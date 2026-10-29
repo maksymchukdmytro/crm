@@ -104,6 +104,8 @@ def j_payment_method(m) -> dict:
 
 def j_source(x) -> dict:
     d = {"id": x.id, "name": x.name, "active": x.is_active, "sort": x.sort}
+    if hasattr(x, "icon"):
+        d["icon"], d["color"] = x.icon or "tag", x.color or "#475569"
     if hasattr(x, "status_ids"):
         d["status_ids"] = [int(i) for i in (x.status_ids or [])]
     return d

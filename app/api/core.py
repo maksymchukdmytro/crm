@@ -43,6 +43,7 @@ from .common import api_user, bad, j_payment_method, j_product, j_source, j_stat
 router = APIRouter(prefix="/api", tags=["core"])
 
 NAV = [  # розділ, ролі
+    ("home", ("admin", "manager")),
     ("leads", ("admin", "manager")),
     ("orders", ("admin", "manager", "warehouse")),
     ("board", ("admin", "manager", "warehouse")),
@@ -142,6 +143,7 @@ def meta(db: Session = Depends(get_db), user: User = Depends(api_user)):
         "marks": [j_source(x) for x in _active(db, OrderMark)],
         "countries": COUNTRIES,
         "extra_fields": [s.get(f"extra{i}_name") or f"Поле {i}" for i in range(1, 5)],
+        "extra_on": [s.get(f"extra{i}_on", "1") != "0" for i in range(1, 5)],
         "checkbox_payments": CHECKBOX_PAYMENTS,
         "payment_kinds": PAYMENT_KINDS,
         "payment_statuses": PAYMENT_STATUSES,

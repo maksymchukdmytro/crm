@@ -6,7 +6,8 @@ import { Ban, Bell, Download, Inbox, Plus, ReceiptText, X } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { dt, itemsLabel, money, phone } from "../lib/format";
-import { PayIcon } from "../components/payicons";
+import { PayLabel } from "../components/payicons";
+import { MarkBadge } from "../components/marks";
 import type { OrderList, OrderRow } from "../lib/types";
 import { PayCheck, Pill } from "../components/ui";
 import OrderModal from "./OrderCard";
@@ -25,7 +26,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
   const qc = useQueryClient();
   const statuses = useMemo(() => Object.fromEntries(meta.statuses.map((s) => [s.id, s])), [meta.statuses]);
   const pm = useMemo(() => Object.fromEntries(meta.payment_methods.map((m) => [m.id, m])), [meta.payment_methods]);
-  const marks = useMemo(() => Object.fromEntries(meta.marks.map((m) => [m.id, m.name])), [meta.marks]);
+  const marks = useMemo(() => Object.fromEntries(meta.marks.map((m) => [m.id, m])), [meta.marks]);
   const managers = useMemo(() => Object.fromEntries(meta.managers.map((m) => [m.id, m])), [meta.managers]);
 
   const f = Object.fromEntries(FILTERS.map((k) => [k, sp.get(k) ?? ""])) as Record<(typeof FILTERS)[number], string>;
@@ -150,7 +151,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         <div className="gt-head gt-row">
           <span className="c-sel"><input type="checkbox" checked={allSel} onChange={() => setSel(allSel ? new Set() : new Set(rows.map((r) => r.id)))} /></span>
           <span>№</span><span>Статус</span><span>Клієнт</span><span>Телефон</span><span>Товари</span>
-          <span className="num">Сума</span><span className="c-pc" title="Чи відповідає ТТН Нової Пошти виду оплати: контроль оплати для NovaPay, без післяплати для оплачених">Перевірка оплати</span><span>Доставка</span><span>ТТН</span><span className="c-m">Менеджер</span><span className="c-s">Джерело</span><span>Дата</span>
+          <span>Оплата</span><span className="num">Сума</span><span className="c-pc" title="Чи відповідає ТТН Нової Пошти виду оплати: контроль оплати для NovaPay, без післяплати для оплачених">Перевірка оплати</span><span>Доставка</span><span>ТТН</span><span className="c-m">Менеджер</span><span className="c-s">Джерело</span><span>Дата</span>
         </div>
         <div className="gt-body" ref={scrollRef}>
           {query.isLoading && <div className="empty"><span className="spinner" /></div>}
@@ -165,11 +166,12 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
                   onClick={(e) => { if (!(e.target as HTMLElement).closest("input")) nav(`${base}/${o.id}${window.location.search}`); }}>
                   <span className="c-sel"><input type="checkbox" checked={sel.has(o.id)} onChange={() => toggle(o.id)} /></span>
                   <span className="nowrap"><b>{o.id}</b>{o.duplicate_of_id && <span className="badge warn" title={`Повтор з номера: №${o.duplicate_of_id}`}>дубль</span>}</span>
-                  <span className="st-cell"><Pill status={s} />{o.remind_at && <span className={`remind-dot ${new Date(o.remind_at) <= new Date() ? "due" : ""}`} title={`Нагадування ${dt(o.remind_at, true)}`}><Bell size={12} /></span>}{o.mark_id && marks[o.mark_id] && <span className="badge" title="Позначка">{marks[o.mark_id]}</span>}</span>
+                  <span className="st-cell"><Pill status={s} />{o.remind_at && <span className={`remind-dot ${new Date(o.remind_at) <= new Date() ? "due" : ""}`} title={`Нагадування ${dt(o.remind_at, true)}`}><Bell size={12} /></span>}{o.mark_id && marks[o.mark_id] && <MarkBadge mark={marks[o.mark_id]} short />}</span>
                   <span className="ell">{o.blacklisted && <span className="bl-mark" title="Покупець у чорному списку"><Ban size={13} /></span>}{o.customer_name || <span className="muted">—</span>}</span>
                   <span className="nowrap">{phone(o.phone)}</span>
                   <span className="ell" title={itemsLabel(o.items)}>{itemsLabel(o.items)}{o.items.some((i) => i.upsell) && <span className="badge info">допродаж</span>}</span>
-                  <span className="num pay-cell">{pm[o.payment_method_id ?? 0] && <PayIcon icon={pm[o.payment_method_id!].icon} size={18} title={pm[o.payment_method_id!].name} />}<b>{money(o.total)}</b></span>
+                  <span className="pay-col">{pm[o.payment_method_id ?? 0] ? <span title={pm[o.payment_method_id!].name}><PayLabel icon={pm[o.payment_method_id!].icon} name={shortPay(pm[o.payment_method_id!].name)} /></span> : <span className="muted">—</span>}</span>
+                  <span className="num"><b>{money(o.total)}</b></span>
                   <span className="c-pc"><PayCheck check={o.pay_check} /></span>
                   <span className="ell">{meta.delivery_methods[o.delivery_method]}{o.city_name && <small> · {o.city_name}</small>}</span>
                   <span className="nowrap">{o.ttn ? <><span className="mono">{o.ttn}</span>{o.delivery_state && <span className={`dstate ${o.delivery_state}`} title={`${meta.delivery_states[o.delivery_state] ?? ""}: ${o.delivery_status}`} />}</> : <span className="muted">—</span>}</span>
@@ -187,3 +189,9 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     </div>
   );
 }
+
+/** Коротка назва виду оплати для вузької колонки: «Післяплата NovaPay» → «NovaPay» (синя крапка на значку вже каже «післяплата»). */
+function shortPay(name: string) {
+  return name.replace(/^Післяплата\s+/i, "").replace(/^Оплата\s+/i, "");
+}
+

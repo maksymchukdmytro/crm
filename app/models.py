@@ -495,6 +495,8 @@ class OrderMark(Base):
     __tablename__ = "order_marks"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(80))
+    icon: Mapped[str] = mapped_column(String(24), default="tag")  # ключ значка (frontend/src/components/marks.tsx)
+    color: Mapped[str] = mapped_column(String(16), default="#475569")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort: Mapped[int] = mapped_column(Integer, default=100)
 

@@ -6,6 +6,7 @@ import { errText, useMeta, useToast } from "../lib/app";
 import { dt, phone } from "../lib/format";
 import type { BlockedIp, Cashier, CustomerGroup, DirItem, LegalEntity, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
+import { MarkLookPick } from "../components/marks";
 import { Badge, Empty, Field, NpAutocomplete, Spinner } from "../components/ui";
 
 type S = Settings;
@@ -324,12 +325,18 @@ function Directories({ s }: { s: S }) {
 
 function ExtraFields({ s }: { s: S }) {
   const save = useSave();
-  const { v, bind } = useForm(s, ["extra1_name", "extra2_name", "extra3_name", "extra4_name"]);
+  const { v, bind, check } = useForm(s, ["extra1_name", "extra2_name", "extra3_name", "extra4_name", "extra1_on", "extra2_on", "extra3_on", "extra4_on"]);
   return (
     <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/fields", body: v }); }}>
       <h2>Додаткові поля замовлення</h2>
-      <p className="hint">Чотири довільні поля в картці (магазин маркетплейсу, номер замовлення Rozetka, посилання…). Їх можна передавати з лендингу як extra1–extra4.</p>
-      <div className="cols">{[1, 2, 3, 4].map((i) => <Field key={i} label={`Поле ${i}`}><input {...bind(`extra${i}_name`)} /></Field>)}</div>
+      <p className="hint">До чотирьох довільних полів у картці (магазин маркетплейсу, номер замовлення Rozetka, посилання…). Вимкнені поля не показуються в картці й фільтрах; дані в них зберігаються. З лендингу — як extra1–extra4.</p>
+      <div className="xf-list">{[1, 2, 3, 4].map((i) => (
+        <div className={`xf-row ${v[`extra${i}_on`] === "0" ? "off" : ""}`} key={i}>
+          <label className="switch" title={v[`extra${i}_on`] === "0" ? "Поле вимкнено" : "Поле показується"}><input type="checkbox" {...check(`extra${i}_on`)} /><span /></label>
+          <span className="xf-n">Поле {i}</span>
+          <input {...bind(`extra${i}_name`)} placeholder={`Назва поля ${i}`} disabled={v[`extra${i}_on`] === "0"} aria-label={`Назва поля ${i}`} />
+        </div>
+      ))}</div>
       <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button></div>
     </form>
   );
@@ -345,7 +352,8 @@ function DirEditor({ kind, title, hint, items, statuses, offices }: { kind: stri
   const upd = (key: string, patch: Partial<DirItem & { status_ids?: number[]; delete?: boolean }>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const visible = rows.filter((r) => !r.delete);
   const [open, setOpen] = useState("");
-  const submit = () => save.mutate({ path: `/settings/dir/${kind}`, method: "put", body: rows.filter((r) => r.name.trim()).map((r, i) => ({ id: r.id || undefined, name: r.name, active: r.active, sort: i * 10, delete: !!r.delete, status_ids: r.status_ids, office_id: offices ? r.office_id ?? null : undefined })) },
+  const submit = () => save.mutate({ path: `/settings/dir/${kind}`, method: "put", body: rows.filter((r) => r.name.trim()).map((r, i) => ({ id: r.id || undefined, name: r.name, active: r.active, sort: i * 10, delete: !!r.delete, status_ids: r.status_ids, office_id: offices ? r.office_id ?? null : undefined,
+    ...(kind === "marks" ? { icon: r.icon ?? "tag", color: r.color ?? "#475569" } : {}) })) },
     { onSuccess: (x) => { const list = (x as S)[kind === "sources" ? "order_sources" : (kind as "offices" | "reasons" | "marks")] as (DirItem | Reason)[]; setRows(list.map((y) => ({ ...y, key: rk() }))); } });
   return (
     <div className="card">
@@ -354,6 +362,7 @@ function DirEditor({ kind, title, hint, items, statuses, offices }: { kind: stri
       <div className="dir-list">
         {visible.map((r) => (
           <div className={`dir-row ${r.active ? "" : "off"}`} key={r.key}>
+            {kind === "marks" && <MarkLookPick icon={r.icon} color={r.color} onChange={(icon, color) => upd(r.key, { icon, color })} />}
             <input value={r.name} onChange={(e) => upd(r.key, { name: e.target.value })} placeholder="Назва" />
             {offices && <select className="dir-office" value={r.office_id ?? ""} title="Відділ джерела" onChange={(e) => upd(r.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
               <option value="">без відділу</option>{offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select>}
