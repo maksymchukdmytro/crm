@@ -201,7 +201,7 @@ export default function StatsPage() {
             </div>
             <div className="st-kpis">
               <Kpi label="Апрув" value={`${data.summary.approve_rate}%`} sub={`${data.summary.approved} підтверджено`} d={pp(data, "approve_rate")} />
-              <Kpi label="Викуп" value={`${data.summary.buyout_rate}%`} sub={`${data.summary.delivered} отримано · ${data.summary.refused} відмов`} d={pp(data, "buyout_rate")} />
+              <Kpi label="Викуп" value={data.summary.delivered + data.summary.refused ? `${data.summary.buyout_rate}%` : "—"} sub={`${data.summary.delivered} отримано · ${data.summary.refused} відмов`} d={data.summary.delivered + data.summary.refused ? pp(data, "buyout_rate") : null} />
               <Kpi label="Відправлено" value={data.summary.shipped} sub={data.summary.orders ? `${Math.round(data.summary.shipped * 100 / data.summary.orders)}% від замовлень` : ""} d={delta(data, "shipped")} />
               <Kpi label="Середній чек" value={`${money(data.summary.avg_check)} ₴`} sub={`маржа ${money(data.summary.margin_avg)} ₴`} d={delta(data, "avg_check")} />
               <Kpi label="Час підтвердження" value={data.summary.confirm_avg_min == null ? "—" : minutes(data.summary.confirm_avg_min)} sub="від додавання до апруву"

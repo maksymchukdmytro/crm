@@ -173,6 +173,9 @@
   .st-seg { margin-left: 0; }
 }
 @media (max-width: 560px) {
-  .st-tiles { grid-template-columns: 1fr; }
+  .st-tiles { gap: 8px; }
+  .st-tile { padding: 10px 11px; }
+  .st-tile-v { font-size: 19px; }
+  .st-tile-r { font-size: 12px; }
   .st-tsearch { width: 100%; }
 }
