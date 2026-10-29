@@ -93,7 +93,7 @@ function ProductList({ editable }: { editable: boolean }) {
           <tbody>
             {isLoading && <tr><td colSpan={8}><Empty><Spinner /></Empty></td></tr>}
             {data?.map((p) => {
-              const active = p.variants.filter((v) => v.active);
+              const active = (p.variants ?? []).filter((v) => v.active);
               return (
                 <tr key={p.id} className="clickable" onClick={() => setEdit(p.id)}>
                   <td><div className="pr-cell">
@@ -180,7 +180,7 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
     setF({ ...f, [k]: e.target instanceof HTMLInputElement && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   const price = num(v("price", 0)), spec = num(v("spec_price", 0)), cost = num(v("cost", 0));
   const sale = spec > 0 ? spec : price;
-  const tabs: [string, string, typeof Package, number?][] = [["main", "Основне", Package], ["media", "Фото й опис", ImagePlus, (data?.photos.length ?? 0) + pending.length],
+  const tabs: [string, string, typeof Package, number?][] = [["main", "Основне", Package], ["media", "Фото й опис", ImagePlus, (data?.photos?.length ?? 0) + pending.length],
     ["variants", "Варіанти", Layers, curVariants.filter((x) => x.active).length], ["shipping", "Доставка", Truck], ...(data ? [["stock", "Склад", Boxes] as [string, string, typeof Package]] : [])];
 
   return (
@@ -245,8 +245,8 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
               <Kpi label="Доступно" value={<span className={data.available <= data.min_stock ? "lowstock" : ""}>{data.available}</span>} />
               <Kpi label="Продано позицій" value={data.sold} />
             </div>
-            {data.variants.length > 0 && <table className="t dense"><thead><tr><th>Варіант</th><th className="num">На складі</th><th className="num">Резерв</th><th className="num">Доступно</th></tr></thead>
-              <tbody>{data.variants.map((x) => <tr key={x.id} className={x.active ? "" : "muted"}><td>{x.name}{!x.active && " (вимкнено)"}</td><td className="num">{x.stock}</td><td className="num">{x.reserved}</td><td className="num"><b>{x.available}</b></td></tr>)}</tbody></table>}
+            {(data.variants ?? []).length > 0 && <table className="t dense"><thead><tr><th>Варіант</th><th className="num">На складі</th><th className="num">Резерв</th><th className="num">Доступно</th></tr></thead>
+              <tbody>{(data.variants ?? []).map((x) => <tr key={x.id} className={x.active ? "" : "muted"}><td>{x.name}{!x.active && " (вимкнено)"}</td><td className="num">{x.stock}</td><td className="num">{x.reserved}</td><td className="num"><b>{x.available}</b></td></tr>)}</tbody></table>}
             <p className="hint">Змінити залишок — розділ «Склад» → «Коригування».</p>
             <MovesTable moves={data.moves} compact />
           </div>}

@@ -5,7 +5,7 @@ import { Ban, Bell, Building2, CreditCard, ExternalLink, Globe, Hand, MessageCir
 import { api, ApiError, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num, phone as fmtPhone } from "../lib/format";
-import type { Order, OrderItem, Product } from "../lib/types";
+import type { Order, OrderItem, Product, Variant } from "../lib/types";
 import { Badge, deliveryKind, Modal, NpAutocomplete, Pill, Spinner } from "../components/ui";
 import { flag, PayIcon } from "../components/payicons";
 import TtnDialog from "./TtnDialog";
@@ -485,7 +485,7 @@ function Goods({ items, products, onChange }: { items: OrderItem[]; products: Pr
   const list = useMemo(() => {
     const t = q.trim().toLowerCase();
     // товар із варіантами — окремий рядок на кожен варіант («Лампа — Чорний»)
-    const rows: { p: Product; v?: Product["variants"][number] }[] = [];
+    const rows: { p: Product; v?: Variant }[] = [];
     for (const p of products) {
       const vs = (p.variants ?? []).filter((v) => v.active);
       if (vs.length) {
@@ -502,7 +502,7 @@ function Goods({ items, products, onChange }: { items: OrderItem[]; products: Pr
   // що запропонувати: товари-допродажі, привʼязані до товарів у замовленні (або до будь-якого замовлення)
   const offers = mains.length ? products.filter((p) => p.upsell && !inOrder.has(p.id) && (!p.upsell_for?.length || mains.some((m) => p.upsell_for!.includes(m.product_id!)))).slice(0, 6) : [];
 
-  const add = (p?: Product, asUpsell = false, v?: Product["variants"][number]) => {
+  const add = (p?: Product, asUpsell = false, v?: Variant) => {
     if (p) {
       const ex = items.find((i) => i.product_id === p.id && (i.variant_id ?? null) === (v?.id ?? null));
       if (ex) onChange(items.map((i) => (i === ex ? { ...i, qty: i.qty + 1 } : i)));
@@ -538,12 +538,12 @@ function Goods({ items, products, onChange }: { items: OrderItem[]; products: Pr
                     <div className="meta-line">
                       {p && (p.variants ?? []).some((x) => x.active) && (
                         <select className="mini-sel" value={i.variant_id ?? ""} title="Варіант"
-                          onChange={(e) => { const nv = p.variants.find((x) => x.id === Number(e.target.value)); upd(i.key, { variant_id: nv?.id ?? null, variant_name: nv?.name ?? "", name: nv ? `${p.name} (${nv.name})` : p.name, price: String(nv?.price ?? p.sale_price ?? p.price) }); }}>
+                          onChange={(e) => { const nv = (p.variants ?? []).find((x) => x.id === Number(e.target.value)); upd(i.key, { variant_id: nv?.id ?? null, variant_name: nv?.name ?? "", name: nv ? `${p.name} (${nv.name})` : p.name, price: String(nv?.price ?? p.sale_price ?? p.price) }); }}>
                           <option value="">варіант…</option>
-                          {p.variants.filter((x) => x.active || x.id === i.variant_id).map((x) => <option key={x.id} value={x.id}>{x.name} · {x.available} шт</option>)}
+                          {(p.variants ?? []).filter((x) => x.active || x.id === i.variant_id).map((x) => <option key={x.id} value={x.id}>{x.name} · {x.available} шт</option>)}
                         </select>
                       )}
-                      {p && <span>{p.sku && `${p.sku} · `}залишок {i.variant_id ? p.variants.find((x) => x.id === i.variant_id)?.available ?? "—" : p.available}</span>}
+                      {p && <span>{p.sku && `${p.sku} · `}залишок {i.variant_id ? (p.variants ?? []).find((x) => x.id === i.variant_id)?.available ?? "—" : p.available}</span>}
                       <label className="mini-check"><input type="checkbox" checked={i.upsell} onChange={(e) => upd(i.key, { upsell: e.target.checked, upsell_for: e.target.checked ? others[0]?.product_id ?? null : null })} /> допродаж</label>
                       {i.upsell && others.length > 0 && (
                         <select className="mini-sel" value={i.upsell_for ?? ""} onChange={(e) => upd(i.key, { upsell_for: e.target.value ? Number(e.target.value) : null })}>
