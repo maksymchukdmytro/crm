@@ -89,6 +89,11 @@ if ! grep -q '^REDIS_URL=' "$ENVF"; then
   fi
 fi
 
+# Фото товарів — поза $APP (там rsync --delete), щоб оновлення їх не стирало
+grep -q '^MEDIA_DIR=' "$ENVF" || echo "MEDIA_DIR=/var/lib/crm/media" >> "$ENVF"
+MEDIA_DIR="$(sed -n 's/^MEDIA_DIR=//p' "$ENVF" | tail -n 1)"
+install -d -m 750 -o "$APP_USER" -g "$APP_USER" "$(dirname "$MEDIA_DIR")" "$MEDIA_DIR"
+
 DB_PASS="$(sed -n 's#^DATABASE_URL=postgresql+psycopg://crm:\([^@]*\)@.*#\1#p' "$ENVF")"
 [ -n "$DB_PASS" ] || die "Не вдалося прочитати пароль бази з $ENVF"
 if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='crm'" | grep -q 1; then
@@ -100,7 +105,7 @@ fi
 
 say "2/5 Код і Python-середовище"
 mkdir -p "$APP" "$BACKUP_DIR"
-rsync -a --delete --exclude '.git' --exclude '.venv' --exclude tests --exclude backups --exclude '__pycache__' \
+rsync -a --delete --exclude '.git' --exclude '.claude' --exclude '.venv' --exclude tests --exclude backups --exclude '__pycache__' \
   --exclude '.env' --exclude 'frontend/node_modules' --exclude 'frontend/dist' --exclude '.npm' "$SRC/" "$APP/"
 git -C "$SRC" log -1 --format='%h · %cd' --date=format:'%Y-%m-%d %H:%M' > "$APP/VERSION" 2>/dev/null || true
 chown -R "$APP_USER:$APP_USER" "$APP" "$BACKUP_DIR"
@@ -252,6 +257,8 @@ say "5/5 Щоденна резервна копія"
 cat > /etc/cron.d/crm-backup <<EOF
 # CRM: копія бази щодня о 03:45, зберігаються 14 останніх
 45 3 * * * postgres pg_dump crm | gzip > $BACKUP_DIR/crm-\$(date +\%F).sql.gz; ls -1t $BACKUP_DIR/crm-*.sql.gz | tail -n +15 | xargs -r rm -f
+# фото товарів — дзеркало поруч із копіями бази
+50 3 * * * root rsync -a --delete $MEDIA_DIR/ $BACKUP_DIR/media/
 EOF
 chmod 644 /etc/cron.d/crm-backup
 chown postgres:"$APP_USER" "$BACKUP_DIR"; chmod 770 "$BACKUP_DIR"

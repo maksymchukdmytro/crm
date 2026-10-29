@@ -566,8 +566,8 @@ function Goods({ items, products, onChange }: { items: OrderItem[]; products: Pr
             })}
           </tbody>
         </table>
-      ) : <div className="goods-empty">Додайте товар — почніть вводити назву або артикул</div>}
-      <div className="goods-add ac">
+      ) : null}
+      <div className={`goods-add ac ${items.length ? "" : "first"}`}>
         <input value={q} placeholder="Додати товар: назва або артикул…" onChange={(e) => { setQ(e.target.value); setHl(0); setOpen(true); }}
           onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)}
           onKeyDown={(e) => {

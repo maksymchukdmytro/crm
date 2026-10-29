@@ -95,6 +95,7 @@ function Column({ status, list, onOpen }: { status: Status; list?: OrderList; on
       <div className="col-body">
         {!list && <div className="spinner sm" />}
         {list?.items.map((o) => <Draggable key={o.id} order={o} onOpen={onOpen} />)}
+        {list && list.items.length === 0 && <div className="board-empty">Перетягніть сюди замовлення</div>}
         {list && list.total != null && list.total > list.items.length && <div className="hint" style={{ textAlign: "center", padding: 6 }}>ще {list.total - list.items.length} у списку</div>}
       </div>
     </div>

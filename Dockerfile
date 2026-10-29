@@ -19,7 +19,7 @@ RUN pip install -r requirements.txt
 
 COPY . .
 COPY --from=frontend /fe/dist ./frontend/dist
-RUN useradd --create-home crm && chmod +x docker-entrypoint.sh && chown -R crm /app
+RUN useradd --create-home crm && chmod +x docker-entrypoint.sh && mkdir -p /app/media && chown -R crm /app
 USER crm
 
 EXPOSE 8000

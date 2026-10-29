@@ -22,6 +22,14 @@
 - Тексти інтерфейсу, коментарі й повідомлення комітів — українською. Коміт етапу називати
   «Етап N: …».
 
+## Інтерфейс: скіл UI/UX Pro Max
+- Скіл лежить у `.claude/skills/ui-ux-pro-max` (MIT, github.com/nextlevelbuilder/ui-ux-pro-max-skill) — Claude Code
+  підхоплює його сам. Перед роботою над виглядом: `python3 .claude/skills/ui-ux-pro-max/scripts/search.py "<запит>" --domain ux`
+  (або `--stack react`), перед здачею — чекліст `references/pro-rules.md`.
+- Орієнтири для CRM (щільний робочий інтерфейс): пласкі поверхні без зайвих тіней, іконки лише lucide (без емодзі),
+  видимий фокус з клавіатури, контраст тексту ≥ 4,5:1, на телефоні цілі дотику ≥ 44 px, без прокрутки вшир на 375 px,
+  переходи 150–200 мс і `prefers-reduced-motion`.
+
 ## Як оновлюється сервер
 
 Сервер — VPS сайту mdmy.me (nginx), CRM стоїть без Docker у підкаталозі `/crm`.

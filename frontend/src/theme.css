@@ -185,3 +185,26 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 
 .t.items td.item-cell { display: flex; }
 .item-ph, .item-ph.empty { width: 38px; height: 38px; min-height: 0; align-self: flex-start; }
+
+/* ---------------------------------------------------------------- шліфування (UI/UX Pro Max: контраст, обрізання, порожні стани) */
+:root { --faint: #7d8697; }            /* ≥3:1 на білому — іконки й підписи другого плану */
+.nav-title { color: var(--muted); }    /* текст групи меню — 4,9:1 */
+.st-cell { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.st-cell .pill { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.kpi .v { font-variant-numeric: lining-nums; letter-spacing: -0.01em; }
+.oc-main .goods-add.first input { height: 46px; border-style: solid; border-color: #cfd4dd; background-color: #fff; font-size: 14px; }
+.goods-add.first input::placeholder { color: var(--muted); }
+.board-empty { color: var(--faint); font-size: 12.5px; text-align: center; padding: 18px 8px; border: 1px dashed var(--line); border-radius: var(--radius-sm); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+@media (max-width: 760px) {
+  .oc-actions { flex-wrap: wrap; }
+  .oc-actions > button { min-height: 40px; }
+  .st-cell .pill { max-width: 118px; }
+}
+/* рядки довідників: різна кількість полів (джерело + відділ, група + колір, IP) — гнучкий рядок замість сітки на 3 колонки */
+.dir-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dir-row > input:not([type=checkbox]):not([type=color]) { flex: 1 1 160px; min-width: 0; width: auto; }
+.dir-row > .dir-office { flex: 0 1 180px; min-width: 0; width: auto; }
+.dir-row > input[type=color] { flex: none; width: 34px; height: 34px; padding: 2px; }
+.dir-row > .x { flex: none; }
+.dir-row > .dir-st-btn, .dir-row > .dir-statuses { flex: 1 0 100%; }
