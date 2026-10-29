@@ -173,15 +173,15 @@ export default function StatsPage() {
                 : <div className="st-chart-in">
                   <StatsChart points={data.series} statuses={chartStatuses} hidden={hidden} showTotal={showTotal} group={data.group} />
                   <div className="st-legend">
-                    <button className={`lg ${showTotal ? "" : "off"}`} onClick={() => setShowTotal((x) => !x)}>
-                      <span className="lg-line" /><b>100%</b><span className="lg-n">({data.summary.orders})</span><span className="lg-name">Усі</span></button>
+                    <button className={`st-lg ${showTotal ? "" : "off"}`} onClick={() => setShowTotal((x) => !x)}>
+                      <span className="st-lg-line" /><b>100%</b><span className="st-lg-n">({data.summary.orders})</span><span className="st-lg-name">Усі</span></button>
                     {data.statuses.map((x) => {
                       const s = statusMap[x.status_id];
                       const off = hidden.has(x.status_id);
                       return (
-                        <button key={x.status_id} className={`lg ${off ? "off" : ""}`} title={off ? "Показати" : "Сховати на графіку"}
+                        <button key={x.status_id} className={`st-lg ${off ? "off" : ""}`} title={off ? "Показати" : "Сховати на графіку"}
                           onClick={() => setHidden((h) => { const n = new Set(h); if (n.has(x.status_id)) n.delete(x.status_id); else n.add(x.status_id); return n; })}>
-                          <span className="lg-dot" style={{ background: s?.color ?? "#999" }} /><b>{x.share}%</b><span className="lg-n">({x.count})</span><span className="lg-name" title={s?.name}>{s?.name ?? "—"}</span>
+                          <span className="st-lg-dot" style={{ background: s?.color ?? "#999" }} /><b>{x.share}%</b><span className="st-lg-n">({x.count})</span><span className="st-lg-name" title={s?.name}>{s?.name ?? "—"}</span>
                         </button>
                       );
                     })}
