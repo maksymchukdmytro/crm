@@ -114,6 +114,7 @@ class PaymentMethodOut(Out):
     kind: Literal["cod", "partial", "prepaid"] = Field(description="cod — післяплата, partial — передоплата + післяплата, prepaid — без післяплати")
     checkbox_type: str
     np_cod: Literal["", "control", "backward", "none"] = Field("", description="що має стояти в ТТН Нової Пошти: контроль оплати / грошовий переказ / без післяплати; порожньо — не перевіряти")
+    image: str = Field("", description="свій значок (адреса картинки) замість стандартного")
     active: bool
     sort: int
 

@@ -3,6 +3,7 @@
 // сервіси (Rozetka, NovaPay, Укрпошта…) — кружечок у кольорі сервісу з абревіатурою (логотипи брендів не малюємо).
 // Синя крапка в куті — «гроші при отриманні» (післяплата), як у LP-CRM.
 import type { LucideIcon } from "lucide-react";
+import { ROOT } from "../lib/api";
 import {
   BadgeCheck, Banknote, BanknoteArrowDown, Calculator, CircleDollarSign, CreditCard, HandCoins, Landmark, MailOpen,
   RefreshCw, SmartphoneNfc, WalletCards,
@@ -32,8 +33,12 @@ export const PAY_ICONS: Record<string, Def> = {
   meest: { label: "Meest (післяплата)", color: "#e30613", text: "M", cod: true },
 };
 
-export function PayIcon({ icon, size = 22, title }: { icon?: string; size?: number; title?: string }) {
+export function PayIcon({ icon, size = 22, title, image }: { icon?: string; size?: number; title?: string; image?: string }) {
   const d = PAY_ICONS[icon || ""] ?? PAY_ICONS.cash;
+  if (image) {  // свій значок (офіційний логотип, завантажений у налаштуваннях)
+    return <span className="pay-ic img" style={{ width: size, height: size }} title={title ?? d.label} aria-hidden={!title}>
+      <img src={`${ROOT}${image}`} alt="" width={size} height={size} />{d.cod && <i className="pay-cod" aria-hidden />}</span>;
+  }
   const style = { width: size, height: size, ["--pc" as string]: d.color, fontSize: Math.round(size * (d.text && d.text.length > 2 ? 0.36 : 0.42)) };
   return (
     <span className={`pay-ic ${d.Icon ? "glyph" : "brand"}`} style={style} title={title ?? d.label} aria-hidden={!title}>
@@ -44,8 +49,8 @@ export function PayIcon({ icon, size = 22, title }: { icon?: string; size?: numb
 }
 
 /** Вид оплати: значок + назва (скрізь, де раніше був лише значок). */
-export function PayLabel({ icon, name, size = 18 }: { icon?: string; name: string; size?: number }) {
-  return <span className="pay-label"><PayIcon icon={icon} size={size} /><span>{name}</span></span>;
+export function PayLabel({ icon, name, size = 18, image }: { icon?: string; name: string; size?: number; image?: string }) {
+  return <span className="pay-label"><PayIcon icon={icon} size={size} image={image} /><span>{name}</span></span>;
 }
 
 /** Код країни → значок-прапорець (емодзі; у Windows показується як дві літери — теж зрозуміло). */

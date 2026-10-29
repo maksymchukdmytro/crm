@@ -170,7 +170,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
                   <span className="ell">{o.blacklisted && <span className="bl-mark" title="Покупець у чорному списку"><Ban size={13} /></span>}{o.customer_name || <span className="muted">—</span>}</span>
                   <span className="nowrap">{phone(o.phone)}</span>
                   <span className="ell" title={itemsLabel(o.items)}>{itemsLabel(o.items)}{o.items.some((i) => i.upsell) && <span className="badge info">допродаж</span>}</span>
-                  <span className="pay-col">{pm[o.payment_method_id ?? 0] ? <span title={pm[o.payment_method_id!].name}><PayLabel icon={pm[o.payment_method_id!].icon} name={shortPay(pm[o.payment_method_id!].name)} /></span> : <span className="muted">—</span>}</span>
+                  <span className="pay-col">{pm[o.payment_method_id ?? 0] ? <span title={pm[o.payment_method_id!].name}><PayLabel icon={pm[o.payment_method_id!].icon} image={pm[o.payment_method_id!].image} name={shortPay(pm[o.payment_method_id!].name)} /></span> : <span className="muted">—</span>}</span>
                   <span className="num"><b>{money(o.total)}</b></span>
                   <span className="c-pc"><PayCheck check={o.pay_check} /></span>
                   <span className="ell">{meta.delivery_methods[o.delivery_method]}{o.city_name && <small> · {o.city_name}</small>}</span>

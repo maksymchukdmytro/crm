@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Building2, Copy, Plus, RefreshCw, Settings as SettingsIcon, Star, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Building2, Copy, Plus, RefreshCw, Settings as SettingsIcon, Star, Trash2, Upload } from "lucide-react";
 import { api } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, phone } from "../lib/format";
@@ -405,8 +405,18 @@ function PaymentMethods({ s }: { s: S }) {
         <tbody>{shown.map(([r, i]) => (
           <tr key={r.key} className={r.active ? "" : "off"}>
             <td className="muted mono">{r.id || "нов."}</td>
-            <td><div className="pm-icon"><PayIcon icon={r.icon} size={24} />
-              <select value={r.icon} onChange={(e) => upd(r.key, { icon: e.target.value })} aria-label="Значок">{Object.entries(PAY_ICONS).map(([k, d]) => <option key={k} value={k}>{d.label}</option>)}</select></div></td>
+            <td><div className="pm-icon"><PayIcon icon={r.icon} image={r.image} size={24} />
+              {r.image ? <span className="pm-own">свій значок</span>
+                : <select value={r.icon} onChange={(e) => upd(r.key, { icon: e.target.value })} aria-label="Значок">{Object.entries(PAY_ICONS).map(([k, d]) => <option key={k} value={k}>{d.label}</option>)}</select>}
+              {r.id > 0 && (r.image
+                ? <button type="button" className="x" title="Прибрати свій значок" onClick={() => save.mutate({ path: `/settings/payment-methods/${r.id}/image`, method: "del" }, { onSuccess: (x) => upd(r.key, { image: (x as S).payment_methods.find((m) => m.id === r.id)?.image ?? "" }) })}>×</button>
+                : <label className="pm-up" title="Завантажити свій значок (PNG, JPG, WEBP до 1 МБ), напр. офіційний логотип">
+                    <Upload size={14} /><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(e) => {
+                      const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+                      const fd = new FormData(); fd.append("file", f);
+                      save.mutate({ path: `/settings/payment-methods/${r.id}/image`, method: "post", body: fd }, { onSuccess: (x) => upd(r.key, { image: (x as S).payment_methods.find((m) => m.id === r.id)?.image ?? "" }) });
+                    }} /></label>)}
+            </div></td>
             <td><input value={r.name} onChange={(e) => upd(r.key, { name: e.target.value })} /></td>
             <td><select value={r.kind} onChange={(e) => upd(r.key, { kind: e.target.value as PaymentMethod["kind"] })}>
               <option value="cod">Післяплата</option><option value="partial">Передоплата + післяплата</option><option value="prepaid">Оплачено (ТТН без післяплати)</option></select></td>
@@ -421,7 +431,7 @@ function PaymentMethods({ s }: { s: S }) {
         ))}</tbody>
       </table></div>
       <div className="form-actions pad">
-        <button type="button" className="btn sm" onClick={() => { setShowOff(true); setRows([...rows, { id: 0, name: "", icon: "cash", kind: "cod", checkbox_type: "", np_cod: "", active: true, sort: 0, key: rk() }]); }}><Plus size={14} /> Додати вид оплати</button>
+        <button type="button" className="btn sm" onClick={() => { setShowOff(true); setRows([...rows, { id: 0, name: "", icon: "cash", kind: "cod", checkbox_type: "", np_cod: "", image: "", active: true, sort: 0, key: rk() }]); }}><Plus size={14} /> Додати вид оплати</button>
         <span className="spacer" />
         <button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти види оплат</button>
       </div>
