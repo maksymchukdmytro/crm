@@ -130,6 +130,25 @@ docker compose exec web python demo_data.py   # 140 демонстраційни
 ```
 Відкрийте http://127.0.0.1:8000.
 
+## Моніторинг
+
+| Що | Як увімкнути |
+|---|---|
+| **Сторінка «Система»** | Є одразу (адміністратор): стан бази, Redis, воркера, черги, трекінгу, SMS і заявок. |
+| **Сповіщення в Telegram** | «Система» → токен бота й ID чату. Пише, коли не йдуть SMS, перевізник не відповідає 3 рази поспіль, черга переповнена або давно немає заявок (поріг у годинах, 8:00–22:00), і ще раз — коли відновилось. |
+| **Зовнішній монітор** | Додайте `https://домен/crm/healthz/full` в UptimeRobot чи подібний сервіс: 503, якщо база, Redis або воркер не працюють. |
+| **Sentry** (помилки) | `SENTRY_DSN=` (сервер і воркер) і `SENTRY_DSN_FRONTEND=` (браузер) у `/etc/crm/crm.env`, потім `systemctl restart crm-web crm-worker`. Телефони й імена клієнтів не надсилаються. |
+| **Prometheus / Grafana** | `GET /crm/api/metrics` із заголовком `Authorization: Bearer <METRICS_TOKEN>` (токен створюється в `/etc/crm/crm.env`). Метрики: запити й час відповіді за маршрутами, стан компонентів, черга, заявки, SMS, помилки трекінгу. |
+
+## Документація API
+
+Схема OpenAPI — `/crm/api/openapi.json`, інтерактивна документація — `/crm/api/docs` (після входу).
+Типи фронтенду генеруються з цієї схеми (`frontend/src/lib/api-schema.d.ts`); тест
+`test_openapi_snapshot_is_current` падає, якщо API змінили, а типи — ні:
+```bash
+python scripts/export_openapi.py && (cd frontend && npm run gen:api)
+```
+
 ## Обслуговування
 
 | Що | Команда |
@@ -159,8 +178,10 @@ docker compose exec web python demo_data.py   # 140 демонстраційни
 app/
   models.py          таблиці БД
   services/          бізнес-логіка: orders, stock, payments, delivery, sms, reports,
-                     events (події після коміту), queue (постановка задач)
-  api/               JSON API для інтерфейсу: core (вхід, meta, SSE), orders, catalog, admin
+                     events (події після коміту), queue (постановка задач), monitoring
+                     (Sentry, метрики, пульс воркера, сповіщення)
+  api/               JSON API: schemas (Pydantic-схеми запитів і відповідей), core (вхід, meta, SSE),
+                     orders, catalog, admin (оплати, звіти, журнал, налаштування, стан системи)
   tasks.py           задачі воркера arq
   carriers/          інтеграції з перевізниками (спільний інтерфейс у base.py)
   routers/           класичний інтерфейс (/classic) і webhook прийому заявок
@@ -168,7 +189,7 @@ app/
 frontend/            новий інтерфейс: React 19, Vite, TypeScript, TanStack Query/Virtual, dnd-kit
 worker.py            запуск воркера (arq з Redis або простий цикл без нього)
 migrations/          міграції Alembic
-tests/               автотести (75 сценаріїв: бізнес-логіка, API, черга, події)
+tests/               автотести (85 сценаріїв: бізнес-логіка, API, схема, черга, події, моніторинг)
 deploy/install.sh    встановлення без Docker (підкаталог наявного сайту)
 ```
 

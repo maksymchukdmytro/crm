@@ -5,7 +5,7 @@ import secrets
 from datetime import timedelta
 from decimal import Decimal
 
-from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
@@ -27,13 +27,14 @@ from ..services.audit import ACTION_NAMES
 from ..services.orders import normalize_phone, to_int
 from ..services.reports import period_bounds
 from ..web import f_details, parse_date, today_local
+from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut
 from .common import admin, bad, iso, j_payment, j_status, j_user, sales
 
 router = APIRouter(prefix="/api", tags=["admin"])
 
 
 # ---------------------------------------------------------------- оплати
-@router.get("/payments")
+@router.get("/payments", response_model=PaymentsOut)
 def payments(status: str = "collected", method: str = "", db: Session = Depends(get_db), user: User = Depends(admin)):
     q = db.query(Payment).options(selectinload(Payment.order)).filter(Payment.kind == "cod")
     if status:
@@ -51,8 +52,9 @@ def payments(status: str = "collected", method: str = "", db: Session = Depends(
     return {"items": out, "totals": {s: {"count": c, "sum": float(v)} for s, c, v in agg}}
 
 
-@router.post("/payments/receive")
-def payments_receive(data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(admin)):
+@router.post("/payments/receive", response_model=DoneOut)
+def payments_receive(body: ReceiveIn, db: Session = Depends(get_db), user: User = Depends(admin)):
+    data = body.model_dump(exclude_unset=True)
     ids = [to_int(x) for x in data.get("ids", []) if to_int(x)]
     n = 0
     for p in db.query(Payment).filter(Payment.id.in_(ids)).all():
@@ -63,7 +65,7 @@ def payments_receive(data: dict = Body(...), db: Session = Depends(get_db), user
     return {"done": n}
 
 
-@router.post("/payments/import")
+@router.post("/payments/import", response_model=RegistryOut)
 async def payments_import(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db),
                           user: User = Depends(admin)):
     rows, err = parse_registry(await file.read())
@@ -83,7 +85,7 @@ def _bucket(b: rep.Bucket) -> dict:
             "buyout_rate": round(b.buyout_rate, 2)}
 
 
-@router.get("/reports")
+@router.get("/reports", response_model=ReportOut)
 def reports(date_from: str = "", date_to: str = "", dim: str = "utm_source", manager: int = 0,
             db: Session = Depends(get_db), user: User = Depends(sales)):
     t = today_local()
@@ -108,7 +110,7 @@ def reports(date_from: str = "", date_to: str = "", dim: str = "utm_source", man
 
 
 # ---------------------------------------------------------------- журнал
-@router.get("/audit")
+@router.get("/audit", response_model=AuditOut)
 def audit_log(entity: str = "", user_id: int = 0, action: str = "", date_from: str = "", date_to: str = "",
               before: int = 0, limit: int = Query(100, le=300), db: Session = Depends(get_db),
               user: User = Depends(admin)):
@@ -134,10 +136,29 @@ def audit_log(entity: str = "", user_id: int = 0, action: str = "", date_from: s
             "actions": ACTION_NAMES}
 
 
+# ---------------------------------------------------------------- стан системи
+@router.get("/system", response_model=SystemOut)
+def system(db: Session = Depends(get_db), user: User = Depends(admin)):
+    from ..services import monitoring
+    return monitoring.system_status(db)
+
+
+@router.post("/system/alert-test", response_model=Ok)
+def alert_test(db: Session = Depends(get_db), user: User = Depends(admin)):
+    from ..services import monitoring
+    token, chat = st.get(db, "alert_tg_token"), st.get(db, "alert_tg_chat")
+    if not token or not chat:
+        bad("Вкажіть токен бота і ID чату в налаштуваннях сповіщень")
+    ok, info = monitoring.send_telegram(token, chat, f"🔔 {st.get(db, 'company_name')}: тестове сповіщення CRM — усе працює")
+    if not ok:
+        bad(f"Telegram відповів помилкою: {info}", 422)
+    return {"ok": True}
+
+
 # ---------------------------------------------------------------- налаштування
 def _settings_payload(request: Request, db: Session) -> dict:
     s = st.get_all(db)
-    values = {k: ("********" if (k in st.SECRET_KEYS and v) else v) for k, v in s.items() if k != "rr_last_manager_id"}
+    values = {k: ("********" if (k in st.SECRET_KEYS and v) else v) for k, v in s.items() if k not in st.INTERNAL_KEYS}
     return {
         "values": values,
         "secret_keys": sorted(st.SECRET_KEYS),
@@ -155,13 +176,13 @@ def _settings_payload(request: Request, db: Session) -> dict:
     }
 
 
-@router.get("/settings")
+@router.get("/settings", response_model=SettingsOut)
 def settings_get(request: Request, db: Session = Depends(get_db), user: User = Depends(admin)):
     return _settings_payload(request, db)
 
 
-@router.put("/settings/{section}")
-def settings_save(section: str, request: Request, data: dict = Body(...), db: Session = Depends(get_db),
+@router.put("/settings/{section}", response_model=SettingsOut)
+def settings_save(section: str, request: Request, data: dict[str, str | bool | int | None], db: Session = Depends(get_db),
                   user: User = Depends(admin)):
     keys = SECTION_KEYS.get(section)
     if not keys:
@@ -183,7 +204,7 @@ def settings_save(section: str, request: Request, data: dict = Body(...), db: Se
     return _settings_payload(request, db)
 
 
-@router.post("/settings/np/load-sender")
+@router.post("/settings/np/load-sender", response_model=SettingsOut)
 def np_load_sender(request: Request, db: Session = Depends(get_db), user: User = Depends(admin)):
     try:
         data = NovaPoshta(st.get_all(db)).load_sender()
@@ -193,11 +214,11 @@ def np_load_sender(request: Request, db: Session = Depends(get_db), user: User =
         st.set_value(db, k, data[k])
     db.commit()
     out = _settings_payload(request, db)
-    out["_message"] = f"Відправника завантажено: {data['sender_name']}, контакт {data['contact_name']}"
+    out["message"] = f"Відправника завантажено: {data['sender_name']}, контакт {data['contact_name']}"
     return out
 
 
-@router.post("/settings/webhook/regenerate")
+@router.post("/settings/webhook/regenerate", response_model=SettingsOut)
 def webhook_regenerate(request: Request, db: Session = Depends(get_db), user: User = Depends(admin)):
     st.set_value(db, "webhook_key", secrets.token_urlsafe(24))
     audit.log(db, user, "settings", None, "update", {"поля": ["webhook_key"]})
@@ -205,8 +226,9 @@ def webhook_regenerate(request: Request, db: Session = Depends(get_db), user: Us
     return _settings_payload(request, db)
 
 
-@router.put("/settings/statuses")
-def statuses_save(request: Request, data: list = Body(...), db: Session = Depends(get_db), user: User = Depends(admin)):
+@router.put("/settings/statuses", response_model=SettingsOut)
+def statuses_save(request: Request, body: list[StatusIn], db: Session = Depends(get_db), user: User = Depends(admin)):
+    data = [b.model_dump(exclude_unset=True) for b in body]
     by_id = {s.id: s for s in db.query(Status).all()}
     for d in data:
         s = by_id.get(to_int(d.get("id")))
@@ -225,8 +247,9 @@ def statuses_save(request: Request, data: list = Body(...), db: Session = Depend
     return _settings_payload(request, db)
 
 
-@router.post("/settings/statuses")
-def status_create(request: Request, data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(admin)):
+@router.post("/settings/statuses", response_model=SettingsOut)
+def status_create(request: Request, body: StatusIn, db: Session = Depends(get_db), user: User = Depends(admin)):
+    data = body.model_dump(exclude_unset=True)
     name = str(data.get("name") or "").strip()
     if not name:
         bad("Вкажіть назву статусу")
@@ -237,7 +260,7 @@ def status_create(request: Request, data: dict = Body(...), db: Session = Depend
     return _settings_payload(request, db)
 
 
-@router.delete("/settings/statuses/{sid}")
+@router.delete("/settings/statuses/{sid}", response_model=SettingsOut)
 def status_delete(sid: int, request: Request, db: Session = Depends(get_db), user: User = Depends(admin)):
     s = db.get(Status, sid)
     if s is None:
@@ -252,9 +275,10 @@ def status_delete(sid: int, request: Request, db: Session = Depends(get_db), use
     return _settings_payload(request, db)
 
 
-@router.post("/settings/sms-templates")
-def sms_template_save(request: Request, data: dict = Body(...), db: Session = Depends(get_db),
+@router.post("/settings/sms-templates", response_model=SettingsOut)
+def sms_template_save(request: Request, body: SmsTemplateIn, db: Session = Depends(get_db),
                       user: User = Depends(admin)):
+    data = body.model_dump(exclude_unset=True)
     tid = to_int(data.get("id"))
     if data.get("delete") and tid:
         t = db.get(SmsTemplate, tid)
@@ -275,8 +299,9 @@ def sms_template_save(request: Request, data: dict = Body(...), db: Session = De
     return _settings_payload(request, db)
 
 
-@router.post("/settings/sms-test")
-def sms_test(data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(admin)):
+@router.post("/settings/sms-test", response_model=Ok)
+def sms_test(body: SmsTestIn, db: Session = Depends(get_db), user: User = Depends(admin)):
+    data = body.model_dump(exclude_unset=True)
     s = st.get_all(db)
     if not s.get("sms_token"):
         bad("Спершу вкажіть токен TurboSMS")
@@ -287,8 +312,9 @@ def sms_test(data: dict = Body(...), db: Session = Depends(get_db), user: User =
     return {"ok": True}
 
 
-@router.post("/users")
-def user_create(data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(admin)):
+@router.post("/users", response_model=UserOut)
+def user_create(body: UserIn, db: Session = Depends(get_db), user: User = Depends(admin)):
+    data = body.model_dump(exclude_unset=True)
     username, pw = str(data.get("username") or "").strip(), str(data.get("password") or "")
     if not username or len(pw) < 8:
         bad("Вкажіть логін і пароль (щонайменше 8 символів)")
@@ -305,8 +331,9 @@ def user_create(data: dict = Body(...), db: Session = Depends(get_db), user: Use
     return j_user(u)
 
 
-@router.patch("/users/{uid}")
-def user_update(uid: int, data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(admin)):
+@router.patch("/users/{uid}", response_model=UserOut)
+def user_update(uid: int, body: UserIn, db: Session = Depends(get_db), user: User = Depends(admin)):
+    data = body.model_dump(exclude_unset=True)
     u = db.get(User, uid)
     if u is None:
         raise HTTPException(404, "Користувача не знайдено")

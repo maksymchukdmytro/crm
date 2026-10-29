@@ -113,7 +113,7 @@ def test_order_list_cursor_counts_filters(api, db, products, webhook_key):
     page1 = api.get("/api/orders?limit=3").json()
     assert len(page1["items"]) == 3 and page1["total"] == 7 and page1["next"]
     page2 = api.get(f"/api/orders?limit=3&before={page1['next']}&counts=0").json()
-    assert len(page2["items"]) == 3 and "total" not in page2
+    assert len(page2["items"]) == 3 and page2.get("total") is None
     assert {x["id"] for x in page1["items"]}.isdisjoint({x["id"] for x in page2["items"]})
     assert api.get("/api/orders?source=fb").json()["total"] == 3
     assert api.get("/api/orders?q=0671234503").json()["total"] == 1
@@ -291,3 +291,33 @@ def test_queue_runs_sms_job(monkeypatch, db, products):
     asyncio.run(run())
     db.expire_all()
     assert db.query(SmsMessage).filter(SmsMessage.status == "sent").count() == 1
+
+
+# ------------------------------------------------------------------ схема API
+def test_openapi_docs_require_login(app):
+    with TestClient(app) as c:
+        assert c.get("/api/openapi.json").status_code == 401
+        c.post("/api/auth/login", json={"username": "admin", "password": "admin12345"}, headers=H)
+        spec = c.get("/api/openapi.json").json()
+        assert "/api/orders" in spec["paths"] and "OrderOut" in spec["components"]["schemas"]
+        assert not any(p.startswith("/classic") for p in spec["paths"])
+        assert c.get("/api/docs").status_code == 200
+
+
+def test_openapi_snapshot_is_current():
+    """frontend/openapi.json (з нього генеруються типи фронтенду) має відповідати коду.
+    Якщо тест упав: python scripts/export_openapi.py && (cd frontend && npm run gen:api)"""
+    import pathlib
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "scripts"))
+    from export_openapi import OUT, schema
+    assert OUT.read_text(encoding="utf-8") == schema()
+
+
+def test_request_validation(api):
+    r = api.post("/api/orders", json={"phone": "0671234567", "delivery_method": "dhl"})
+    assert r.status_code == 422 and r.json()["error"]
+    r = api.post("/api/orders/bulk", json={"ids": [1], "action": "explode"})
+    assert r.status_code == 422
+    r = api.post("/api/orders", json={"phone": "0671234567", "unknown_field": 1})
+    assert r.status_code == 422

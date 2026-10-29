@@ -1,0 +1,6143 @@
+{
+ "components": {
+  "schemas": {
+   "AdjustIn": {
+    "additionalProperties": false,
+    "properties": {
+     "comment": {
+      "default": "",
+      "title": "Comment",
+      "type": "string"
+     },
+     "mode": {
+      "default": "set",
+      "enum": [
+       "set",
+       "delta"
+      ],
+      "title": "Mode",
+      "type": "string"
+     },
+     "product_id": {
+      "title": "Product Id",
+      "type": "integer"
+     },
+     "qty": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Qty"
+     }
+    },
+    "required": [
+     "product_id",
+     "qty"
+    ],
+    "title": "AdjustIn",
+    "type": "object"
+   },
+   "AuditOut": {
+    "properties": {
+     "actions": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Actions",
+      "type": "object"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/AuditRow"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "next": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Next"
+     }
+    },
+    "required": [
+     "items",
+     "next",
+     "actions"
+    ],
+    "title": "AuditOut",
+    "type": "object"
+   },
+   "AuditRow": {
+    "properties": {
+     "action": {
+      "title": "Action",
+      "type": "string"
+     },
+     "action_name": {
+      "title": "Action Name",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "details": {
+      "title": "Details",
+      "type": "string"
+     },
+     "entity": {
+      "title": "Entity",
+      "type": "string"
+     },
+     "entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Entity Id"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "user": {
+      "title": "User",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "user",
+     "entity",
+     "entity_id",
+     "action",
+     "action_name",
+     "details",
+     "created_at"
+    ],
+    "title": "AuditRow",
+    "type": "object"
+   },
+   "Body_payments_import_api_payments_import_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
+    ],
+    "title": "Body_payments_import_api_payments_import_post",
+    "type": "object"
+   },
+   "Bucket": {
+    "properties": {
+     "approve_rate": {
+      "title": "Approve Rate",
+      "type": "number"
+     },
+     "approved": {
+      "title": "Approved",
+      "type": "integer"
+     },
+     "avg_check": {
+      "title": "Avg Check",
+      "type": "number"
+     },
+     "buyout_rate": {
+      "title": "Buyout Rate",
+      "type": "number"
+     },
+     "cost": {
+      "title": "Cost",
+      "type": "number"
+     },
+     "delivered": {
+      "title": "Delivered",
+      "type": "integer"
+     },
+     "leads": {
+      "title": "Leads",
+      "type": "integer"
+     },
+     "profit": {
+      "title": "Profit",
+      "type": "number"
+     },
+     "refused": {
+      "title": "Refused",
+      "type": "integer"
+     },
+     "revenue": {
+      "title": "Revenue",
+      "type": "number"
+     },
+     "shipped": {
+      "title": "Shipped",
+      "type": "integer"
+     },
+     "unique": {
+      "title": "Unique",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "leads",
+     "unique",
+     "approved",
+     "shipped",
+     "delivered",
+     "refused",
+     "revenue",
+     "cost",
+     "profit",
+     "avg_check",
+     "approve_rate",
+     "buyout_rate"
+    ],
+    "title": "Bucket",
+    "type": "object"
+   },
+   "BulkIn": {
+    "additionalProperties": false,
+    "properties": {
+     "action": {
+      "enum": [
+       "status",
+       "assign",
+       "ttn",
+       "track"
+      ],
+      "title": "Action",
+      "type": "string"
+     },
+     "ids": {
+      "items": {
+       "type": "integer"
+      },
+      "title": "Ids",
+      "type": "array"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "required": [
+     "ids",
+     "action"
+    ],
+    "title": "BulkIn",
+    "type": "object"
+   },
+   "BulkOut": {
+    "properties": {
+     "done": {
+      "title": "Done",
+      "type": "integer"
+     },
+     "errors": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+     },
+     "queued": {
+      "title": "Queued",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "done",
+     "queued",
+     "errors"
+    ],
+    "title": "BulkOut",
+    "type": "object"
+   },
+   "CarrierOut": {
+    "properties": {
+     "beta": {
+      "title": "Beta",
+      "type": "boolean"
+     },
+     "configured": {
+      "title": "Configured",
+      "type": "boolean"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "beta",
+     "configured"
+    ],
+    "title": "CarrierOut",
+    "type": "object"
+   },
+   "CheckOut": {
+    "properties": {
+     "detail": {
+      "default": "",
+      "title": "Detail",
+      "type": "string"
+     },
+     "ok": {
+      "title": "Ok",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "ok"
+    ],
+    "title": "CheckOut",
+    "type": "object"
+   },
+   "CommentOut": {
+    "properties": {
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     },
+     "user": {
+      "title": "User",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "text",
+     "user",
+     "created_at"
+    ],
+    "title": "CommentOut",
+    "type": "object"
+   },
+   "DayRow": {
+    "properties": {
+     "approved": {
+      "title": "Approved",
+      "type": "integer"
+     },
+     "day": {
+      "title": "Day",
+      "type": "string"
+     },
+     "leads": {
+      "title": "Leads",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "day",
+     "leads",
+     "approved"
+    ],
+    "title": "DayRow",
+    "type": "object"
+   },
+   "DoneOut": {
+    "properties": {
+     "done": {
+      "title": "Done",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "done"
+    ],
+    "title": "DoneOut",
+    "type": "object"
+   },
+   "GroupRow": {
+    "properties": {
+     "approve_rate": {
+      "title": "Approve Rate",
+      "type": "number"
+     },
+     "approved": {
+      "title": "Approved",
+      "type": "integer"
+     },
+     "avg_check": {
+      "title": "Avg Check",
+      "type": "number"
+     },
+     "buyout_rate": {
+      "title": "Buyout Rate",
+      "type": "number"
+     },
+     "cost": {
+      "title": "Cost",
+      "type": "number"
+     },
+     "delivered": {
+      "title": "Delivered",
+      "type": "integer"
+     },
+     "leads": {
+      "title": "Leads",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "profit": {
+      "title": "Profit",
+      "type": "number"
+     },
+     "refused": {
+      "title": "Refused",
+      "type": "integer"
+     },
+     "revenue": {
+      "title": "Revenue",
+      "type": "number"
+     },
+     "shipped": {
+      "title": "Shipped",
+      "type": "integer"
+     },
+     "unique": {
+      "title": "Unique",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "leads",
+     "unique",
+     "approved",
+     "shipped",
+     "delivered",
+     "refused",
+     "revenue",
+     "cost",
+     "profit",
+     "avg_check",
+     "approve_rate",
+     "buyout_rate",
+     "name"
+    ],
+    "title": "GroupRow",
+    "type": "object"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "title": "Detail",
+      "type": "array"
+     }
+    },
+    "title": "HTTPValidationError",
+    "type": "object"
+   },
+   "HistoryOut": {
+    "properties": {
+     "action": {
+      "title": "Action",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "details": {
+      "title": "Details",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "user": {
+      "title": "User",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "user",
+     "action",
+     "details",
+     "created_at"
+    ],
+    "title": "HistoryOut",
+    "type": "object"
+   },
+   "LoginIn": {
+    "additionalProperties": false,
+    "properties": {
+     "password": {
+      "title": "Password",
+      "type": "string"
+     },
+     "username": {
+      "title": "Username",
+      "type": "string"
+     }
+    },
+    "required": [
+     "username",
+     "password"
+    ],
+    "title": "LoginIn",
+    "type": "object"
+   },
+   "LoginOut": {
+    "properties": {
+     "user": {
+      "$ref": "#/components/schemas/UserOut"
+     }
+    },
+    "required": [
+     "user"
+    ],
+    "title": "LoginOut",
+    "type": "object"
+   },
+   "MeIn": {
+    "additionalProperties": false,
+    "properties": {
+     "full_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Full Name"
+     },
+     "new_password": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "New Password"
+     },
+     "old_password": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Old Password"
+     }
+    },
+    "title": "MeIn",
+    "type": "object"
+   },
+   "MetaOut": {
+    "properties": {
+     "carriers": {
+      "additionalProperties": {
+       "$ref": "#/components/schemas/CarrierOut"
+      },
+      "title": "Carriers",
+      "type": "object"
+     },
+     "company": {
+      "title": "Company",
+      "type": "string"
+     },
+     "delivery_methods": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Delivery Methods",
+      "type": "object"
+     },
+     "delivery_states": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Delivery States",
+      "type": "object"
+     },
+     "managers": {
+      "items": {
+       "$ref": "#/components/schemas/UserOut"
+      },
+      "title": "Managers",
+      "type": "array"
+     },
+     "managers_see_own_only": {
+      "title": "Managers See Own Only",
+      "type": "boolean"
+     },
+     "nav": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Nav",
+      "type": "array"
+     },
+     "payment_kinds": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Payment Kinds",
+      "type": "object"
+     },
+     "payment_statuses": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Payment Statuses",
+      "type": "object"
+     },
+     "payment_types": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Payment Types",
+      "type": "object"
+     },
+     "products": {
+      "items": {
+       "$ref": "#/components/schemas/ProductOut"
+      },
+      "title": "Products",
+      "type": "array"
+     },
+     "realtime": {
+      "title": "Realtime",
+      "type": "boolean"
+     },
+     "roles": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Roles",
+      "type": "object"
+     },
+     "root": {
+      "title": "Root",
+      "type": "string"
+     },
+     "sms_ready": {
+      "title": "Sms Ready",
+      "type": "boolean"
+     },
+     "statuses": {
+      "items": {
+       "$ref": "#/components/schemas/StatusOut"
+      },
+      "title": "Statuses",
+      "type": "array"
+     },
+     "stock_actions": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Stock Actions",
+      "type": "object"
+     },
+     "user": {
+      "$ref": "#/components/schemas/UserOut"
+     }
+    },
+    "required": [
+     "user",
+     "company",
+     "nav",
+     "statuses",
+     "managers",
+     "products",
+     "delivery_methods",
+     "delivery_states",
+     "payment_types",
+     "payment_kinds",
+     "payment_statuses",
+     "stock_actions",
+     "roles",
+     "carriers",
+     "sms_ready",
+     "managers_see_own_only",
+     "realtime",
+     "root"
+    ],
+    "title": "MetaOut",
+    "type": "object"
+   },
+   "MoveOut": {
+    "properties": {
+     "comment": {
+      "title": "Comment",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "kind": {
+      "title": "Kind",
+      "type": "string"
+     },
+     "kind_name": {
+      "title": "Kind Name",
+      "type": "string"
+     },
+     "order_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Order Id"
+     },
+     "product": {
+      "title": "Product",
+      "type": "string"
+     },
+     "product_id": {
+      "title": "Product Id",
+      "type": "integer"
+     },
+     "purchase_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Purchase Id"
+     },
+     "reserved_delta": {
+      "title": "Reserved Delta",
+      "type": "integer"
+     },
+     "stock_delta": {
+      "title": "Stock Delta",
+      "type": "integer"
+     },
+     "user": {
+      "title": "User",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "product_id",
+     "product",
+     "kind",
+     "kind_name",
+     "stock_delta",
+     "reserved_delta",
+     "order_id",
+     "purchase_id",
+     "user",
+     "comment",
+     "created_at"
+    ],
+    "title": "MoveOut",
+    "type": "object"
+   },
+   "Ok": {
+    "properties": {
+     "ok": {
+      "default": true,
+      "title": "Ok",
+      "type": "boolean"
+     }
+    },
+    "title": "Ok",
+    "type": "object"
+   },
+   "OrderIn": {
+    "additionalProperties": false,
+    "description": "Створення або зміна замовлення. У PATCH змінюються лише передані поля.",
+    "properties": {
+     "address": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Address"
+     },
+     "city_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "City Name"
+     },
+     "city_ref": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "City Ref"
+     },
+     "comment": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Comment"
+     },
+     "customer_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Customer Name"
+     },
+     "delivery_cost": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Delivery Cost"
+     },
+     "delivery_method": {
+      "anyOf": [
+       {
+        "enum": [
+         "novaposhta",
+         "ukrposhta",
+         "meest",
+         "pickup",
+         "courier"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Delivery Method"
+     },
+     "discount": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Discount"
+     },
+     "email": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Email"
+     },
+     "items": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/OrderItemIn"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Items"
+     },
+     "manager_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Manager Id"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Коментар менеджера, що додається разом зі створенням",
+      "title": "Note"
+     },
+     "payment_type": {
+      "anyOf": [
+       {
+        "enum": [
+         "cod",
+         "partial",
+         "prepaid"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payment Type"
+     },
+     "phone": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Phone"
+     },
+     "postcode": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Postcode"
+     },
+     "prepayment": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Prepayment"
+     },
+     "site": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Site"
+     },
+     "status_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Status Id"
+     },
+     "ttn": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ttn"
+     },
+     "utm_campaign": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Utm Campaign"
+     },
+     "utm_content": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Utm Content"
+     },
+     "utm_medium": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Utm Medium"
+     },
+     "utm_source": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Utm Source"
+     },
+     "utm_term": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Utm Term"
+     },
+     "version": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "updated_at, отриманий з картки: захист від одночасного редагування (409)",
+      "title": "Version"
+     },
+     "warehouse_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Warehouse Name"
+     },
+     "warehouse_ref": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Warehouse Ref"
+     }
+    },
+    "title": "OrderIn",
+    "type": "object"
+   },
+   "OrderItemIn": {
+    "additionalProperties": false,
+    "properties": {
+     "name": {
+      "default": "",
+      "title": "Name",
+      "type": "string"
+     },
+     "price": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price"
+     },
+     "product_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Id"
+     },
+     "qty": {
+      "default": 1,
+      "maximum": 100000.0,
+      "minimum": 1.0,
+      "title": "Qty",
+      "type": "integer"
+     },
+     "upsell": {
+      "default": false,
+      "title": "Upsell",
+      "type": "boolean"
+     }
+    },
+    "title": "OrderItemIn",
+    "type": "object"
+   },
+   "OrderItemOut": {
+    "properties": {
+     "available": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Available"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "price": {
+      "title": "Price",
+      "type": "number"
+     },
+     "product_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Id"
+     },
+     "qty": {
+      "title": "Qty",
+      "type": "integer"
+     },
+     "sku": {
+      "default": "",
+      "title": "Sku",
+      "type": "string"
+     },
+     "upsell": {
+      "title": "Upsell",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "product_id",
+     "name",
+     "price",
+     "qty",
+     "upsell"
+    ],
+    "title": "OrderItemOut",
+    "type": "object"
+   },
+   "OrderListOut": {
+    "properties": {
+     "all": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "All"
+     },
+     "counts": {
+      "anyOf": [
+       {
+        "additionalProperties": {
+         "type": "integer"
+        },
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Counts"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/OrderRowOut"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "next": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Next"
+     },
+     "total": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Total"
+     }
+    },
+    "required": [
+     "items",
+     "next"
+    ],
+    "title": "OrderListOut",
+    "type": "object"
+   },
+   "OrderOut": {
+    "properties": {
+     "address": {
+      "title": "Address",
+      "type": "string"
+     },
+     "carrier_ref": {
+      "title": "Carrier Ref",
+      "type": "string"
+     },
+     "city_name": {
+      "title": "City Name",
+      "type": "string"
+     },
+     "city_ref": {
+      "title": "City Ref",
+      "type": "string"
+     },
+     "cod_amount": {
+      "title": "Cod Amount",
+      "type": "number"
+     },
+     "comment": {
+      "title": "Comment",
+      "type": "string"
+     },
+     "comments": {
+      "items": {
+       "$ref": "#/components/schemas/CommentOut"
+      },
+      "title": "Comments",
+      "type": "array"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "customer_name": {
+      "title": "Customer Name",
+      "type": "string"
+     },
+     "delivered_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Delivered At"
+     },
+     "delivery_checked_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Delivery Checked At"
+     },
+     "delivery_cost": {
+      "title": "Delivery Cost",
+      "type": "number"
+     },
+     "delivery_method": {
+      "title": "Delivery Method",
+      "type": "string"
+     },
+     "delivery_state": {
+      "title": "Delivery State",
+      "type": "string"
+     },
+     "delivery_status": {
+      "title": "Delivery Status",
+      "type": "string"
+     },
+     "discount": {
+      "title": "Discount",
+      "type": "number"
+     },
+     "duplicate_of_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Duplicate Of Id"
+     },
+     "email": {
+      "title": "Email",
+      "type": "string"
+     },
+     "history": {
+      "items": {
+       "$ref": "#/components/schemas/HistoryOut"
+      },
+      "title": "History",
+      "type": "array"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "ip": {
+      "title": "Ip",
+      "type": "string"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/OrderItemOut"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "manager": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/UserOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "manager_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Manager Id"
+     },
+     "others": {
+      "items": {
+       "$ref": "#/components/schemas/OrderRowOut"
+      },
+      "title": "Others",
+      "type": "array"
+     },
+     "payment_type": {
+      "title": "Payment Type",
+      "type": "string"
+     },
+     "payments": {
+      "items": {
+       "$ref": "#/components/schemas/PaymentOut"
+      },
+      "title": "Payments",
+      "type": "array"
+     },
+     "phone": {
+      "title": "Phone",
+      "type": "string"
+     },
+     "postcode": {
+      "title": "Postcode",
+      "type": "string"
+     },
+     "prepayment": {
+      "title": "Prepayment",
+      "type": "number"
+     },
+     "shipped_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shipped At"
+     },
+     "site": {
+      "title": "Site",
+      "type": "string"
+     },
+     "sms": {
+      "items": {
+       "$ref": "#/components/schemas/SmsOut"
+      },
+      "title": "Sms",
+      "type": "array"
+     },
+     "status_id": {
+      "title": "Status Id",
+      "type": "integer"
+     },
+     "stock_reserved": {
+      "title": "Stock Reserved",
+      "type": "boolean"
+     },
+     "stock_shipped": {
+      "title": "Stock Shipped",
+      "type": "boolean"
+     },
+     "total": {
+      "title": "Total",
+      "type": "number"
+     },
+     "ttn": {
+      "title": "Ttn",
+      "type": "string"
+     },
+     "updated_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated At"
+     },
+     "utm_campaign": {
+      "title": "Utm Campaign",
+      "type": "string"
+     },
+     "utm_content": {
+      "title": "Utm Content",
+      "type": "string"
+     },
+     "utm_medium": {
+      "title": "Utm Medium",
+      "type": "string"
+     },
+     "utm_source": {
+      "title": "Utm Source",
+      "type": "string"
+     },
+     "utm_term": {
+      "title": "Utm Term",
+      "type": "string"
+     },
+     "version": {
+      "title": "Version",
+      "type": "string"
+     },
+     "warehouse_name": {
+      "title": "Warehouse Name",
+      "type": "string"
+     },
+     "warehouse_ref": {
+      "title": "Warehouse Ref",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "status_id",
+     "manager_id",
+     "manager",
+     "customer_name",
+     "phone",
+     "email",
+     "comment",
+     "delivery_method",
+     "city_name",
+     "city_ref",
+     "warehouse_name",
+     "warehouse_ref",
+     "address",
+     "postcode",
+     "ttn",
+     "carrier_ref",
+     "delivery_state",
+     "delivery_status",
+     "payment_type",
+     "site",
+     "utm_source",
+     "utm_medium",
+     "utm_campaign",
+     "utm_content",
+     "utm_term",
+     "ip",
+     "delivery_cost",
+     "prepayment",
+     "discount",
+     "total",
+     "cod_amount",
+     "duplicate_of_id",
+     "stock_reserved",
+     "stock_shipped",
+     "created_at",
+     "updated_at",
+     "shipped_at",
+     "delivered_at",
+     "delivery_checked_at",
+     "version",
+     "items",
+     "payments",
+     "comments",
+     "history",
+     "sms",
+     "others"
+    ],
+    "title": "OrderOut",
+    "type": "object"
+   },
+   "OrderRowItem": {
+    "properties": {
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "qty": {
+      "title": "Qty",
+      "type": "integer"
+     },
+     "upsell": {
+      "title": "Upsell",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "name",
+     "qty",
+     "upsell"
+    ],
+    "title": "OrderRowItem",
+    "type": "object"
+   },
+   "OrderRowOut": {
+    "properties": {
+     "city_name": {
+      "title": "City Name",
+      "type": "string"
+     },
+     "cod_amount": {
+      "title": "Cod Amount",
+      "type": "number"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "customer_name": {
+      "title": "Customer Name",
+      "type": "string"
+     },
+     "delivery_method": {
+      "title": "Delivery Method",
+      "type": "string"
+     },
+     "delivery_state": {
+      "title": "Delivery State",
+      "type": "string"
+     },
+     "delivery_status": {
+      "title": "Delivery Status",
+      "type": "string"
+     },
+     "duplicate_of_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Duplicate Of Id"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/OrderRowItem"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "manager_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Manager Id"
+     },
+     "payment_type": {
+      "title": "Payment Type",
+      "type": "string"
+     },
+     "phone": {
+      "title": "Phone",
+      "type": "string"
+     },
+     "site": {
+      "title": "Site",
+      "type": "string"
+     },
+     "status_changed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Status Changed At"
+     },
+     "status_id": {
+      "title": "Status Id",
+      "type": "integer"
+     },
+     "total": {
+      "title": "Total",
+      "type": "number"
+     },
+     "ttn": {
+      "title": "Ttn",
+      "type": "string"
+     },
+     "utm_campaign": {
+      "title": "Utm Campaign",
+      "type": "string"
+     },
+     "utm_source": {
+      "title": "Utm Source",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "status_id",
+     "manager_id",
+     "customer_name",
+     "phone",
+     "items",
+     "total",
+     "cod_amount",
+     "payment_type",
+     "delivery_method",
+     "city_name",
+     "ttn",
+     "delivery_state",
+     "delivery_status",
+     "utm_source",
+     "utm_campaign",
+     "site",
+     "duplicate_of_id",
+     "created_at",
+     "status_changed_at"
+    ],
+    "title": "OrderRowOut",
+    "type": "object"
+   },
+   "PaymentIn": {
+    "additionalProperties": false,
+    "properties": {
+     "amount": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Amount"
+     },
+     "method": {
+      "default": "card",
+      "enum": [
+       "card",
+       "iban",
+       "cash",
+       "other"
+      ],
+      "title": "Method",
+      "type": "string"
+     },
+     "reference": {
+      "default": "",
+      "title": "Reference",
+      "type": "string"
+     }
+    },
+    "required": [
+     "amount"
+    ],
+    "title": "PaymentIn",
+    "type": "object"
+   },
+   "PaymentOut": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "number"
+     },
+     "collected_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Collected At"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "customer": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Customer"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "kind": {
+      "title": "Kind",
+      "type": "string"
+     },
+     "kind_name": {
+      "title": "Kind Name",
+      "type": "string"
+     },
+     "method": {
+      "title": "Method",
+      "type": "string"
+     },
+     "order_id": {
+      "title": "Order Id",
+      "type": "integer"
+     },
+     "received_amount": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Received Amount"
+     },
+     "received_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Received At"
+     },
+     "reference": {
+      "title": "Reference",
+      "type": "string"
+     },
+     "status": {
+      "title": "Status",
+      "type": "string"
+     },
+     "status_name": {
+      "title": "Status Name",
+      "type": "string"
+     },
+     "ttn": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ttn"
+     }
+    },
+    "required": [
+     "id",
+     "order_id",
+     "kind",
+     "kind_name",
+     "amount",
+     "status",
+     "status_name",
+     "method",
+     "reference",
+     "received_amount",
+     "created_at",
+     "collected_at",
+     "received_at"
+    ],
+    "title": "PaymentOut",
+    "type": "object"
+   },
+   "PaymentTotal": {
+    "properties": {
+     "count": {
+      "title": "Count",
+      "type": "integer"
+     },
+     "sum": {
+      "title": "Sum",
+      "type": "number"
+     }
+    },
+    "required": [
+     "count",
+     "sum"
+    ],
+    "title": "PaymentTotal",
+    "type": "object"
+   },
+   "PaymentsOut": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/PaymentOut"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "totals": {
+      "additionalProperties": {
+       "$ref": "#/components/schemas/PaymentTotal"
+      },
+      "title": "Totals",
+      "type": "object"
+     }
+    },
+    "required": [
+     "items",
+     "totals"
+    ],
+    "title": "PaymentsOut",
+    "type": "object"
+   },
+   "ProductDetailOut": {
+    "properties": {
+     "active": {
+      "title": "Active",
+      "type": "boolean"
+     },
+     "available": {
+      "title": "Available",
+      "type": "integer"
+     },
+     "cost": {
+      "title": "Cost",
+      "type": "number"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "min_stock": {
+      "title": "Min Stock",
+      "type": "integer"
+     },
+     "moves": {
+      "items": {
+       "$ref": "#/components/schemas/MoveOut"
+      },
+      "title": "Moves",
+      "type": "array"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "price": {
+      "title": "Price",
+      "type": "number"
+     },
+     "reserved": {
+      "title": "Reserved",
+      "type": "integer"
+     },
+     "sku": {
+      "title": "Sku",
+      "type": "string"
+     },
+     "sold": {
+      "title": "Sold",
+      "type": "integer"
+     },
+     "stock": {
+      "title": "Stock",
+      "type": "integer"
+     },
+     "upsell": {
+      "title": "Upsell",
+      "type": "boolean"
+     },
+     "weight": {
+      "title": "Weight",
+      "type": "number"
+     }
+    },
+    "required": [
+     "id",
+     "sku",
+     "name",
+     "price",
+     "cost",
+     "weight",
+     "stock",
+     "reserved",
+     "available",
+     "min_stock",
+     "upsell",
+     "active",
+     "moves",
+     "sold"
+    ],
+    "title": "ProductDetailOut",
+    "type": "object"
+   },
+   "ProductIn": {
+    "additionalProperties": false,
+    "properties": {
+     "active": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Active"
+     },
+     "cost": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cost"
+     },
+     "initial_stock": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Лише при створенні",
+      "title": "Initial Stock"
+     },
+     "min_stock": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Min Stock"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "price": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price"
+     },
+     "sku": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sku"
+     },
+     "upsell": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Upsell"
+     },
+     "weight": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Weight"
+     }
+    },
+    "title": "ProductIn",
+    "type": "object"
+   },
+   "ProductOut": {
+    "properties": {
+     "active": {
+      "title": "Active",
+      "type": "boolean"
+     },
+     "available": {
+      "title": "Available",
+      "type": "integer"
+     },
+     "cost": {
+      "title": "Cost",
+      "type": "number"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "min_stock": {
+      "title": "Min Stock",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "price": {
+      "title": "Price",
+      "type": "number"
+     },
+     "reserved": {
+      "title": "Reserved",
+      "type": "integer"
+     },
+     "sku": {
+      "title": "Sku",
+      "type": "string"
+     },
+     "stock": {
+      "title": "Stock",
+      "type": "integer"
+     },
+     "upsell": {
+      "title": "Upsell",
+      "type": "boolean"
+     },
+     "weight": {
+      "title": "Weight",
+      "type": "number"
+     }
+    },
+    "required": [
+     "id",
+     "sku",
+     "name",
+     "price",
+     "cost",
+     "weight",
+     "stock",
+     "reserved",
+     "available",
+     "min_stock",
+     "upsell",
+     "active"
+    ],
+    "title": "ProductOut",
+    "type": "object"
+   },
+   "ProductReportRow": {
+    "properties": {
+     "cost": {
+      "title": "Cost",
+      "type": "number"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "orders": {
+      "title": "Orders",
+      "type": "integer"
+     },
+     "qty": {
+      "title": "Qty",
+      "type": "integer"
+     },
+     "revenue": {
+      "title": "Revenue",
+      "type": "number"
+     },
+     "upsell_qty": {
+      "title": "Upsell Qty",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "name",
+     "qty",
+     "orders",
+     "revenue",
+     "cost",
+     "upsell_qty"
+    ],
+    "title": "ProductReportRow",
+    "type": "object"
+   },
+   "PurchaseIn": {
+    "additionalProperties": false,
+    "properties": {
+     "comment": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Comment"
+     },
+     "items": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/PurchaseItemIn"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Items"
+     },
+     "supplier_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Supplier Id"
+     },
+     "then": {
+      "default": "",
+      "enum": [
+       "",
+       "save",
+       "ordered",
+       "receive",
+       "cancel"
+      ],
+      "title": "Then",
+      "type": "string"
+     }
+    },
+    "title": "PurchaseIn",
+    "type": "object"
+   },
+   "PurchaseItemIn": {
+    "additionalProperties": false,
+    "properties": {
+     "cost": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cost"
+     },
+     "product_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Product Id"
+     },
+     "qty": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Qty"
+     }
+    },
+    "required": [
+     "product_id",
+     "qty"
+    ],
+    "title": "PurchaseItemIn",
+    "type": "object"
+   },
+   "PurchaseItemOut": {
+    "properties": {
+     "cost": {
+      "title": "Cost",
+      "type": "number"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "product_id": {
+      "title": "Product Id",
+      "type": "integer"
+     },
+     "qty": {
+      "title": "Qty",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "product_id",
+     "name",
+     "qty",
+     "cost"
+    ],
+    "title": "PurchaseItemOut",
+    "type": "object"
+   },
+   "PurchaseOut": {
+    "properties": {
+     "comment": {
+      "title": "Comment",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/PurchaseItemOut"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "received_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Received At"
+     },
+     "status": {
+      "enum": [
+       "draft",
+       "ordered",
+       "received",
+       "cancelled"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "supplier": {
+      "title": "Supplier",
+      "type": "string"
+     },
+     "supplier_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Supplier Id"
+     },
+     "total": {
+      "title": "Total",
+      "type": "number"
+     }
+    },
+    "required": [
+     "id",
+     "supplier_id",
+     "supplier",
+     "status",
+     "comment",
+     "total",
+     "created_at",
+     "received_at",
+     "items"
+    ],
+    "title": "PurchaseOut",
+    "type": "object"
+   },
+   "ReceiveIn": {
+    "additionalProperties": false,
+    "properties": {
+     "ids": {
+      "items": {
+       "type": "integer"
+      },
+      "title": "Ids",
+      "type": "array"
+     },
+     "reference": {
+      "default": "",
+      "title": "Reference",
+      "type": "string"
+     }
+    },
+    "required": [
+     "ids"
+    ],
+    "title": "ReceiveIn",
+    "type": "object"
+   },
+   "RegistryOut": {
+    "properties": {
+     "already": {
+      "items": {
+       "$ref": "#/components/schemas/RegistryRow"
+      },
+      "title": "Already",
+      "type": "array"
+     },
+     "matched": {
+      "items": {
+       "$ref": "#/components/schemas/RegistryRow"
+      },
+      "title": "Matched",
+      "type": "array"
+     },
+     "mismatch": {
+      "items": {
+       "$ref": "#/components/schemas/RegistryRow"
+      },
+      "title": "Mismatch",
+      "type": "array"
+     },
+     "not_found": {
+      "items": {
+       "$ref": "#/components/schemas/RegistryRow"
+      },
+      "title": "Not Found",
+      "type": "array"
+     }
+    },
+    "required": [
+     "matched",
+     "mismatch",
+     "not_found",
+     "already"
+    ],
+    "title": "RegistryOut",
+    "type": "object"
+   },
+   "RegistryRow": {
+    "properties": {
+     "amount": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Amount"
+     },
+     "expected": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expected"
+     },
+     "order_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Order Id"
+     },
+     "ttn": {
+      "title": "Ttn",
+      "type": "string"
+     }
+    },
+    "required": [
+     "ttn"
+    ],
+    "title": "RegistryRow",
+    "type": "object"
+   },
+   "ReportOut": {
+    "properties": {
+     "date_from": {
+      "title": "Date From",
+      "type": "string"
+     },
+     "date_to": {
+      "title": "Date To",
+      "type": "string"
+     },
+     "days": {
+      "items": {
+       "$ref": "#/components/schemas/DayRow"
+      },
+      "title": "Days",
+      "type": "array"
+     },
+     "dim": {
+      "title": "Dim",
+      "type": "string"
+     },
+     "dims": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Dims",
+      "type": "object"
+     },
+     "groups": {
+      "items": {
+       "$ref": "#/components/schemas/GroupRow"
+      },
+      "title": "Groups",
+      "type": "array"
+     },
+     "products": {
+      "items": {
+       "$ref": "#/components/schemas/ProductReportRow"
+      },
+      "title": "Products",
+      "type": "array"
+     },
+     "total": {
+      "$ref": "#/components/schemas/Bucket"
+     }
+    },
+    "required": [
+     "date_from",
+     "date_to",
+     "dim",
+     "dims",
+     "total",
+     "groups",
+     "days",
+     "products"
+    ],
+    "title": "ReportOut",
+    "type": "object"
+   },
+   "SettingsOut": {
+    "properties": {
+     "message": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Message"
+     },
+     "placeholders": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Placeholders",
+      "type": "object"
+     },
+     "roles": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Roles",
+      "type": "object"
+     },
+     "secret_keys": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Secret Keys",
+      "type": "array"
+     },
+     "sms_log": {
+      "items": {
+       "$ref": "#/components/schemas/SmsLogOut"
+      },
+      "title": "Sms Log",
+      "type": "array"
+     },
+     "sms_templates": {
+      "items": {
+       "$ref": "#/components/schemas/SmsTemplateOut"
+      },
+      "title": "Sms Templates",
+      "type": "array"
+     },
+     "statuses": {
+      "items": {
+       "$ref": "#/components/schemas/StatusOut"
+      },
+      "title": "Statuses",
+      "type": "array"
+     },
+     "stock_actions": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Stock Actions",
+      "type": "object"
+     },
+     "users": {
+      "items": {
+       "$ref": "#/components/schemas/UserOut"
+      },
+      "title": "Users",
+      "type": "array"
+     },
+     "values": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Values",
+      "type": "object"
+     },
+     "webhook_url": {
+      "title": "Webhook Url",
+      "type": "string"
+     }
+    },
+    "required": [
+     "values",
+     "secret_keys",
+     "webhook_url",
+     "statuses",
+     "users",
+     "sms_templates",
+     "placeholders",
+     "sms_log",
+     "stock_actions",
+     "roles"
+    ],
+    "title": "SettingsOut",
+    "type": "object"
+   },
+   "SmsIn": {
+    "additionalProperties": false,
+    "properties": {
+     "channel": {
+      "default": "sms",
+      "enum": [
+       "sms",
+       "viber",
+       "hybrid"
+      ],
+      "title": "Channel",
+      "type": "string"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ],
+    "title": "SmsIn",
+    "type": "object"
+   },
+   "SmsLogOut": {
+    "properties": {
+     "channel": {
+      "title": "Channel",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "error": {
+      "title": "Error",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "phone": {
+      "title": "Phone",
+      "type": "string"
+     },
+     "status": {
+      "title": "Status",
+      "type": "string"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "phone",
+     "text",
+     "status",
+     "error",
+     "channel",
+     "created_at"
+    ],
+    "title": "SmsLogOut",
+    "type": "object"
+   },
+   "SmsOut": {
+    "properties": {
+     "channel": {
+      "title": "Channel",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "error": {
+      "title": "Error",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "status": {
+      "title": "Status",
+      "type": "string"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "text",
+     "channel",
+     "status",
+     "error",
+     "created_at"
+    ],
+    "title": "SmsOut",
+    "type": "object"
+   },
+   "SmsTemplateIn": {
+    "additionalProperties": false,
+    "properties": {
+     "active": {
+      "default": true,
+      "title": "Active",
+      "type": "boolean"
+     },
+     "channel": {
+      "default": "sms",
+      "enum": [
+       "sms",
+       "viber",
+       "hybrid"
+      ],
+      "title": "Channel",
+      "type": "string"
+     },
+     "delete": {
+      "default": false,
+      "title": "Delete",
+      "type": "boolean"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "status_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Status Id"
+     },
+     "text": {
+      "default": "",
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "title": "SmsTemplateIn",
+    "type": "object"
+   },
+   "SmsTemplateOut": {
+    "properties": {
+     "active": {
+      "title": "Active",
+      "type": "boolean"
+     },
+     "channel": {
+      "title": "Channel",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "status_id": {
+      "title": "Status Id",
+      "type": "integer"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "status_id",
+     "channel",
+     "text",
+     "active"
+    ],
+    "title": "SmsTemplateOut",
+    "type": "object"
+   },
+   "SmsTestIn": {
+    "additionalProperties": false,
+    "properties": {
+     "channel": {
+      "default": "sms",
+      "enum": [
+       "sms",
+       "viber"
+      ],
+      "title": "Channel",
+      "type": "string"
+     },
+     "phone": {
+      "title": "Phone",
+      "type": "string"
+     }
+    },
+    "required": [
+     "phone"
+    ],
+    "title": "SmsTestIn",
+    "type": "object"
+   },
+   "StatusIn": {
+    "additionalProperties": false,
+    "properties": {
+     "active": {
+      "default": true,
+      "title": "Active",
+      "type": "boolean"
+     },
+     "approved": {
+      "default": false,
+      "title": "Approved",
+      "type": "boolean"
+     },
+     "code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Code"
+     },
+     "color": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Color"
+     },
+     "final": {
+      "default": false,
+      "title": "Final",
+      "type": "boolean"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "sort": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sort"
+     },
+     "stock_action": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Stock Action"
+     },
+     "system": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "System"
+     }
+    },
+    "title": "StatusIn",
+    "type": "object"
+   },
+   "StatusOut": {
+    "properties": {
+     "active": {
+      "title": "Active",
+      "type": "boolean"
+     },
+     "approved": {
+      "title": "Approved",
+      "type": "boolean"
+     },
+     "code": {
+      "title": "Code",
+      "type": "string"
+     },
+     "color": {
+      "title": "Color",
+      "type": "string"
+     },
+     "final": {
+      "title": "Final",
+      "type": "boolean"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "sort": {
+      "title": "Sort",
+      "type": "integer"
+     },
+     "stock_action": {
+      "title": "Stock Action",
+      "type": "string"
+     },
+     "system": {
+      "title": "System",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "id",
+     "code",
+     "name",
+     "color",
+     "sort",
+     "stock_action",
+     "approved",
+     "final",
+     "system",
+     "active"
+    ],
+    "title": "StatusOut",
+    "type": "object"
+   },
+   "SupplierIn": {
+    "additionalProperties": false,
+    "properties": {
+     "comment": {
+      "default": "",
+      "title": "Comment",
+      "type": "string"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "phone": {
+      "default": "",
+      "title": "Phone",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "SupplierIn",
+    "type": "object"
+   },
+   "SupplierOut": {
+    "properties": {
+     "comment": {
+      "title": "Comment",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "phone": {
+      "title": "Phone",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "phone",
+     "comment"
+    ],
+    "title": "SupplierOut",
+    "type": "object"
+   },
+   "SystemOut": {
+    "properties": {
+     "alerts": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Alerts",
+      "type": "array"
+     },
+     "checks": {
+      "additionalProperties": {
+       "$ref": "#/components/schemas/CheckOut"
+      },
+      "title": "Checks",
+      "type": "object"
+     },
+     "last_order_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Order At"
+     },
+     "metrics_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Metrics Url"
+     },
+     "orders_today": {
+      "title": "Orders Today",
+      "type": "integer"
+     },
+     "queue_length": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Queue Length"
+     },
+     "sentry": {
+      "title": "Sentry",
+      "type": "boolean"
+     },
+     "sms": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "Sms",
+      "type": "object"
+     },
+     "tracking": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tracking"
+     },
+     "version": {
+      "title": "Version",
+      "type": "string"
+     },
+     "worker_seen_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Worker Seen At"
+     }
+    },
+    "required": [
+     "version",
+     "checks",
+     "queue_length",
+     "worker_seen_at",
+     "tracking",
+     "sms",
+     "orders_today",
+     "last_order_at",
+     "alerts",
+     "sentry",
+     "metrics_url"
+    ],
+    "title": "SystemOut",
+    "type": "object"
+   },
+   "TextIn": {
+    "additionalProperties": false,
+    "properties": {
+     "text": {
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "text"
+    ],
+    "title": "TextIn",
+    "type": "object"
+   },
+   "TrackOut": {
+    "properties": {
+     "address": {
+      "title": "Address",
+      "type": "string"
+     },
+     "carrier_ref": {
+      "title": "Carrier Ref",
+      "type": "string"
+     },
+     "changed": {
+      "default": false,
+      "title": "Changed",
+      "type": "boolean"
+     },
+     "city_name": {
+      "title": "City Name",
+      "type": "string"
+     },
+     "city_ref": {
+      "title": "City Ref",
+      "type": "string"
+     },
+     "cod_amount": {
+      "title": "Cod Amount",
+      "type": "number"
+     },
+     "comment": {
+      "title": "Comment",
+      "type": "string"
+     },
+     "comments": {
+      "items": {
+       "$ref": "#/components/schemas/CommentOut"
+      },
+      "title": "Comments",
+      "type": "array"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "customer_name": {
+      "title": "Customer Name",
+      "type": "string"
+     },
+     "delivered_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Delivered At"
+     },
+     "delivery_checked_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Delivery Checked At"
+     },
+     "delivery_cost": {
+      "title": "Delivery Cost",
+      "type": "number"
+     },
+     "delivery_method": {
+      "title": "Delivery Method",
+      "type": "string"
+     },
+     "delivery_state": {
+      "title": "Delivery State",
+      "type": "string"
+     },
+     "delivery_status": {
+      "title": "Delivery Status",
+      "type": "string"
+     },
+     "discount": {
+      "title": "Discount",
+      "type": "number"
+     },
+     "duplicate_of_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Duplicate Of Id"
+     },
+     "email": {
+      "title": "Email",
+      "type": "string"
+     },
+     "history": {
+      "items": {
+       "$ref": "#/components/schemas/HistoryOut"
+      },
+      "title": "History",
+      "type": "array"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "ip": {
+      "title": "Ip",
+      "type": "string"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/OrderItemOut"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "manager": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/UserOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "manager_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Manager Id"
+     },
+     "others": {
+      "items": {
+       "$ref": "#/components/schemas/OrderRowOut"
+      },
+      "title": "Others",
+      "type": "array"
+     },
+     "payment_type": {
+      "title": "Payment Type",
+      "type": "string"
+     },
+     "payments": {
+      "items": {
+       "$ref": "#/components/schemas/PaymentOut"
+      },
+      "title": "Payments",
+      "type": "array"
+     },
+     "phone": {
+      "title": "Phone",
+      "type": "string"
+     },
+     "postcode": {
+      "title": "Postcode",
+      "type": "string"
+     },
+     "prepayment": {
+      "title": "Prepayment",
+      "type": "number"
+     },
+     "shipped_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shipped At"
+     },
+     "site": {
+      "title": "Site",
+      "type": "string"
+     },
+     "sms": {
+      "items": {
+       "$ref": "#/components/schemas/SmsOut"
+      },
+      "title": "Sms",
+      "type": "array"
+     },
+     "status_id": {
+      "title": "Status Id",
+      "type": "integer"
+     },
+     "stock_reserved": {
+      "title": "Stock Reserved",
+      "type": "boolean"
+     },
+     "stock_shipped": {
+      "title": "Stock Shipped",
+      "type": "boolean"
+     },
+     "total": {
+      "title": "Total",
+      "type": "number"
+     },
+     "ttn": {
+      "title": "Ttn",
+      "type": "string"
+     },
+     "updated_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated At"
+     },
+     "utm_campaign": {
+      "title": "Utm Campaign",
+      "type": "string"
+     },
+     "utm_content": {
+      "title": "Utm Content",
+      "type": "string"
+     },
+     "utm_medium": {
+      "title": "Utm Medium",
+      "type": "string"
+     },
+     "utm_source": {
+      "title": "Utm Source",
+      "type": "string"
+     },
+     "utm_term": {
+      "title": "Utm Term",
+      "type": "string"
+     },
+     "version": {
+      "title": "Version",
+      "type": "string"
+     },
+     "warehouse_name": {
+      "title": "Warehouse Name",
+      "type": "string"
+     },
+     "warehouse_ref": {
+      "title": "Warehouse Ref",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "status_id",
+     "manager_id",
+     "manager",
+     "customer_name",
+     "phone",
+     "email",
+     "comment",
+     "delivery_method",
+     "city_name",
+     "city_ref",
+     "warehouse_name",
+     "warehouse_ref",
+     "address",
+     "postcode",
+     "ttn",
+     "carrier_ref",
+     "delivery_state",
+     "delivery_status",
+     "payment_type",
+     "site",
+     "utm_source",
+     "utm_medium",
+     "utm_campaign",
+     "utm_content",
+     "utm_term",
+     "ip",
+     "delivery_cost",
+     "prepayment",
+     "discount",
+     "total",
+     "cod_amount",
+     "duplicate_of_id",
+     "stock_reserved",
+     "stock_shipped",
+     "created_at",
+     "updated_at",
+     "shipped_at",
+     "delivered_at",
+     "delivery_checked_at",
+     "version",
+     "items",
+     "payments",
+     "comments",
+     "history",
+     "sms",
+     "others"
+    ],
+    "title": "TrackOut",
+    "type": "object"
+   },
+   "UserIn": {
+    "additionalProperties": false,
+    "properties": {
+     "full_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Full Name"
+     },
+     "is_active": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Active"
+     },
+     "password": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Password"
+     },
+     "role": {
+      "anyOf": [
+       {
+        "enum": [
+         "admin",
+         "manager",
+         "warehouse"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Role"
+     },
+     "username": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Username"
+     }
+    },
+    "title": "UserIn",
+    "type": "object"
+   },
+   "UserOut": {
+    "properties": {
+     "full_name": {
+      "title": "Full Name",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "is_active": {
+      "title": "Is Active",
+      "type": "boolean"
+     },
+     "last_login_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Login At"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "role": {
+      "enum": [
+       "admin",
+       "manager",
+       "warehouse"
+      ],
+      "title": "Role",
+      "type": "string"
+     },
+     "role_name": {
+      "title": "Role Name",
+      "type": "string"
+     },
+     "username": {
+      "title": "Username",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "username",
+     "name",
+     "full_name",
+     "role",
+     "role_name",
+     "is_active"
+    ],
+    "title": "UserOut",
+    "type": "object"
+   },
+   "ValidationError": {
+    "properties": {
+     "ctx": {
+      "title": "Context",
+      "type": "object"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "title": "Location",
+      "type": "array"
+     },
+     "msg": {
+      "title": "Message",
+      "type": "string"
+     },
+     "type": {
+      "title": "Error Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError",
+    "type": "object"
+   },
+   "WarehouseOut": {
+    "properties": {
+     "kinds": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Kinds",
+      "type": "object"
+     },
+     "low": {
+      "title": "Low",
+      "type": "integer"
+     },
+     "moves": {
+      "items": {
+       "$ref": "#/components/schemas/MoveOut"
+      },
+      "title": "Moves",
+      "type": "array"
+     },
+     "products": {
+      "items": {
+       "$ref": "#/components/schemas/ProductOut"
+      },
+      "title": "Products",
+      "type": "array"
+     },
+     "reserved": {
+      "title": "Reserved",
+      "type": "integer"
+     },
+     "units": {
+      "title": "Units",
+      "type": "integer"
+     },
+     "value": {
+      "title": "Value",
+      "type": "number"
+     }
+    },
+    "required": [
+     "products",
+     "value",
+     "units",
+     "reserved",
+     "low",
+     "moves",
+     "kinds"
+    ],
+    "title": "WarehouseOut",
+    "type": "object"
+   }
+  }
+ },
+ "info": {
+  "description": "JSON API CRM. Зміни (не GET) — із заголовком `X-CRM: 1` і cookie сесії після `/api/auth/login`.",
+  "title": "CRM API",
+  "version": "1.0"
+ },
+ "openapi": "3.1.0",
+ "paths": {
+  "/api/audit": {
+   "get": {
+    "operationId": "audit_log_api_audit_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "entity",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Entity",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "user_id",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "User Id",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "action",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Action",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "date_from",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date From",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "date_to",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date To",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "before",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Before",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 100,
+       "maximum": 300,
+       "title": "Limit",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AuditOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Audit Log",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/auth/login": {
+   "post": {
+    "operationId": "login_api_auth_login_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LoginIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LoginOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Login",
+    "tags": [
+     "core"
+    ]
+   }
+  },
+  "/api/auth/logout": {
+   "post": {
+    "operationId": "logout_api_auth_logout_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Logout",
+    "tags": [
+     "core"
+    ]
+   }
+  },
+  "/api/events": {
+   "get": {
+    "description": "Server-Sent Events: зміни замовлень і товарів. Без Redis — 204 (інтерфейс перейде на опитування).",
+    "operationId": "events_stream_api_events_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Events Stream",
+    "tags": [
+     "core"
+    ]
+   }
+  },
+  "/api/me": {
+   "get": {
+    "operationId": "me_api_me_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Me",
+    "tags": [
+     "core"
+    ]
+   },
+   "patch": {
+    "operationId": "me_update_api_me_patch",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MeIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Me Update",
+    "tags": [
+     "core"
+    ]
+   }
+  },
+  "/api/meta": {
+   "get": {
+    "operationId": "meta_api_meta_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MetaOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Meta",
+    "tags": [
+     "core"
+    ]
+   }
+  },
+  "/api/np/cities": {
+   "get": {
+    "operationId": "np_cities_api_np_cities_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Q",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Np Cities"
+   }
+  },
+  "/api/np/warehouses": {
+   "get": {
+    "operationId": "np_warehouses_api_np_warehouses_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "city_ref",
+      "required": true,
+      "schema": {
+       "title": "City Ref",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Q",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Np Warehouses"
+   }
+  },
+  "/api/orders": {
+   "get": {
+    "operationId": "list_orders_api_orders_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "before",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Before",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 100,
+       "maximum": 500,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "counts",
+      "required": false,
+      "schema": {
+       "default": 1,
+       "title": "Counts",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderListOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Orders",
+    "tags": [
+     "orders"
+    ]
+   },
+   "post": {
+    "operationId": "create_order_api_orders_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OrderIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Order",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/bulk": {
+   "post": {
+    "operationId": "bulk_api_orders_bulk_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BulkIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BulkOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Bulk",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/sources": {
+   "get": {
+    "operationId": "sources_api_orders_sources_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "type": "string"
+         },
+         "title": "Response Sources Api Orders Sources Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Sources",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}": {
+   "get": {
+    "operationId": "get_order_api_orders__order_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Order",
+    "tags": [
+     "orders"
+    ]
+   },
+   "patch": {
+    "operationId": "update_order_api_orders__order_id__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OrderIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Update Order",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/comments": {
+   "post": {
+    "operationId": "comment_api_orders__order_id__comments_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TextIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Comment",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/payments": {
+   "post": {
+    "operationId": "add_payment_api_orders__order_id__payments_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PaymentIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Add Payment",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/sms": {
+   "post": {
+    "operationId": "send_sms_api_orders__order_id__sms_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SmsIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Send Sms",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/take": {
+   "post": {
+    "operationId": "take_api_orders__order_id__take_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Take",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/track": {
+   "post": {
+    "operationId": "track_api_orders__order_id__track_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TrackOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Track",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/ttn": {
+   "delete": {
+    "operationId": "ttn_delete_api_orders__order_id__ttn_delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Ttn Delete",
+    "tags": [
+     "orders"
+    ]
+   },
+   "post": {
+    "operationId": "ttn_create_api_orders__order_id__ttn_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Ttn Create",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/payments": {
+   "get": {
+    "operationId": "payments_api_payments_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "collected",
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "method",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Method",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaymentsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Payments",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/payments/import": {
+   "post": {
+    "operationId": "payments_import_api_payments_import_post",
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_payments_import_api_payments_import_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RegistryOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Payments Import",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/payments/receive": {
+   "post": {
+    "operationId": "payments_receive_api_payments_receive_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReceiveIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DoneOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Payments Receive",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/products": {
+   "get": {
+    "operationId": "products_api_products_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Q",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "show",
+      "required": false,
+      "schema": {
+       "default": "active",
+       "title": "Show",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/ProductOut"
+         },
+         "title": "Response Products Api Products Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Products",
+    "tags": [
+     "catalog"
+    ]
+   },
+   "post": {
+    "operationId": "product_create_api_products_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProductIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProductOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Product Create",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/products/{pid}": {
+   "get": {
+    "operationId": "product_api_products__pid__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProductDetailOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Product",
+    "tags": [
+     "catalog"
+    ]
+   },
+   "patch": {
+    "operationId": "product_update_api_products__pid__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProductIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProductOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Product Update",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/purchases": {
+   "get": {
+    "operationId": "purchases_api_purchases_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Status",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/PurchaseOut"
+         },
+         "title": "Response Purchases Api Purchases Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Purchases",
+    "tags": [
+     "catalog"
+    ]
+   },
+   "post": {
+    "operationId": "purchase_create_api_purchases_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PurchaseIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PurchaseOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Purchase Create",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/purchases/{pid}": {
+   "get": {
+    "operationId": "purchase_api_purchases__pid__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PurchaseOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Purchase",
+    "tags": [
+     "catalog"
+    ]
+   },
+   "patch": {
+    "operationId": "purchase_update_api_purchases__pid__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PurchaseIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PurchaseOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Purchase Update",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/reports": {
+   "get": {
+    "operationId": "reports_api_reports_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "date_from",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date From",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "date_to",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date To",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "dim",
+      "required": false,
+      "schema": {
+       "default": "utm_source",
+       "title": "Dim",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "manager",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Manager",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReportOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Reports",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings": {
+   "get": {
+    "operationId": "settings_get_api_settings_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Settings Get",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/np/load-sender": {
+   "post": {
+    "operationId": "np_load_sender_api_settings_np_load_sender_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Np Load Sender",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/sms-templates": {
+   "post": {
+    "operationId": "sms_template_save_api_settings_sms_templates_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SmsTemplateIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Sms Template Save",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/sms-test": {
+   "post": {
+    "operationId": "sms_test_api_settings_sms_test_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SmsTestIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Sms Test",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/statuses": {
+   "post": {
+    "operationId": "status_create_api_settings_statuses_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/StatusIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Status Create",
+    "tags": [
+     "admin"
+    ]
+   },
+   "put": {
+    "operationId": "statuses_save_api_settings_statuses_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "items": {
+         "$ref": "#/components/schemas/StatusIn"
+        },
+        "title": "Body",
+        "type": "array"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Statuses Save",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/statuses/{sid}": {
+   "delete": {
+    "operationId": "status_delete_api_settings_statuses__sid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "sid",
+      "required": true,
+      "schema": {
+       "title": "Sid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Status Delete",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/webhook/regenerate": {
+   "post": {
+    "operationId": "webhook_regenerate_api_settings_webhook_regenerate_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Webhook Regenerate",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/{section}": {
+   "put": {
+    "operationId": "settings_save_api_settings__section__put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "section",
+      "required": true,
+      "schema": {
+       "title": "Section",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "integer"
+          },
+          {
+           "type": "null"
+          }
+         ]
+        },
+        "title": "Data",
+        "type": "object"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Settings Save",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/suppliers": {
+   "get": {
+    "operationId": "suppliers_api_suppliers_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/SupplierOut"
+         },
+         "title": "Response Suppliers Api Suppliers Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Suppliers",
+    "tags": [
+     "catalog"
+    ]
+   },
+   "post": {
+    "operationId": "supplier_save_api_suppliers_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SupplierIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Supplier Save",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/system": {
+   "get": {
+    "operationId": "system_api_system_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SystemOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "System",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/system/alert-test": {
+   "post": {
+    "operationId": "alert_test_api_system_alert_test_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Alert Test",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/users": {
+   "post": {
+    "operationId": "user_create_api_users_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/UserIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "User Create",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/users/{uid}": {
+   "patch": {
+    "operationId": "user_update_api_users__uid__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "uid",
+      "required": true,
+      "schema": {
+       "title": "Uid",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/UserIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "User Update",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/v1/orders": {
+   "options": {
+    "operationId": "webhook_options_api_v1_orders_options",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Webhook Options"
+   },
+   "post": {
+    "operationId": "webhook_api_v1_orders_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Webhook"
+   }
+  },
+  "/api/warehouse": {
+   "get": {
+    "operationId": "warehouse_api_warehouse_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "product",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Product",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "kind",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Kind",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WarehouseOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Warehouse",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/warehouse/adjust": {
+   "post": {
+    "operationId": "adjust_api_warehouse_adjust_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AdjustIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProductOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Adjust",
+    "tags": [
+     "catalog"
+    ]
+   }
+  }
+ }
+}

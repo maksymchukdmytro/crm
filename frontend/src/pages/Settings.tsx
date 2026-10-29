@@ -4,15 +4,10 @@ import { Copy, Plus, Trash2 } from "lucide-react";
 import { api } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, phone } from "../lib/format";
-import type { Status, User } from "../lib/types";
+import type { Settings, Status, User } from "../lib/types";
 import { Badge, Empty, Field, NpAutocomplete, Spinner } from "../components/ui";
 
-type S = {
-  values: Record<string, string>; webhook_url: string; statuses: Status[]; users: User[];
-  sms_templates: { id: number; status_id: number; channel: string; text: string; active: boolean }[];
-  placeholders: Record<string, string>; sms_log: { id: number; phone: string; text: string; status: string; error: string; created_at: string }[];
-  stock_actions: Record<string, string>; roles: Record<string, string>; _message?: string;
-};
+type S = Settings;
 const TABS = { general: "Загальні", webhook: "Прийом заявок", delivery: "Доставка", sms: "SMS / Viber", statuses: "Статуси", users: "Користувачі" };
 
 export default function SettingsPage() {
@@ -41,7 +36,7 @@ function useSave() {
   return useMutation({
     mutationFn: ({ path, body, method = "put" }: { path: string; body?: unknown; method?: "put" | "post" | "del" }) =>
       method === "del" ? api.del<S>(path) : method === "post" ? api.post<S>(path, body as Record<string, unknown>) : api.put<S>(path, body as Record<string, unknown>),
-    onSuccess: (s) => { if (s?.values) qc.setQueryData(["settings"], s); qc.invalidateQueries({ queryKey: ["meta"] }); toast(s?._message ?? "Збережено"); },
+    onSuccess: (s) => { if (s?.values) qc.setQueryData(["settings"], s); qc.invalidateQueries({ queryKey: ["meta"] }); toast(s?.message ?? "Збережено"); },
     onError: (e) => toast(errText(e), "error"),
   });
 }

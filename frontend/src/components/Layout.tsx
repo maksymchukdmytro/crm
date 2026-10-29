@@ -3,11 +3,12 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3, Boxes, History, KanbanSquare, ListOrdered, LogOut, Menu, Package, Plus, Search, Settings,
-  ShoppingCart, Wallet,
+  ShoppingCart, Activity, Wallet,
 } from "lucide-react";
 import { api, ROOT } from "../lib/api";
 import { useLive, useMeta } from "../lib/app";
 import CommandPalette from "./CommandPalette";
+import { ErrorBoundary } from "../lib/monitoring";
 
 const NAV: Record<string, { to: string; label: string; icon: typeof ListOrdered }> = {
   orders: { to: "/orders", label: "Замовлення", icon: ListOrdered },
@@ -19,6 +20,7 @@ const NAV: Record<string, { to: string; label: string; icon: typeof ListOrdered 
   reports: { to: "/reports", label: "Звіти", icon: BarChart3 },
   audit: { to: "/audit", label: "Журнал дій", icon: History },
   settings: { to: "/settings", label: "Налаштування", icon: Settings },
+  system: { to: "/system", label: "Система", icon: Activity },
 };
 
 export default function Layout() {
@@ -71,7 +73,7 @@ export default function Layout() {
       {open && <div className="side-backdrop" onClick={() => setOpen(false)} />}
       <main className="main">
         <button className="burger" onClick={() => setOpen(true)} aria-label="Меню"><Menu size={18} /></button>
-        <Outlet />
+        <ErrorBoundary area="page"><Outlet /></ErrorBoundary>
       </main>
       {palette && <CommandPalette onClose={() => setPalette(false)} />}
     </div>

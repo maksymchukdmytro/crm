@@ -4,7 +4,7 @@ import { Plus, Truck } from "lucide-react";
 import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num } from "../lib/format";
-import type { Move, Product, Purchase, Supplier } from "../lib/types";
+import type { Move, Product, ProductDetail, Purchase, Supplier, Warehouse } from "../lib/types";
 import { Badge, Empty, Field, Kpi, Modal, Spinner } from "../components/ui";
 
 const canEditStock = (role: string) => role === "admin" || role === "warehouse";
@@ -53,7 +53,7 @@ function ProductModal({ id, editable, onClose }: { id: number | "new"; editable:
   const isNew = id === "new";
   const qc = useQueryClient();
   const toast = useToast();
-  const { data } = useQuery({ queryKey: ["products", "one", id], queryFn: () => api.get<Product & { moves: Move[]; sold: number }>(`/products/${id}`), enabled: !isNew });
+  const { data } = useQuery({ queryKey: ["products", "one", id], queryFn: () => api.get<ProductDetail>(`/products/${id}`), enabled: !isNew });
   const [f, setF] = useState<Record<string, string | boolean>>({});
   const v = (k: string, d: string | boolean = "") => (k in f ? f[k] : data ? (data as unknown as Record<string, string | boolean>)[k] ?? d : d);
   const save = useMutation({
@@ -133,7 +133,7 @@ export function WarehousePage() {
   const [kind, setKind] = useState("");
   const [lowOnly, setLowOnly] = useState(false);
   const [adj, setAdj] = useState({ product_id: "", mode: "set", qty: "", comment: "" });
-  const { data } = useQuery({ queryKey: ["warehouse", product, kind], queryFn: () => api.get<{ products: Product[]; value: number; units: number; reserved: number; low: number; moves: Move[]; kinds: Record<string, string> }>(`/warehouse${qs({ product, kind })}`) });
+  const { data } = useQuery({ queryKey: ["warehouse", product, kind], queryFn: () => api.get<Warehouse>(`/warehouse${qs({ product, kind })}`) });
   const adjust = useMutation({
     mutationFn: () => api.post<Product>("/warehouse/adjust", adj),
     onSuccess: (p) => { toast(`Залишок «${p.name}»: ${p.stock}`); setAdj({ ...adj, qty: "", comment: "" }); qc.invalidateQueries({ queryKey: ["warehouse"] }); qc.invalidateQueries({ queryKey: ["products"] }); },

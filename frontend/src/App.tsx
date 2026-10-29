@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, ROOT } from "./lib/api";
+import { report } from "./lib/monitoring";
 import { RealtimeProvider, ToastProvider } from "./lib/app";
 import type { Meta } from "./lib/types";
 import Layout from "./components/Layout";
@@ -12,10 +13,13 @@ import { ProductsPage, PurchasesPage, WarehousePage } from "./pages/Catalog";
 import { AuditPage, PaymentsPage, ReportsPage } from "./pages/Finance";
 import SettingsPage from "./pages/Settings";
 import { LoginPage, ProfilePage } from "./pages/Auth";
+import SystemPage from "./pages/System";
+import { ErrorBoundary } from "./lib/monitoring";
 
 const qc = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 15_000, refetchOnWindowFocus: true, retry: (n, e) => !(e instanceof ApiError && e.status < 500) && n < 2 },
+    mutations: { onError: (e) => { if (!(e instanceof ApiError) || e.status >= 500) report(e); } },
   },
 });
 
@@ -50,6 +54,7 @@ function Gate() {
           {can("reports") && <Route path="reports" element={<ReportsPage />} />}
           {can("audit") && <Route path="audit" element={<AuditPage />} />}
           {can("settings") && <Route path="settings" element={<SettingsPage />} />}
+          {can("system") && <Route path="system" element={<SystemPage />} />}
           <Route path="profile" element={<ProfilePage />} />
           <Route path="*" element={<div className="empty big"><h1>Сторінку не знайдено</h1></div>} />
         </Route>
@@ -63,7 +68,7 @@ export default function App() {
     <QueryClientProvider client={qc}>
       <ToastProvider>
         <BrowserRouter basename={ROOT || "/"}>
-          <Gate />
+          <ErrorBoundary area="app"><Gate /></ErrorBoundary>
         </BrowserRouter>
       </ToastProvider>
     </QueryClientProvider>

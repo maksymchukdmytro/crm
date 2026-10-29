@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
@@ -12,6 +12,7 @@ from ..db import get_db
 from ..models import OrderItem, Product, Purchase, PurchaseItem, StockMovement, Supplier, User
 from ..services import audit, stock
 from ..services.orders import to_int, to_money
+from .schemas import AdjustIn, ProductDetailOut, ProductIn, ProductOut, PurchaseIn, PurchaseOut, SupplierIn, SupplierOut, WarehouseOut
 from .common import bad, iso, j_product, j_purchase, staff, stock_team
 
 router = APIRouter(prefix="/api", tags=["catalog"])
@@ -45,7 +46,7 @@ def _apply_product(p: Product, d: dict):
 
 
 # ---------------------------------------------------------------- товари
-@router.get("/products")
+@router.get("/products", response_model=list[ProductOut])
 def products(q: str = "", show: str = "active", db: Session = Depends(get_db), user: User = Depends(staff)):
     query = db.query(Product)
     if show == "active":
@@ -57,7 +58,7 @@ def products(q: str = "", show: str = "active", db: Session = Depends(get_db), u
     return [j_product(p) for p in query.order_by(Product.is_upsell, Product.name).all()]
 
 
-@router.get("/products/{pid}")
+@router.get("/products/{pid}", response_model=ProductDetailOut)
 def product(pid: int, db: Session = Depends(get_db), user: User = Depends(staff)):
     p = db.get(Product, pid)
     if p is None:
@@ -70,8 +71,9 @@ def product(pid: int, db: Session = Depends(get_db), user: User = Depends(staff)
     return d
 
 
-@router.post("/products")
-def product_create(data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(stock_team)):
+@router.post("/products", response_model=ProductOut)
+def product_create(body: ProductIn, db: Session = Depends(get_db), user: User = Depends(stock_team)):
+    data = body.model_dump(exclude_unset=True)
     p = Product(stock=0, reserved=0, price=0, cost=0, weight=Decimal("0.5"), min_stock=0, is_upsell=False,
                 is_active=True)
     _apply_product(p, data)
@@ -91,8 +93,9 @@ def product_create(data: dict = Body(...), db: Session = Depends(get_db), user: 
     return j_product(p)
 
 
-@router.patch("/products/{pid}")
-def product_update(pid: int, data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(stock_team)):
+@router.patch("/products/{pid}", response_model=ProductOut)
+def product_update(pid: int, body: ProductIn, db: Session = Depends(get_db), user: User = Depends(stock_team)):
+    data = body.model_dump(exclude_unset=True)
     p = db.get(Product, pid)
     if p is None:
         raise HTTPException(404, "Товар не знайдено")
@@ -116,7 +119,7 @@ def product_update(pid: int, data: dict = Body(...), db: Session = Depends(get_d
 
 
 # ---------------------------------------------------------------- склад
-@router.get("/warehouse")
+@router.get("/warehouse", response_model=WarehouseOut)
 def warehouse(product: int = 0, kind: str = "", db: Session = Depends(get_db), user: User = Depends(stock_team)):
     products = db.query(Product).filter(Product.is_active.is_(True)).order_by(Product.name).all()
     mq = db.query(StockMovement).options(selectinload(StockMovement.product), selectinload(StockMovement.user))
@@ -135,8 +138,9 @@ def warehouse(product: int = 0, kind: str = "", db: Session = Depends(get_db), u
     }
 
 
-@router.post("/warehouse/adjust")
-def adjust(data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(stock_team)):
+@router.post("/warehouse/adjust", response_model=ProductOut)
+def adjust(body: AdjustIn, db: Session = Depends(get_db), user: User = Depends(stock_team)):
+    data = body.model_dump(exclude_unset=True)
     p = db.get(Product, to_int(data.get("product_id")))
     if p is None:
         raise HTTPException(404, "Товар не знайдено")
@@ -170,7 +174,7 @@ def _purchase_from(db: Session, p: Purchase, data: dict):
                 p.items.append(PurchaseItem(product_id=pid, qty=qty, cost=to_money(it.get("cost"))))
 
 
-@router.get("/purchases")
+@router.get("/purchases", response_model=list[PurchaseOut])
 def purchases(status: str = "", db: Session = Depends(get_db), user: User = Depends(stock_team)):
     q = db.query(Purchase).options(selectinload(Purchase.items).selectinload(PurchaseItem.product),
                                    selectinload(Purchase.supplier))
@@ -179,7 +183,7 @@ def purchases(status: str = "", db: Session = Depends(get_db), user: User = Depe
     return [j_purchase(p) for p in q.order_by(Purchase.id.desc()).limit(300).all()]
 
 
-@router.get("/purchases/{pid}")
+@router.get("/purchases/{pid}", response_model=PurchaseOut)
 def purchase(pid: int, db: Session = Depends(get_db), user: User = Depends(stock_team)):
     p = db.get(Purchase, pid)
     if p is None:
@@ -200,8 +204,9 @@ def _then(db: Session, p: Purchase, then: str, user: User):
         audit.log(db, user, "purchase", p.id, "update", {"статус": "скасовано"})
 
 
-@router.post("/purchases")
-def purchase_create(data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(stock_team)):
+@router.post("/purchases", response_model=PurchaseOut)
+def purchase_create(body: PurchaseIn, db: Session = Depends(get_db), user: User = Depends(stock_team)):
+    data = body.model_dump(exclude_unset=True)
     p = Purchase(status="draft", created_by_id=user.id)
     db.add(p)
     _purchase_from(db, p, data)
@@ -215,8 +220,9 @@ def purchase_create(data: dict = Body(...), db: Session = Depends(get_db), user:
     return j_purchase(p)
 
 
-@router.patch("/purchases/{pid}")
-def purchase_update(pid: int, data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(stock_team)):
+@router.patch("/purchases/{pid}", response_model=PurchaseOut)
+def purchase_update(pid: int, body: PurchaseIn, db: Session = Depends(get_db), user: User = Depends(stock_team)):
+    data = body.model_dump(exclude_unset=True)
     p = db.get(Purchase, pid)
     if p is None:
         raise HTTPException(404, "Закупівлю не знайдено")
@@ -229,14 +235,15 @@ def purchase_update(pid: int, data: dict = Body(...), db: Session = Depends(get_
     return j_purchase(p)
 
 
-@router.get("/suppliers")
+@router.get("/suppliers", response_model=list[SupplierOut])
 def suppliers(db: Session = Depends(get_db), user: User = Depends(stock_team)):
     return [{"id": s.id, "name": s.name, "phone": s.phone, "comment": s.comment}
             for s in db.query(Supplier).order_by(Supplier.name).all()]
 
 
-@router.post("/suppliers")
-def supplier_save(data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(stock_team)):
+@router.post("/suppliers", response_model=SupplierOut)
+def supplier_save(body: SupplierIn, db: Session = Depends(get_db), user: User = Depends(stock_team)):
+    data = body.model_dump(exclude_unset=True)
     sid = to_int(data.get("id"))
     s = db.get(Supplier, sid) if sid else Supplier()
     s.name = str(data.get("name") or "").strip()[:255]

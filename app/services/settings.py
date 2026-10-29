@@ -47,11 +47,18 @@ DEFAULTS: dict[str, str] = {
     "sms_sender": "",
     "viber_sender": "",
     "sms_enabled": "0",
+    # Моніторинг і сповіщення
+    "alert_tg_token": "",
+    "alert_tg_chat": "",
+    "alert_no_leads_hours": "0",  # 0 — не стежити
     # Службові
     "rr_last_manager_id": "0",
+    "alert_state": "",
+    "worker_heartbeat": "",
 }
 
-SECRET_KEYS = {"np_api_key", "up_bearer", "up_token", "up_tracking_bearer", "meest_password", "sms_token"}
+SECRET_KEYS = {"np_api_key", "up_bearer", "up_token", "up_tracking_bearer", "meest_password", "sms_token", "alert_tg_token"}
+INTERNAL_KEYS = {"rr_last_manager_id", "alert_state", "worker_heartbeat"}
 
 
 def get_all(db: Session) -> dict[str, str]:

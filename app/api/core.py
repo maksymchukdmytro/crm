@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 
-from fastapi import APIRouter, Body, Depends, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -28,6 +28,7 @@ from ..security import hash_password, throttle, verify_password
 from ..services import audit
 from ..services import settings as st
 from ..services.events import CHANNEL
+from .schemas import LoginIn, LoginOut, MeIn, MetaOut, Ok, UserOut
 from .common import api_user, bad, j_product, j_status, j_user
 
 router = APIRouter(prefix="/api", tags=["core"])
@@ -42,11 +43,13 @@ NAV = [  # розділ, ролі
     ("reports", ("admin", "manager")),
     ("audit", ("admin",)),
     ("settings", ("admin",)),
+    ("system", ("admin",)),
 ]
 
 
-@router.post("/auth/login")
-def login(request: Request, data: dict = Body(...), db: Session = Depends(get_db)):
+@router.post("/auth/login", response_model=LoginOut)
+def login(request: Request, body: LoginIn, db: Session = Depends(get_db)):
+    data = body.model_dump(exclude_unset=True)
     if request.headers.get("x-crm") != "1":
         return JSONResponse({"error": "Відсутній заголовок X-CRM"}, 403)
     username = str(data.get("username", "")).strip()
@@ -67,19 +70,20 @@ def login(request: Request, data: dict = Body(...), db: Session = Depends(get_db
     return {"user": j_user(user)}
 
 
-@router.post("/auth/logout")
+@router.post("/auth/logout", response_model=Ok)
 def logout(request: Request):
     request.session.clear()
     return {"ok": True}
 
 
-@router.get("/me")
+@router.get("/me", response_model=UserOut)
 def me(user: User = Depends(api_user)):
     return j_user(user)
 
 
-@router.patch("/me")
-def me_update(data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(api_user)):
+@router.patch("/me", response_model=UserOut)
+def me_update(body: MeIn, db: Session = Depends(get_db), user: User = Depends(api_user)):
+    data = body.model_dump(exclude_unset=True)
     if data.get("full_name"):
         user.full_name = str(data["full_name"]).strip()[:128]
     if data.get("new_password"):
@@ -92,7 +96,7 @@ def me_update(data: dict = Body(...), db: Session = Depends(get_db), user: User 
     return j_user(user)
 
 
-@router.get("/meta")
+@router.get("/meta", response_model=MetaOut)
 def meta(db: Session = Depends(get_db), user: User = Depends(api_user)):
     s = st.get_all(db)
     statuses = db.query(Status).order_by(Status.sort, Status.id).all()

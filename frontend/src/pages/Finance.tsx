@@ -5,11 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { api, qs } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { date, dt, isoDay, money } from "../lib/format";
-import type { Payment } from "../lib/types";
+import type { Audit, Payment, Payments, Registry, Report as ReportData } from "../lib/types";
 import { Badge, Empty, Kpi, Spinner } from "../components/ui";
 
 // ================================================================ оплати
-type Report = Record<"matched" | "mismatch" | "not_found" | "already", { ttn: string; order_id?: number; expected?: number; amount?: number }[]>;
 
 export function PaymentsPage() {
   const meta = useMeta();
@@ -19,16 +18,16 @@ export function PaymentsPage() {
   const [status, setStatus] = useState("collected");
   const [sel, setSel] = useState<Set<number>>(new Set());
   const [ref, setRef] = useState("");
-  const [report, setReport] = useState<Report | null>(null);
+  const [report, setReport] = useState<Registry | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const { data } = useQuery({ queryKey: ["payments", status], queryFn: () => api.get<{ items: Payment[]; totals: Record<string, { count: number; sum: number }> }>(`/payments${qs({ status })}`) });
+  const { data } = useQuery({ queryKey: ["payments", status], queryFn: () => api.get<Payments>(`/payments${qs({ status })}`) });
   const receive = useMutation({
     mutationFn: () => api.post<{ done: number }>("/payments/receive", { ids: [...sel], reference: ref }),
     onSuccess: (r) => { toast(`Позначено як отримані: ${r.done}`); setSel(new Set()); qc.invalidateQueries({ queryKey: ["payments"] }); },
     onError: (e) => toast(errText(e), "error"),
   });
   const upload = useMutation({
-    mutationFn: (file: File) => { const fd = new FormData(); fd.append("file", file); return api.post<Report>("/payments/import", fd); },
+    mutationFn: (file: File) => { const fd = new FormData(); fd.append("file", file); return api.post<Registry>("/payments/import", fd); },
     onSuccess: (r) => {
       setReport(r); qc.invalidateQueries({ queryKey: ["payments"] });
       toast(`Зараховано: ${r.matched.length}, розбіжність: ${r.mismatch.length}, не знайдено: ${r.not_found.length}`, r.mismatch.length || r.not_found.length ? "warn" : "ok");
@@ -89,8 +88,6 @@ export function PaymentsPage() {
 }
 
 // ================================================================ звіти
-type Bucket = { leads: number; unique: number; approved: number; shipped: number; delivered: number; refused: number; revenue: number; cost: number; profit: number; avg_check: number; approve_rate: number; buyout_rate: number };
-type ReportData = { date_from: string; date_to: string; dim: string; dims: Record<string, string>; total: Bucket; groups: (Bucket & { name: string })[]; days: { day: string; leads: number; approved: number }[]; products: { name: string; qty: number; orders: number; revenue: number; cost: number; upsell_qty: number }[] };
 
 function presets() {
   const t = new Date(); const d = (n: number) => { const x = new Date(t); x.setDate(x.getDate() - n); return isoDay(x); };
@@ -161,14 +158,13 @@ export function ReportsPage() {
 
 // ================================================================ журнал дій
 const ENTITIES: Record<string, string> = { order: "Замовлення", product: "Товар", purchase: "Закупівля", user: "Користувач", settings: "Налаштування" };
-type AuditRow = { id: number; user: string; entity: string; entity_id: number | null; action: string; action_name: string; details: string; created_at: string };
 
 export function AuditPage() {
   const nav = useNavigate();
   const [f, setF] = useState({ entity: "", action: "", date_from: "", date_to: "" });
   const q = useInfiniteQuery({
     queryKey: ["audit", f],
-    queryFn: ({ pageParam }) => api.get<{ items: AuditRow[]; next: number | null; actions: Record<string, string> }>(`/audit${qs({ ...f, before: pageParam || undefined })}`),
+    queryFn: ({ pageParam }) => api.get<Audit>(`/audit${qs({ ...f, before: pageParam || undefined })}`),
     initialPageParam: 0, getNextPageParam: (l) => l.next ?? undefined,
   });
   const rows = q.data?.pages.flatMap((p) => p.items) ?? [];

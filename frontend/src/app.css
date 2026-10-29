@@ -90,3 +90,8 @@ a[onClick], a:not([href]) { cursor: pointer; }
   .gt-row > span:nth-child(7) { order: 5; }
   .gt-row .pill { max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
 }
+
+/* Сторінка «Система» */
+.sys-banner { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-weight: 600; margin-bottom: 14px; }
+.sys-banner.ok { background: var(--ok-soft); color: var(--ok); }
+.sys-banner.bad { background: var(--bad-soft); color: var(--bad); }

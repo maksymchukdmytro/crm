@@ -22,7 +22,7 @@ from . import db as dbmod
 from .carriers import CARRIERS, CarrierError, get_carrier
 from .config import config
 from .models import Order, User
-from .services import delivery, events, sms
+from .services import delivery, events, monitoring, sms
 from .services import settings as st
 
 log = logging.getLogger("crm.tasks")
@@ -51,7 +51,14 @@ def _ttn_job(order_id: int, user_id: int | None) -> dict:
 
 def _track_job(carrier: str) -> dict:
     with dbmod.SessionLocal() as db:
-        return delivery.sync_tracking(db, carrier=carrier)
+        stats = delivery.sync_tracking(db, carrier=carrier)
+    monitoring.save_track_stats(carrier, stats)
+    return stats
+
+
+def _alerts_job() -> dict:
+    with dbmod.SessionLocal() as db:
+        return monitoring.run_alerts(db)
 
 
 def _configured_carriers() -> list[str]:
@@ -90,8 +97,20 @@ async def sweep_sms(ctx) -> None:
     await ctx["redis"].enqueue_job("send_sms", _job_id="sms:pending")
 
 
+async def heartbeat(ctx) -> None:
+    await asyncio.to_thread(monitoring.beat)
+
+
+async def alerts(ctx) -> None:
+    res = await asyncio.to_thread(_alerts_job)
+    if res["opened"] or res["resolved"]:
+        log.info("Сповіщення: нові %s, відновлено %s", res["opened"], res["resolved"])
+
+
 async def startup(ctx) -> None:
     dbmod.init_engine()
+    monitoring.init_sentry("worker")
+    monitoring.beat()
     log.info("Воркер arq запущено")
 
 
@@ -104,6 +123,8 @@ class WorkerSettings:
     cron_jobs = [
         cron(track_all, minute=set(range(0, 60, 5)), run_at_startup=True),
         cron(sweep_sms, second={10}),
+        cron(heartbeat, second={0, 30}),
+        cron(alerts, second={40}),
     ]
     on_startup = startup
     max_jobs = 10

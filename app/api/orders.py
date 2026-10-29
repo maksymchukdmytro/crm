@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
@@ -18,6 +18,7 @@ from ..services import settings as st
 from ..services import sms as sms_svc
 from ..services.audit import ACTION_NAMES
 from ..web import f_details
+from .schemas import BulkIn, BulkOut, OrderIn, OrderListOut, OrderOut, PaymentIn, SmsIn, TextIn, TrackOut
 from .common import bad, iso, j_order, j_order_row, staff
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
@@ -64,7 +65,7 @@ def _fields(data: dict) -> dict:
 
 
 # ------------------------------------------------------------------ список
-@router.get("")
+@router.get("", response_model=OrderListOut)
 def list_orders(request: Request, before: int = 0, limit: int = Query(100, le=500), counts: int = 1,
                 db: Session = Depends(get_db), user: User = Depends(staff)):
     f = {k: (request.query_params.get(k) or "").strip() for k in FILTERS}
@@ -83,7 +84,7 @@ def list_orders(request: Request, before: int = 0, limit: int = Query(100, le=50
     return out
 
 
-@router.get("/sources")
+@router.get("/sources", response_model=list[str])
 def sources(db: Session = Depends(get_db), user: User = Depends(staff)):
     rows = (db.query(Order.utm_source).filter(Order.utm_source != "").group_by(Order.utm_source)
             .order_by(func.count(Order.id).desc()).limit(50).all())
@@ -91,13 +92,14 @@ def sources(db: Session = Depends(get_db), user: User = Depends(staff)):
 
 
 # ------------------------------------------------------------------ картка
-@router.get("/{order_id}")
+@router.get("/{order_id}", response_model=OrderOut)
 def get_order(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
     return _full(db, _get(db, order_id, user))
 
 
-@router.post("")
-def create_order(data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(staff)):
+@router.post("", response_model=OrderOut)
+def create_order(body: OrderIn, db: Session = Depends(get_db), user: User = Depends(staff)):
+    data = body.model_dump(exclude_unset=True)
     fields = _fields(data)
     if not svc.normalize_phone(fields.get("phone")):
         bad("Вкажіть телефон")
@@ -114,8 +116,9 @@ def create_order(data: dict = Body(...), db: Session = Depends(get_db), user: Us
     return _full(db, order)
 
 
-@router.patch("/{order_id}")
-def update_order(order_id: int, data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(staff)):
+@router.patch("/{order_id}", response_model=OrderOut)
+def update_order(order_id: int, body: OrderIn, db: Session = Depends(get_db), user: User = Depends(staff)):
+    data = body.model_dump(exclude_unset=True)
     order = _get(db, order_id, user)
     version = data.get("version")
     if version and order.updated_at and version != order.updated_at.isoformat():
@@ -139,8 +142,9 @@ def update_order(order_id: int, data: dict = Body(...), db: Session = Depends(ge
     return _full(db, order)
 
 
-@router.post("/bulk")
-def bulk(data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(staff)):
+@router.post("/bulk", response_model=BulkOut)
+def bulk(body: BulkIn, db: Session = Depends(get_db), user: User = Depends(staff)):
+    data = body.model_dump(exclude_unset=True)
     ids = [svc.to_int(x) for x in data.get("ids", []) if svc.to_int(x)]
     action, value = data.get("action", ""), data.get("value")
     if not ids:
@@ -185,7 +189,7 @@ def bulk(data: dict = Body(...), db: Session = Depends(get_db), user: User = Dep
     return {"done": done, "queued": queued, "errors": errors[:20]}
 
 
-@router.post("/{order_id}/take")
+@router.post("/{order_id}/take", response_model=OrderOut)
 def take(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
     order = _get(db, order_id, user)
     if user.role == "warehouse":
@@ -197,8 +201,9 @@ def take(order_id: int, db: Session = Depends(get_db), user: User = Depends(staf
     return _full(db, order)
 
 
-@router.post("/{order_id}/comments")
-def comment(order_id: int, data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(staff)):
+@router.post("/{order_id}/comments", response_model=OrderOut)
+def comment(order_id: int, body: TextIn, db: Session = Depends(get_db), user: User = Depends(staff)):
+    data = body.model_dump(exclude_unset=True)
     order = _get(db, order_id, user)
     if not svc.add_comment(db, order, data.get("text", ""), user):
         bad("Порожній коментар")
@@ -206,7 +211,7 @@ def comment(order_id: int, data: dict = Body(...), db: Session = Depends(get_db)
     return _full(db, order)
 
 
-@router.post("/{order_id}/ttn")
+@router.post("/{order_id}/ttn", response_model=OrderOut)
 def ttn_create(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
     order = _get(db, order_id, user)
     try:
@@ -218,7 +223,7 @@ def ttn_create(order_id: int, db: Session = Depends(get_db), user: User = Depend
     return _full(db, order)
 
 
-@router.delete("/{order_id}/ttn")
+@router.delete("/{order_id}/ttn", response_model=OrderOut)
 def ttn_delete(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
     order = _get(db, order_id, user)
     try:
@@ -230,19 +235,20 @@ def ttn_delete(order_id: int, db: Session = Depends(get_db), user: User = Depend
     return _full(db, order)
 
 
-@router.post("/{order_id}/track")
+@router.post("/{order_id}/track", response_model=TrackOut)
 def track(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
     order = _get(db, order_id, user)
     res = delivery.sync_tracking(db, [order.id], force=True)
     if res["errors"]:
         bad("; ".join(res["errors"]), 422)
     out = _full(db, order)
-    out["_changed"] = bool(res["changed"])
+    out["changed"] = bool(res["changed"])
     return out
 
 
-@router.post("/{order_id}/sms")
-def send_sms(order_id: int, data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(staff)):
+@router.post("/{order_id}/sms", response_model=OrderOut)
+def send_sms(order_id: int, body: SmsIn, db: Session = Depends(get_db), user: User = Depends(staff)):
+    data = body.model_dump(exclude_unset=True)
     order = _get(db, order_id, user)
     text = sms_svc.render(data.get("text", ""), order, st.get(db, "company_name"))
     channel = data.get("channel") if data.get("channel") in ("sms", "viber", "hybrid") else "sms"
@@ -254,8 +260,9 @@ def send_sms(order_id: int, data: dict = Body(...), db: Session = Depends(get_db
     return _full(db, order)
 
 
-@router.post("/{order_id}/payments")
-def add_payment(order_id: int, data: dict = Body(...), db: Session = Depends(get_db), user: User = Depends(staff)):
+@router.post("/{order_id}/payments", response_model=OrderOut)
+def add_payment(order_id: int, body: PaymentIn, db: Session = Depends(get_db), user: User = Depends(staff)):
+    data = body.model_dump(exclude_unset=True)
     order = _get(db, order_id, user)
     amount = svc.to_money(data.get("amount"))
     if amount <= 0:

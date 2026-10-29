@@ -37,6 +37,7 @@ SECTION_KEYS = {
     "up": ["up_bearer", "up_token", "up_tracking_bearer", "up_sender_uuid", "up_sandbox", "up_type"],
     "meest": ["meest_username", "meest_password", "meest_sender_branch_id", "meest_sender_name", "meest_sender_phone"],
     "sms": ["sms_enabled", "sms_token", "sms_sender", "viber_sender"],
+    "alerts": ["alert_tg_token", "alert_tg_chat", "alert_no_leads_hours"],
 }
 CHECKBOXES = {"managers_see_own_only", "auto_status_from_tracking", "up_sandbox", "sms_enabled"}
 

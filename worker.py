@@ -11,7 +11,7 @@ import time
 
 from app import db as dbmod
 from app.config import config
-from app.services import delivery, sms
+from app.services import delivery, monitoring, sms
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s worker %(levelname)s %(message)s")
 log = logging.getLogger("worker")
@@ -24,6 +24,13 @@ def _stop(*_):
 
 
 def tick():
+    with dbmod.SessionLocal() as db:
+        try:
+            monitoring.beat(db)
+            monitoring.run_alerts(db)
+        except Exception:  # noqa: BLE001
+            db.rollback()
+            log.exception("Помилка моніторингу")
     with dbmod.SessionLocal() as db:
         try:
             sent = sms.send_pending(db)
@@ -46,6 +53,7 @@ def tick():
 
 def legacy_loop():
     dbmod.init_engine()
+    monitoring.init_sentry("worker")
     signal.signal(signal.SIGTERM, _stop)
     signal.signal(signal.SIGINT, _stop)
     log.info("Воркер без Redis (простий цикл), інтервал %s с", config.WORKER_TICK)

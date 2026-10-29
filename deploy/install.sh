@@ -77,6 +77,9 @@ chown root:"$APP_USER" "$ENVF"; chmod 640 "$ENVF"
 HTTPS_ONLY=0; [ -d "/etc/letsencrypt/live/$DOMAIN" ] && HTTPS_ONLY=1
 sed -i '/^HTTPS_ONLY=/d;/^ROOT_PATH=/d' "$ENVF"
 printf 'HTTPS_ONLY=%s\nROOT_PATH=%s\n' "$HTTPS_ONLY" "$ROOT" >> "$ENVF"
+# Токен для метрик Prometheus (/crm/api/metrics); Sentry вмикається вручну: SENTRY_DSN=... у цьому файлі
+grep -q '^METRICS_TOKEN=' "$ENVF" || echo "METRICS_TOKEN=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')" >> "$ENVF"
+grep -q '^SENTRY_DSN=' "$ENVF" || printf '# SENTRY_DSN=https://...@sentry.io/...      (помилки сервера й воркера)\n# SENTRY_DSN_FRONTEND=https://...           (помилки в браузері)\nSENTRY_DSN=\n' >> "$ENVF"
 # Черга задач і події в реальному часі: окрема база Redis №3 (щоб не перетинатися з іншими сайтами)
 if ! grep -q '^REDIS_URL=' "$ENVF"; then
   if redis-cli -n 3 ping 2>/dev/null | grep -q PONG; then
@@ -143,7 +146,7 @@ fi
 ( cd "$APP" && set -a && . "$ENVF" && set +a && sudo -u "$APP_USER" --preserve-env=DATABASE_URL,SECRET_KEY \
   "$APP/.venv/bin/alembic" upgrade head )
 
-unit() { # назва, опис, команда
+unit() { # назва, опис, команда, [додаткові рядки секції Service]
   cat > "/etc/systemd/system/$1.service" <<EOF
 [Unit]
 Description=$2
@@ -164,13 +167,17 @@ ProtectSystem=full
 ProtectHome=true
 PrivateTmp=true
 MemoryMax=600M
+${4:-}
 
 [Install]
 WantedBy=multi-user.target
 EOF
 }
+# метрики кількох процесів uvicorn збираються в спільному каталозі (очищується при кожному перезапуску)
 unit crm-web "CRM — веб ($DOMAIN$ROOT)" \
-  "$APP/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port $PORT --workers 2 --proxy-headers --forwarded-allow-ips 127.0.0.1"
+  "$APP/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port $PORT --workers 2 --proxy-headers --forwarded-allow-ips 127.0.0.1" \
+  "RuntimeDirectory=crm-web
+Environment=PROMETHEUS_MULTIPROC_DIR=/run/crm-web"
 unit crm-worker "CRM — фонові задачі (SMS, трекінг)" "$APP/.venv/bin/python worker.py"
 systemctl daemon-reload
 systemctl enable crm-web crm-worker >/dev/null 2>&1
@@ -258,4 +265,5 @@ if [ -f "$ETC/initial-admin.txt" ] && ! sudo -u postgres psql -d crm -tAc \
   echo "  (той самий пароль збережено у $ETC/initial-admin.txt)"
 fi
 echo "  Журнали: journalctl -u crm-web -u crm-worker -f"
+echo "  Стан: $SCHEME://$DOMAIN$ROOT/system · для зовнішнього монітора: $SCHEME://$DOMAIN$ROOT/healthz/full"
 echo "  Налаштування: $ENVF · копії бази: $BACKUP_DIR"

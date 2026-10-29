@@ -1,0 +1,600 @@
+"""Схеми JSON API (Pydantic). З них будуються документація OpenAPI (/api/docs) і типи для фронтенду.
+
+Відповіді будуються функціями j_* у common.py і перевіряються цими схемами.
+Запити з частковими змінами (PATCH) — усі поля необов'язкові; змінюються лише передані.
+"""
+from __future__ import annotations
+
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+Num = float | int
+Money = float | int | str  # у запитах суму можна передати рядком «399,50»
+
+
+class Out(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+
+class In(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class Ok(Out):
+    ok: bool = True
+
+
+# ---------------------------------------------------------------- довідники
+class UserOut(Out):
+    id: int
+    username: str
+    name: str
+    full_name: str
+    role: Literal["admin", "manager", "warehouse"]
+    role_name: str
+    is_active: bool
+    last_login_at: str | None = None
+
+
+class StatusOut(Out):
+    id: int
+    code: str
+    name: str
+    color: str
+    sort: int
+    stock_action: str
+    approved: bool
+    final: bool
+    system: bool
+    active: bool
+
+
+class ProductOut(Out):
+    id: int
+    sku: str
+    name: str
+    price: float
+    cost: float
+    weight: float
+    stock: int
+    reserved: int
+    available: int
+    min_stock: int
+    upsell: bool
+    active: bool
+
+
+class CarrierOut(Out):
+    name: str
+    beta: bool
+    configured: bool
+
+
+class MetaOut(Out):
+    user: UserOut
+    company: str
+    nav: list[str]
+    statuses: list[StatusOut]
+    managers: list[UserOut]
+    products: list[ProductOut]
+    delivery_methods: dict[str, str]
+    delivery_states: dict[str, str]
+    payment_types: dict[str, str]
+    payment_kinds: dict[str, str]
+    payment_statuses: dict[str, str]
+    stock_actions: dict[str, str]
+    roles: dict[str, str]
+    carriers: dict[str, CarrierOut]
+    sms_ready: bool
+    managers_see_own_only: bool
+    realtime: bool
+    root: str
+
+
+class LoginIn(In):
+    username: str
+    password: str
+
+
+class LoginOut(Out):
+    user: UserOut
+
+
+class MeIn(In):
+    full_name: str | None = None
+    old_password: str | None = None
+    new_password: str | None = None
+
+
+# ---------------------------------------------------------------- замовлення
+class OrderRowItem(Out):
+    name: str
+    qty: int
+    upsell: bool
+
+
+class OrderRowOut(Out):
+    id: int
+    status_id: int
+    manager_id: int | None
+    customer_name: str
+    phone: str
+    items: list[OrderRowItem]
+    total: float
+    cod_amount: float
+    payment_type: str
+    delivery_method: str
+    city_name: str
+    ttn: str
+    delivery_state: str
+    delivery_status: str
+    utm_source: str
+    utm_campaign: str
+    site: str
+    duplicate_of_id: int | None
+    created_at: str | None
+    status_changed_at: str | None
+
+
+class OrderListOut(Out):
+    items: list[OrderRowOut]
+    next: int | None
+    total: int | None = None
+    counts: dict[str, int] | None = None
+    all: int | None = None
+
+
+class OrderItemOut(Out):
+    id: int | None = None
+    product_id: int | None
+    name: str
+    price: float
+    qty: int
+    upsell: bool
+    sku: str = ""
+    available: int | None = None
+
+
+class PaymentOut(Out):
+    id: int
+    order_id: int
+    kind: str
+    kind_name: str
+    amount: float
+    status: str
+    status_name: str
+    method: str
+    reference: str
+    received_amount: float | None
+    created_at: str | None
+    collected_at: str | None
+    received_at: str | None
+    ttn: str | None = None
+    customer: str | None = None
+
+
+class CommentOut(Out):
+    id: int
+    text: str
+    user: str
+    created_at: str | None
+
+
+class HistoryOut(Out):
+    id: int
+    user: str
+    action: str
+    details: str
+    created_at: str | None
+
+
+class SmsOut(Out):
+    id: int
+    text: str
+    channel: str
+    status: str
+    error: str
+    created_at: str | None
+
+
+class OrderOut(Out):
+    id: int
+    status_id: int
+    manager_id: int | None
+    manager: UserOut | None
+    customer_name: str
+    phone: str
+    email: str
+    comment: str
+    delivery_method: str
+    city_name: str
+    city_ref: str
+    warehouse_name: str
+    warehouse_ref: str
+    address: str
+    postcode: str
+    ttn: str
+    carrier_ref: str
+    delivery_state: str
+    delivery_status: str
+    payment_type: str
+    site: str
+    utm_source: str
+    utm_medium: str
+    utm_campaign: str
+    utm_content: str
+    utm_term: str
+    ip: str
+    delivery_cost: float
+    prepayment: float
+    discount: float
+    total: float
+    cod_amount: float
+    duplicate_of_id: int | None
+    stock_reserved: bool
+    stock_shipped: bool
+    created_at: str | None
+    updated_at: str | None
+    shipped_at: str | None
+    delivered_at: str | None
+    delivery_checked_at: str | None
+    version: str
+    items: list[OrderItemOut]
+    payments: list[PaymentOut]
+    comments: list[CommentOut]
+    history: list[HistoryOut]
+    sms: list[SmsOut]
+    others: list[OrderRowOut]
+
+
+class OrderItemIn(In):
+    product_id: int | None = None
+    name: str = ""
+    qty: int = Field(1, ge=1, le=100000)
+    price: Money | None = None
+    upsell: bool = False
+
+
+class OrderIn(In):
+    """Створення або зміна замовлення. У PATCH змінюються лише передані поля."""
+    customer_name: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    comment: str | None = None
+    delivery_method: Literal["novaposhta", "ukrposhta", "meest", "pickup", "courier"] | None = None
+    city_name: str | None = None
+    city_ref: str | None = None
+    warehouse_name: str | None = None
+    warehouse_ref: str | None = None
+    address: str | None = None
+    postcode: str | None = None
+    ttn: str | None = None
+    delivery_cost: Money | None = None
+    payment_type: Literal["cod", "partial", "prepaid"] | None = None
+    prepayment: Money | None = None
+    discount: Money | None = None
+    site: str | None = None
+    utm_source: str | None = None
+    utm_medium: str | None = None
+    utm_campaign: str | None = None
+    utm_content: str | None = None
+    utm_term: str | None = None
+    status_id: int | None = None
+    manager_id: int | None = None
+    items: list[OrderItemIn] | None = None
+    note: str | None = Field(None, description="Коментар менеджера, що додається разом зі створенням")
+    version: str | None = Field(None, description="updated_at, отриманий з картки: захист від одночасного редагування (409)")
+
+
+class BulkIn(In):
+    ids: list[int]
+    action: Literal["status", "assign", "ttn", "track"]
+    value: int | str | None = None
+
+
+class BulkOut(Out):
+    done: int
+    queued: int
+    errors: list[str]
+
+
+class TextIn(In):
+    text: str
+
+
+class SmsIn(In):
+    text: str
+    channel: Literal["sms", "viber", "hybrid"] = "sms"
+
+
+class PaymentIn(In):
+    amount: Money
+    method: Literal["card", "iban", "cash", "other"] = "card"
+    reference: str = ""
+
+
+class TrackOut(OrderOut):
+    changed: bool = False
+
+
+# ---------------------------------------------------------------- склад
+class MoveOut(Out):
+    id: int
+    product_id: int
+    product: str
+    kind: str
+    kind_name: str
+    stock_delta: int
+    reserved_delta: int
+    order_id: int | None
+    purchase_id: int | None
+    user: str
+    comment: str
+    created_at: str | None
+
+
+class ProductDetailOut(ProductOut):
+    moves: list[MoveOut]
+    sold: int
+
+
+class ProductIn(In):
+    name: str | None = None
+    sku: str | None = None
+    price: Money | None = None
+    cost: Money | None = None
+    weight: Money | None = None
+    min_stock: int | str | None = None
+    upsell: bool | None = None
+    active: bool | None = None
+    initial_stock: int | str | None = Field(None, description="Лише при створенні")
+
+
+class WarehouseOut(Out):
+    products: list[ProductOut]
+    value: float
+    units: int
+    reserved: int
+    low: int
+    moves: list[MoveOut]
+    kinds: dict[str, str]
+
+
+class AdjustIn(In):
+    product_id: int
+    mode: Literal["set", "delta"] = "set"
+    qty: int | str
+    comment: str = ""
+
+
+class PurchaseItemOut(Out):
+    id: int | None = None
+    product_id: int
+    name: str
+    qty: int
+    cost: float
+
+
+class PurchaseOut(Out):
+    id: int
+    supplier_id: int | None
+    supplier: str
+    status: Literal["draft", "ordered", "received", "cancelled"]
+    comment: str
+    total: float
+    created_at: str | None
+    received_at: str | None
+    items: list[PurchaseItemOut]
+
+
+class PurchaseItemIn(In):
+    product_id: int | str
+    qty: int | str
+    cost: Money | None = None
+
+
+class PurchaseIn(In):
+    supplier_id: int | str | None = None
+    comment: str | None = None
+    items: list[PurchaseItemIn] | None = None
+    then: Literal["", "save", "ordered", "receive", "cancel"] = ""
+
+
+class SupplierOut(Out):
+    id: int
+    name: str
+    phone: str
+    comment: str
+
+
+class SupplierIn(In):
+    id: int | None = None
+    name: str
+    phone: str = ""
+    comment: str = ""
+
+
+# ---------------------------------------------------------------- гроші, звіти, журнал
+class PaymentTotal(Out):
+    count: int
+    sum: float
+
+
+class PaymentsOut(Out):
+    items: list[PaymentOut]
+    totals: dict[str, PaymentTotal]
+
+
+class ReceiveIn(In):
+    ids: list[int]
+    reference: str = ""
+
+
+class DoneOut(Out):
+    done: int
+
+
+class RegistryRow(Out):
+    ttn: str
+    order_id: int | None = None
+    expected: float | None = None
+    amount: float | None = None
+
+
+class RegistryOut(Out):
+    matched: list[RegistryRow]
+    mismatch: list[RegistryRow]
+    not_found: list[RegistryRow]
+    already: list[RegistryRow]
+
+
+class Bucket(Out):
+    leads: int
+    unique: int
+    approved: int
+    shipped: int
+    delivered: int
+    refused: int
+    revenue: float
+    cost: float
+    profit: float
+    avg_check: float
+    approve_rate: float
+    buyout_rate: float
+
+
+class GroupRow(Bucket):
+    name: str
+
+
+class DayRow(Out):
+    day: str
+    leads: int
+    approved: int
+
+
+class ProductReportRow(Out):
+    name: str
+    qty: int
+    orders: int
+    revenue: float
+    cost: float
+    upsell_qty: int
+
+
+class ReportOut(Out):
+    date_from: str
+    date_to: str
+    dim: str
+    dims: dict[str, str]
+    total: Bucket
+    groups: list[GroupRow]
+    days: list[DayRow]
+    products: list[ProductReportRow]
+
+
+class AuditRow(Out):
+    id: int
+    user: str
+    entity: str
+    entity_id: int | None
+    action: str
+    action_name: str
+    details: str
+    created_at: str | None
+
+
+class AuditOut(Out):
+    items: list[AuditRow]
+    next: int | None
+    actions: dict[str, str]
+
+
+# ---------------------------------------------------------------- налаштування
+class SmsTemplateOut(Out):
+    id: int
+    status_id: int
+    channel: str
+    text: str
+    active: bool
+
+
+class SmsLogOut(Out):
+    id: int
+    phone: str
+    text: str
+    status: str
+    error: str
+    channel: str
+    created_at: str | None
+
+
+class SettingsOut(Out):
+    values: dict[str, str]
+    secret_keys: list[str]
+    webhook_url: str
+    statuses: list[StatusOut]
+    users: list[UserOut]
+    sms_templates: list[SmsTemplateOut]
+    placeholders: dict[str, str]
+    sms_log: list[SmsLogOut]
+    stock_actions: dict[str, str]
+    roles: dict[str, str]
+    message: str | None = None
+
+
+class StatusIn(In):
+    id: int | None = None
+    name: str | None = None
+    color: str | None = None
+    sort: int | None = None
+    stock_action: str | None = None
+    approved: bool = False
+    final: bool = False
+    active: bool = True
+    # поля відповіді, які інтерфейс може надіслати назад, ігноруються
+    code: str | None = None
+    system: bool | None = None
+
+
+class SmsTemplateIn(In):
+    id: int | None = None
+    status_id: int | None = None
+    channel: Literal["sms", "viber", "hybrid"] = "sms"
+    text: str = ""
+    active: bool = True
+    delete: bool = False
+
+
+class SmsTestIn(In):
+    phone: str
+    channel: Literal["sms", "viber"] = "sms"
+
+
+class UserIn(In):
+    username: str | None = None
+    full_name: str | None = None
+    role: Literal["admin", "manager", "warehouse"] | None = None
+    password: str | None = None
+    is_active: bool | None = None
+
+
+# ---------------------------------------------------------------- стан системи
+class CheckOut(Out):
+    ok: bool
+    detail: str = ""
+
+
+class SystemOut(Out):
+    version: str
+    checks: dict[str, CheckOut]
+    queue_length: int | None
+    worker_seen_at: str | None
+    tracking: dict | None
+    sms: dict[str, int]
+    orders_today: int
+    last_order_at: str | None
+    alerts: list[str]
+    sentry: bool
+    metrics_url: str | None
