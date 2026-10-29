@@ -370,7 +370,8 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .pm-up input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
 /* меню «Друк» у картці замовлення */
-.print-menu { position: relative; }
+.print-menu { position: relative; display: flex; }
+.print-pop.left { right: auto; left: 0; }
 .print-pop { position: absolute; z-index: 40; right: 0; top: calc(100% + 4px); width: min(290px, calc(100vw - 32px)); padding: 4px; background: #fff; border: 1px solid var(--line);
   border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; }
 .print-pop button { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; font: inherit; text-align: left; background: none; border: 0; border-radius: 6px; cursor: pointer; color: var(--ink); }
