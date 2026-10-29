@@ -108,6 +108,9 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
     if payload.get("delivery") in ("novaposhta", "ukrposhta", "meest", "pickup", "courier"):
         data["delivery_method"] = payload["delivery"]
     data["ip"] = _client_ip(request)
+    from ..models import BlockedIp
+    if data["ip"] and db.query(BlockedIp).filter(BlockedIp.ip == data["ip"]).first():
+        return JSONResponse({"ok": False, "error": "Заявки з цієї адреси не приймаються"}, 403, headers=CORS)
     # джерело: за назвою (source=Соціальні мережі) або «Сайти» для заявок з лендингу
     from ..models import OrderSource, PaymentMethod
     src_name = str(payload.get("source") or "Сайти").strip()

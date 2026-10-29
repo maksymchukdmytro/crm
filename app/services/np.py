@@ -63,12 +63,19 @@ def accounts(db: Session, active_only: bool = True) -> list[NpAccount]:
 
 
 def pick_account(db: Session, order: Order | None = None) -> NpAccount | None:
-    """Ключ для замовлення: вибраний у замовленні → закріплений за відділом → основний → перший."""
+    """Ключ для замовлення: вибраний у замовленні → юрособи замовлення → закріплений за відділом → основний."""
     if order is not None and order.np_account_id:
         acc = db.get(NpAccount, order.np_account_id)
         if acc is not None:
             return acc
     accs = accounts(db)
+    if order is not None:
+        from .checkbox import order_entity
+        entity = order_entity(db, order)
+        if entity is not None:
+            for a in accs:
+                if a.legal_entity_id == entity.id:
+                    return a
     if order is not None and order.office_id:
         for a in accs:
             if a.office_id == order.office_id:

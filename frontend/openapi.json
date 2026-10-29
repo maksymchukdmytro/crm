@@ -32,6 +32,17 @@
        }
       ],
       "title": "Qty"
+     },
+     "variant_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Variant Id"
      }
     },
     "required": [
@@ -39,6 +50,149 @@
      "qty"
     ],
     "title": "AdjustIn",
+    "type": "object"
+   },
+   "AttributeGroupIn": {
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "name": {
+      "maxLength": 120,
+      "title": "Name",
+      "type": "string"
+     },
+     "sort": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sort"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "AttributeGroupIn",
+    "type": "object"
+   },
+   "AttributeGroupOut": {
+    "properties": {
+     "attributes": {
+      "items": {
+       "$ref": "#/components/schemas/AttributeOut"
+      },
+      "title": "Attributes",
+      "type": "array"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "sort": {
+      "title": "Sort",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "sort",
+     "attributes"
+    ],
+    "title": "AttributeGroupOut",
+    "type": "object"
+   },
+   "AttributeIn": {
+    "additionalProperties": false,
+    "properties": {
+     "active": {
+      "default": true,
+      "title": "Active",
+      "type": "boolean"
+     },
+     "group_id": {
+      "title": "Group Id",
+      "type": "integer"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "name": {
+      "maxLength": 120,
+      "title": "Name",
+      "type": "string"
+     },
+     "sort": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sort"
+     }
+    },
+    "required": [
+     "group_id",
+     "name"
+    ],
+    "title": "AttributeIn",
+    "type": "object"
+   },
+   "AttributeOut": {
+    "properties": {
+     "active": {
+      "title": "Active",
+      "type": "boolean"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "sort": {
+      "title": "Sort",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "sort",
+     "active"
+    ],
+    "title": "AttributeOut",
     "type": "object"
    },
    "AuditOut": {
@@ -139,6 +293,68 @@
     "title": "AuditRow",
     "type": "object"
    },
+   "BlockedIpIn": {
+    "additionalProperties": false,
+    "properties": {
+     "comment": {
+      "anyOf": [
+       {
+        "maxLength": 255,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Comment"
+     },
+     "ip": {
+      "maxLength": 64,
+      "title": "Ip",
+      "type": "string"
+     }
+    },
+    "required": [
+     "ip"
+    ],
+    "title": "BlockedIpIn",
+    "type": "object"
+   },
+   "BlockedIpOut": {
+    "properties": {
+     "comment": {
+      "title": "Comment",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "ip": {
+      "title": "Ip",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "ip",
+     "comment",
+     "created_at"
+    ],
+    "title": "BlockedIpOut",
+    "type": "object"
+   },
    "Body_payments_import_api_payments_import_post": {
     "properties": {
      "file": {
@@ -151,6 +367,23 @@
      "file"
     ],
     "title": "Body_payments_import_api_payments_import_post",
+    "type": "object"
+   },
+   "Body_photo_upload_api_products__pid__photos_post": {
+    "properties": {
+     "files": {
+      "items": {
+       "contentMediaType": "application/octet-stream",
+       "type": "string"
+      },
+      "title": "Files",
+      "type": "array"
+     }
+    },
+    "required": [
+     "files"
+    ],
+    "title": "Body_photo_upload_api_products__pid__photos_post",
     "type": "object"
    },
    "Bucket": {
@@ -229,7 +462,8 @@
        "status",
        "assign",
        "ttn",
-       "track"
+       "track",
+       "fiscalize"
       ],
       "title": "Action",
       "type": "string"
@@ -381,6 +615,17 @@
       "title": "Is Active",
       "type": "boolean"
      },
+     "legal_entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Legal Entity Id"
+     },
      "license_key": {
       "anyOf": [
        {
@@ -465,6 +710,17 @@
       "title": "Last Error",
       "type": "string"
      },
+     "legal_entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Legal Entity Id"
+     },
      "license_key": {
       "description": "Маскований",
       "title": "License Key",
@@ -506,6 +762,134 @@
      "last_error"
     ],
     "title": "CashierOut",
+    "type": "object"
+   },
+   "CategoryIn": {
+    "additionalProperties": false,
+    "properties": {
+     "active": {
+      "default": true,
+      "title": "Active",
+      "type": "boolean"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "name": {
+      "maxLength": 160,
+      "title": "Name",
+      "type": "string"
+     },
+     "parent_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Parent Id"
+     },
+     "sort": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sort"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "CategoryIn",
+    "type": "object"
+   },
+   "CategoryOut": {
+    "properties": {
+     "active": {
+      "title": "Active",
+      "type": "boolean"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "parent_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Parent Id"
+     },
+     "products": {
+      "title": "Products",
+      "type": "integer"
+     },
+     "sort": {
+      "title": "Sort",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "parent_id",
+     "sort",
+     "active",
+     "products"
+    ],
+    "title": "CategoryOut",
+    "type": "object"
+   },
+   "CategoryShort": {
+    "properties": {
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "parent_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Parent Id"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "parent_id"
+    ],
+    "title": "CategoryShort",
     "type": "object"
    },
    "CheckOut": {
@@ -561,6 +945,518 @@
     "title": "CommentOut",
     "type": "object"
    },
+   "CustomerDetailOut": {
+    "properties": {
+     "blacklist_reason": {
+      "title": "Blacklist Reason",
+      "type": "string"
+     },
+     "blacklisted": {
+      "title": "Blacklisted",
+      "type": "boolean"
+     },
+     "buyout_rate": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Buyout Rate"
+     },
+     "cancelled": {
+      "title": "Cancelled",
+      "type": "integer"
+     },
+     "comment": {
+      "title": "Comment",
+      "type": "string"
+     },
+     "country": {
+      "title": "Country",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "delivered": {
+      "title": "Delivered",
+      "type": "integer"
+     },
+     "email": {
+      "title": "Email",
+      "type": "string"
+     },
+     "first_order_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "First Order At"
+     },
+     "group": {
+      "title": "Group",
+      "type": "string"
+     },
+     "group_color": {
+      "title": "Group Color",
+      "type": "string"
+     },
+     "group_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Group Id"
+     },
+     "history": {
+      "items": {
+       "$ref": "#/components/schemas/OrderRowOut"
+      },
+      "title": "History",
+      "type": "array"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "last_order_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Order At"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "orders": {
+      "title": "Orders",
+      "type": "integer"
+     },
+     "phone": {
+      "title": "Phone",
+      "type": "string"
+     },
+     "refused": {
+      "title": "Refused",
+      "type": "integer"
+     },
+     "sum_delivered": {
+      "title": "Sum Delivered",
+      "type": "number"
+     },
+     "sum_total": {
+      "title": "Sum Total",
+      "type": "number"
+     }
+    },
+    "required": [
+     "id",
+     "phone",
+     "name",
+     "email",
+     "country",
+     "group_id",
+     "group",
+     "group_color",
+     "comment",
+     "blacklisted",
+     "blacklist_reason",
+     "created_at",
+     "orders",
+     "delivered",
+     "refused",
+     "cancelled",
+     "sum_delivered",
+     "sum_total",
+     "buyout_rate",
+     "first_order_at",
+     "last_order_at",
+     "history"
+    ],
+    "title": "CustomerDetailOut",
+    "type": "object"
+   },
+   "CustomerGroupIn": {
+    "additionalProperties": false,
+    "properties": {
+     "color": {
+      "anyOf": [
+       {
+        "maxLength": 9,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Color"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "name": {
+      "maxLength": 80,
+      "title": "Name",
+      "type": "string"
+     },
+     "sort": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sort"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "CustomerGroupIn",
+    "type": "object"
+   },
+   "CustomerGroupOut": {
+    "properties": {
+     "color": {
+      "title": "Color",
+      "type": "string"
+     },
+     "customers": {
+      "title": "Customers",
+      "type": "integer"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "sort": {
+      "title": "Sort",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "color",
+     "sort",
+     "customers"
+    ],
+    "title": "CustomerGroupOut",
+    "type": "object"
+   },
+   "CustomerIn": {
+    "additionalProperties": false,
+    "properties": {
+     "blacklist_reason": {
+      "anyOf": [
+       {
+        "maxLength": 255,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Blacklist Reason"
+     },
+     "blacklisted": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Blacklisted"
+     },
+     "comment": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Comment"
+     },
+     "country": {
+      "anyOf": [
+       {
+        "maxLength": 2,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Country"
+     },
+     "email": {
+      "anyOf": [
+       {
+        "maxLength": 255,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Email"
+     },
+     "group_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Group Id"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "maxLength": 255,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "phone": {
+      "anyOf": [
+       {
+        "maxLength": 32,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Phone"
+     }
+    },
+    "title": "CustomerIn",
+    "type": "object"
+   },
+   "CustomerListOut": {
+    "properties": {
+     "offset": {
+      "title": "Offset",
+      "type": "integer"
+     },
+     "rows": {
+      "items": {
+       "$ref": "#/components/schemas/CustomerOut"
+      },
+      "title": "Rows",
+      "type": "array"
+     },
+     "total": {
+      "title": "Total",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "total",
+     "offset",
+     "rows"
+    ],
+    "title": "CustomerListOut",
+    "type": "object"
+   },
+   "CustomerOut": {
+    "properties": {
+     "blacklist_reason": {
+      "title": "Blacklist Reason",
+      "type": "string"
+     },
+     "blacklisted": {
+      "title": "Blacklisted",
+      "type": "boolean"
+     },
+     "buyout_rate": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Buyout Rate"
+     },
+     "cancelled": {
+      "title": "Cancelled",
+      "type": "integer"
+     },
+     "comment": {
+      "title": "Comment",
+      "type": "string"
+     },
+     "country": {
+      "title": "Country",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "delivered": {
+      "title": "Delivered",
+      "type": "integer"
+     },
+     "email": {
+      "title": "Email",
+      "type": "string"
+     },
+     "first_order_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "First Order At"
+     },
+     "group": {
+      "title": "Group",
+      "type": "string"
+     },
+     "group_color": {
+      "title": "Group Color",
+      "type": "string"
+     },
+     "group_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Group Id"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "last_order_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Order At"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "orders": {
+      "title": "Orders",
+      "type": "integer"
+     },
+     "phone": {
+      "title": "Phone",
+      "type": "string"
+     },
+     "refused": {
+      "title": "Refused",
+      "type": "integer"
+     },
+     "sum_delivered": {
+      "title": "Sum Delivered",
+      "type": "number"
+     },
+     "sum_total": {
+      "title": "Sum Total",
+      "type": "number"
+     }
+    },
+    "required": [
+     "id",
+     "phone",
+     "name",
+     "email",
+     "country",
+     "group_id",
+     "group",
+     "group_color",
+     "comment",
+     "blacklisted",
+     "blacklist_reason",
+     "created_at",
+     "orders",
+     "delivered",
+     "refused",
+     "cancelled",
+     "sum_delivered",
+     "sum_total",
+     "buyout_rate",
+     "first_order_at",
+     "last_order_at"
+    ],
+    "title": "CustomerOut",
+    "type": "object"
+   },
    "DayRow": {
     "properties": {
      "approved": {
@@ -595,6 +1491,34 @@
      "done"
     ],
     "title": "DoneOut",
+    "type": "object"
+   },
+   "EntityShort": {
+    "properties": {
+     "has_cashier": {
+      "title": "Has Cashier",
+      "type": "boolean"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "is_default": {
+      "title": "Is Default",
+      "type": "boolean"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "is_default",
+     "has_cashier"
+    ],
+    "title": "EntityShort",
     "type": "object"
    },
    "GroupRow": {
@@ -670,6 +1594,29 @@
     "title": "GroupRow",
     "type": "object"
    },
+   "GroupShort": {
+    "properties": {
+     "color": {
+      "title": "Color",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "color"
+    ],
+    "title": "GroupShort",
+    "type": "object"
+   },
    "HTTPValidationError": {
     "properties": {
      "detail": {
@@ -723,6 +1670,113 @@
     "title": "HistoryOut",
     "type": "object"
    },
+   "LegalEntityIn": {
+    "additionalProperties": false,
+    "properties": {
+     "code": {
+      "default": "",
+      "maxLength": 20,
+      "title": "Code",
+      "type": "string"
+     },
+     "delete": {
+      "default": false,
+      "title": "Delete",
+      "type": "boolean"
+     },
+     "iban": {
+      "default": "",
+      "maxLength": 34,
+      "title": "Iban",
+      "type": "string"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "is_active": {
+      "default": true,
+      "title": "Is Active",
+      "type": "boolean"
+     },
+     "is_default": {
+      "default": false,
+      "title": "Is Default",
+      "type": "boolean"
+     },
+     "name": {
+      "maxLength": 255,
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "LegalEntityIn",
+    "type": "object"
+   },
+   "LegalEntityOut": {
+    "properties": {
+     "cashier": {
+      "default": "",
+      "description": "Назва каси Checkbox цієї юрособи",
+      "title": "Cashier",
+      "type": "string"
+     },
+     "code": {
+      "title": "Code",
+      "type": "string"
+     },
+     "iban": {
+      "title": "Iban",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "is_active": {
+      "title": "Is Active",
+      "type": "boolean"
+     },
+     "is_default": {
+      "title": "Is Default",
+      "type": "boolean"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "orders": {
+      "default": 0,
+      "title": "Orders",
+      "type": "integer"
+     },
+     "sort": {
+      "title": "Sort",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "code",
+     "iban",
+     "is_default",
+     "is_active",
+     "sort"
+    ],
+    "title": "LegalEntityOut",
+    "type": "object"
+   },
    "LoginIn": {
     "additionalProperties": false,
     "properties": {
@@ -752,6 +1806,65 @@
      "user"
     ],
     "title": "LoginOut",
+    "type": "object"
+   },
+   "ManufacturerIn": {
+    "additionalProperties": false,
+    "properties": {
+     "active": {
+      "default": true,
+      "title": "Active",
+      "type": "boolean"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "name": {
+      "maxLength": 160,
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "ManufacturerIn",
+    "type": "object"
+   },
+   "ManufacturerOut": {
+    "properties": {
+     "active": {
+      "title": "Active",
+      "type": "boolean"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "products": {
+      "title": "Products",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "active",
+     "products"
+    ],
+    "title": "ManufacturerOut",
     "type": "object"
    },
    "MeIn": {
@@ -803,12 +1916,24 @@
       "title": "Carriers",
       "type": "object"
      },
+     "categories": {
+      "items": {
+       "$ref": "#/components/schemas/CategoryShort"
+      },
+      "title": "Categories",
+      "type": "array"
+     },
      "checkbox_payments": {
       "additionalProperties": {
        "type": "string"
       },
       "title": "Checkbox Payments",
       "type": "object"
+     },
+     "checkbox_ready": {
+      "default": false,
+      "title": "Checkbox Ready",
+      "type": "boolean"
      },
      "company": {
       "title": "Company",
@@ -820,6 +1945,13 @@
       },
       "title": "Countries",
       "type": "object"
+     },
+     "customer_groups": {
+      "items": {
+       "$ref": "#/components/schemas/GroupShort"
+      },
+      "title": "Customer Groups",
+      "type": "array"
      },
      "delivery_methods": {
       "additionalProperties": {
@@ -843,6 +1975,13 @@
       "title": "Extra Fields",
       "type": "array"
      },
+     "legal_entities": {
+      "items": {
+       "$ref": "#/components/schemas/EntityShort"
+      },
+      "title": "Legal Entities",
+      "type": "array"
+     },
      "managers": {
       "items": {
        "$ref": "#/components/schemas/UserOut"
@@ -853,6 +1992,13 @@
      "managers_see_own_only": {
       "title": "Managers See Own Only",
       "type": "boolean"
+     },
+     "manufacturers": {
+      "items": {
+       "$ref": "#/components/schemas/NamedShort"
+      },
+      "title": "Manufacturers",
+      "type": "array"
      },
      "marks": {
       "items": {
@@ -1089,6 +2235,24 @@
     "title": "MoveOut",
     "type": "object"
    },
+   "NamedShort": {
+    "properties": {
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name"
+    ],
+    "title": "NamedShort",
+    "type": "object"
+   },
    "NpAccountIn": {
     "additionalProperties": false,
     "properties": {
@@ -1221,6 +2385,17 @@
       "default": false,
       "title": "Is Default",
       "type": "boolean"
+     },
+     "legal_entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Legal Entity Id"
      },
      "name": {
       "default": "",
@@ -1366,6 +2541,17 @@
      "is_default": {
       "title": "Is Default",
       "type": "boolean"
+     },
+     "legal_entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Legal Entity Id"
      },
      "name": {
       "title": "Name",
@@ -1557,6 +2743,81 @@
      }
     },
     "title": "Ok",
+    "type": "object"
+   },
+   "OrderCustomer": {
+    "properties": {
+     "blacklist_reason": {
+      "title": "Blacklist Reason",
+      "type": "string"
+     },
+     "blacklisted": {
+      "title": "Blacklisted",
+      "type": "boolean"
+     },
+     "buyout_rate": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Buyout Rate"
+     },
+     "comment": {
+      "title": "Comment",
+      "type": "string"
+     },
+     "delivered": {
+      "title": "Delivered",
+      "type": "integer"
+     },
+     "group": {
+      "title": "Group",
+      "type": "string"
+     },
+     "group_color": {
+      "title": "Group Color",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "orders": {
+      "title": "Orders",
+      "type": "integer"
+     },
+     "refused": {
+      "title": "Refused",
+      "type": "integer"
+     },
+     "sum_delivered": {
+      "title": "Sum Delivered",
+      "type": "number"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "group",
+     "group_color",
+     "blacklisted",
+     "blacklist_reason",
+     "comment",
+     "orders",
+     "delivered",
+     "refused",
+     "buyout_rate",
+     "sum_delivered"
+    ],
+    "title": "OrderCustomer",
     "type": "object"
    },
    "OrderIn": {
@@ -1778,6 +3039,18 @@
        }
       ],
       "title": "Last Name"
+     },
+     "legal_entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Юридична особа: за нею обирається каса Checkbox",
+      "title": "Legal Entity Id"
      },
      "manager_id": {
       "anyOf": [
@@ -2134,6 +3407,18 @@
       ],
       "description": "Допродаж до якого товару (id)",
       "title": "Upsell For"
+     },
+     "variant_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Варіант товару (колір, розмір…)",
+      "title": "Variant Id"
      }
     },
     "title": "OrderItemIn",
@@ -2179,6 +3464,17 @@
       "title": "Name",
       "type": "string"
      },
+     "photo": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Photo"
+     },
      "price": {
       "title": "Price",
       "type": "number"
@@ -2221,6 +3517,22 @@
      "upsell_for_name": {
       "default": "",
       "title": "Upsell For Name",
+      "type": "string"
+     },
+     "variant_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Variant Id"
+     },
+     "variant_name": {
+      "default": "",
+      "title": "Variant Name",
       "type": "string"
      }
     },
@@ -2352,6 +3664,16 @@
       ],
       "title": "Created At"
      },
+     "customer": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/OrderCustomer"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
      "customer_name": {
       "title": "Customer Name",
       "type": "string"
@@ -2474,6 +3796,17 @@
       "default": "",
       "title": "Last Name",
       "type": "string"
+     },
+     "legal_entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Legal Entity Id"
      },
      "manager": {
       "anyOf": [
@@ -2789,6 +4122,11 @@
    },
    "OrderRowOut": {
     "properties": {
+     "blacklisted": {
+      "default": false,
+      "title": "Blacklisted",
+      "type": "boolean"
+     },
      "city_name": {
       "title": "City Name",
       "type": "string"
@@ -2812,6 +4150,17 @@
        }
       ],
       "title": "Created At"
+     },
+     "customer_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Customer Id"
      },
      "customer_name": {
       "title": "Customer Name",
@@ -2860,6 +4209,17 @@
       },
       "title": "Items",
       "type": "array"
+     },
+     "legal_entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Legal Entity Id"
      },
      "manager_id": {
       "anyOf": [
@@ -3340,6 +4700,43 @@
     "title": "PaymentsOut",
     "type": "object"
    },
+   "PhotoOut": {
+    "properties": {
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "url": {
+      "title": "Url",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "url"
+    ],
+    "title": "PhotoOut",
+    "type": "object"
+   },
+   "ProductDeleteOut": {
+    "properties": {
+     "deleted": {
+      "description": "false — товар лише перенесено в архів (уже був у замовленнях)",
+      "title": "Deleted",
+      "type": "boolean"
+     },
+     "message": {
+      "title": "Message",
+      "type": "string"
+     }
+    },
+    "required": [
+     "deleted",
+     "message"
+    ],
+    "title": "ProductDeleteOut",
+    "type": "object"
+   },
    "ProductDetailOut": {
     "properties": {
      "active": {
@@ -3350,9 +4747,38 @@
       "title": "Available",
       "type": "integer"
      },
+     "category_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category Id"
+     },
      "cost": {
       "title": "Cost",
       "type": "number"
+     },
+     "countries": {
+      "description": "Країни продажу; порожньо — усі",
+      "items": {
+       "type": "string"
+      },
+      "title": "Countries",
+      "type": "array"
+     },
+     "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+     },
+     "discount_percent": {
+      "default": 0,
+      "title": "Discount Percent",
+      "type": "integer"
      },
      "height": {
       "default": 0,
@@ -3368,9 +4794,25 @@
       "title": "Length",
       "type": "number"
      },
+     "manufacturer_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Manufacturer Id"
+     },
      "min_stock": {
       "title": "Min Stock",
       "type": "integer"
+     },
+     "model": {
+      "default": "",
+      "title": "Model",
+      "type": "string"
      },
      "moves": {
       "items": {
@@ -3383,6 +4825,25 @@
       "title": "Name",
       "type": "string"
      },
+     "photo": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Головне фото: шлях від кореня CRM (/media/…)",
+      "title": "Photo"
+     },
+     "photos": {
+      "items": {
+       "$ref": "#/components/schemas/PhotoOut"
+      },
+      "title": "Photos",
+      "type": "array"
+     },
      "price": {
       "title": "Price",
       "type": "number"
@@ -3390,6 +4851,12 @@
      "reserved": {
       "title": "Reserved",
       "type": "integer"
+     },
+     "sale_price": {
+      "default": 0,
+      "description": "Ціна в замовленні: акційна або звичайна",
+      "title": "Sale Price",
+      "type": "number"
      },
      "ship_description": {
       "default": "",
@@ -3403,6 +4870,12 @@
      "sold": {
       "title": "Sold",
       "type": "integer"
+     },
+     "spec_price": {
+      "default": 0,
+      "description": "Акційна ціна; 0 — без акції",
+      "title": "Spec Price",
+      "type": "number"
      },
      "stock": {
       "title": "Stock",
@@ -3420,8 +4893,20 @@
       "title": "Upsell For",
       "type": "array"
      },
+     "variants": {
+      "items": {
+       "$ref": "#/components/schemas/VariantOut"
+      },
+      "title": "Variants",
+      "type": "array"
+     },
      "weight": {
       "title": "Weight",
+      "type": "number"
+     },
+     "wholesale_price": {
+      "default": 0,
+      "title": "Wholesale Price",
       "type": "number"
      },
      "width": {
@@ -3463,6 +4948,17 @@
       ],
       "title": "Active"
      },
+     "category_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category Id"
+     },
      "cost": {
       "anyOf": [
        {
@@ -3479,6 +4975,31 @@
        }
       ],
       "title": "Cost"
+     },
+     "countries": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Countries"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
      },
      "height": {
       "anyOf": [
@@ -3521,6 +5042,17 @@
       ],
       "title": "Length"
      },
+     "manufacturer_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Manufacturer Id"
+     },
      "min_stock": {
       "anyOf": [
        {
@@ -3534,6 +5066,18 @@
        }
       ],
       "title": "Min Stock"
+     },
+     "model": {
+      "anyOf": [
+       {
+        "maxLength": 120,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Model"
      },
      "name": {
       "anyOf": [
@@ -3586,6 +5130,23 @@
       ],
       "title": "Sku"
      },
+     "spec_price": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Spec Price"
+     },
      "upsell": {
       "anyOf": [
        {
@@ -3611,6 +5172,21 @@
       ],
       "title": "Upsell For"
      },
+     "variants": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/VariantIn"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Повний список варіантів; відсутні буде видалено (або вимкнено, якщо вже продавались)",
+      "title": "Variants"
+     },
      "weight": {
       "anyOf": [
        {
@@ -3627,6 +5203,23 @@
        }
       ],
       "title": "Weight"
+     },
+     "wholesale_price": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Wholesale Price"
      },
      "width": {
       "anyOf": [
@@ -3655,9 +5248,33 @@
       "title": "Available",
       "type": "integer"
      },
+     "category_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category Id"
+     },
      "cost": {
       "title": "Cost",
       "type": "number"
+     },
+     "countries": {
+      "description": "Країни продажу; порожньо — усі",
+      "items": {
+       "type": "string"
+      },
+      "title": "Countries",
+      "type": "array"
+     },
+     "discount_percent": {
+      "default": 0,
+      "title": "Discount Percent",
+      "type": "integer"
      },
      "height": {
       "default": 0,
@@ -3673,13 +5290,41 @@
       "title": "Length",
       "type": "number"
      },
+     "manufacturer_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Manufacturer Id"
+     },
      "min_stock": {
       "title": "Min Stock",
       "type": "integer"
      },
+     "model": {
+      "default": "",
+      "title": "Model",
+      "type": "string"
+     },
      "name": {
       "title": "Name",
       "type": "string"
+     },
+     "photo": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Головне фото: шлях від кореня CRM (/media/…)",
+      "title": "Photo"
      },
      "price": {
       "title": "Price",
@@ -3689,6 +5334,12 @@
       "title": "Reserved",
       "type": "integer"
      },
+     "sale_price": {
+      "default": 0,
+      "description": "Ціна в замовленні: акційна або звичайна",
+      "title": "Sale Price",
+      "type": "number"
+     },
      "ship_description": {
       "default": "",
       "title": "Ship Description",
@@ -3697,6 +5348,12 @@
      "sku": {
       "title": "Sku",
       "type": "string"
+     },
+     "spec_price": {
+      "default": 0,
+      "description": "Акційна ціна; 0 — без акції",
+      "title": "Spec Price",
+      "type": "number"
      },
      "stock": {
       "title": "Stock",
@@ -3714,8 +5371,20 @@
       "title": "Upsell For",
       "type": "array"
      },
+     "variants": {
+      "items": {
+       "$ref": "#/components/schemas/VariantOut"
+      },
+      "title": "Variants",
+      "type": "array"
+     },
      "weight": {
       "title": "Weight",
+      "type": "number"
+     },
+     "wholesale_price": {
+      "default": 0,
+      "title": "Wholesale Price",
       "type": "number"
      },
      "width": {
@@ -4022,6 +5691,18 @@
      "name": {
       "title": "Name",
       "type": "string"
+     },
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Лише для джерел: відділ, до якого належить джерело",
+      "title": "Office Id"
      },
      "sort": {
       "title": "Sort",
@@ -4367,6 +6048,13 @@
       },
       "title": "Checkbox Payments",
       "type": "object"
+     },
+     "legal_entities": {
+      "items": {
+       "$ref": "#/components/schemas/LegalEntityOut"
+      },
+      "title": "Legal Entities",
+      "type": "array"
      },
      "marks": {
       "items": {
@@ -5133,6 +6821,18 @@
       "title": "Name",
       "type": "string"
      },
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Лише для джерел: відділ",
+      "title": "Office Id"
+     },
      "sort": {
       "default": 100,
       "title": "Sort",
@@ -5174,6 +6874,18 @@
      "name": {
       "title": "Name",
       "type": "string"
+     },
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Лише для джерел: відділ, до якого належить джерело",
+      "title": "Office Id"
      },
      "sort": {
       "title": "Sort",
@@ -6314,6 +8026,21 @@
       ],
       "title": "Sort"
      },
+     "stage": {
+      "anyOf": [
+       {
+        "enum": [
+         "lead",
+         "order"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Stage"
+     },
      "stock_action": {
       "anyOf": [
        {
@@ -6373,6 +8100,16 @@
      "sort": {
       "title": "Sort",
       "type": "integer"
+     },
+     "stage": {
+      "default": "order",
+      "description": "Розділ: «Ліди» чи «Замовлення»",
+      "enum": [
+       "lead",
+       "order"
+      ],
+      "title": "Stage",
+      "type": "string"
      },
      "stock_action": {
       "title": "Stock Action",
@@ -6683,6 +8420,16 @@
       ],
       "title": "Created At"
      },
+     "customer": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/OrderCustomer"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
      "customer_name": {
       "title": "Customer Name",
       "type": "string"
@@ -6805,6 +8552,17 @@
       "default": "",
       "title": "Last Name",
       "type": "string"
+     },
+     "legal_entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Legal Entity Id"
      },
      "manager": {
       "anyOf": [
@@ -7595,6 +9353,135 @@
     "title": "ValidationError",
     "type": "object"
    },
+   "VariantIn": {
+    "additionalProperties": false,
+    "properties": {
+     "active": {
+      "default": true,
+      "title": "Active",
+      "type": "boolean"
+     },
+     "attribute_ids": {
+      "items": {
+       "type": "integer"
+      },
+      "title": "Attribute Ids",
+      "type": "array"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "initial_stock": {
+      "default": 0,
+      "description": "Лише для нового варіанта",
+      "minimum": 0.0,
+      "title": "Initial Stock",
+      "type": "integer"
+     },
+     "name": {
+      "default": "",
+      "maxLength": 255,
+      "title": "Name",
+      "type": "string"
+     },
+     "price": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price"
+     },
+     "sku": {
+      "default": "",
+      "maxLength": 64,
+      "title": "Sku",
+      "type": "string"
+     }
+    },
+    "title": "VariantIn",
+    "type": "object"
+   },
+   "VariantOut": {
+    "properties": {
+     "active": {
+      "title": "Active",
+      "type": "boolean"
+     },
+     "attribute_ids": {
+      "items": {
+       "type": "integer"
+      },
+      "title": "Attribute Ids",
+      "type": "array"
+     },
+     "available": {
+      "title": "Available",
+      "type": "integer"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "price": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price"
+     },
+     "reserved": {
+      "title": "Reserved",
+      "type": "integer"
+     },
+     "sku": {
+      "title": "Sku",
+      "type": "string"
+     },
+     "stock": {
+      "title": "Stock",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "sku",
+     "attribute_ids",
+     "price",
+     "stock",
+     "reserved",
+     "available",
+     "active"
+    ],
+    "title": "VariantOut",
+    "type": "object"
+   },
    "WarehouseOut": {
     "properties": {
      "kinds": {
@@ -7819,6 +9706,911 @@
     "summary": "Logout",
     "tags": [
      "core"
+    ]
+   }
+  },
+  "/api/blocked-ips": {
+   "get": {
+    "operationId": "blocked_ips_api_blocked_ips_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/BlockedIpOut"
+         },
+         "title": "Response Blocked Ips Api Blocked Ips Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Blocked Ips",
+    "tags": [
+     "customers"
+    ]
+   },
+   "post": {
+    "operationId": "blocked_ip_add_api_blocked_ips_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BlockedIpIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/BlockedIpOut"
+         },
+         "title": "Response Blocked Ip Add Api Blocked Ips Post",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Blocked Ip Add",
+    "tags": [
+     "customers"
+    ]
+   }
+  },
+  "/api/blocked-ips/{bid}": {
+   "delete": {
+    "operationId": "blocked_ip_delete_api_blocked_ips__bid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "bid",
+      "required": true,
+      "schema": {
+       "title": "Bid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/BlockedIpOut"
+         },
+         "title": "Response Blocked Ip Delete Api Blocked Ips  Bid  Delete",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Blocked Ip Delete",
+    "tags": [
+     "customers"
+    ]
+   }
+  },
+  "/api/catalog/attribute-groups": {
+   "post": {
+    "operationId": "attribute_group_save_api_catalog_attribute_groups_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AttributeGroupIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/AttributeGroupOut"
+         },
+         "title": "Response Attribute Group Save Api Catalog Attribute Groups Post",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Attribute Group Save",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/catalog/attribute-groups/{gid}": {
+   "delete": {
+    "operationId": "attribute_group_delete_api_catalog_attribute_groups__gid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "gid",
+      "required": true,
+      "schema": {
+       "title": "Gid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/AttributeGroupOut"
+         },
+         "title": "Response Attribute Group Delete Api Catalog Attribute Groups  Gid  Delete",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Attribute Group Delete",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/catalog/attributes": {
+   "get": {
+    "operationId": "attributes_api_catalog_attributes_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/AttributeGroupOut"
+         },
+         "title": "Response Attributes Api Catalog Attributes Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Attributes",
+    "tags": [
+     "catalog"
+    ]
+   },
+   "post": {
+    "operationId": "attribute_save_api_catalog_attributes_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AttributeIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/AttributeGroupOut"
+         },
+         "title": "Response Attribute Save Api Catalog Attributes Post",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Attribute Save",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/catalog/attributes/{aid}": {
+   "delete": {
+    "operationId": "attribute_delete_api_catalog_attributes__aid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "aid",
+      "required": true,
+      "schema": {
+       "title": "Aid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/AttributeGroupOut"
+         },
+         "title": "Response Attribute Delete Api Catalog Attributes  Aid  Delete",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Attribute Delete",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/catalog/categories": {
+   "get": {
+    "operationId": "categories_api_catalog_categories_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/CategoryOut"
+         },
+         "title": "Response Categories Api Catalog Categories Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Categories",
+    "tags": [
+     "catalog"
+    ]
+   },
+   "post": {
+    "operationId": "category_save_api_catalog_categories_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CategoryIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/CategoryOut"
+         },
+         "title": "Response Category Save Api Catalog Categories Post",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Category Save",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/catalog/categories/{cid}": {
+   "delete": {
+    "operationId": "category_delete_api_catalog_categories__cid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "title": "Cid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/CategoryOut"
+         },
+         "title": "Response Category Delete Api Catalog Categories  Cid  Delete",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Category Delete",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/catalog/manufacturers": {
+   "get": {
+    "operationId": "manufacturers_api_catalog_manufacturers_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/ManufacturerOut"
+         },
+         "title": "Response Manufacturers Api Catalog Manufacturers Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Manufacturers",
+    "tags": [
+     "catalog"
+    ]
+   },
+   "post": {
+    "operationId": "manufacturer_save_api_catalog_manufacturers_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ManufacturerIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/ManufacturerOut"
+         },
+         "title": "Response Manufacturer Save Api Catalog Manufacturers Post",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Manufacturer Save",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/catalog/manufacturers/{mid}": {
+   "delete": {
+    "operationId": "manufacturer_delete_api_catalog_manufacturers__mid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "mid",
+      "required": true,
+      "schema": {
+       "title": "Mid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/ManufacturerOut"
+         },
+         "title": "Response Manufacturer Delete Api Catalog Manufacturers  Mid  Delete",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Manufacturer Delete",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/customer-groups": {
+   "get": {
+    "operationId": "groups_api_customer_groups_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/CustomerGroupOut"
+         },
+         "title": "Response Groups Api Customer Groups Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Groups",
+    "tags": [
+     "customers"
+    ]
+   },
+   "post": {
+    "operationId": "group_save_api_customer_groups_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CustomerGroupIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/CustomerGroupOut"
+         },
+         "title": "Response Group Save Api Customer Groups Post",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Group Save",
+    "tags": [
+     "customers"
+    ]
+   }
+  },
+  "/api/customer-groups/{gid}": {
+   "delete": {
+    "operationId": "group_delete_api_customer_groups__gid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "gid",
+      "required": true,
+      "schema": {
+       "title": "Gid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/CustomerGroupOut"
+         },
+         "title": "Response Group Delete Api Customer Groups  Gid  Delete",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Group Delete",
+    "tags": [
+     "customers"
+    ]
+   }
+  },
+  "/api/customers": {
+   "get": {
+    "operationId": "customers_api_customers_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Q",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "group",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Group",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "blacklist",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Blacklist",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "sort",
+      "required": false,
+      "schema": {
+       "default": "last",
+       "title": "Sort",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "desc",
+      "required": false,
+      "schema": {
+       "default": true,
+       "title": "Desc",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
+      "name": "min_orders",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Min Orders",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Offset",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 100,
+       "title": "Limit",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CustomerListOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Customers",
+    "tags": [
+     "customers"
+    ]
+   },
+   "post": {
+    "operationId": "customer_create_api_customers_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CustomerIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CustomerDetailOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Customer Create",
+    "tags": [
+     "customers"
+    ]
+   }
+  },
+  "/api/customers/{cid}": {
+   "get": {
+    "operationId": "customer_api_customers__cid__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "title": "Cid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CustomerDetailOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Customer",
+    "tags": [
+     "customers"
+    ]
+   },
+   "patch": {
+    "operationId": "customer_update_api_customers__cid__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "title": "Cid",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CustomerIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CustomerDetailOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Customer Update",
+    "tags": [
+     "customers"
     ]
    }
   },
@@ -8316,6 +11108,49 @@
      }
     },
     "summary": "Comment",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/fiscalize": {
+   "post": {
+    "description": "Ручна фіскалізація в один клік: чек продажу на суму замовлення через касу юрособи замовлення.",
+    "operationId": "fiscalize_api_orders__order_id__fiscalize_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Fiscalize",
     "tags": [
      "orders"
     ]
@@ -8872,6 +11707,36 @@
        "title": "Show",
        "type": "string"
       }
+     },
+     {
+      "in": "query",
+      "name": "category",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Category",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "manufacturer",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Manufacturer",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "stock_state",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Stock State",
+       "type": "string"
+      }
      }
     ],
     "responses": {
@@ -8946,6 +11811,47 @@
    }
   },
   "/api/products/{pid}": {
+   "delete": {
+    "description": "Видалити товар. Якщо він уже був у замовленнях, закупівлях чи русі складу — лише в архів (вимкнути),\nщоб історія й статистика лишились цілими.",
+    "operationId": "product_delete_api_products__pid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProductDeleteOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Product Delete",
+    "tags": [
+     "catalog"
+    ]
+   },
    "get": {
     "operationId": "product_api_products__pid__get",
     "parameters": [
@@ -9032,6 +11938,175 @@
      }
     },
     "summary": "Product Update",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/products/{pid}/photos": {
+   "post": {
+    "operationId": "photo_upload_api_products__pid__photos_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_photo_upload_api_products__pid__photos_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/PhotoOut"
+         },
+         "title": "Response Photo Upload Api Products  Pid  Photos Post",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Photo Upload",
+    "tags": [
+     "catalog"
+    ]
+   },
+   "put": {
+    "operationId": "photo_order_api_products__pid__photos_put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "items": {
+         "type": "integer"
+        },
+        "title": "Ids",
+        "type": "array"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/PhotoOut"
+         },
+         "title": "Response Photo Order Api Products  Pid  Photos Put",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Photo Order",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/products/{pid}/photos/{photo_id}": {
+   "delete": {
+    "operationId": "photo_delete_api_products__pid__photos__photo_id__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "path",
+      "name": "photo_id",
+      "required": true,
+      "schema": {
+       "title": "Photo Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/PhotoOut"
+         },
+         "title": "Response Photo Delete Api Products  Pid  Photos  Photo Id  Delete",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Photo Delete",
     "tags": [
      "catalog"
     ]
@@ -9449,6 +12524,52 @@
      }
     },
     "summary": "Directory Save",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/legal-entities": {
+   "put": {
+    "description": "Юридичні особи цілим списком. Рівно одна — за замовчуванням (для нових замовлень).",
+    "operationId": "legal_entities_save_api_settings_legal_entities_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "items": {
+         "$ref": "#/components/schemas/LegalEntityIn"
+        },
+        "title": "Body",
+        "type": "array"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Legal Entities Save",
     "tags": [
      "admin"
     ]
@@ -10275,6 +13396,16 @@
      },
      {
       "in": "query",
+      "name": "legal_entity",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Legal Entity",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
       "name": "country",
       "required": false,
       "schema": {
@@ -10624,6 +13755,16 @@
       "schema": {
        "default": "",
        "title": "Mark",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "legal_entity",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Legal Entity",
        "type": "string"
       }
      },
@@ -11014,6 +14155,16 @@
      },
      {
       "in": "query",
+      "name": "legal_entity",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Legal Entity",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
       "name": "country",
       "required": false,
       "schema": {
@@ -11388,6 +14539,16 @@
      },
      {
       "in": "query",
+      "name": "legal_entity",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Legal Entity",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
       "name": "country",
       "required": false,
       "schema": {
@@ -11737,6 +14898,16 @@
       "schema": {
        "default": "",
        "title": "Mark",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "legal_entity",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Legal Entity",
        "type": "string"
       }
      },

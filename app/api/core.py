@@ -6,7 +6,7 @@ import json
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, StreamingResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from ..carriers import CARRIERS
 from ..config import config
@@ -116,7 +116,11 @@ def meta(db: Session = Depends(get_db), user: User = Depends(api_user)):
     statuses = db.query(Status).order_by(Status.sort, Status.id).all()
     managers = (db.query(User).filter(User.is_active.is_(True), User.role.in_(["admin", "manager"]))
                 .order_by(User.full_name, User.username).all())
-    products = db.query(Product).filter(Product.is_active.is_(True)).order_by(Product.is_upsell, Product.name).all()
+    products = (db.query(Product).options(selectinload(Product.variants), selectinload(Product.photos))
+                .filter(Product.is_active.is_(True)).order_by(Product.is_upsell, Product.name).all())
+    from ..models import Category, CheckboxCashier, CustomerGroup, LegalEntity, Manufacturer
+    with_cashier = {c for (c,) in db.query(CheckboxCashier.legal_entity_id).filter(
+        CheckboxCashier.is_active.is_(True), CheckboxCashier.legal_entity_id.isnot(None))}
     return {
         "user": j_user(user),
         "company": s.get("company_name") or "CRM",
@@ -152,6 +156,15 @@ def meta(db: Session = Depends(get_db), user: User = Depends(api_user)):
         "managers_see_own_only": s.get("managers_see_own_only") == "1",
         "realtime": bool(config.REDIS_URL),
         "root": config.ROOT_PATH,
+        "categories": [{"id": c.id, "name": c.name, "parent_id": c.parent_id}
+                       for c in db.query(Category).filter(Category.is_active.is_(True)).order_by(Category.sort, Category.name)],
+        "manufacturers": [{"id": m.id, "name": m.name}
+                          for m in db.query(Manufacturer).filter(Manufacturer.is_active.is_(True)).order_by(Manufacturer.name)],
+        "customer_groups": [{"id": g.id, "name": g.name, "color": g.color}
+                            for g in db.query(CustomerGroup).order_by(CustomerGroup.sort, CustomerGroup.id)],
+        "legal_entities": [{"id": x.id, "name": x.name, "is_default": x.is_default, "has_cashier": x.id in with_cashier}
+                           for x in db.query(LegalEntity).filter(LegalEntity.is_active.is_(True)).order_by(LegalEntity.sort, LegalEntity.id)],
+        "checkbox_ready": bool(with_cashier) or db.query(CheckboxCashier).filter(CheckboxCashier.is_active.is_(True)).count() > 0,
     }
 
 

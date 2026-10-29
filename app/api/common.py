@@ -70,7 +70,17 @@ def j_user(u: User | None) -> dict | None:
 def j_status(s: Status) -> dict:
     return {"id": s.id, "code": s.code, "name": s.name, "color": s.color, "sort": s.sort,
             "stock_action": s.stock_action, "approved": s.counts_as_approved, "final": s.is_final,
-            "system": s.is_system, "active": s.is_active}
+            "system": s.is_system, "active": s.is_active, "stage": s.stage or "order"}
+
+
+def j_variant(v) -> dict:
+    return {"id": v.id, "name": v.name, "sku": v.sku or "", "attribute_ids": [int(x) for x in (v.attribute_ids or [])],
+            "price": money(v.price) if v.price is not None else None, "stock": v.stock, "reserved": v.reserved,
+            "available": v.available, "active": v.is_active}
+
+
+def photo_url(file: str) -> str:
+    return f"/media/products/{file}"
 
 
 def j_product(p: Product) -> dict:
@@ -78,7 +88,12 @@ def j_product(p: Product) -> dict:
             "weight": float(p.weight or 0), "stock": p.stock, "reserved": p.reserved, "available": p.available,
             "min_stock": p.min_stock, "length": float(p.length or 0), "width": float(p.width or 0),
             "height": float(p.height or 0), "ship_description": p.ship_description or "", "upsell": p.is_upsell,
-            "upsell_for": [int(x) for x in (p.upsell_for or [])] if p.is_upsell else [], "active": p.is_active}
+            "upsell_for": [int(x) for x in (p.upsell_for or [])] if p.is_upsell else [], "active": p.is_active,
+            "category_id": p.category_id, "manufacturer_id": p.manufacturer_id, "model": p.model or "",
+            "countries": list(p.countries or []), "spec_price": money(p.spec_price), "sale_price": money(p.sale_price),
+            "discount_percent": p.discount_percent, "wholesale_price": money(p.wholesale_price),
+            "photo": photo_url(p.photos[0].file) if p.photos else None,
+            "variants": [j_variant(v) for v in p.variants]}
 
 
 def j_payment_method(m) -> dict:
@@ -96,9 +111,11 @@ def j_source(x) -> dict:
 def j_item(i: OrderItem) -> dict:
     return {"id": i.id, "product_id": i.product_id, "name": i.name, "price": money(i.price), "qty": i.qty,
             "upsell": i.is_upsell, "upsell_for": i.upsell_for_id, "upsell_for_name": i.upsell_for.name if i.upsell_for else "",
-            "base_price": money(i.product.price) if i.product else None,
-            "sku": i.product.sku if i.product and i.product.sku else "",
-            "available": i.product.available if i.product else None}
+            "base_price": money(i.variant.price if i.variant is not None and i.variant.price is not None else i.product.sale_price) if i.product else None,
+            "sku": (i.variant.sku if i.variant is not None and i.variant.sku else (i.product.sku if i.product and i.product.sku else "")),
+            "available": (i.variant.available if i.variant is not None else i.product.available) if i.product else None,
+            "variant_id": i.variant_id, "variant_name": i.variant.name if i.variant is not None else "",
+            "photo": photo_url(i.product.photos[0].file) if i.product and i.product.photos else None}
 
 
 def j_payment(p: Payment) -> dict:
@@ -123,7 +140,7 @@ def j_order_row(o: Order) -> dict:
         "items": [{"name": i.name, "qty": i.qty, "upsell": i.is_upsell} for i in o.items],
         "total": money(o.total), "cod_amount": money(o.cod_amount), "payment_type": o.payment_type,
         "payment_method_id": o.payment_method_id, "source_id": o.source_id,
-        "office_id": o.office_id, "np_account_id": o.np_account_id, "reason_id": o.reason_id,
+        "office_id": o.office_id, "np_account_id": o.np_account_id, "legal_entity_id": o.legal_entity_id, "reason_id": o.reason_id,
         "shop_id": o.shop_id, "external_id": o.external_id or "", "external_status": o.external_status or "", "mark_id": o.mark_id, "remind_at": iso(o.remind_at),
         "country": o.country or "UA",
         "delivery_method": o.delivery_method, "city_name": o.city_name, "ttn": o.ttn,
@@ -131,6 +148,7 @@ def j_order_row(o: Order) -> dict:
         "utm_source": o.utm_source, "utm_campaign": o.utm_campaign, "site": o.site,
         "duplicate_of_id": o.duplicate_of_id, "created_at": iso(o.created_at),
         "status_changed_at": iso(o.status_changed_at),
+        "customer_id": o.customer_id, "blacklisted": bool(o.customer and o.customer.is_blacklisted),
     }
 
 
@@ -139,7 +157,7 @@ def j_order(o: Order) -> dict:
     d.update({
         "id": o.id, "status_id": o.status_id, "manager_id": o.manager_id,
         "manager": j_user(o.manager), "payment_method_id": o.payment_method_id, "source_id": o.source_id,
-        "office_id": o.office_id, "np_account_id": o.np_account_id, "reason_id": o.reason_id,
+        "office_id": o.office_id, "np_account_id": o.np_account_id, "legal_entity_id": o.legal_entity_id, "reason_id": o.reason_id,
         "shop_id": o.shop_id, "external_id": o.external_id or "", "external_status": o.external_status or "", "mark_id": o.mark_id, "remind_at": iso(o.remind_at),
         "country": o.country or "UA",
         "delivery_cost": money(o.delivery_cost), "prepayment": money(o.prepayment), "discount": money(o.discount),

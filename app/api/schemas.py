@@ -49,6 +49,7 @@ class StatusOut(Out):
     final: bool
     system: bool
     active: bool
+    stage: Literal["lead", "order"] = Field("order", description="Розділ: «Ліди» чи «Замовлення»")
 
 
 class ProductOut(Out):
@@ -68,6 +69,28 @@ class ProductOut(Out):
     ship_description: str = ""
     upsell: bool
     upsell_for: list[int] = Field(default_factory=list, description="Допродаж: до яких товарів пропонувати (порожньо — до будь-якого)")
+    active: bool
+    category_id: int | None = None
+    manufacturer_id: int | None = None
+    model: str = ""
+    countries: list[str] = Field(default_factory=list, description="Країни продажу; порожньо — усі")
+    spec_price: float = Field(0, description="Акційна ціна; 0 — без акції")
+    sale_price: float = Field(0, description="Ціна в замовленні: акційна або звичайна")
+    discount_percent: int = 0
+    wholesale_price: float = 0
+    photo: str | None = Field(None, description="Головне фото: шлях від кореня CRM (/media/…)")
+    variants: list[VariantOut] = Field(default_factory=list)
+
+
+class VariantOut(Out):
+    id: int
+    name: str
+    sku: str
+    attribute_ids: list[int]
+    price: float | None
+    stock: int
+    reserved: int
+    available: int
     active: bool
 
 
@@ -100,6 +123,7 @@ class SourceOut(Out):
     name: str
     active: bool
     sort: int
+    office_id: int | None = Field(None, description="Лише для джерел: відділ, до якого належить джерело")
 
 
 class ReasonOut(SourceOut):
@@ -135,6 +159,35 @@ class MetaOut(Out):
     managers_see_own_only: bool
     realtime: bool
     root: str
+    categories: list[CategoryShort] = Field(default_factory=list)
+    manufacturers: list[NamedShort] = Field(default_factory=list)
+    customer_groups: list[GroupShort] = Field(default_factory=list)
+    legal_entities: list[EntityShort] = Field(default_factory=list)
+    checkbox_ready: bool = False
+
+
+class EntityShort(Out):
+    id: int
+    name: str
+    is_default: bool
+    has_cashier: bool
+
+
+class CategoryShort(Out):
+    id: int
+    name: str
+    parent_id: int | None
+
+
+class NamedShort(Out):
+    id: int
+    name: str
+
+
+class GroupShort(Out):
+    id: int
+    name: str
+    color: str
 
 
 class LoginIn(In):
@@ -165,6 +218,7 @@ class OrderRowOut(Out):
     manager_id: int | None
     office_id: int | None = None
     np_account_id: int | None = None
+    legal_entity_id: int | None = None
     shop_id: int | None = None
     external_id: str = ""
     external_status: str = ""
@@ -191,6 +245,8 @@ class OrderRowOut(Out):
     duplicate_of_id: int | None
     created_at: str | None
     status_changed_at: str | None
+    customer_id: int | None = None
+    blacklisted: bool = False
 
 
 class OrderListOut(Out):
@@ -212,6 +268,9 @@ class OrderItemOut(Out):
     upsell_for_name: str = ""
     base_price: float | None = Field(None, description="Ціна товару в каталозі — щоб показати, що ціну в замовленні змінено")
     sku: str = ""
+    variant_id: int | None = None
+    variant_name: str = ""
+    photo: str | None = None
     available: int | None = None
 
 
@@ -257,12 +316,28 @@ class SmsOut(Out):
     created_at: str | None
 
 
+class OrderCustomer(Out):
+    id: int
+    name: str
+    group: str
+    group_color: str
+    blacklisted: bool
+    blacklist_reason: str
+    comment: str
+    orders: int
+    delivered: int
+    refused: int
+    buyout_rate: float | None
+    sum_delivered: float
+
+
 class OrderOut(Out):
     id: int
     status_id: int
     manager_id: int | None
     office_id: int | None = None
     np_account_id: int | None = None
+    legal_entity_id: int | None = None
     shop_id: int | None = None
     external_id: str = ""
     external_status: str = ""
@@ -323,6 +398,7 @@ class OrderOut(Out):
     history: list[HistoryOut]
     sms: list[SmsOut]
     others: list[OrderRowOut]
+    customer: OrderCustomer | None = None
     receipts: list["ReceiptOut"] = Field(default_factory=list)
     checkbox_ready: bool = False
 
@@ -335,6 +411,7 @@ class OrderItemIn(In):
     price: Money | None = None
     upsell: bool = False
     upsell_for: int | None = Field(None, description="Допродаж до якого товару (id)")
+    variant_id: int | None = Field(None, description="Варіант товару (колір, розмір…)")
 
 
 class OrderIn(In):
@@ -361,6 +438,7 @@ class OrderIn(In):
     source_id: int | None = None
     office_id: int | None = None
     np_account_id: int | None = Field(None, description="Ключ Нової Пошти (ФОП) для ТТН")
+    legal_entity_id: int | None = Field(None, description="Юридична особа: за нею обирається каса Checkbox")
     reason_id: int | None = None
     mark_id: int | None = None
     remind_at: str | None = Field(None, description="ISO-дата нагадування, порожньо — прибрати")
@@ -386,7 +464,7 @@ class OrderIn(In):
 
 class BulkIn(In):
     ids: list[int]
-    action: Literal["status", "assign", "ttn", "track"]
+    action: Literal["status", "assign", "ttn", "track", "fiscalize"]
     value: int | str | None = None
 
 
@@ -431,9 +509,26 @@ class MoveOut(Out):
     created_at: str | None
 
 
+class PhotoOut(Out):
+    id: int
+    url: str
+
+
 class ProductDetailOut(ProductOut):
     moves: list[MoveOut]
     sold: int
+    description: str = ""
+    photos: list[PhotoOut] = Field(default_factory=list)
+
+
+class VariantIn(In):
+    id: int | None = None
+    name: str = Field("", max_length=255)
+    sku: str = Field("", max_length=64)
+    attribute_ids: list[int] = Field(default_factory=list)
+    price: Money | None = None
+    active: bool = True
+    initial_stock: int = Field(0, ge=0, description="Лише для нового варіанта")
 
 
 class ProductIn(In):
@@ -451,6 +546,14 @@ class ProductIn(In):
     upsell_for: list[int] | None = None
     active: bool | None = None
     initial_stock: int | str | None = Field(None, description="Лише при створенні")
+    category_id: int | None = None
+    manufacturer_id: int | None = None
+    model: str | None = Field(None, max_length=120)
+    description: str | None = None
+    countries: list[str] | None = None
+    spec_price: Money | None = None
+    wholesale_price: Money | None = None
+    variants: list[VariantIn] | None = Field(None, description="Повний список варіантів; відсутні буде видалено (або вимкнено, якщо вже продавались)")
 
 
 class WarehouseOut(Out):
@@ -465,6 +568,7 @@ class WarehouseOut(Out):
 
 class AdjustIn(In):
     product_id: int
+    variant_id: int | None = None
     mode: Literal["set", "delta"] = "set"
     qty: int | str
     comment: str = ""
@@ -653,6 +757,7 @@ class SettingsOut(Out):
     np_status_rules: list["NpRuleOut"] = Field(default_factory=list)
     shops: list["ShopOut"] = Field(default_factory=list)
     cashiers: list["CashierOut"] = Field(default_factory=list)
+    legal_entities: list["LegalEntityOut"] = Field(default_factory=list)
     np_statuses: dict[str, str] = Field(default_factory=dict)
     message: str | None = None
 
@@ -674,6 +779,7 @@ class SourceIn(In):
     sort: int = 100
     delete: bool = False
     status_ids: list[int] | None = Field(None, description="Лише для причин")
+    office_id: int | None = Field(None, description="Лише для джерел: відділ")
 
 
 class StatusIn(In):
@@ -685,6 +791,7 @@ class StatusIn(In):
     approved: bool = False
     final: bool = False
     active: bool = True
+    stage: Literal["lead", "order"] | None = None
     # поля відповіді, які інтерфейс може надіслати назад, ігноруються
     code: str | None = None
     system: bool | None = None
@@ -810,6 +917,7 @@ class NpAccountOut(Out):
     seat_size: str
     description: str
     office_id: int | None = None
+    legal_entity_id: int | None = None
     is_default: bool
     is_active: bool
     directory: dict = Field(default_factory=dict)
@@ -840,6 +948,7 @@ class NpAccountIn(In):
     seat_size: str = Field("20x15x10", max_length=32)
     description: str = Field("Товар", max_length=255)
     office_id: int | None = None
+    legal_entity_id: int | None = None
     is_default: bool = False
     is_active: bool = True
     delete: bool = False
@@ -941,6 +1050,7 @@ class CashierOut(Out):
     password: str = Field(description="Маскований")
     test_mode: bool
     auto_shift: bool
+    legal_entity_id: int | None = None
     condition: Literal["none", "office", "user", "np_account"]
     condition_value: int | None = None
     sort: int
@@ -956,6 +1066,7 @@ class CashierIn(In):
     password: str | None = Field(None, max_length=128)
     test_mode: bool = False
     auto_shift: bool = True
+    legal_entity_id: int | None = None
     condition: Literal["none", "office", "user", "np_account"] = "none"
     condition_value: int | None = None
     is_active: bool = True
@@ -988,6 +1099,7 @@ class StatsQuery(BaseModel):
     shop: str = ""
     np_account: str = ""
     mark: str = ""
+    legal_entity: str = ""
     country: str = ""
     site: str = ""
     utm_source: str = ""
@@ -1173,4 +1285,164 @@ class TestDataIn(In):
 class TestDataOut(Out):
     products: int
     orders: int
+    message: str
+
+
+# ---------------------------------------------------------------- каталог: категорії, виробники, атрибути
+class CategoryOut(Out):
+    id: int
+    name: str
+    parent_id: int | None
+    sort: int
+    active: bool
+    products: int
+
+
+class CategoryIn(In):
+    id: int | None = None
+    name: str = Field(..., max_length=160)
+    parent_id: int | None = None
+    sort: int | None = None
+    active: bool = True
+
+
+class ManufacturerOut(Out):
+    id: int
+    name: str
+    active: bool
+    products: int
+
+
+class ManufacturerIn(In):
+    id: int | None = None
+    name: str = Field(..., max_length=160)
+    active: bool = True
+
+
+class AttributeOut(Out):
+    id: int
+    name: str
+    sort: int
+    active: bool
+
+
+class AttributeGroupOut(Out):
+    id: int
+    name: str
+    sort: int
+    attributes: list[AttributeOut]
+
+
+class AttributeGroupIn(In):
+    id: int | None = None
+    name: str = Field(..., max_length=120)
+    sort: int | None = None
+
+
+class AttributeIn(In):
+    id: int | None = None
+    group_id: int
+    name: str = Field(..., max_length=120)
+    sort: int | None = None
+    active: bool = True
+
+
+# ---------------------------------------------------------------- покупці
+class CustomerOut(Out):
+    id: int
+    phone: str
+    name: str
+    email: str
+    country: str
+    group_id: int | None
+    group: str
+    group_color: str
+    comment: str
+    blacklisted: bool
+    blacklist_reason: str
+    created_at: str | None
+    orders: int
+    delivered: int
+    refused: int
+    cancelled: int
+    sum_delivered: float
+    sum_total: float
+    buyout_rate: float | None
+    first_order_at: str | None
+    last_order_at: str | None
+
+
+class CustomerListOut(Out):
+    total: int
+    offset: int
+    rows: list[CustomerOut]
+
+
+class CustomerDetailOut(CustomerOut):
+    history: list[OrderRowOut]
+
+
+class CustomerIn(In):
+    phone: str | None = Field(None, max_length=32)
+    name: str | None = Field(None, max_length=255)
+    email: str | None = Field(None, max_length=255)
+    country: str | None = Field(None, max_length=2)
+    group_id: int | None = None
+    comment: str | None = None
+    blacklisted: bool | None = None
+    blacklist_reason: str | None = Field(None, max_length=255)
+
+
+class CustomerGroupOut(Out):
+    id: int
+    name: str
+    color: str
+    sort: int
+    customers: int
+
+
+class CustomerGroupIn(In):
+    id: int | None = None
+    name: str = Field(..., max_length=80)
+    color: str | None = Field(None, max_length=9)
+    sort: int | None = None
+
+
+class BlockedIpOut(Out):
+    id: int
+    ip: str
+    comment: str
+    created_at: str | None
+
+
+class BlockedIpIn(In):
+    ip: str = Field(..., max_length=64)
+    comment: str | None = Field(None, max_length=255)
+
+
+# ---------------------------------------------------------------- юридичні особи
+class LegalEntityOut(Out):
+    id: int
+    name: str
+    code: str
+    iban: str
+    is_default: bool
+    is_active: bool
+    sort: int
+    orders: int = 0
+    cashier: str = Field("", description="Назва каси Checkbox цієї юрособи")
+
+
+class LegalEntityIn(In):
+    id: int | None = None
+    name: str = Field(..., max_length=255)
+    code: str = Field("", max_length=20)
+    iban: str = Field("", max_length=34)
+    is_default: bool = False
+    is_active: bool = True
+    delete: bool = False
+
+
+class ProductDeleteOut(Out):
+    deleted: bool = Field(description="false — товар лише перенесено в архів (уже був у замовленнях)")
     message: str

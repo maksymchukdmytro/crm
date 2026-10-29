@@ -24,6 +24,9 @@ class Config:
     SENTRY_TRACES_RATE: float = float(os.getenv("SENTRY_TRACES_RATE", "0") or 0)
     # Токен для /api/metrics (Prometheus). Порожньо — метрики доступні лише адміністратору в браузері.
     METRICS_TOKEN: str = os.getenv("METRICS_TOKEN", "")
+    # Каталог для файлів (фото товарів). На сервері — поза кодом (install.sh: /var/lib/crm/media),
+    # бо оновлення коду замінює вміст /opt/crm.
+    MEDIA_DIR: str = os.getenv("MEDIA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "media"))
     # Інтервал роботи фонового воркера, секунд
     WORKER_TICK: int = int(os.getenv("WORKER_TICK", "30"))
 

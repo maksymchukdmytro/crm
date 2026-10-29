@@ -64,6 +64,10 @@ DEFAULT_MARKS = [
     "Написати в WhatsApp", "Попросити відгук",
 ]
 
+LEAD_CODES = ("new", "no_answer", "callback", "duplicate")  # статуси розділу «Ліди»
+
+DEFAULT_CUSTOMER_GROUPS = [("Покупець", "#64748b"), ("Оптовик", "#0ea5e9"), ("Дропшипер", "#a855f7"), ("Партнер", "#16a34a")]
+
 DEFAULT_TEMPLATES = {
     "shipped": "Замовлення №{order_id} відправлено. {carrier}, ТТН {ttn}. До сплати при отриманні: {cod} грн. {company}",
     "confirmed": "{first_name}, дякуємо! Замовлення №{order_id} на {total} грн підтверджено. {company}",
@@ -74,7 +78,8 @@ def seed(db: Session):
     if db.query(Status).count() == 0:
         for code, name, color, sort, action, approved, final in DEFAULT_STATUSES:
             db.add(Status(code=code, name=name, color=color, sort=sort, stock_action=action,
-                          counts_as_approved=approved, is_final=final, is_system=True))
+                          counts_as_approved=approved, is_final=final, is_system=True,
+                          stage="lead" if code in LEAD_CODES else "order"))
         db.flush()
         for code, text in DEFAULT_TEMPLATES.items():
             s = db.query(Status).filter(Status.code == code).one()
@@ -105,4 +110,8 @@ def seed_directories(db: Session):
     if db.query(OrderMark).count() == 0:
         for sort, name in enumerate(DEFAULT_MARKS):
             db.add(OrderMark(name=name, sort=sort * 10))
+    from ..models import CustomerGroup
+    if db.query(CustomerGroup).count() == 0:
+        for sort, (name, color) in enumerate(DEFAULT_CUSTOMER_GROUPS):
+            db.add(CustomerGroup(name=name, color=color, sort=(sort + 1) * 10))
     db.flush()

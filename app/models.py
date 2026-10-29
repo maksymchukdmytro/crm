@@ -148,6 +148,47 @@ class Status(Base):
     is_final: Mapped[bool] = mapped_column(Boolean, default=False)
     is_system: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # розділ: lead — «Ліди» (обробка заявки: новий, недозвон, передзвонити…), order — «Замовлення»
+    stage: Mapped[str] = mapped_column(String(8), default="order")
+
+
+class Category(Base):
+    """Категорія товарів (два рівні: розділ і підкатегорія), як у LP-CRM."""
+    __tablename__ = "categories"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(160))
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id", ondelete="SET NULL"), nullable=True, index=True)
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Manufacturer(Base):
+    """Виробник / бренд."""
+    __tablename__ = "manufacturers"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(160), unique=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class AttributeGroup(Base):
+    """Категорія атрибутів: «Колір», «Розмір», «Пам'ять»…"""
+    __tablename__ = "attribute_groups"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+    attributes: Mapped[list[Attribute]] = relationship(back_populates="group", order_by="Attribute.sort, Attribute.id",
+                                                        cascade="all, delete-orphan")
+
+
+class Attribute(Base):
+    """Значення атрибута: «Чорний», «XL», «64 ГБ»."""
+    __tablename__ = "attributes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("attribute_groups.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    group: Mapped[AttributeGroup] = relationship(back_populates="attributes")
 
 
 class Product(Base):
@@ -170,10 +211,67 @@ class Product(Base):
     upsell_for: Mapped[list] = mapped_column(JSON, default=list)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    # картка товару (етап 6)
+    category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id", ondelete="SET NULL"), nullable=True, index=True)
+    manufacturer_id: Mapped[int | None] = mapped_column(ForeignKey("manufacturers.id", ondelete="SET NULL"), nullable=True)
+    model: Mapped[str] = mapped_column(String(120), default="")
+    description: Mapped[str] = mapped_column(Text, default="")
+    countries: Mapped[list] = mapped_column(JSON, default=list)  # країни продажу; порожньо — усі
+    spec_price: Mapped[Decimal] = mapped_column(Money, default=0)  # акційна ціна (зі знижкою); 0 — без акції
+    wholesale_price: Mapped[Decimal] = mapped_column(Money, default=0)
+
+    category: Mapped[Category | None] = relationship()
+    manufacturer: Mapped[Manufacturer | None] = relationship()
+    variants: Mapped[list[ProductVariant]] = relationship(back_populates="product", cascade="all, delete-orphan",
+                                                          order_by="ProductVariant.sort, ProductVariant.id")
+    photos: Mapped[list[ProductPhoto]] = relationship(back_populates="product", cascade="all, delete-orphan",
+                                                      order_by="ProductPhoto.sort, ProductPhoto.id")
 
     @property
     def available(self) -> int:
         return (self.stock or 0) - (self.reserved or 0)
+
+    @property
+    def sale_price(self) -> Decimal:
+        """Ціна в замовленні: акційна, якщо задана, інакше звичайна."""
+        return Decimal(self.spec_price) if self.spec_price and Decimal(self.spec_price) > 0 else Decimal(self.price or 0)
+
+    @property
+    def discount_percent(self) -> int:
+        if not self.spec_price or not self.price or Decimal(self.spec_price) <= 0:
+            return 0
+        return max(0, round((1 - Decimal(self.spec_price) / Decimal(self.price)) * 100))
+
+
+class ProductVariant(Base):
+    """Варіант товару (поєднання атрибутів: «Чорний / XL») зі своїм залишком і, за потреби, ціною та артикулом."""
+    __tablename__ = "product_variants"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(255), default="")
+    sku: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    attribute_ids: Mapped[list] = mapped_column(JSON, default=list)
+    price: Mapped[Decimal | None] = mapped_column(Money, nullable=True)  # NULL — ціна товару
+    stock: Mapped[int] = mapped_column(Integer, default=0)
+    reserved: Mapped[int] = mapped_column(Integer, default=0)
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    product: Mapped[Product] = relationship(back_populates="variants")
+
+    @property
+    def available(self) -> int:
+        return (self.stock or 0) - (self.reserved or 0)
+
+
+class ProductPhoto(Base):
+    """Фото товару: файл у каталозі MEDIA_DIR/products. Перше за порядком — головне."""
+    __tablename__ = "product_photos"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), index=True)
+    file: Mapped[str] = mapped_column(String(255))
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    product: Mapped[Product] = relationship(back_populates="photos")
 
 
 class Supplier(Base):
@@ -209,6 +307,7 @@ class PurchaseItem(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     purchase_id: Mapped[int] = mapped_column(ForeignKey("purchases.id", ondelete="CASCADE"))
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    variant_id: Mapped[int | None] = mapped_column(ForeignKey("product_variants.id", ondelete="SET NULL"), nullable=True)
     qty: Mapped[int] = mapped_column(Integer, default=1)
     cost: Mapped[Decimal] = mapped_column(Money, default=0)
 
@@ -220,6 +319,7 @@ class StockMovement(Base):
     __tablename__ = "stock_movements"
     id: Mapped[int] = mapped_column(primary_key=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[int | None] = mapped_column(ForeignKey("product_variants.id", ondelete="SET NULL"), nullable=True, index=True)
     kind: Mapped[str] = mapped_column(String(16))  # purchase/reserve/unreserve/ship/return/adjust
     stock_delta: Mapped[int] = mapped_column(Integer, default=0)
     reserved_delta: Mapped[int] = mapped_column(Integer, default=0)
@@ -243,6 +343,19 @@ class PaymentMethod(Base):
     # prepaid — оплачено повністю, при створенні ТТН післяплати немає
     kind: Mapped[str] = mapped_column(String(10), default="cod")
     checkbox_type: Mapped[str] = mapped_column(String(20), default="")  # тип оплати в чеку Checkbox
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+
+
+class LegalEntity(Base):
+    """Юридична особа (ФОП / ТОВ), від імені якої продається замовлення. За нею обирається каса Checkbox
+    (і ключ Нової Пошти, якщо його прив'язано). Одна юрособа — за замовчуванням."""
+    __tablename__ = "legal_entities"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255))
+    code: Mapped[str] = mapped_column(String(20), default="")  # ЄДРПОУ / РНОКПП
+    iban: Mapped[str] = mapped_column(String(34), default="")
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort: Mapped[int] = mapped_column(Integer, default=100)
 
@@ -274,6 +387,7 @@ class NpAccount(Base):
     seat_size: Mapped[str] = mapped_column(String(32), default="20x15x10")
     description: Mapped[str] = mapped_column(String(255), default="Товар")
     office_id: Mapped[int | None] = mapped_column(ForeignKey("offices.id", ondelete="SET NULL"), nullable=True)
+    legal_entity_id: Mapped[int | None] = mapped_column(ForeignKey("legal_entities.id", ondelete="SET NULL"), nullable=True)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     # кеш із кабінету НП: контрагенти й контактні особи для вибору в налаштуваннях
@@ -325,6 +439,8 @@ class CheckboxCashier(Base):
     password: Mapped[str] = mapped_column(String(128), default="")
     test_mode: Mapped[bool] = mapped_column(Boolean, default=False)  # тестовий сервер Checkbox
     auto_shift: Mapped[bool] = mapped_column(Boolean, default=True)  # відкривати зміну для чека, закривати о 23:00
+    legal_entity_id: Mapped[int | None] = mapped_column(ForeignKey("legal_entities.id", ondelete="SET NULL"), nullable=True)
+    # застаріле (до юросіб): умова вибору каси; використовується, лише якщо юросіб ще не заведено
     condition: Mapped[str] = mapped_column(String(16), default="none")  # none / office / user / np_account
     condition_value: Mapped[int | None] = mapped_column(Integer, nullable=True)
     sort: Mapped[int] = mapped_column(Integer, default=100)
@@ -379,12 +495,49 @@ class OrderMark(Base):
 
 
 class OrderSource(Base):
-    """Джерело замовлення: Маркетплейси / Сайти / Соцмережі / Інше (редагується)."""
+    """Джерело замовлення (сайт, Instagram, Rozetka…). Додається лише в налаштуваннях; належить відділу —
+    відділ замовлення визначається його джерелом."""
     __tablename__ = "order_sources"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(80))
+    office_id: Mapped[int | None] = mapped_column(ForeignKey("offices.id", ondelete="SET NULL"), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort: Mapped[int] = mapped_column(Integer, default=100)
+
+
+class CustomerGroup(Base):
+    """Група покупців: «Покупець», «Оптовик», «Дропшипер», «Партнер»…"""
+    __tablename__ = "customer_groups"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80))
+    color: Mapped[str] = mapped_column(String(9), default="#64748b")
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+
+
+class Customer(Base):
+    """Покупець: один на номер телефону. Історію й суми рахуємо із замовлень."""
+    __tablename__ = "customers"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    phone: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(255), default="")
+    email: Mapped[str] = mapped_column(String(255), default="")
+    country: Mapped[str] = mapped_column(String(2), default="UA")
+    group_id: Mapped[int | None] = mapped_column(ForeignKey("customer_groups.id", ondelete="SET NULL"), nullable=True)
+    comment: Mapped[str] = mapped_column(Text, default="")
+    is_blacklisted: Mapped[bool] = mapped_column(Boolean, default=False)
+    blacklist_reason: Mapped[str] = mapped_column(String(255), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+    group: Mapped[CustomerGroup | None] = relationship()
+
+
+class BlockedIp(Base):
+    """Заблокована IP-адреса: заявки з неї через webhook не приймаються."""
+    __tablename__ = "blocked_ips"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ip: Mapped[str] = mapped_column(String(64), unique=True)
+    comment: Mapped[str] = mapped_column(String(255), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class Order(Base):
@@ -395,6 +548,8 @@ class Order(Base):
     office_id: Mapped[int | None] = mapped_column(ForeignKey("offices.id"), nullable=True, index=True)
     np_account_id: Mapped[int | None] = mapped_column(ForeignKey("np_accounts.id", ondelete="SET NULL"), nullable=True)
     shop_id: Mapped[int | None] = mapped_column(ForeignKey("marketplace_shops.id", ondelete="SET NULL"), nullable=True)
+    customer_id: Mapped[int | None] = mapped_column(ForeignKey("customers.id", ondelete="SET NULL"), nullable=True, index=True)
+    legal_entity_id: Mapped[int | None] = mapped_column(ForeignKey("legal_entities.id", ondelete="SET NULL"), nullable=True, index=True)
     external_id: Mapped[str] = mapped_column(String(64), default="", index=True)  # номер замовлення на маркетплейсі
     external_status: Mapped[str] = mapped_column(String(120), default="")
     reason_id: Mapped[int | None] = mapped_column(ForeignKey("status_reasons.id"), nullable=True)
@@ -464,6 +619,8 @@ class Order(Base):
     manager: Mapped[User | None] = relationship()
     payment_method: Mapped[PaymentMethod | None] = relationship()
     source: Mapped[OrderSource | None] = relationship()
+    customer: Mapped[Customer | None] = relationship()
+    legal_entity: Mapped[LegalEntity | None] = relationship()
     items: Mapped[list[OrderItem]] = relationship(
         back_populates="order", cascade="all, delete-orphan", order_by="OrderItem.id"
     )
@@ -510,10 +667,12 @@ class OrderItem(Base):
     is_upsell: Mapped[bool] = mapped_column(Boolean, default=False)
     # допродаж до якого основного товару (id товару); NULL — не допродаж або «до замовлення загалом»
     upsell_for_id: Mapped[int | None] = mapped_column(ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    variant_id: Mapped[int | None] = mapped_column(ForeignKey("product_variants.id", ondelete="SET NULL"), nullable=True)
 
     order: Mapped[Order] = relationship(back_populates="items")
     product: Mapped[Product | None] = relationship(foreign_keys=[product_id])
     upsell_for: Mapped[Product | None] = relationship(foreign_keys=[upsell_for_id])
+    variant: Mapped[ProductVariant | None] = relationship()
 
     @property
     def sum(self) -> Decimal:
@@ -626,6 +785,14 @@ def _order_dates(session: Session, _ctx, _instances):
                 o.assigned_at = None
             elif not (is_new and o.assigned_at):
                 o.assigned_at = now
+        if is_new and o.legal_entity_id is None and o.__dict__.get("legal_entity") is None:
+            default = session.query(LegalEntity.id).filter(LegalEntity.is_default.is_(True), LegalEntity.is_active.is_(True)).first()
+            if default:
+                o.legal_entity_id = default[0]
+        if o.source_id and (is_new or state.attrs.source_id.history.has_changes()):
+            src = session.get(OrderSource, o.source_id)
+            if src is not None and src.office_id:
+                o.office_id = src.office_id  # відділ = сукупність джерел
         if o.confirmed_at is None and (is_new or state.attrs.status_id.history.has_changes()
                                        or state.attrs.status.history.has_changes()):
             st = o.__dict__.get("status") or (session.get(Status, o.status_id) if o.status_id else None)
