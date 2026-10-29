@@ -1,0 +1,26 @@
+/* Покупці */
+.cu-groups { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.cu-groups button { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 12px;
+  font: inherit; font-size: 13px; font-weight: 550; color: var(--ink-2); cursor: pointer; }
+.cu-groups button i { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--faint)); }
+.cu-groups button:hover { border-color: #c4cad5; }
+.cu-groups button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.cu-groups button.bl.on { background: var(--bad); border-color: var(--bad); }
+.cu-sort { display: inline-flex; gap: 4px; }
+.t.cu-table td { vertical-align: middle; }
+.cu-name { display: flex; align-items: center; gap: 6px; font-weight: 550; }
+.bl-ico { color: var(--bad); flex: none; }
+.cu-table tr.is-bl td:first-child { box-shadow: inset 3px 0 0 var(--bad); }
+.cu-pages { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 14px; }
+.cu-phone { font-size: 15px; font-weight: 500; margin-left: 6px; }
+.cu-stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 20px; }
+.cu-stats > div { padding: 10px 14px; border-right: 1px solid var(--line-2); }
+.cu-stats > div:last-child { border-right: 0; }
+.cu-stats small { display: block; color: var(--muted); font-size: 12px; }
+.cu-stats b { font-size: 17px; font-weight: 650; font-feature-settings: "tnum" 1; }
+.cu-bl { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: var(--radius-sm); background: var(--bg); }
+.cu-bl.on { background: var(--bad-soft); }
+.cu-bl .hint { display: inline-flex; align-items: center; gap: 4px; }
+.rate { font-weight: 600; font-feature-settings: "tnum" 1; }
+.rate.hi { color: var(--ok); } .rate.mid { color: var(--warn); } .rate.lo { color: var(--bad); }
+@media (max-width: 900px) { .cu-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cu-stats > div:nth-child(3) { border-right: 0; } }

@@ -22,7 +22,7 @@ from .schemas import BulkIn, BulkOut, OrderIn, OrderListOut, OrderOut, PaymentIn
 from .common import bad, iso, j_order, j_order_row, staff
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
-FILTERS = ("status", "q", "manager", "date_from", "date_to", "delivery", "source", "dup", "pay")
+FILTERS = ("status", "q", "manager", "date_from", "date_to", "delivery", "source", "dup", "pay", "stage")
 
 
 def _get(db: Session, order_id: int, user: User) -> Order:
@@ -47,6 +47,15 @@ def _full(db: Session, order: Order) -> dict:
                  "created_at": iso(m.created_at)}
                 for m in db.query(SmsMessage).filter(SmsMessage.order_id == order.id).order_by(SmsMessage.id.desc())]
     d["others"] = [j_order_row(o) for o in svc.customer_orders(db, order.phone, exclude_id=order.id)]
+    d["customer"] = None
+    if order.customer is not None:
+        from ..services import customers as cust
+        c, cs = order.customer, cust.stats_for(db, [order.customer_id]).get(order.customer_id, cust.EMPTY_STATS)
+        d["customer"] = {"id": c.id, "name": c.name, "group": c.group.name if c.group else "",
+                         "group_color": c.group.color if c.group else "", "blacklisted": c.is_blacklisted,
+                         "blacklist_reason": c.blacklist_reason, "comment": c.comment, "orders": cs["orders"],
+                         "delivered": cs["delivered"], "refused": cs["refused"], "buyout_rate": cs["buyout_rate"],
+                         "sum_delivered": cs["sum_delivered"]}
     from ..models import CheckboxCashier
     from ..services import checkbox as cb
     cashiers = {c.id: c for c in db.query(CheckboxCashier).all()}
@@ -66,7 +75,7 @@ def _items(data: dict) -> list[dict] | None:
         bad("items має бути списком")
     return [{"product_id": i.get("product_id") or "", "name": i.get("name", ""), "qty": i.get("qty", 1),
              "price": i.get("price", ""), "is_upsell": "1" if i.get("upsell") else "0",
-             "upsell_for": i.get("upsell_for") or ""} for i in items if isinstance(i, dict)]
+             "upsell_for": i.get("upsell_for") or "", "variant_id": i.get("variant_id") or ""} for i in items if isinstance(i, dict)]
 
 
 def _fields(data: dict) -> dict:
@@ -81,7 +90,7 @@ def list_orders(request: Request, before: int = 0, limit: int = Query(100, le=50
     base = svc.visible_orders_query(db, user)
     q = _apply(base, f)
     page_q = q.filter(Order.id < before) if before else q
-    rows = (page_q.options(selectinload(Order.items)).order_by(Order.id.desc()).limit(limit + 1).all())
+    rows = (page_q.options(selectinload(Order.items), selectinload(Order.customer)).order_by(Order.id.desc()).limit(limit + 1).all())
     out = {"items": [j_order_row(o) for o in rows[:limit]],
            "next": rows[limit - 1].id if len(rows) > limit else None}
     if counts:
@@ -188,6 +197,19 @@ def bulk(body: BulkIn, db: Session = Depends(get_db), user: User = Depends(staff
             except CarrierError as e:
                 db.rollback()
                 errors.append(f"№{o.id}: {e}")
+    elif action == "fiscalize":
+        from ..services import checkbox as cb
+        for o in orders:
+            try:
+                rec = cb.create_receipt(db, o, "sell", user)
+                db.commit()
+                if rec.status == "error":
+                    errors.append(f"№{o.id}: {rec.error}")
+                else:
+                    done += 1
+            except cb.CheckboxError as e:
+                db.rollback()
+                errors.append(f"№{o.id}: {e}")
     elif action == "track":
         res = delivery.sync_tracking(db, [o.id for o in orders], force=True)
         done = res["checked"]
@@ -264,6 +286,22 @@ def receipt_create(order_id: int, body: ReceiptIn, db: Session = Depends(get_db)
     order = _get(db, order_id, user)
     try:
         rec = cb.create_receipt(db, order, body.kind, user)
+        db.commit()
+    except cb.CheckboxError as e:
+        db.rollback()
+        bad(str(e), 422)
+    if rec.status == "error":
+        bad(rec.error, 422)
+    return _full(db, order)
+
+
+@router.post("/{order_id}/fiscalize", response_model=OrderOut)
+def fiscalize(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
+    """Ручна фіскалізація в один клік: чек продажу на суму замовлення через касу юрособи замовлення."""
+    from ..services import checkbox as cb
+    order = _get(db, order_id, user)
+    try:
+        rec = cb.create_receipt(db, order, "sell", user)
         db.commit()
     except cb.CheckboxError as e:
         db.rollback()

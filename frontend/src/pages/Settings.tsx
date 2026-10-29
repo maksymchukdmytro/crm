@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Copy, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Building2, Copy, Plus, RefreshCw, Settings as SettingsIcon, Star, Trash2 } from "lucide-react";
 import { api } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, phone } from "../lib/format";
-import type { Cashier, DirItem, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
+import type { BlockedIp, Cashier, CustomerGroup, DirItem, LegalEntity, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { Badge, Empty, Field, NpAutocomplete, Spinner } from "../components/ui";
 
 type S = Settings;
-const TABS = { general: "Загальні", dirs: "Довідники", market: "Маркетплейси", checkbox: "Checkbox", webhook: "Прийом заявок", delivery: "Доставка", sms: "SMS / Viber", statuses: "Статуси", users: "Користувачі" };
+const TABS = { general: "Загальні", entities: "Юрособи", dirs: "Довідники", statuses: "Статуси", checkbox: "Checkbox", delivery: "Доставка", market: "Маркетплейси",
+  webhook: "Прийом заявок", sms: "SMS / Viber", customers: "Покупці", users: "Користувачі" };
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<keyof typeof TABS>(() => (localStorage.getItem("crm-settings-tab") as keyof typeof TABS) || "general");
@@ -17,10 +18,12 @@ export default function SettingsPage() {
   const choose = (t: keyof typeof TABS) => { setTab(t); localStorage.setItem("crm-settings-tab", t); };
   return (
     <div>
-      <div className="head"><h1>Налаштування</h1></div>
+      <div className="head"><h1><span className="h-ico"><SettingsIcon size={18} /></span>Налаштування</h1></div>
       <nav className="subnav">{Object.entries(TABS).map(([k, n]) => <a key={k} className={tab === k ? "on" : ""} onClick={() => choose(k as keyof typeof TABS)}>{n}</a>)}</nav>
       {!data ? <Empty><Spinner /></Empty> : <>
         {tab === "general" && <General s={data} />}
+        {tab === "entities" && <LegalEntities s={data} />}
+        {tab === "customers" && <CustomerSettings />}
         {tab === "dirs" && <Directories s={data} />}
         {tab === "market" && <Shops s={data} />}
         {tab === "checkbox" && <CheckboxSettings s={data} />}
@@ -217,12 +220,13 @@ function Statuses({ s }: { s: S }) {
     <div className="stack">
       <div className="card flush tablewrap">
         <table className="t dense">
-          <thead><tr><th>Порядок</th><th>Колір</th><th>Назва</th><th>Дія зі складом</th><th title="Рахується як підтверджене у звітах">Апрув</th><th>Фінальний</th><th>Активний</th><th /></tr></thead>
+          <thead><tr><th>Порядок</th><th>Колір</th><th>Назва</th><th title="У якому розділі показується замовлення з цим статусом">Розділ</th><th>Дія зі складом</th><th title="Рахується як підтверджене у звітах">Апрув</th><th>Фінальний</th><th>Активний</th><th /></tr></thead>
           <tbody>{rows.map((r) => (
             <tr key={r.id}>
               <td style={{ width: 80 }}><input type="number" value={r.sort} onChange={(e) => upd(r.id, { sort: Number(e.target.value) })} /></td>
               <td style={{ width: 56 }}><input type="color" value={r.color} onChange={(e) => upd(r.id, { color: e.target.value })} /></td>
               <td><input value={r.name} onChange={(e) => upd(r.id, { name: e.target.value })} /><span className="sub mono">{r.code}</span></td>
+              <td><select value={r.stage ?? "order"} onChange={(e) => upd(r.id, { stage: e.target.value as Status["stage"] })}><option value="lead">Ліди</option><option value="order">Замовлення</option></select></td>
               <td><select value={r.stock_action} onChange={(e) => upd(r.id, { stock_action: e.target.value })}>{Object.entries(s.stock_actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></td>
               <td><input type="checkbox" checked={r.approved} onChange={(e) => upd(r.id, { approved: e.target.checked })} /></td>
               <td><input type="checkbox" checked={r.final} onChange={(e) => upd(r.id, { final: e.target.checked })} /></td>
@@ -239,6 +243,7 @@ function Statuses({ s }: { s: S }) {
         <Field label="Дія зі складом"><select value={nw.stock_action} onChange={(e) => setNw({ ...nw, stock_action: e.target.value })}>{Object.entries(s.stock_actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
         <button className="btn"><Plus size={14} /> Додати</button>
       </form>
+      <p className="hint"><b>Розділ</b>: «Ліди» — обробка заявки (новий, недозвон, передзвонити…), «Замовлення» — усе після підтвердження. Зміна статусу переносить замовлення між розділами.</p>
       <p className="hint"><b>Резервувати</b> — товар відкладається під замовлення. <b>Списати</b> — знімається зі складу. <b>Повернути</b> — списаний товар повертається. <b>Зняти резерв</b> — скасування до відправки. Кожна дія виконується один раз.</p>
     </div>
   );
@@ -303,8 +308,8 @@ function Directories({ s }: { s: S }) {
     <div className="stack">
       <PaymentMethods s={s} />
       <div className="grid half">
-        <DirEditor kind="offices" title="Відділи" hint="ФОП, маркетплейси, сайти. Менеджеру можна відкрити лише свої відділи (Користувачі); за відділом обирається каса Checkbox." items={s.offices} />
-        <DirEditor kind="sources" title="Джерела замовлень" hint="Звідки прийшов покупець — для статистики. Заявки з лендингів отримують «Сайти»." items={s.order_sources} />
+        <DirEditor kind="offices" title="Відділи" hint="Відділ — це група джерел (наприклад «Маркетплейси» = Rozetka + Prom). Відділ замовлення визначається його джерелом. Менеджеру можна відкрити лише свої відділи (Користувачі)." items={s.offices} />
+        <DirEditor kind="sources" title="Джерела замовлень" hint="Додаються лише тут; у замовленні джерело вибирають зі списку. Кожному джерелу вкажіть відділ." items={s.order_sources} offices={s.offices} />
       </div>
       <div className="grid half">
         <DirEditor kind="reasons" title="Причини (атрибути статусів)" hint="Менеджер обирає причину, коли ставить статус. Позначте, для яких статусів кожна причина." items={s.reasons} statuses={s.statuses} />
@@ -334,13 +339,13 @@ type Row<T> = T & { key: string; delete?: boolean };
 let rowSeq = 0;
 const rk = () => `r${++rowSeq}`;
 
-function DirEditor({ kind, title, hint, items, statuses }: { kind: string; title: string; hint: string; items: (DirItem | Reason)[]; statuses?: Status[] }) {
+function DirEditor({ kind, title, hint, items, statuses, offices }: { kind: string; title: string; hint: string; items: (DirItem | Reason)[]; statuses?: Status[]; offices?: DirItem[] }) {
   const save = useSave();
   const [rows, setRows] = useState<Row<DirItem & { status_ids?: number[] }>[]>(() => items.map((x) => ({ ...x, key: rk() })));
   const upd = (key: string, patch: Partial<DirItem & { status_ids?: number[]; delete?: boolean }>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const visible = rows.filter((r) => !r.delete);
   const [open, setOpen] = useState("");
-  const submit = () => save.mutate({ path: `/settings/dir/${kind}`, method: "put", body: rows.filter((r) => r.name.trim()).map((r, i) => ({ id: r.id || undefined, name: r.name, active: r.active, sort: i * 10, delete: !!r.delete, status_ids: r.status_ids })) },
+  const submit = () => save.mutate({ path: `/settings/dir/${kind}`, method: "put", body: rows.filter((r) => r.name.trim()).map((r, i) => ({ id: r.id || undefined, name: r.name, active: r.active, sort: i * 10, delete: !!r.delete, status_ids: r.status_ids, office_id: offices ? r.office_id ?? null : undefined })) },
     { onSuccess: (x) => { const list = (x as S)[kind === "sources" ? "order_sources" : (kind as "offices" | "reasons" | "marks")] as (DirItem | Reason)[]; setRows(list.map((y) => ({ ...y, key: rk() }))); } });
   return (
     <div className="card">
@@ -350,6 +355,8 @@ function DirEditor({ kind, title, hint, items, statuses }: { kind: string; title
         {visible.map((r) => (
           <div className={`dir-row ${r.active ? "" : "off"}`} key={r.key}>
             <input value={r.name} onChange={(e) => upd(r.key, { name: e.target.value })} placeholder="Назва" />
+            {offices && <select className="dir-office" value={r.office_id ?? ""} title="Відділ джерела" onChange={(e) => upd(r.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
+              <option value="">без відділу</option>{offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select>}
             <label className="mini-check" title="Показувати в замовленнях"><input type="checkbox" checked={r.active} onChange={(e) => upd(r.key, { active: e.target.checked })} /> активна</label>
             <button type="button" className="x" title="Прибрати" onClick={() => (r.id ? upd(r.key, { delete: true }) : setRows(rows.filter((x) => x.key !== r.key)))}>×</button>
             {statuses && open !== r.key && <button type="button" className="dir-st-btn" onClick={() => setOpen(r.key)}>
@@ -430,7 +437,7 @@ function NpAccounts({ s }: { s: S }) {
   const blank = (): Acc => ({ id: 0, name: "", api_key: "", sender_ref: "", sender_name: "", contact_ref: "", contact_name: "", sender_phone: "",
     city_name: "", city_ref: "", warehouse_name: "", warehouse_ref: "", payer: "Recipient", cargo_type: "Parcel", service_type: "WarehouseWarehouse",
     cod_mode: "backward", cod_payer: "Recipient", info_comment: false, info_items: true, info_item_ids: false, default_weight: 0.5, seat_size: "20x15x10",
-    description: "Товар", office_id: null, is_default: rows.length === 0, is_active: true, directory: {}, key: rk() });
+    description: "Товар", office_id: null, legal_entity_id: null, is_default: rows.length === 0, is_active: true, directory: {}, key: rk() });
   return (
     <div className="stack">
       <div className="card">
@@ -480,8 +487,13 @@ function NpAccounts({ s }: { s: S }) {
                       <Field label="Післяплата" hint="Контроль оплати — гроші на рахунок, потрібен договір з НП"><select value={a.cod_mode} onChange={(e) => upd(a.key, { cod_mode: e.target.value })}>
                         <option value="backward">Грошовий переказ</option><option value="afterpayment">Контроль оплати</option></select></Field>
                       <Field label="Платник переказу"><select value={a.cod_payer} onChange={(e) => upd(a.key, { cod_payer: e.target.value })}><option value="Recipient">Одержувач</option><option value="Sender">Відправник</option></select></Field>
-                      <Field label="Відділ" hint="Замовлення цього відділу йдуть з цього ключа"><select value={a.office_id ?? ""} onChange={(e) => upd(a.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
-                        <option value="">будь-який</option>{s.offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></Field>
+                      {s.legal_entities.length > 0 ? (
+                        <Field label="Юрособа" hint="Замовлення цієї юрособи йдуть з цього ключа"><select value={a.legal_entity_id ?? ""} onChange={(e) => upd(a.key, { legal_entity_id: e.target.value ? Number(e.target.value) : null })}>
+                          <option value="">будь-яка</option>{s.legal_entities.filter((x) => x.is_active).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
+                      ) : (
+                        <Field label="Відділ" hint="Замовлення цього відділу йдуть з цього ключа"><select value={a.office_id ?? ""} onChange={(e) => upd(a.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
+                          <option value="">будь-який</option>{s.offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></Field>
+                      )}
                     </div>
                     <div className="cols c3">
                       <Field label="Вага за замовчуванням, кг" hint="Якщо в товарах не вказана"><input value={String(a.default_weight)} inputMode="decimal" onChange={(e) => upd(a.key, { default_weight: Number(e.target.value.replace(",", ".")) || 0 })} /></Field>
@@ -685,12 +697,13 @@ function CheckboxSettings({ s }: { s: S }) {
     : c.condition === "np_account" ? s.np_accounts.map((a) => [a.id, a.name || `Ключ ${a.id}`]) : [];
   const check = async (id: number) => { try { const r = await api.post<{ message: string }>(`/settings/checkbox-cashiers/${id}/check`); toast(r.message); } catch (e) { toast(errText(e), "error"); } };
   const statuses = s.statuses.filter((x) => x.active);
+  const byEntity = s.legal_entities.length > 0;
   return (
     <div className="stack">
       <div className="card">
         <div className="card-head"><h2>Каси Checkbox <span className="muted">{visible.length}</span></h2>
-          <button type="button" className="btn sm" onClick={() => setRows([...rows, { id: 0, name: "", license_key: "", login: "", password: "", test_mode: false, auto_shift: true, condition: "office", condition_value: null, sort: 0, is_active: true, last_error: "", key: rk() }])}><Plus size={14} /> Додати касу</button></div>
-        <p className="hint">Одна каса — один ФОП. Для чека береться перша каса згори, умова якої підходить до замовлення. Тип оплати в чеку — з виду оплати (Налаштування → Довідники → Види оплат, колонка «Checkbox»).</p>
+          <button type="button" className="btn sm" onClick={() => setRows([...rows, { id: 0, name: "", license_key: "", login: "", password: "", test_mode: false, auto_shift: true, legal_entity_id: null, condition: "none", condition_value: null, sort: 0, is_active: true, last_error: "", key: rk() }])}><Plus size={14} /> Додати касу</button></div>
+        <p className="hint">{byEntity ? "Каса обирається за юрособою замовлення (вкладка «Юрособи»). Одна юрособа — одна каса." : "Одна каса — один ФОП. Для чека береться перша каса згори, умова якої підходить до замовлення. Порада: заведіть юрособи — тоді каса обиратиметься за юрособою замовлення."} Тип оплати в чеку — з виду оплати (Довідники → Види оплат, колонка «Checkbox»).</p>
         {visible.length === 0 && <Empty>Кас ще немає. Ключ ліцензії, логін і пароль касира — у кабінеті Checkbox.</Empty>}
         <div className="np-accs">
           {visible.map(([c, i]) => (
@@ -704,12 +717,17 @@ function CheckboxSettings({ s }: { s: S }) {
                   <Field label="Логін касира"><input value={c.login} autoComplete="off" onChange={(e) => upd(c.key, { login: e.target.value })} /></Field>
                   <Field label="Пароль касира"><input type="password" autoComplete="new-password" placeholder={c.password ? "збережено" : "не вказано"} value={c.password === "********" ? "" : c.password} onChange={(e) => upd(c.key, { password: e.target.value || (c.id ? "********" : "") })} /></Field>
                 </div>
+                {byEntity ? (
+                  <Field label="Юрособа" hint="Чеки замовлень цієї юрособи йдуть через цю касу"><select value={c.legal_entity_id ?? ""} required onChange={(e) => upd(c.key, { legal_entity_id: e.target.value ? Number(e.target.value) : null })}>
+                    <option value="">оберіть юрособу</option>{s.legal_entities.map((x) => <option key={x.id} value={x.id}>{x.name}{x.is_default ? " (за замовч.)" : ""}</option>)}</select></Field>
+                ) : (
                 <div className="cols">
                   <Field label="Умова вибору каси"><select value={c.condition} onChange={(e) => upd(c.key, { condition: e.target.value as Cashier["condition"], condition_value: null })}>
                     {Object.entries(COND).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
                   {c.condition !== "none" && <Field label="Значення"><select value={c.condition_value ?? ""} onChange={(e) => upd(c.key, { condition_value: e.target.value ? Number(e.target.value) : null })}>
                     <option value="">оберіть</option>{options(c).map(([id, n]) => <option key={id} value={id}>{n}</option>)}</select></Field>}
                 </div>
+                )}
                 {c.last_error && <p className="flash error">{c.last_error}</p>}
                 <div className="form-actions">
                   <label className="check" title="Відкривати зміну перед першим чеком і закривати о 23:00"><input type="checkbox" checked={c.auto_shift} onChange={(e) => upd(c.key, { auto_shift: e.target.checked })} /> Автозміни</label>
@@ -738,6 +756,98 @@ function CheckboxSettings({ s }: { s: S }) {
         </div>
         <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button></div>
       </form>
+    </div>
+  );
+}
+
+
+// ---------------------------------------------------------------- юридичні особи
+type EntRow = LegalEntity & { key: string; delete?: boolean };
+
+function LegalEntities({ s }: { s: S }) {
+  const save = useSave();
+  const [rows, setRows] = useState<EntRow[]>(() => s.legal_entities.map((x) => ({ ...x, key: rk() })));
+  const upd = (key: string, patch: Partial<EntRow>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  const visible = rows.filter((r) => !r.delete);
+  const submit = () => save.mutate({ path: "/settings/legal-entities", body: rows.filter((r) => r.name.trim() || r.delete).map((r) => ({
+    id: r.id || undefined, name: r.name, code: r.code, iban: r.iban, is_default: r.is_default, is_active: r.is_active, delete: !!r.delete })) },
+    { onSuccess: (x) => setRows((x as S).legal_entities.map((y) => ({ ...y, key: rk() }))) });
+  return (
+    <div className="card">
+      <div className="card-head"><h2><Building2 size={16} /> Юридичні особи <span className="muted">{visible.length}</span></h2>
+        <button type="button" className="btn sm" onClick={() => setRows([...rows, { id: 0, name: "", code: "", iban: "", is_default: rows.length === 0, is_active: true, sort: 0, orders: 0, cashier: "", key: rk() }])}><Plus size={14} /> Додати</button></div>
+      <p className="hint">ФОП або ТОВ, від імені якого продається замовлення. У кожному замовленні юрособу можна змінити; нові замовлення отримують юрособу за замовчуванням.
+        За юрособою обирається каса Checkbox (вкладка «Checkbox») і ключ Нової Пошти (вкладка «Доставка»).</p>
+      {visible.length === 0 && <Empty><Building2 size={22} className="e-ico" />Юросіб ще немає. Додайте, наприклад, «ФОП Максимчук О. В.».</Empty>}
+      <div className="ent-list">
+        {visible.map((r) => (
+          <div key={r.key} className={`ent-row ${r.is_active ? "" : "off"}`}>
+            <button type="button" className={`ent-star ${r.is_default ? "on" : ""}`} title={r.is_default ? "За замовчуванням" : "Зробити юрособою за замовчуванням"}
+              onClick={() => setRows(rows.map((x) => ({ ...x, is_default: x.key === r.key })))}><Star size={16} /></button>
+            <input value={r.name} onChange={(e) => upd(r.key, { name: e.target.value })} placeholder="ФОП Прізвище І. П." />
+            <input className="mono" value={r.code} onChange={(e) => upd(r.key, { code: e.target.value })} placeholder="ЄДРПОУ / РНОКПП" />
+            <input className="mono" value={r.iban} onChange={(e) => upd(r.key, { iban: e.target.value })} placeholder="IBAN (необов'язково)" />
+            <span className="ent-meta">{r.cashier ? <Badge kind="ok">каса: {r.cashier}</Badge> : r.id ? <Badge kind="warn">без каси</Badge> : null}{r.orders > 0 && <span className="muted"> {r.orders} замовл.</span>}</span>
+            <label className="mini-check"><input type="checkbox" checked={r.is_active} onChange={(e) => upd(r.key, { is_active: e.target.checked })} /> активна</label>
+            <button type="button" className="x" title="Прибрати" onClick={() => (r.id ? upd(r.key, { delete: true }) : setRows(rows.filter((x) => x.key !== r.key)))}>×</button>
+          </div>
+        ))}
+      </div>
+      <div className="form-actions mt"><span className="spacer" /><button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти юрособи</button></div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- покупці: групи й заблоковані IP
+function CustomerSettings() {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const groups = useQuery({ queryKey: ["customer-groups"], queryFn: () => api.get<CustomerGroup[]>("/customer-groups") });
+  const ips = useQuery({ queryKey: ["blocked-ips"], queryFn: () => api.get<BlockedIp[]>("/blocked-ips") });
+  const [ng, setNg] = useState({ name: "", color: "#64748b" });
+  const [nip, setNip] = useState({ ip: "", comment: "" });
+  const mut = useMutation({
+    mutationFn: ({ method, url, body }: { method: "post" | "del"; url: string; body?: Record<string, unknown> }) => method === "del" ? api.del<unknown>(url) : api.post<unknown>(url, body),
+    onSuccess: (data, v) => { qc.setQueryData([v.url.includes("blocked") ? "blocked-ips" : "customer-groups"], data); qc.invalidateQueries({ queryKey: ["meta"] }); toast("Збережено"); },
+    onError: (e) => toast(errText(e), "error"),
+  });
+  return (
+    <div className="grid half">
+      <div className="card">
+        <h2>Групи покупців</h2>
+        <p className="hint">Покупець, оптовик, дропшипер, партнер… Групу видно в картці замовлення й у розділі «Покупці».</p>
+        <div className="dir-list">
+          {groups.data?.map((g) => (
+            <div key={g.id} className="dir-row">
+              <input type="color" value={g.color} onChange={(e) => mut.mutate({ method: "post", url: "/customer-groups", body: { id: g.id, name: g.name, color: e.target.value } })} />
+              <input defaultValue={g.name} onBlur={(e) => e.target.value.trim() && e.target.value !== g.name && mut.mutate({ method: "post", url: "/customer-groups", body: { id: g.id, name: e.target.value, color: g.color } })} />
+              <span className="muted nowrap">{g.customers} покупц.</span>
+              <button type="button" className="x" title="Видалити групу" onClick={() => window.confirm(`Видалити групу «${g.name}»? Покупці залишаться без групи.`) && mut.mutate({ method: "del", url: `/customer-groups/${g.id}` })}>×</button>
+            </div>
+          ))}
+        </div>
+        <form className="dir-add-row" onSubmit={(e) => { e.preventDefault(); mut.mutate({ method: "post", url: "/customer-groups", body: ng }); setNg({ ...ng, name: "" }); }}>
+          <input type="color" value={ng.color} onChange={(e) => setNg({ ...ng, color: e.target.value })} />
+          <input value={ng.name} onChange={(e) => setNg({ ...ng, name: e.target.value })} placeholder="Нова група" required />
+          <button className="btn"><Plus size={14} /> Додати</button>
+        </form>
+      </div>
+      <div className="card">
+        <h2>Заблоковані IP-адреси</h2>
+        <p className="hint">Заявки з лендингів із цих адрес не приймаються (захист від спаму й ботів). IP видно в картці замовлення, блок «Сайт і UTM-мітки».</p>
+        <div className="dir-list">
+          {ips.data?.map((x) => (
+            <div key={x.id} className="dir-row"><span className="mono">{x.ip}</span><span className="muted">{x.comment}</span><span className="spacer" />
+              <button type="button" className="x" title="Розблокувати" onClick={() => mut.mutate({ method: "del", url: `/blocked-ips/${x.id}` })}>×</button></div>
+          ))}
+          {ips.data && !ips.data.length && <p className="hint">Немає заблокованих адрес.</p>}
+        </div>
+        <form className="dir-add-row" onSubmit={(e) => { e.preventDefault(); mut.mutate({ method: "post", url: "/blocked-ips", body: nip }); setNip({ ip: "", comment: "" }); }}>
+          <input className="mono" value={nip.ip} onChange={(e) => setNip({ ...nip, ip: e.target.value })} placeholder="IP-адреса" required />
+          <input value={nip.comment} onChange={(e) => setNip({ ...nip, comment: e.target.value })} placeholder="Причина" />
+          <button className="btn"><Plus size={14} /> Заблокувати</button>
+        </form>
+      </div>
     </div>
   );
 }

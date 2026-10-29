@@ -38,6 +38,7 @@ GROUPS = ("auto", "hour", "day", "week", "month")
 ID_FILTERS = {
     "status": "status_id", "reason": "reason_id", "payment": "payment_method_id", "office": "office_id",
     "source": "source_id", "manager": "manager_id", "shop": "shop_id", "np_account": "np_account_id", "mark": "mark_id",
+    "legal_entity": "legal_entity_id",
 }
 STR_FILTERS = {
     "delivery": "delivery_method", "country": "country", "site": "site",
@@ -52,7 +53,7 @@ OPTION_FIELDS = ("site", "utm_source", "utm_medium", "utm_term", "utm_content", 
 DIMENSIONS: dict[str, str] = {
     "source": "Джерело", "utm_source": "utm_source", "utm_medium": "utm_medium", "utm_campaign": "utm_campaign",
     "utm_content": "utm_content", "utm_term": "utm_term", "site": "Сайт", "manager": "Менеджер", "office": "Відділ",
-    "payment": "Вид оплати", "delivery": "Доставка", "country": "Країна", "reason": "Причина / атрибут статусу",
+    "legal_entity": "Юрособа", "payment": "Вид оплати", "delivery": "Доставка", "country": "Країна", "reason": "Причина / атрибут статусу",
     "shop": "Магазин маркетплейсу", "extra1": "Додаткове поле 1", "extra2": "Додаткове поле 2",
     "extra3": "Додаткове поле 3", "extra4": "Додаткове поле 4", "weekday": "День тижня", "hour": "Година доби",
 }
@@ -420,7 +421,8 @@ def _dim_expr(dim: str):
 
 def _dim_labels(db: Session, dim: str, keys: list) -> dict:
     ids = [k for k in keys if k is not None]
-    models = {"source": OrderSource, "office": Office, "payment": PaymentMethod, "reason": StatusReason}
+    from ..models import LegalEntity
+    models = {"source": OrderSource, "office": Office, "payment": PaymentMethod, "reason": StatusReason, "legal_entity": LegalEntity}
     if dim in models:
         return {x.id: x.name for x in db.query(models[dim]).filter(models[dim].id.in_(ids))}
     if dim == "manager":

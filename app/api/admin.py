@@ -28,7 +28,7 @@ from ..services.audit import ACTION_NAMES
 from ..services.orders import normalize_phone, to_int
 from ..services.reports import period_bounds
 from ..web import f_details, parse_date, today_local
-from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn, NpAccountIn, NpRuleIn, ShopCheckOut, ShopIn, ShopSyncOut, CashierCheckOut, CashierIn, TestDataIn, TestDataOut
+from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn, NpAccountIn, NpRuleIn, ShopCheckOut, ShopIn, ShopSyncOut, CashierCheckOut, CashierIn, TestDataIn, TestDataOut, LegalEntityIn
 from .common import admin, bad, iso, j_payment, j_payment_method, j_source, j_status, j_user, sales
 
 router = APIRouter(prefix="/api", tags=["admin"])
@@ -182,7 +182,8 @@ def test_data_action(body: TestDataIn, db: Session = Depends(get_db), user: User
 # ---------------------------------------------------------------- налаштування
 NP_FIELDS = ("name", "sender_ref", "sender_name", "contact_ref", "contact_name", "sender_phone", "city_name", "city_ref",
              "warehouse_name", "warehouse_ref", "payer", "cargo_type", "service_type", "cod_mode", "cod_payer",
-             "info_comment", "info_items", "info_item_ids", "seat_size", "description", "office_id", "is_default", "is_active")
+             "info_comment", "info_items", "info_item_ids", "seat_size", "description", "office_id", "legal_entity_id",
+             "is_default", "is_active")
 
 
 def j_np_account(a: NpAccount) -> dict:
@@ -204,7 +205,7 @@ def j_shop(x: MarketplaceShop) -> dict:
 def j_cashier(c: CheckboxCashier) -> dict:
     return {"id": c.id, "name": c.name, "license_key": "********" if c.license_key else "", "login": c.login,
             "password": "********" if c.password else "", "test_mode": c.test_mode, "auto_shift": c.auto_shift,
-            "condition": c.condition, "condition_value": c.condition_value, "sort": c.sort, "is_active": c.is_active,
+            "legal_entity_id": c.legal_entity_id, "condition": c.condition, "condition_value": c.condition_value, "sort": c.sort, "is_active": c.is_active,
             "last_error": c.last_error or ""}
 
 
@@ -226,7 +227,7 @@ def _settings_payload(request: Request, db: Session) -> dict:
         "stock_actions": STOCK_ACTIONS,
         "roles": ROLES,
         "payment_methods": [j_payment_method(m) for m in db.query(PaymentMethod).order_by(PaymentMethod.sort, PaymentMethod.id)],
-        "order_sources": [j_source(x) for x in db.query(OrderSource).order_by(OrderSource.sort, OrderSource.id)],
+        "order_sources": [{**j_source(x), "office_id": x.office_id} for x in db.query(OrderSource).order_by(OrderSource.sort, OrderSource.id)],
         "offices": [j_source(x) for x in db.query(Office).order_by(Office.sort, Office.id)],
         "reasons": [j_source(x) for x in db.query(StatusReason).order_by(StatusReason.sort, StatusReason.id)],
         "marks": [j_source(x) for x in db.query(OrderMark).order_by(OrderMark.sort, OrderMark.id)],
@@ -237,7 +238,21 @@ def _settings_payload(request: Request, db: Session) -> dict:
         "np_statuses": np_svc.NP_STATUSES,
         "shops": [j_shop(x) for x in db.query(MarketplaceShop).order_by(MarketplaceShop.id)],
         "cashiers": [j_cashier(c) for c in db.query(CheckboxCashier).order_by(CheckboxCashier.sort, CheckboxCashier.id)],
+        "legal_entities": _legal_entities(db),
     }
+
+
+def _legal_entities(db: Session) -> list[dict]:
+    from sqlalchemy import func
+    from ..models import LegalEntity
+    counts = dict(db.query(Order.legal_entity_id, func.count(Order.id)).filter(Order.legal_entity_id.isnot(None))
+                  .group_by(Order.legal_entity_id).all())
+    cashiers = {c.legal_entity_id: c.name or f"Каса {c.id}" for c in db.query(CheckboxCashier)
+                .filter(CheckboxCashier.is_active.is_(True), CheckboxCashier.legal_entity_id.isnot(None))
+                .order_by(CheckboxCashier.sort.desc())}
+    return [{"id": x.id, "name": x.name, "code": x.code, "iban": x.iban, "is_default": x.is_default,
+             "is_active": x.is_active, "sort": x.sort, "orders": counts.get(x.id, 0), "cashier": cashiers.get(x.id, "")}
+            for x in db.query(LegalEntity).order_by(LegalEntity.sort, LegalEntity.id)]
 
 
 @router.get("/settings", response_model=SettingsOut)
@@ -283,6 +298,8 @@ def statuses_save(request: Request, body: list[StatusIn], db: Session = Depends(
         s.counts_as_approved = bool(d.get("approved"))
         s.is_final = bool(d.get("final"))
         s.is_active = bool(d.get("active")) or s.code == "new"
+        if d.get("stage") in ("lead", "order"):
+            s.stage = d["stage"]
     audit.log(db, user, "settings", None, "update", {"поля": ["statuses"]})
     db.commit()
     return _settings_payload(request, db)
@@ -367,6 +384,11 @@ def directory_save(kind: str, request: Request, body: list[SourceIn], db: Sessio
         x.name, x.is_active, x.sort = b.name.strip()[:120], b.active, b.sort
         if kind == "reasons" and b.status_ids is not None:
             x.status_ids = sorted({int(i) for i in b.status_ids})
+        if kind == "sources":
+            office = b.office_id if b.office_id and db.get(Office, b.office_id) else None
+            if x.id and x.office_id != office:  # відділ = сукупність джерел: переносимо й наявні замовлення
+                db.query(Order).filter(Order.source_id == x.id).update({"office_id": office}, synchronize_session=False)
+            x.office_id = office
     audit.log(db, user, "settings", None, "update", {"поля": [title]})
     db.commit()
     return _settings_payload(request, db)
@@ -505,6 +527,7 @@ def cashiers_save(request: Request, body: list[CashierIn], db: Session = Depends
             db.add(c)
         c.name, c.login, c.test_mode, c.auto_shift = b.name.strip(), b.login.strip(), b.test_mode, b.auto_shift
         c.condition, c.is_active, c.sort = b.condition, b.is_active, i * 10
+        c.legal_entity_id = b.legal_entity_id or None
         c.condition_value = b.condition_value if b.condition != "none" else None
         for f in ("license_key", "password"):
             v = getattr(b, f)
@@ -621,6 +644,41 @@ def user_update(uid: int, body: UserIn, db: Session = Depends(get_db), user: Use
 
 
 # Загальне збереження розділу — в кінці файлу, щоб не перехоплювати конкретні маршрути (/settings/statuses тощо)
+@router.put("/settings/legal-entities", response_model=SettingsOut)
+def legal_entities_save(request: Request, body: list[LegalEntityIn], db: Session = Depends(get_db), user: User = Depends(admin)):
+    """Юридичні особи цілим списком. Рівно одна — за замовчуванням (для нових замовлень)."""
+    from ..models import LegalEntity
+    by_id = {x.id: x for x in db.query(LegalEntity).all()}
+    for i, b in enumerate(body):
+        x = by_id.get(b.id) if b.id else None
+        if b.delete:
+            if x is not None:
+                if db.query(Order).filter(Order.legal_entity_id == x.id).first():
+                    x.is_active, x.is_default = False, False
+                else:
+                    db.delete(x)
+            continue
+        if not b.name.strip():
+            bad("Вкажіть назву юридичної особи")
+        if x is None:
+            x = LegalEntity()
+            db.add(x)
+        x.name, x.code, x.iban = b.name.strip()[:255], b.code.strip()[:20], b.iban.strip().replace(" ", "")[:34]
+        x.is_default, x.is_active, x.sort = b.is_default and b.is_active, b.is_active, (i + 1) * 10
+    db.flush()
+    rows = db.query(LegalEntity).order_by(LegalEntity.sort, LegalEntity.id).all()
+    defaults = [x for x in rows if x.is_default]
+    for x in rows:
+        x.is_default = bool(defaults) and x is defaults[0]
+    if rows and not defaults:
+        first = next((x for x in rows if x.is_active), None)
+        if first is not None:
+            first.is_default = True
+    audit.log(db, user, "settings", None, "update", {"поля": ["юридичні особи"]})
+    db.commit()
+    return _settings_payload(request, db)
+
+
 @router.put("/settings/{section}", response_model=SettingsOut)
 def settings_save(section: str, request: Request, data: dict[str, str | bool | int | None], db: Session = Depends(get_db),
                   user: User = Depends(admin)):
@@ -642,3 +700,4 @@ def settings_save(section: str, request: Request, data: dict[str, str | bool | i
         audit.log(db, user, "settings", None, "update", {"поля": changed})
     db.commit()
     return _settings_payload(request, db)
+

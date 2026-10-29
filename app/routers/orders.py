@@ -34,6 +34,8 @@ def _filters(request: Request) -> dict:
 
 
 def _apply(q, f: dict, with_status: bool = True):
+    if f.get("stage") in ("lead", "order"):  # розділ «Ліди» / «Замовлення»
+        q = q.filter(Order.status.has(Status.stage == f["stage"]))
     if with_status and f.get("status"):
         q = q.filter(Order.status_id == svc.to_int(f["status"]))
     text = f.get("q")

@@ -6,7 +6,7 @@ import type { Status } from "../lib/types";
 
 export function Pill({ status, children }: { status?: Status; children?: ReactNode }) {
   if (!status) return null;
-  return <span className="pill" style={{ ["--c" as string]: status.color }}>{children ?? status.name}</span>;
+  return <span className="pill" title={status.name} style={{ ["--c" as string]: status.color }}>{children ?? status.name}</span>;
 }
 
 export function Badge({ kind = "", children, title }: { kind?: "" | "ok" | "bad" | "warn" | "info"; children: ReactNode; title?: string }) {

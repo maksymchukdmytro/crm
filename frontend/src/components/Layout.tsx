@@ -1,18 +1,22 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  BarChart3, Boxes, History, KanbanSquare, ListOrdered, LogOut, Menu, Package, Plus, Search, Settings,
-  ShoppingCart, Activity, Wallet, ChartColumnStacked,
+  Activity, BarChart3, Boxes, ChartColumnStacked, Contact, History, Inbox, KanbanSquare, LogOut, Menu, Package, PackagePlus,
+  Plus, ReceiptText, Search, Settings, ShoppingCart, Wallet,
 } from "lucide-react";
-import { api, ROOT } from "../lib/api";
+import { api, qs, ROOT } from "../lib/api";
 import { useLive, useMeta } from "../lib/app";
+import type { OrderList } from "../lib/types";
 import CommandPalette from "./CommandPalette";
 import { ErrorBoundary } from "../lib/monitoring";
 
-const NAV: Record<string, { to: string; label: string; icon: typeof ListOrdered }> = {
-  orders: { to: "/orders", label: "Замовлення", icon: ListOrdered },
+type Item = { to: string; label: string; icon: typeof Inbox };
+const NAV: Record<string, Item> = {
+  leads: { to: "/leads", label: "Ліди", icon: Inbox },
+  orders: { to: "/orders", label: "Замовлення", icon: ReceiptText },
   board: { to: "/board", label: "Дошка", icon: KanbanSquare },
+  customers: { to: "/customers", label: "Покупці", icon: Contact },
   products: { to: "/products", label: "Товари", icon: Package },
   warehouse: { to: "/warehouse", label: "Склад", icon: Boxes },
   purchases: { to: "/purchases", label: "Закупівлі", icon: ShoppingCart },
@@ -23,6 +27,13 @@ const NAV: Record<string, { to: string; label: string; icon: typeof ListOrdered 
   settings: { to: "/settings", label: "Налаштування", icon: Settings },
   system: { to: "/system", label: "Система", icon: Activity },
 };
+// групи меню — за видом роботи
+const GROUPS: [string, string[]][] = [
+  ["Продажі", ["leads", "orders", "board", "customers"]],
+  ["Склад", ["products", "warehouse", "purchases"]],
+  ["Гроші й аналітика", ["payments", "stats", "reports"]],
+  ["Керування", ["audit", "settings", "system"]],
+];
 
 export default function Layout() {
   const meta = useMeta();
@@ -31,6 +42,15 @@ export default function Layout() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [palette, setPalette] = useState(false);
+  const canProducts = meta.user.role === "admin" || meta.user.role === "warehouse";
+  // скільки нових лідів чекає на обробку
+  const leads = useQuery({
+    queryKey: ["nav-leads"], enabled: meta.nav.includes("leads"), refetchInterval: 60_000,
+    queryFn: () => api.get<OrderList>(`/orders${qs({ stage: "lead", limit: 1 })}`),
+  });
+  const newStatus = meta.statuses.find((s) => s.code === "new")?.id;
+  const fresh = newStatus ? leads.data?.counts?.[String(newStatus)] ?? 0 : 0;
+  const leadTotal = leads.data?.total ?? 0;
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -54,14 +74,30 @@ export default function Layout() {
         <div className="brand"><span className="brand-mark" /><span>{meta.company}</span>
           <span className={`live-dot ${live ? "on" : ""}`} title={live ? "Оновлення в реальному часі" : "Оновлення кожні 30 с"} />
         </div>
-        <button className="new" onClick={() => nav("/orders/new")}><Plus size={16} /> Нове замовлення</button>
+        <div className="side-actions" style={canProducts ? undefined : { gridTemplateColumns: "1fr" }}>
+          <button className="new" onClick={() => { nav("/orders/new"); setOpen(false); }}><Plus size={16} /> Замовлення</button>
+          {canProducts && <button className="new-product" title="Додати товар" onClick={() => { nav("/products?new=1"); setOpen(false); }}><PackagePlus size={16} /> Товар</button>}
+        </div>
         <button className="search-btn" onClick={() => setPalette(true)}><Search size={15} /> Пошук <kbd>Ctrl K</kbd></button>
         <nav>
-          {meta.nav.map((k) => {
-            const n = NAV[k];
-            if (!n) return null;
-            const Icon = n.icon;
-            return <NavLink key={k} to={n.to} className={({ isActive }) => (isActive ? "on" : "")}><Icon size={16} />{n.label}</NavLink>;
+          {GROUPS.map(([title, keys]) => {
+            const items = keys.filter((k) => meta.nav.includes(k) && NAV[k]);
+            if (!items.length) return null;
+            return (
+              <div className="nav-group" key={title}>
+                <div className="nav-title">{title}</div>
+                {items.map((k) => {
+                  const n = NAV[k];
+                  const Icon = n.icon;
+                  return (
+                    <NavLink key={k} to={n.to} className={({ isActive }) => (isActive ? "on" : "")}>
+                      <Icon size={17} />{n.label}
+                      {k === "leads" && leadTotal > 0 && <span className={`count ${fresh ? "hot" : ""}`} title={fresh ? `${fresh} нових` : `${leadTotal} у роботі`}>{fresh || leadTotal}</span>}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            );
           })}
         </nav>
         <div className="side-foot">

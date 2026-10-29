@@ -12,6 +12,7 @@ from . import db as dbmod
 from .api import admin as api_admin
 from .api import catalog as api_catalog
 from .api import core as api_core
+from .api import customers as api_customers
 from .api import orders as api_orders
 from .api import stats as api_stats
 from .config import config
@@ -75,7 +76,7 @@ def create_app(database_url: str | None = None, run_seed: bool = True) -> FastAP
                 monitoring.observe(request.method, path, status, monitoring.timed() - t)
 
     # JSON API для нового інтерфейсу
-    for r in (api_core, api_orders, api_catalog, api_admin, api_stats):
+    for r in (api_core, api_orders, api_catalog, api_admin, api_stats, api_customers):
         app.include_router(r.router)
     # Прийом заявок (webhook) і довідники Нової Пошти
     app.include_router(api.router)
@@ -158,10 +159,20 @@ def create_app(database_url: str | None = None, run_seed: bool = True) -> FastAP
     if (SPA_DIR / "assets").is_dir():
         app.mount("/assets", StaticFiles(directory=str(SPA_DIR / "assets")), name="spa-assets")
 
+    @app.get("/media/{path:path}", include_in_schema=False)
+    def media(path: str):
+        """Фото товарів (публічні — їх показують і на маркетплейсах). Лише файли всередині MEDIA_DIR."""
+        from fastapi.responses import FileResponse
+        root = Path(config.MEDIA_DIR).resolve()
+        f = (root / path).resolve()
+        if root not in f.parents or not f.is_file():
+            return JSONResponse({"error": "Не знайдено"}, status_code=404)
+        return FileResponse(f, headers={"Cache-Control": "public, max-age=31536000, immutable"})
+
     @app.get("/{path:path}", include_in_schema=False)
     def spa(path: str):
         """Усі інші адреси — новий інтерфейс (маршрутизацію робить сам застосунок)."""
-        if path.startswith(("api/", "static/", "assets/")):
+        if path.startswith(("api/", "static/", "assets/", "media/")):
             return JSONResponse({"error": "Не знайдено"}, status_code=404)
         html = _spa_index()
         if html is None:

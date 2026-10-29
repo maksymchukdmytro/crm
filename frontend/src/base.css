@@ -153,7 +153,8 @@ table.t { width: 100%; border-collapse: collapse; background: var(--panel); }
 .t .sub { display: block; color: var(--muted); font-size: 12px; }
 .tablewrap { overflow-x: auto; }
 table.dense td { padding: 6px 10px; }
-table.dense td, table.dense th { font-size: 13.5px; }
+table.dense td { font-size: 13.5px; }
+.t th.num { text-align: right; }
 .ell { max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Мітки статусів і бейджі (як теги в Notion) */
@@ -327,8 +328,8 @@ body.embed .oc-head { padding-right: 40px; }
 }
 @media (max-width: 760px) {
   .shell { grid-template-columns: 1fr; }
-  .side { position: fixed; left: 0; top: 0; bottom: 0; width: 250px; z-index: 50; transform: translateX(-100%); transition: transform .2s; box-shadow: var(--shadow-lg); }
-  .side.open { transform: none; }
+  .side { position: fixed; left: 0; top: 0; bottom: 0; width: 250px; z-index: 50; transform: translateX(-100%); transition: transform .2s, box-shadow .2s; box-shadow: none; }
+  .side.open { transform: none; box-shadow: var(--shadow-lg); }
   .burger { display: inline-grid; place-items: center; background: #fff; border: 1px solid var(--line); border-radius: 6px; width: 34px; height: 34px; margin-bottom: 12px; cursor: pointer; color: var(--ink); }
   .main, body.embed .main { padding: 14px 14px 60px; }
   .filters input[type=search] { min-width: 0; width: 100%; }

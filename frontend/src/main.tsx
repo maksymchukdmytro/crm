@@ -4,6 +4,7 @@ import App from "./App";
 import { initMonitoring } from "./lib/monitoring";
 import "./base.css";
 import "./app.css";
+import "./theme.css";
 
 initMonitoring();
 

@@ -39,7 +39,7 @@ export default function SystemPage() {
 
   return (
     <div>
-      <div className="head"><h1>Система</h1>
+      <div className="head"><h1><span className="h-ico"><Activity size={18} /></span>Система</h1>
         <div className="actions">{isFetching && <span className="spinner sm" />}<span className="muted">Версія {data.version}</span></div></div>
 
       <div className={`sys-banner ${allOk && !data.alerts.length ? "ok" : "bad"}`}>

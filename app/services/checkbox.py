@@ -116,7 +116,23 @@ class Api:
         return self._req("GET", f"/receipts/{rid}")
 
 
+def order_entity(db: Session, order: Order):
+    """Юрособа замовлення, а якщо не вибрана — юрособа за замовчуванням."""
+    from ..models import LegalEntity
+    if order.legal_entity_id:
+        return db.get(LegalEntity, order.legal_entity_id)
+    return db.query(LegalEntity).filter(LegalEntity.is_default.is_(True), LegalEntity.is_active.is_(True)).first()
+
+
 def pick_cashier(db: Session, order: Order) -> CheckboxCashier | None:
+    """Каса — за юридичною особою замовлення. Якщо юросіб ще не заведено, діють старі умови вибору."""
+    from ..models import LegalEntity
+    if db.query(LegalEntity).count():
+        entity = order_entity(db, order)
+        if entity is None:
+            return None
+        return (db.query(CheckboxCashier).filter(CheckboxCashier.is_active.is_(True), CheckboxCashier.legal_entity_id == entity.id)
+                .order_by(CheckboxCashier.sort, CheckboxCashier.id).first())
     for c in db.query(CheckboxCashier).filter(CheckboxCashier.is_active.is_(True)).order_by(CheckboxCashier.sort, CheckboxCashier.id):
         v = c.condition_value
         if c.condition == "none" \
@@ -174,7 +190,10 @@ def create_receipt(db: Session, order: Order, kind: str, user=None) -> CheckboxR
         raise CheckboxError("Чек продажу для цього замовлення вже є")
     cashier = pick_cashier(db, order)
     if cashier is None:
-        raise CheckboxError("Немає каси Checkbox для цього замовлення (Налаштування → Checkbox)")
+        entity = order_entity(db, order)
+        if entity is not None:
+            raise CheckboxError(f"Для юрособи «{entity.name}» немає активної каси Checkbox (Налаштування → Checkbox)")
+        raise CheckboxError("Немає каси Checkbox для цього замовлення: виберіть юрособу або задайте її за замовчуванням")
     body, total = build_body(order, kind, cashier)
     rec = CheckboxReceipt(order_id=order.id, cashier_id=cashier.id, kind=kind, total=total, test=cashier.test_mode,
                           checkbox_id=body["id"])

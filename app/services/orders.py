@@ -5,21 +5,21 @@ from decimal import Decimal, InvalidOperation
 
 from sqlalchemy.orm import Session
 
-from ..models import COUNTRIES, Office, Order, OrderComment, OrderItem, OrderMark, OrderSource, PaymentMethod, Product, Status, StatusReason, User, utcnow
-from . import audit, events, payments, sms, stock
+from ..models import COUNTRIES, Office, Order, OrderComment, OrderItem, OrderMark, OrderSource, PaymentMethod, Product, ProductVariant, Status, StatusReason, User, utcnow
+from . import audit, customers, events, payments, sms, stock
 from . import settings as st
 from .names import join_name, split_full_name
 
 NAME_PARTS = ("last_name", "first_name", "middle_name")
 ORDER_FIELDS = [
     "customer_name", *NAME_PARTS, "phone", "email", "comment", "country",
-    "office_id", "np_account_id", "reason_id", "mark_id", "remind_at",
+    "office_id", "np_account_id", "legal_entity_id", "reason_id", "mark_id", "remind_at",
     "delivery_method", "city_name", "city_ref", "warehouse_name", "warehouse_ref", "address", "postcode",
     "ttn", "delivery_cost", "payment_type", "payment_method_id", "prepayment", "discount",
     "source_id", "extra1", "extra2", "extra3", "extra4", "site", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
 ]
 MONEY_FIELDS = {"delivery_cost", "prepayment", "discount"}
-ID_FIELDS = {"payment_method_id", "source_id", "office_id", "np_account_id", "reason_id", "mark_id"}
+ID_FIELDS = {"payment_method_id", "source_id", "office_id", "np_account_id", "legal_entity_id", "reason_id", "mark_id"}
 
 
 def normalize_phone(raw: str | None) -> str:
@@ -100,21 +100,43 @@ def build_items(db: Session, items_data: list[dict]) -> list[OrderItem]:
         if qty <= 0:
             continue
         product = None
+        variant = None
         pid = to_int(d.get("product_id"), 0)
+        vid = to_int(d.get("variant_id"), 0)
+        if vid:
+            variant = db.get(ProductVariant, vid)
+            if variant is not None and pid and variant.product_id != pid:
+                variant = None
         if pid:
             product = db.get(Product, pid)
+        elif variant is not None:
+            product = variant.product
         elif d.get("sku"):
-            product = db.query(Product).filter(Product.sku == str(d["sku"]).strip()).one_or_none()
-        name = (d.get("name") or "").strip() or (product.name if product else "")
+            sku = str(d["sku"]).strip()
+            product = db.query(Product).filter(Product.sku == sku).one_or_none()
+            if product is None:  # артикул варіанта
+                variant = db.query(ProductVariant).filter(ProductVariant.sku == sku).one_or_none()
+                product = variant.product if variant is not None else None
+        if product is not None and variant is None and product.variants and vid:
+            variant = next((v for v in product.variants if v.id == vid), None)
+        name = (d.get("name") or "").strip()
+        if not name and product is not None:
+            name = f"{product.name} ({variant.name})" if variant is not None and variant.name else product.name
         if not name:
             continue
         price = d.get("price")
-        price = to_money(price) if price not in (None, "") else (Decimal(product.price) if product else Decimal(0))
+        if price not in (None, ""):
+            price = to_money(price)
+        elif variant is not None and variant.price is not None:
+            price = Decimal(variant.price)
+        else:
+            price = product.sale_price if product is not None else Decimal(0)
         is_upsell = str(d.get("is_upsell", "")).lower() in ("1", "true", "on", "yes")
         upsell_for = to_int(d.get("upsell_for"), 0) if is_upsell else 0
         result.append(
             OrderItem(
                 product_id=product.id if product else None,
+                variant_id=variant.id if variant is not None else None,
                 name=name,
                 price=price,
                 cost=Decimal(product.cost) if product else Decimal(0),
@@ -185,11 +207,15 @@ def _apply_directories(db: Session, fields: dict):
             fields["payment_method_id"] = None
         else:
             fields["payment_type"] = m.kind
-    from ..models import NpAccount
+    from ..models import LegalEntity, NpAccount
     for key, model in (("source_id", OrderSource), ("office_id", Office), ("reason_id", StatusReason),
-                       ("mark_id", OrderMark), ("np_account_id", NpAccount)):
+                       ("mark_id", OrderMark), ("np_account_id", NpAccount), ("legal_entity_id", LegalEntity)):
         if fields.get(key) and db.get(model, fields[key]) is None:
             fields[key] = None
+    if fields.get("source_id"):  # відділ визначається джерелом
+        src = db.get(OrderSource, fields["source_id"])
+        if src is not None and src.office_id:
+            fields["office_id"] = src.office_id
 
 
 def create_order(db: Session, data: dict, items_data: list[dict], user: User | None = None,
@@ -218,6 +244,7 @@ def create_order(db: Session, data: dict, items_data: list[dict], user: User | N
     order.items = build_items(db, items_data)
     recalc(order)
     db.add(order)
+    customers.attach(db, order)
     db.flush()
     events.order_changed(db, order.id)
     audit.log(db, user, "order", order.id, "create", {
@@ -235,6 +262,8 @@ def update_order(db: Session, order: Order, data: dict, user: User | None) -> di
     if "phone" in changes:
         dup = find_duplicate(db, order.phone, exclude_id=order.id)
         order.duplicate_of_id = dup.id if dup and dup.id < order.id else None
+    if changes.keys() & {"phone", "customer_name", "last_name", "first_name", "middle_name", "email"}:
+        customers.attach(db, order)
     recalc(order)
     if order.stock_shipped:
         payments.ensure_cod_payment(db, order)
@@ -245,7 +274,7 @@ def update_order(db: Session, order: Order, data: dict, user: User | None) -> di
 
 
 def set_items(db: Session, order: Order, items_data: list[dict], user: User | None):
-    old_items = [(i.product_id, i.qty) for i in order.items]
+    old_items = [(i.product_id, i.qty, i.variant_id) for i in order.items]
     old_desc = [f"{i.name} × {i.qty} = {i.price}" for i in order.items]
     order.items.clear()
     db.flush()

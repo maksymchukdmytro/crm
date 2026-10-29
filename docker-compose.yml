@@ -28,6 +28,8 @@ services:
     build: .
     restart: unless-stopped
     command: web
+    volumes:
+      - media:/app/media
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://crm:${DB_PASSWORD}@db:5432/crm
@@ -44,6 +46,8 @@ services:
     build: .
     restart: unless-stopped
     command: worker
+    volumes:
+      - media:/app/media
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://crm:${DB_PASSWORD}@db:5432/crm
@@ -75,5 +79,6 @@ services:
 
 volumes:
   pgdata:
+  media:
   caddy_data:
   caddy_config:

@@ -54,6 +54,18 @@ export type BulkResult = S["BulkOut"];
 export type OrderInput = S["OrderIn"];
 
 // Рядок товару у формі картки: ціна редагується як текст, key — для React
-export type OrderItem = Omit<S["OrderItemOut"], "price" | "sku" | "available" | "upsell_for_name" | "base_price"> & {
+export type OrderItem = Omit<S["OrderItemOut"], "price" | "sku" | "available" | "upsell_for_name" | "base_price" | "variant_id" | "variant_name" | "photo"> & {
   price: number | string; sku?: string; available?: number | null; key?: string; upsell_for_name?: string; base_price?: number | null;
+  variant_id?: number | null; variant_name?: string; photo?: string | null;
 };
+
+export type Customer = S["CustomerOut"];
+export type CustomerList = S["CustomerListOut"];
+export type CustomerDetail = S["CustomerDetailOut"];
+export type CustomerGroup = S["CustomerGroupOut"];
+export type Category = S["CategoryOut"];
+export type Manufacturer = S["ManufacturerOut"];
+export type AttributeGroup = S["AttributeGroupOut"];
+export type LegalEntity = S["LegalEntityOut"];
+export type BlockedIp = S["BlockedIpOut"];
+export type Variant = S["VariantOut"];

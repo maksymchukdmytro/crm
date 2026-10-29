@@ -1,3 +1,4 @@
+import { UserRound } from "lucide-react";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
@@ -39,7 +40,7 @@ export function ProfilePage() {
   });
   return (
     <div>
-      <div className="head"><h1>Мій профіль</h1></div>
+      <div className="head"><h1><span className="h-ico"><UserRound size={18} /></span>Мій профіль</h1></div>
       <form className="card form narrow" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
         <Field label="Логін"><input value={meta.user.username} disabled /></Field>
         <Field label="Ім'я"><input value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} /></Field>
