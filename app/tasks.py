@@ -73,6 +73,42 @@ def _push_job(order_id: int) -> str | None:
         return err
 
 
+def _receipt_job(order_id: int, kind: str) -> dict:
+    from .services import checkbox
+    with dbmod.SessionLocal() as db:
+        order = db.get(Order, order_id)
+        if order is None:
+            return {"skipped": True}
+        try:
+            rec = checkbox.create_receipt(db, order, kind)
+            db.commit()
+            if rec.status == "error":
+                events.publish("toast", kind="error", text=f"№{order_id}: {rec.error}")
+            return {"status": rec.status}
+        except checkbox.CheckboxError as e:
+            db.rollback()
+            events.publish("toast", kind="error", text=f"№{order_id}: {e}")
+            return {"error": str(e)}
+
+
+def _close_shifts_job() -> int:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    from .services import checkbox
+    if datetime.now(ZoneInfo("Europe/Kyiv")).hour != 23:
+        return 0
+    with dbmod.SessionLocal() as db:
+        return checkbox.close_shifts(db)
+
+
+async def checkbox_receipt(ctx, order_id: int, kind: str) -> dict:
+    return await asyncio.to_thread(_receipt_job, order_id, kind)
+
+
+async def checkbox_close_shifts(ctx) -> int:
+    return await asyncio.to_thread(_close_shifts_job)
+
+
 async def marketplaces_sync(ctx) -> dict:
     return await asyncio.to_thread(_marketplaces_job)
 
@@ -147,6 +183,7 @@ class WorkerSettings:
         func(create_ttn, keep_result=600, max_tries=1, timeout=90),
         func(track_carrier, keep_result=0, max_tries=1, timeout=600),
         func(marketplace_push, keep_result=0, max_tries=3, timeout=60),
+        func(checkbox_receipt, keep_result=0, max_tries=1, timeout=90),
     ]
     cron_jobs = [
         cron(track_all, minute=set(range(0, 60, 5)), run_at_startup=True),
@@ -154,6 +191,7 @@ class WorkerSettings:
         cron(heartbeat, second={0, 30}),
         cron(alerts, second={40}),
         cron(marketplaces_sync, minute=set(range(2, 60, 5)), timeout=600),
+        cron(checkbox_close_shifts, minute={1}, timeout=300),
     ]
     on_startup = startup
     max_jobs = 10

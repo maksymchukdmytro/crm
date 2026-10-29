@@ -281,6 +281,11 @@ def change_status(db: Session, order: Order, new_status: Status, user: User | No
     sms.queue_for_status(db, order, new_status)
     if order.shop_id and order.external_id:  # передати статус на маркетплейс (через чергу, без неї — одразу)
         _push_marketplace(db, order)
+    try:  # автоматичні чеки Checkbox за статусом
+        from .checkbox import CheckboxError, on_status
+        on_status(db, order)
+    except CheckboxError:
+        pass
     return True
 
 

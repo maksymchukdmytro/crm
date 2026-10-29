@@ -4,12 +4,12 @@ import { ArrowDown, ArrowUp, Copy, Plus, RefreshCw, Trash2 } from "lucide-react"
 import { api } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, phone } from "../lib/format";
-import type { DirItem, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
+import type { Cashier, DirItem, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { Badge, Empty, Field, NpAutocomplete, Spinner } from "../components/ui";
 
 type S = Settings;
-const TABS = { general: "Загальні", dirs: "Довідники", market: "Маркетплейси", webhook: "Прийом заявок", delivery: "Доставка", sms: "SMS / Viber", statuses: "Статуси", users: "Користувачі" };
+const TABS = { general: "Загальні", dirs: "Довідники", market: "Маркетплейси", checkbox: "Checkbox", webhook: "Прийом заявок", delivery: "Доставка", sms: "SMS / Viber", statuses: "Статуси", users: "Користувачі" };
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<keyof typeof TABS>(() => (localStorage.getItem("crm-settings-tab") as keyof typeof TABS) || "general");
@@ -23,6 +23,7 @@ export default function SettingsPage() {
         {tab === "general" && <General s={data} />}
         {tab === "dirs" && <Directories s={data} />}
         {tab === "market" && <Shops s={data} />}
+        {tab === "checkbox" && <CheckboxSettings s={data} />}
         {tab === "webhook" && <Webhook s={data} />}
         {tab === "delivery" && <Delivery s={data} />}
         {tab === "sms" && <Sms s={data} />}
@@ -663,6 +664,80 @@ function Shops({ s }: { s: S }) {
         })}
       </div>
       {rows.length > 0 && <div className="form-actions mt"><button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти</button></div>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- Checkbox
+type CashRow = Cashier & { key: string; delete?: boolean };
+const COND = { none: "Без умови (для всіх)", office: "Відділ замовлення", user: "Менеджер замовлення", np_account: "Відправник ТТН (ключ НП)" };
+
+function CheckboxSettings({ s }: { s: S }) {
+  const save = useSave();
+  const toast = useToast();
+  const [rows, setRows] = useState<CashRow[]>(() => s.cashiers.map((c) => ({ ...c, key: rk() })));
+  const auto = useForm(s, ["cb_sell_status", "cb_return_status", "cb_prepay_status", "cb_postpay_status"]);
+  const upd = (key: string, patch: Partial<CashRow>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  const move = (i: number, d: number) => { const a = [...rows]; const j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; setRows(a); };
+  const visible = rows.map((r, i) => [r, i] as const).filter(([r]) => !r.delete);
+  const options = (c: CashRow): [number, string][] => c.condition === "office" ? s.offices.filter((o) => o.active).map((o) => [o.id, o.name])
+    : c.condition === "user" ? s.users.filter((u) => u.is_active).map((u) => [u.id, u.name])
+    : c.condition === "np_account" ? s.np_accounts.map((a) => [a.id, a.name || `Ключ ${a.id}`]) : [];
+  const check = async (id: number) => { try { const r = await api.post<{ message: string }>(`/settings/checkbox-cashiers/${id}/check`); toast(r.message); } catch (e) { toast(errText(e), "error"); } };
+  const statuses = s.statuses.filter((x) => x.active);
+  return (
+    <div className="stack">
+      <div className="card">
+        <div className="card-head"><h2>Каси Checkbox <span className="muted">{visible.length}</span></h2>
+          <button type="button" className="btn sm" onClick={() => setRows([...rows, { id: 0, name: "", license_key: "", login: "", password: "", test_mode: false, auto_shift: true, condition: "office", condition_value: null, sort: 0, is_active: true, last_error: "", key: rk() }])}><Plus size={14} /> Додати касу</button></div>
+        <p className="hint">Одна каса — один ФОП. Для чека береться перша каса згори, умова якої підходить до замовлення. Тип оплати в чеку — з виду оплати (Налаштування → Довідники → Види оплат, колонка «Checkbox»).</p>
+        {visible.length === 0 && <Empty>Кас ще немає. Ключ ліцензії, логін і пароль касира — у кабінеті Checkbox.</Empty>}
+        <div className="np-accs">
+          {visible.map(([c, i]) => (
+            <div className="np-acc open" key={c.key}>
+              <div className="form np-acc-b cb-row">
+                <div className="cols">
+                  <Field label="ПІБ касира" hint="Друкується в чеку"><input value={c.name} onChange={(e) => upd(c.key, { name: e.target.value })} /></Field>
+                  <Field label="Ключ ліцензії каси" hint="Кабінет Checkbox → Каси"><input className="mono" autoComplete="off" placeholder="не вказано" value={c.license_key} onChange={(e) => upd(c.key, { license_key: e.target.value })} /></Field>
+                </div>
+                <div className="cols">
+                  <Field label="Логін касира"><input value={c.login} autoComplete="off" onChange={(e) => upd(c.key, { login: e.target.value })} /></Field>
+                  <Field label="Пароль касира"><input type="password" autoComplete="new-password" placeholder={c.password ? "збережено" : "не вказано"} value={c.password === "********" ? "" : c.password} onChange={(e) => upd(c.key, { password: e.target.value || (c.id ? "********" : "") })} /></Field>
+                </div>
+                <div className="cols">
+                  <Field label="Умова вибору каси"><select value={c.condition} onChange={(e) => upd(c.key, { condition: e.target.value as Cashier["condition"], condition_value: null })}>
+                    {Object.entries(COND).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
+                  {c.condition !== "none" && <Field label="Значення"><select value={c.condition_value ?? ""} onChange={(e) => upd(c.key, { condition_value: e.target.value ? Number(e.target.value) : null })}>
+                    <option value="">оберіть</option>{options(c).map(([id, n]) => <option key={id} value={id}>{n}</option>)}</select></Field>}
+                </div>
+                {c.last_error && <p className="flash error">{c.last_error}</p>}
+                <div className="form-actions">
+                  <label className="check" title="Відкривати зміну перед першим чеком і закривати о 23:00"><input type="checkbox" checked={c.auto_shift} onChange={(e) => upd(c.key, { auto_shift: e.target.checked })} /> Автозміни</label>
+                  <label className="check" title="Тестовий сервер Checkbox — чеки не фіскальні"><input type="checkbox" checked={c.test_mode} onChange={(e) => upd(c.key, { test_mode: e.target.checked })} /> Тестова каса</label>
+                  <label className="check"><input type="checkbox" checked={c.is_active} onChange={(e) => upd(c.key, { is_active: e.target.checked })} /> Активна</label>
+                  <span className="spacer" />
+                  <button type="button" className="x" title="Вище" onClick={() => move(i, -1)}><ArrowUp size={13} /></button>
+                  <button type="button" className="x" title="Нижче" onClick={() => move(i, 1)}><ArrowDown size={13} /></button>
+                  <button type="button" className="btn sm" disabled={!c.id} onClick={() => check(c.id)}>Перевірити</button>
+                  <button type="button" className="btn sm danger" onClick={() => (c.id ? upd(c.key, { delete: true }) : setRows(rows.filter((r) => r.key !== c.key)))}><Trash2 size={13} /></button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {rows.length > 0 && <div className="form-actions mt"><button type="button" className="btn primary" disabled={save.isPending}
+          onClick={() => save.mutate({ path: "/settings/checkbox-cashiers", method: "put", body: rows.map(({ key: _k, last_error: _e, sort: _s, ...r }) => ({ ...r, id: r.id || undefined })) }, { onSuccess: (x) => setRows((x as S).cashiers.map((c) => ({ ...c, key: rk() }))) })}>Зберегти каси</button></div>}
+      </div>
+      <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/checkbox", body: auto.v }); }}>
+        <h2>Автоматичні чеки</h2>
+        <p className="hint">Чек створюється сам, коли замовлення переходить у вибраний статус (один раз на замовлення).</p>
+        <div className="cols">
+          {([["cb_sell_status", "Чек продажу"], ["cb_return_status", "Чек повернення"], ["cb_prepay_status", "Чек передоплати"], ["cb_postpay_status", "Чек післяплати"]] as const).map(([k, n]) => (
+            <Field key={k} label={n}><select {...auto.bind(k)}><option value="">вручну</option>{statuses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
+          ))}
+        </div>
+        <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button></div>
+      </form>
     </div>
   );
 }

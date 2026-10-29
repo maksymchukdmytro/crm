@@ -505,3 +505,54 @@ def test_rozetka_and_prom_import_and_status_push(api, db, products, monkeypatch)
     po = db.query(Order).filter(Order.external_id == "777").one()
     assert po.office_id == prom_office and po.payment_method_id == 10 and po.items[0].product_id is None
     assert po.total == 499
+
+
+# ------------------------------------------------------------------ Checkbox (етап 4)
+def test_checkbox_cashiers_and_receipts(api, db, products, monkeypatch):
+    import json as _json
+    import httpx
+    from app.services import checkbox as cb
+    sent = []
+
+    def handler(req: httpx.Request):
+        u = str(req.url)
+        if u.endswith("/cashier/signin"):
+            return httpx.Response(200, json={"access_token": "CBTOKEN"})
+        if u.endswith("/cashier/shift"):
+            return httpx.Response(200, json={"id": "sh1", "status": "CLOSED"})
+        if u.endswith("/shifts") and req.method == "POST":
+            return httpx.Response(202, json={"id": "sh1", "status": "OPENED"})
+        if u.endswith("/receipts/sell"):
+            body = _json.loads(req.content)
+            sent.append((req.headers.get("X-License-Key"), body))
+            return httpx.Response(201, json={"id": body["id"], "status": "DONE", "fiscal_code": f"FC-{len(sent)}"})
+        return httpx.Response(404, json={"message": "not found"})
+
+    monkeypatch.setattr(cb, "_client", httpx.Client(transport=httpx.MockTransport(handler)))
+    offices = api.put("/api/settings/dir/offices", json=[{"name": "ФОП А"}, {"name": "ФОП Б"}]).json()["offices"]
+    fa, fb = offices[0]["id"], offices[1]["id"]
+    s = api.put("/api/settings/checkbox-cashiers", json=[
+        {"name": "Касир А", "license_key": "LIC-A", "login": "a", "password": "pa", "condition": "office", "condition_value": fa},
+        {"name": "Касир Б", "license_key": "LIC-B", "login": "b", "password": "pb", "condition": "office", "condition_value": fb},
+    ]).json()
+    assert [c["license_key"] for c in s["cashiers"]] == ["********", "********"]
+    assert api.post(f"/api/settings/checkbox-cashiers/{s['cashiers'][0]['id']}/check").json()["shift"] == "CLOSED"
+
+    # ручний чек: каса за відділом, тип оплати з виду оплати (Післяплата Rozetka → RozetkaPay)
+    o = new_order(api, products, office_id=fb, payment_method_id=15, discount="47")
+    o = api.post(f"/api/orders/{o['id']}/receipts", json={"kind": "sell"}).json()
+    assert o["receipts"][0]["status"] == "done" and o["receipts"][0]["cashier"] == "Касир Б" and o["receipts"][0]["total"] == 850
+    lic, body = sent[-1]
+    assert lic == "LIC-B" and body["payments"][0]["type"] == "CASHLESS" and "RozetkaPay" in body["payments"][0]["label"]
+    assert body["goods"][0]["quantity"] == 2000 and body["goods"][0]["good"]["price"] == 39900
+    assert body["discounts"][0]["value"] == 4700 and o["receipts"][0]["url"].endswith(body["id"])
+    assert api.post(f"/api/orders/{o['id']}/receipts", json={"kind": "sell"}).status_code == 422  # другий чек продажу — ні
+
+    # автоматичний чек при статусі «Відправлено», повернення — з is_return
+    api.put("/api/settings/checkbox", json={"cb_sell_status": str(sid(db, "shipped"))})
+    o2 = new_order(api, products, office_id=fa, payment_method_id=9)
+    o2 = api.patch(f"/api/orders/{o2['id']}", json={"status_id": sid(db, "shipped"), "version": o2["version"]}).json()
+    assert sent[-1][0] == "LIC-A" and sent[-1][1]["payments"][0]["type"] == "CASH"
+    assert api.get(f"/api/orders/{o2['id']}").json()["receipts"][0]["kind"] == "sell"
+    api.post(f"/api/orders/{o2['id']}/receipts", json={"kind": "return"})
+    assert all(g["is_return"] for g in sent[-1][1]["goods"])

@@ -302,3 +302,11 @@ details.ocs > summary .muted { overflow: hidden; text-overflow: ellipsis; white-
 .mp-map-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 8px; align-items: center; font-size: 13px; }
 .mp-map-row select { height: 32px; }
 @media (max-width: 900px) { .mp-maps { grid-template-columns: 1fr; } }
+
+/* Чеки Checkbox у картці */
+.rc-list { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 8px; }
+.rc { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 6px; background: var(--side); font-size: 13px; }
+.rc.done { background: var(--ok-soft); }
+.rc.error { background: var(--bad-soft); }
+.rc a { display: inline-flex; align-items: center; gap: 3px; color: var(--accent); }
+.rc-actions { display: flex; gap: 6px; flex-wrap: wrap; }

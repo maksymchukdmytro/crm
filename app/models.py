@@ -313,6 +313,41 @@ class MarketplaceShop(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
+class CheckboxCashier(Base):
+    """Каса Checkbox (ПРРО): одна каса — один ФОП. Умова вибору перевіряється згори вниз."""
+    __tablename__ = "checkbox_cashiers"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(160), default="")  # ПІБ касира — друкується в чеку
+    license_key: Mapped[str] = mapped_column(String(128), default="")
+    login: Mapped[str] = mapped_column(String(128), default="")
+    password: Mapped[str] = mapped_column(String(128), default="")
+    test_mode: Mapped[bool] = mapped_column(Boolean, default=False)  # тестовий сервер Checkbox
+    auto_shift: Mapped[bool] = mapped_column(Boolean, default=True)  # відкривати зміну для чека, закривати о 23:00
+    condition: Mapped[str] = mapped_column(String(16), default="none")  # none / office / user / np_account
+    condition_value: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    token: Mapped[str] = mapped_column(Text, default="")
+    token_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_error: Mapped[str] = mapped_column(Text, default="")
+
+
+class CheckboxReceipt(Base):
+    """Чек Checkbox по замовленню: продажу, повернення, передоплати, післяплати."""
+    __tablename__ = "checkbox_receipts"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True)
+    cashier_id: Mapped[int | None] = mapped_column(ForeignKey("checkbox_cashiers.id", ondelete="SET NULL"), nullable=True)
+    kind: Mapped[str] = mapped_column(String(10))  # sell / return / prepay / postpay
+    checkbox_id: Mapped[str] = mapped_column(String(64), default="")
+    status: Mapped[str] = mapped_column(String(20), default="new")  # new / done / error
+    fiscal_code: Mapped[str] = mapped_column(String(64), default="")
+    total: Mapped[Decimal] = mapped_column(Money, default=0)
+    error: Mapped[str] = mapped_column(Text, default="")
+    test: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class Office(Base):
     """Відділ (ФОП, PROM, сайт, OLX…): доступ менеджерів, вибір каси Checkbox, замовлення маркетплейсів."""
     __tablename__ = "offices"

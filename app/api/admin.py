@@ -14,7 +14,7 @@ from ..carriers import CarrierError
 from ..carriers.novaposhta import NovaPoshta
 from ..config import config
 from ..db import get_db
-from ..models import CHECKBOX_PAYMENTS, ROLES, STOCK_ACTIONS, AuditLog, MarketplaceShop, NpAccount, NpStatusRule, Office, Order, OrderMark, OrderSource, Payment, PaymentMethod, StatusReason, SmsMessage, SmsTemplate, Status, User
+from ..models import CHECKBOX_PAYMENTS, ROLES, STOCK_ACTIONS, AuditLog, CheckboxCashier, MarketplaceShop, NpAccount, NpStatusRule, Office, Order, OrderMark, OrderSource, Payment, PaymentMethod, StatusReason, SmsMessage, SmsTemplate, Status, User
 from ..routers.payments import parse_registry
 from ..routers.settings import CHECKBOXES, SECTION_KEYS
 from ..security import hash_password
@@ -28,7 +28,7 @@ from ..services.audit import ACTION_NAMES
 from ..services.orders import normalize_phone, to_int
 from ..services.reports import period_bounds
 from ..web import f_details, parse_date, today_local
-from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn, NpAccountIn, NpRuleIn, ShopCheckOut, ShopIn, ShopSyncOut
+from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn, NpAccountIn, NpRuleIn, ShopCheckOut, ShopIn, ShopSyncOut, CashierCheckOut, CashierIn
 from .common import admin, bad, iso, j_payment, j_payment_method, j_source, j_status, j_user, sales
 
 router = APIRouter(prefix="/api", tags=["admin"])
@@ -178,6 +178,13 @@ def j_shop(x: MarketplaceShop) -> dict:
             "is_active": x.is_active}
 
 
+def j_cashier(c: CheckboxCashier) -> dict:
+    return {"id": c.id, "name": c.name, "license_key": "********" if c.license_key else "", "login": c.login,
+            "password": "********" if c.password else "", "test_mode": c.test_mode, "auto_shift": c.auto_shift,
+            "condition": c.condition, "condition_value": c.condition_value, "sort": c.sort, "is_active": c.is_active,
+            "last_error": c.last_error or ""}
+
+
 def _settings_payload(request: Request, db: Session) -> dict:
     s = st.get_all(db)
     values = {k: ("********" if (k in st.SECRET_KEYS and v) else v) for k, v in s.items() if k not in st.INTERNAL_KEYS}
@@ -206,6 +213,7 @@ def _settings_payload(request: Request, db: Session) -> dict:
                              "except_ids": [int(x) for x in r.except_ids or []]} for r in np_svc.rules(db)],
         "np_statuses": np_svc.NP_STATUSES,
         "shops": [j_shop(x) for x in db.query(MarketplaceShop).order_by(MarketplaceShop.id)],
+        "cashiers": [j_cashier(c) for c in db.query(CheckboxCashier).order_by(CheckboxCashier.sort, CheckboxCashier.id)],
     }
 
 
@@ -457,6 +465,51 @@ def shop_sync(sid: int, db: Session = Depends(get_db), user: User = Depends(admi
     if x is None:
         raise HTTPException(404, "Магазин не знайдено")
     return mp.sync_shop(db, x)
+
+
+@router.put("/settings/checkbox-cashiers", response_model=SettingsOut)
+def cashiers_save(request: Request, body: list[CashierIn], db: Session = Depends(get_db), user: User = Depends(admin)):
+    """Каси Checkbox цілим списком (порядок = порядок перевірки умов). Ключ і пароль «********» — не змінювати."""
+    by_id = {c.id: c for c in db.query(CheckboxCashier).all()}
+    for i, b in enumerate(body):
+        c = by_id.get(b.id) if b.id else None
+        if b.delete:
+            if c is not None:
+                db.delete(c)
+            continue
+        if c is None:
+            c = CheckboxCashier()
+            db.add(c)
+        c.name, c.login, c.test_mode, c.auto_shift = b.name.strip(), b.login.strip(), b.test_mode, b.auto_shift
+        c.condition, c.is_active, c.sort = b.condition, b.is_active, i * 10
+        c.condition_value = b.condition_value if b.condition != "none" else None
+        for f in ("license_key", "password"):
+            v = getattr(b, f)
+            if v is not None and v != "********":
+                setattr(c, f, v.strip())
+                c.token = ""
+    audit.log(db, user, "settings", None, "update", {"поля": ["каси Checkbox"]})
+    db.commit()
+    return _settings_payload(request, db)
+
+
+@router.post("/settings/checkbox-cashiers/{cid}/check", response_model=CashierCheckOut)
+def cashier_check(cid: int, db: Session = Depends(get_db), user: User = Depends(admin)):
+    from ..services import checkbox as cb
+    c = db.get(CheckboxCashier, cid)
+    if c is None:
+        raise HTTPException(404, "Касу не знайдено")
+    try:
+        shift = cb.Api(c)._req("GET", "/cashier/shift")
+        c.last_error = ""
+        db.commit()
+    except cb.CheckboxError as e:
+        c.last_error = str(e)[:1000]
+        db.commit()
+        bad(str(e), 422)
+    state = (shift or {}).get("status") or "CLOSED"
+    names = {"OPENED": "відкрита", "CLOSED": "закрита", "OPENING": "відкривається", "CLOSING": "закривається"}
+    return {"shift": state, "message": f"Касир увійшов. Зміна {names.get(state, state)}."}
 
 
 @router.post("/settings/sms-templates", response_model=SettingsOut)

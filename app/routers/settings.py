@@ -31,6 +31,7 @@ TABS = {
 
 SECTION_KEYS = {
     "fields": ["extra1_name", "extra2_name", "extra3_name", "extra4_name"],
+    "checkbox": ["cb_sell_status", "cb_return_status", "cb_prepay_status", "cb_postpay_status"],
     "general": ["company_name", "duplicate_days", "auto_assign", "managers_see_own_only",
                 "auto_status_from_tracking", "tracking_interval_min"],
     "np": ["np_api_key", "np_city_name", "np_city_ref", "np_warehouse_name", "np_warehouse_ref", "np_sender_phone",

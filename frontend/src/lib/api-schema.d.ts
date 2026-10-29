@@ -248,6 +248,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{order_id}/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receipt Create
+         * @description Створити чек Checkbox вручну (продажу, повернення, передоплати, післяплати).
+         */
+        post: operations["receipt_create_api_orders__order_id__receipts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{order_id}/sms": {
         parameters: {
             query?: never;
@@ -488,6 +508,43 @@ export interface paths {
         get: operations["settings_get_api_settings_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/checkbox-cashiers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Cashiers Save
+         * @description Каси Checkbox цілим списком (порядок = порядок перевірки умов). Ключ і пароль «********» — не змінювати.
+         */
+        put: operations["cashiers_save_api_settings_checkbox_cashiers_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/checkbox-cashiers/{cid}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cashier Check */
+        post: operations["cashier_check_api_settings_checkbox_cashiers__cid__check_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1017,6 +1074,96 @@ export interface components {
             configured: boolean;
             /** Name */
             name: string;
+        };
+        /** CashierCheckOut */
+        CashierCheckOut: {
+            /** Message */
+            message: string;
+            /** Shift */
+            shift: string;
+        };
+        /** CashierIn */
+        CashierIn: {
+            /**
+             * Auto Shift
+             * @default true
+             */
+            auto_shift: boolean;
+            /**
+             * Condition
+             * @default none
+             * @enum {string}
+             */
+            condition: "none" | "office" | "user" | "np_account";
+            /** Condition Value */
+            condition_value?: number | null;
+            /**
+             * Delete
+             * @default false
+             */
+            delete: boolean;
+            /** Id */
+            id?: number | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /** License Key */
+            license_key?: string | null;
+            /**
+             * Login
+             * @default
+             */
+            login: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** Password */
+            password?: string | null;
+            /**
+             * Test Mode
+             * @default false
+             */
+            test_mode: boolean;
+        };
+        /** CashierOut */
+        CashierOut: {
+            /** Auto Shift */
+            auto_shift: boolean;
+            /**
+             * Condition
+             * @enum {string}
+             */
+            condition: "none" | "office" | "user" | "np_account";
+            /** Condition Value */
+            condition_value?: number | null;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Last Error */
+            last_error: string;
+            /**
+             * License Key
+             * @description Маскований
+             */
+            license_key: string;
+            /** Login */
+            login: string;
+            /** Name */
+            name: string;
+            /**
+             * Password
+             * @description Маскований
+             */
+            password: string;
+            /** Sort */
+            sort: number;
+            /** Test Mode */
+            test_mode: boolean;
         };
         /** CheckOut */
         CheckOut: {
@@ -1671,6 +1818,11 @@ export interface components {
             address: string;
             /** Carrier Ref */
             carrier_ref: string;
+            /**
+             * Checkbox Ready
+             * @default false
+             */
+            checkbox_ready: boolean;
             /** City Name */
             city_name: string;
             /** City Ref */
@@ -1786,6 +1938,8 @@ export interface components {
             prepayment: number;
             /** Reason Id */
             reason_id?: number | null;
+            /** Receipts */
+            receipts?: components["schemas"]["ReceiptOut"][];
             /** Remind At */
             remind_at?: string | null;
             /** Shipped At */
@@ -2263,6 +2417,45 @@ export interface components {
              */
             status_ids?: number[];
         };
+        /** ReceiptIn */
+        ReceiptIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "sell" | "return" | "prepay" | "postpay";
+        };
+        /** ReceiptOut */
+        ReceiptOut: {
+            /** Cashier */
+            cashier: string;
+            /** Created At */
+            created_at: string | null;
+            /** Error */
+            error: string;
+            /** Fiscal Code */
+            fiscal_code: string;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "sell" | "return" | "prepay" | "postpay";
+            /** Kind Name */
+            kind_name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "new" | "done" | "error";
+            /** Test */
+            test: boolean;
+            /** Total */
+            total: number;
+            /** Url */
+            url: string;
+        };
         /** ReceiveIn */
         ReceiveIn: {
             /** Ids */
@@ -2334,6 +2527,8 @@ export interface components {
         };
         /** SettingsOut */
         SettingsOut: {
+            /** Cashiers */
+            cashiers?: components["schemas"]["CashierOut"][];
             /** Checkbox Payments */
             checkbox_payments?: {
                 [key: string]: string;
@@ -2800,6 +2995,11 @@ export interface components {
              * @default false
              */
             changed: boolean;
+            /**
+             * Checkbox Ready
+             * @default false
+             */
+            checkbox_ready: boolean;
             /** City Name */
             city_name: string;
             /** City Ref */
@@ -2915,6 +3115,8 @@ export interface components {
             prepayment: number;
             /** Reason Id */
             reason_id?: number | null;
+            /** Receipts */
+            receipts?: components["schemas"]["ReceiptOut"][];
             /** Remind At */
             remind_at?: string | null;
             /** Shipped At */
@@ -3629,6 +3831,41 @@ export interface operations {
             };
         };
     };
+    receipt_create_api_orders__order_id__receipts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiptIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     send_sms_api_orders__order_id__sms_post: {
         parameters: {
             query?: never;
@@ -4234,6 +4471,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+        };
+    };
+    cashiers_save_api_settings_checkbox_cashiers_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashierIn"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cashier_check_api_settings_checkbox_cashiers__cid__check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashierCheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

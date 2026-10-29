@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, CreditCard, ExternalLink, Globe, Tag, Hand, MessageCircle, Package, Phone, Plus, Printer, RefreshCw, Send, Sparkles, Trash2, Truck, User } from "lucide-react";
+import { Bell, CreditCard, ExternalLink, Globe, Receipt, Tag, Hand, MessageCircle, Package, Phone, Plus, Printer, RefreshCw, Send, Sparkles, Trash2, Truck, User } from "lucide-react";
 import { api, ApiError, ROOT } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num, phone as fmtPhone } from "../lib/format";
@@ -159,7 +159,7 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
       const f = toForm(o, newStatus);
       setForm(f); setBaseline(JSON.stringify(f)); setLoadedVersion(o.version);
       const msg: Record<string, string> = { "/ttn": `ТТН ${o.ttn} створено`, "/track": "Статус доставки оновлено", "/take": "Замовлення ваше",
-        "/comments": "Коментар додано", "/sms": "Повідомлення поставлено в чергу", "/payments": "Передоплату додано" };
+        "/comments": "Коментар додано", "/sms": "Повідомлення поставлено в чергу", "/payments": "Передоплату додано", "/receipts": "Чек створено" };
       toast(vars.method === "del" ? "ТТН видалено" : msg[vars.path] ?? "Готово");
     },
     onError: (e) => toast(errText(e), "error"),
@@ -324,6 +324,26 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
             {method && <p className="hint pay-note">{method.kind === "prepaid" ? "Оплачено повністю — ТТН без післяплати" : method.kind === "partial" ? "Передоплата, решта — післяплатою" : "Уся сума — при отриманні"}</p>}
             {form.payment_type === "partial" && <div className="fl"><span>Передоплата</span><div className="fl-in"><input value={form.prepayment} onChange={(e) => set({ prepayment: e.target.value })} placeholder="0" inputMode="decimal" /><span className="unit">грн</span></div></div>}
           </section>
+
+          {order?.checkbox_ready && (
+            <section className="ocs">
+              <h3 className="ocs-h"><Receipt size={15} /> ПРРО · Checkbox</h3>
+              {(order.receipts ?? []).length === 0 ? <p className="hint fl-note">Чеків ще немає.</p> : (
+                <div className="rc-list">{(order.receipts ?? []).map((r) => (
+                  <div className={`rc ${r.status}`} key={r.id} title={r.error || undefined}>
+                    <span>{r.kind_name}{r.test && <span className="badge">тест</span>}</span>
+                    <b>{money(r.total)} ₴</b>
+                    {r.url ? <a href={r.url} target="_blank" rel="noreferrer">чек <ExternalLink size={12} /></a> : <span className={r.status === "error" ? "lowstock" : "muted"}>{r.status === "error" ? "помилка" : r.fiscal_code || "в обробці"}</span>}
+                  </div>
+                ))}</div>
+              )}
+              <div className="rc-actions">
+                {!(order.receipts ?? []).some((r) => r.kind === "sell" && r.status === "done") && <button type="button" className="btn sm" disabled={action.isPending} onClick={() => action.mutate({ path: "/receipts", body: { kind: "sell" } })}>Чек продажу</button>}
+                <button type="button" className="btn sm" disabled={action.isPending} onClick={() => { if (window.confirm("Створити чек повернення?")) action.mutate({ path: "/receipts", body: { kind: "return" } }); }}>Чек повернення</button>
+                {num(form.prepayment) > 0 && <button type="button" className="btn sm" disabled={action.isPending} onClick={() => action.mutate({ path: "/receipts", body: { kind: "prepay" } })}>Чек передоплати</button>}
+              </div>
+            </section>
+          )}
 
           <section className="ocs">
             <h3 className="ocs-h"><Tag size={15} /> Джерело й додаткові поля</h3>

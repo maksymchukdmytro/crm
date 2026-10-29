@@ -312,6 +312,202 @@
     "title": "CarrierOut",
     "type": "object"
    },
+   "CashierCheckOut": {
+    "properties": {
+     "message": {
+      "title": "Message",
+      "type": "string"
+     },
+     "shift": {
+      "title": "Shift",
+      "type": "string"
+     }
+    },
+    "required": [
+     "shift",
+     "message"
+    ],
+    "title": "CashierCheckOut",
+    "type": "object"
+   },
+   "CashierIn": {
+    "additionalProperties": false,
+    "properties": {
+     "auto_shift": {
+      "default": true,
+      "title": "Auto Shift",
+      "type": "boolean"
+     },
+     "condition": {
+      "default": "none",
+      "enum": [
+       "none",
+       "office",
+       "user",
+       "np_account"
+      ],
+      "title": "Condition",
+      "type": "string"
+     },
+     "condition_value": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Condition Value"
+     },
+     "delete": {
+      "default": false,
+      "title": "Delete",
+      "type": "boolean"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "is_active": {
+      "default": true,
+      "title": "Is Active",
+      "type": "boolean"
+     },
+     "license_key": {
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "License Key"
+     },
+     "login": {
+      "default": "",
+      "maxLength": 128,
+      "title": "Login",
+      "type": "string"
+     },
+     "name": {
+      "default": "",
+      "maxLength": 160,
+      "title": "Name",
+      "type": "string"
+     },
+     "password": {
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Password"
+     },
+     "test_mode": {
+      "default": false,
+      "title": "Test Mode",
+      "type": "boolean"
+     }
+    },
+    "title": "CashierIn",
+    "type": "object"
+   },
+   "CashierOut": {
+    "properties": {
+     "auto_shift": {
+      "title": "Auto Shift",
+      "type": "boolean"
+     },
+     "condition": {
+      "enum": [
+       "none",
+       "office",
+       "user",
+       "np_account"
+      ],
+      "title": "Condition",
+      "type": "string"
+     },
+     "condition_value": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Condition Value"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "is_active": {
+      "title": "Is Active",
+      "type": "boolean"
+     },
+     "last_error": {
+      "title": "Last Error",
+      "type": "string"
+     },
+     "license_key": {
+      "description": "Маскований",
+      "title": "License Key",
+      "type": "string"
+     },
+     "login": {
+      "title": "Login",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "password": {
+      "description": "Маскований",
+      "title": "Password",
+      "type": "string"
+     },
+     "sort": {
+      "title": "Sort",
+      "type": "integer"
+     },
+     "test_mode": {
+      "title": "Test Mode",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "license_key",
+     "login",
+     "password",
+     "test_mode",
+     "auto_shift",
+     "condition",
+     "sort",
+     "is_active",
+     "last_error"
+    ],
+    "title": "CashierOut",
+    "type": "object"
+   },
    "CheckOut": {
     "properties": {
      "detail": {
@@ -2112,6 +2308,11 @@
       "title": "Carrier Ref",
       "type": "string"
      },
+     "checkbox_ready": {
+      "default": false,
+      "title": "Checkbox Ready",
+      "type": "boolean"
+     },
      "city_name": {
       "title": "City Name",
       "type": "string"
@@ -2384,6 +2585,13 @@
        }
       ],
       "title": "Reason Id"
+     },
+     "receipts": {
+      "items": {
+       "$ref": "#/components/schemas/ReceiptOut"
+      },
+      "title": "Receipts",
+      "type": "array"
      },
      "remind_at": {
       "anyOf": [
@@ -3837,6 +4045,107 @@
     "title": "ReasonOut",
     "type": "object"
    },
+   "ReceiptIn": {
+    "additionalProperties": false,
+    "properties": {
+     "kind": {
+      "enum": [
+       "sell",
+       "return",
+       "prepay",
+       "postpay"
+      ],
+      "title": "Kind",
+      "type": "string"
+     }
+    },
+    "required": [
+     "kind"
+    ],
+    "title": "ReceiptIn",
+    "type": "object"
+   },
+   "ReceiptOut": {
+    "properties": {
+     "cashier": {
+      "title": "Cashier",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "error": {
+      "title": "Error",
+      "type": "string"
+     },
+     "fiscal_code": {
+      "title": "Fiscal Code",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "kind": {
+      "enum": [
+       "sell",
+       "return",
+       "prepay",
+       "postpay"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "kind_name": {
+      "title": "Kind Name",
+      "type": "string"
+     },
+     "status": {
+      "enum": [
+       "new",
+       "done",
+       "error"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "test": {
+      "title": "Test",
+      "type": "boolean"
+     },
+     "total": {
+      "title": "Total",
+      "type": "number"
+     },
+     "url": {
+      "title": "Url",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "kind",
+     "kind_name",
+     "status",
+     "fiscal_code",
+     "total",
+     "error",
+     "url",
+     "test",
+     "cashier",
+     "created_at"
+    ],
+    "title": "ReceiptOut",
+    "type": "object"
+   },
    "ReceiveIn": {
     "additionalProperties": false,
     "properties": {
@@ -4045,6 +4354,13 @@
    },
    "SettingsOut": {
     "properties": {
+     "cashiers": {
+      "items": {
+       "$ref": "#/components/schemas/CashierOut"
+      },
+      "title": "Cashiers",
+      "type": "array"
+     },
      "checkbox_payments": {
       "additionalProperties": {
        "type": "string"
@@ -5230,6 +5546,11 @@
       "title": "Changed",
       "type": "boolean"
      },
+     "checkbox_ready": {
+      "default": false,
+      "title": "Checkbox Ready",
+      "type": "boolean"
+     },
      "city_name": {
       "title": "City Name",
       "type": "string"
@@ -5502,6 +5823,13 @@
        }
       ],
       "title": "Reason Id"
+     },
+     "receipts": {
+      "items": {
+       "$ref": "#/components/schemas/ReceiptOut"
+      },
+      "title": "Receipts",
+      "type": "array"
      },
      "remind_at": {
       "anyOf": [
@@ -6952,6 +7280,59 @@
     ]
    }
   },
+  "/api/orders/{order_id}/receipts": {
+   "post": {
+    "description": "Створити чек Checkbox вручну (продажу, повернення, передоплати, післяплати).",
+    "operationId": "receipt_create_api_orders__order_id__receipts_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReceiptIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Receipt Create",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
   "/api/orders/{order_id}/sms": {
    "post": {
     "operationId": "send_sms_api_orders__order_id__sms_post",
@@ -7830,6 +8211,94 @@
      }
     },
     "summary": "Settings Get",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/checkbox-cashiers": {
+   "put": {
+    "description": "Каси Checkbox цілим списком (порядок = порядок перевірки умов). Ключ і пароль «********» — не змінювати.",
+    "operationId": "cashiers_save_api_settings_checkbox_cashiers_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "items": {
+         "$ref": "#/components/schemas/CashierIn"
+        },
+        "title": "Body",
+        "type": "array"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Cashiers Save",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/checkbox-cashiers/{cid}/check": {
+   "post": {
+    "operationId": "cashier_check_api_settings_checkbox_cashiers__cid__check_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "title": "Cid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CashierCheckOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Cashier Check",
     "tags": [
      "admin"
     ]

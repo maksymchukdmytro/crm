@@ -323,6 +323,9 @@ class OrderOut(Out):
     history: list[HistoryOut]
     sms: list[SmsOut]
     others: list[OrderRowOut]
+    receipts: list["ReceiptOut"] = Field(default_factory=list)
+    checkbox_ready: bool = False
+
 
 
 class OrderItemIn(In):
@@ -649,6 +652,7 @@ class SettingsOut(Out):
     np_accounts: list["NpAccountOut"] = Field(default_factory=list)
     np_status_rules: list["NpRuleOut"] = Field(default_factory=list)
     shops: list["ShopOut"] = Field(default_factory=list)
+    cashiers: list["CashierOut"] = Field(default_factory=list)
     np_statuses: dict[str, str] = Field(default_factory=dict)
     message: str | None = None
 
@@ -908,3 +912,56 @@ class ShopSyncOut(Out):
     updated: int
     seen: int
     error: str
+
+
+# ---------------------------------------------------------------- Checkbox
+class ReceiptOut(Out):
+    id: int
+    kind: Literal["sell", "return", "prepay", "postpay"]
+    kind_name: str
+    status: Literal["new", "done", "error"]
+    fiscal_code: str
+    total: float
+    error: str
+    url: str
+    test: bool
+    cashier: str
+    created_at: str | None
+
+
+class ReceiptIn(In):
+    kind: Literal["sell", "return", "prepay", "postpay"]
+
+
+class CashierOut(Out):
+    id: int
+    name: str
+    license_key: str = Field(description="Маскований")
+    login: str
+    password: str = Field(description="Маскований")
+    test_mode: bool
+    auto_shift: bool
+    condition: Literal["none", "office", "user", "np_account"]
+    condition_value: int | None = None
+    sort: int
+    is_active: bool
+    last_error: str
+
+
+class CashierIn(In):
+    id: int | None = None
+    name: str = Field("", max_length=160)
+    license_key: str | None = Field(None, max_length=128)
+    login: str = Field("", max_length=128)
+    password: str | None = Field(None, max_length=128)
+    test_mode: bool = False
+    auto_shift: bool = True
+    condition: Literal["none", "office", "user", "np_account"] = "none"
+    condition_value: int | None = None
+    is_active: bool = True
+    delete: bool = False
+
+
+class CashierCheckOut(Out):
+    shift: str
+    message: str

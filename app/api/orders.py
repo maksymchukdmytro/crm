@@ -18,7 +18,7 @@ from ..services import settings as st
 from ..services import sms as sms_svc
 from ..services.audit import ACTION_NAMES
 from ..web import f_details
-from .schemas import BulkIn, BulkOut, OrderIn, OrderListOut, OrderOut, PaymentIn, SmsIn, TextIn, TrackOut, TtnIn, TtnPreviewOut
+from .schemas import BulkIn, BulkOut, OrderIn, OrderListOut, OrderOut, PaymentIn, SmsIn, TextIn, TrackOut, TtnIn, TtnPreviewOut, ReceiptIn
 from .common import bad, iso, j_order, j_order_row, staff
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
@@ -47,6 +47,14 @@ def _full(db: Session, order: Order) -> dict:
                  "created_at": iso(m.created_at)}
                 for m in db.query(SmsMessage).filter(SmsMessage.order_id == order.id).order_by(SmsMessage.id.desc())]
     d["others"] = [j_order_row(o) for o in svc.customer_orders(db, order.phone, exclude_id=order.id)]
+    from ..models import CheckboxCashier
+    from ..services import checkbox as cb
+    cashiers = {c.id: c for c in db.query(CheckboxCashier).all()}
+    d["receipts"] = [{"id": r.id, "kind": r.kind, "kind_name": cb.KINDS.get(r.kind, r.kind), "status": r.status,
+                      "fiscal_code": r.fiscal_code, "total": float(r.total or 0), "error": r.error, "url": cb.receipt_url(r),
+                      "test": r.test, "cashier": cashiers[r.cashier_id].name if r.cashier_id in cashiers else "",
+                      "created_at": iso(r.created_at)} for r in cb.receipts(db, order)]
+    d["checkbox_ready"] = any(c.is_active for c in cashiers.values())
     return d
 
 
@@ -246,6 +254,22 @@ def ttn_create(order_id: int, body: TtnIn | None = None, db: Session = Depends(g
     except CarrierError as e:
         db.rollback()
         bad(str(e), 422)
+    return _full(db, order)
+
+
+@router.post("/{order_id}/receipts", response_model=OrderOut)
+def receipt_create(order_id: int, body: ReceiptIn, db: Session = Depends(get_db), user: User = Depends(staff)):
+    """Створити чек Checkbox вручну (продажу, повернення, передоплати, післяплати)."""
+    from ..services import checkbox as cb
+    order = _get(db, order_id, user)
+    try:
+        rec = cb.create_receipt(db, order, body.kind, user)
+        db.commit()
+    except cb.CheckboxError as e:
+        db.rollback()
+        bad(str(e), 422)
+    if rec.status == "error":
+        bad(rec.error, 422)
     return _full(db, order)
 
 

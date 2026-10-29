@@ -52,6 +52,11 @@ DEFAULTS: dict[str, str] = {
     "sms_sender": "",
     "viber_sender": "",
     "sms_enabled": "0",
+    # Checkbox: у якому статусі замовлення автоматично створювати чек (id статусу, порожньо — вручну)
+    "cb_sell_status": "",
+    "cb_return_status": "",
+    "cb_prepay_status": "",
+    "cb_postpay_status": "",
     # Моніторинг і сповіщення
     "alert_tg_token": "",
     "alert_tg_chat": "",
