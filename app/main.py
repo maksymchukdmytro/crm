@@ -122,11 +122,13 @@ def create_app(database_url: str | None = None, run_seed: bool = True) -> FastAP
     async def _validation(request: Request, exc: RequestValidationError):
         return JSONResponse({"error": "Некоректні дані запиту", "details": exc.errors()[:5]}, status_code=422)
 
+    try:  # VERSION пише deploy/install.sh: «коміт · дата»; читаємо при старті — це версія, що справді працює
+        running_version = (Path(__file__).resolve().parent.parent / "VERSION").read_text(encoding="utf-8").strip()
+    except OSError:
+        running_version = ""
+
     def _version() -> str:
-        try:  # VERSION пише deploy/install.sh: «коміт · дата»
-            return (Path(__file__).resolve().parent.parent / "VERSION").read_text(encoding="utf-8").strip()
-        except OSError:
-            return ""
+        return running_version
 
     @app.get("/healthz", include_in_schema=False)
     def healthz():
