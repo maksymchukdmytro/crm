@@ -17,7 +17,7 @@
 - Змінив API (`app/api/*`, `schemas.py`) — онови типи фронтенду, інакше впаде
   `test_openapi_snapshot_is_current`:
   `python scripts/export_openapi.py && (cd frontend && npm run gen:api)`.
-- Змінив моделі — нова міграція в `migrations/versions/` (нумерація `0007_…`, `0008_…`), стійка до
+- Змінив моделі — нова міграція в `migrations/versions/` (нумерація `0011_…`, `0012_…`), стійка до
   повторного запуску й до наявних даних на сервері.
 - Тексти інтерфейсу, коментарі й повідомлення комітів — українською. Коміт етапу називати
   «Етап N: …».
@@ -68,8 +68,9 @@ app/api/             JSON API для React: core, orders, catalog, admin, schema
 app/carriers/        перевізники: novaposhta, ukrposhta, meest (спільний інтерфейс base.py)
 app/tasks.py         задачі воркера arq: SMS, ТТН, трекінг, маркетплейси, чеки, сповіщення
 app/routers/, templates/  класичний інтерфейс /classic (запасний) і webhook прийому заявок
-frontend/src/pages/  React-сторінки: Orders, OrderCard, TtnDialog, Board, Catalog, Finance, Settings, System
-migrations/versions/ 0001…0007
+frontend/src/pages/  React-сторінки: Orders (ліди й замовлення), OrderCard, TtnDialog, Board, Products, Customers,
+                     Catalog (склад), Stats, Finance, Settings, System
+migrations/versions/ 0001…0010
 ```
 Стек: Python 3.12, FastAPI, SQLAlchemy 2, PostgreSQL 16, Redis + arq, Alembic; React 19, TypeScript, Vite.
 
