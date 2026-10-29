@@ -965,3 +965,59 @@ class CashierIn(In):
 class CashierCheckOut(Out):
     shift: str
     message: str
+
+
+# ---------------------------------------------------------------- статистика
+class StatsDay(Out):
+    day: str
+    total: int
+    by_status: dict[str, int]
+
+
+class StatsStatus(Out):
+    status_id: int
+    count: int
+    share: float
+
+
+class StatsSummary(Out):
+    orders: int
+    orders_plain: int
+    orders_upsell: int
+    upsell_rate: float
+    qty: int
+    qty_main: int
+    qty_upsell: int
+    qty_upsell_rate: float
+    margin: float
+    margin_main: float
+    margin_upsell: float
+    margin_avg: float
+    sum: float
+    sum_main: float
+    sum_upsell: float
+    avg_check: float
+
+
+class StatsProduct(Out):
+    product_id: int | None
+    name: str
+    qty: int
+    qty_main: int
+    qty_upsell: int
+    sum: float
+    sum_main: float
+    sum_upsell: float
+    margin: float
+    margin_main: float
+    margin_upsell: float
+
+
+class StatsOut(Out):
+    date_from: str
+    date_to: str
+    date_field: str
+    days: list[StatsDay]
+    statuses: list[StatsStatus]
+    summary: StatsSummary
+    products: list[StatsProduct]

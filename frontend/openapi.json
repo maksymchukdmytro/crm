@@ -5189,6 +5189,264 @@
     "title": "SourceOut",
     "type": "object"
    },
+   "StatsDay": {
+    "properties": {
+     "by_status": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "By Status",
+      "type": "object"
+     },
+     "day": {
+      "title": "Day",
+      "type": "string"
+     },
+     "total": {
+      "title": "Total",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "day",
+     "total",
+     "by_status"
+    ],
+    "title": "StatsDay",
+    "type": "object"
+   },
+   "StatsOut": {
+    "properties": {
+     "date_field": {
+      "title": "Date Field",
+      "type": "string"
+     },
+     "date_from": {
+      "title": "Date From",
+      "type": "string"
+     },
+     "date_to": {
+      "title": "Date To",
+      "type": "string"
+     },
+     "days": {
+      "items": {
+       "$ref": "#/components/schemas/StatsDay"
+      },
+      "title": "Days",
+      "type": "array"
+     },
+     "products": {
+      "items": {
+       "$ref": "#/components/schemas/StatsProduct"
+      },
+      "title": "Products",
+      "type": "array"
+     },
+     "statuses": {
+      "items": {
+       "$ref": "#/components/schemas/StatsStatus"
+      },
+      "title": "Statuses",
+      "type": "array"
+     },
+     "summary": {
+      "$ref": "#/components/schemas/StatsSummary"
+     }
+    },
+    "required": [
+     "date_from",
+     "date_to",
+     "date_field",
+     "days",
+     "statuses",
+     "summary",
+     "products"
+    ],
+    "title": "StatsOut",
+    "type": "object"
+   },
+   "StatsProduct": {
+    "properties": {
+     "margin": {
+      "title": "Margin",
+      "type": "number"
+     },
+     "margin_main": {
+      "title": "Margin Main",
+      "type": "number"
+     },
+     "margin_upsell": {
+      "title": "Margin Upsell",
+      "type": "number"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "product_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Id"
+     },
+     "qty": {
+      "title": "Qty",
+      "type": "integer"
+     },
+     "qty_main": {
+      "title": "Qty Main",
+      "type": "integer"
+     },
+     "qty_upsell": {
+      "title": "Qty Upsell",
+      "type": "integer"
+     },
+     "sum": {
+      "title": "Sum",
+      "type": "number"
+     },
+     "sum_main": {
+      "title": "Sum Main",
+      "type": "number"
+     },
+     "sum_upsell": {
+      "title": "Sum Upsell",
+      "type": "number"
+     }
+    },
+    "required": [
+     "product_id",
+     "name",
+     "qty",
+     "qty_main",
+     "qty_upsell",
+     "sum",
+     "sum_main",
+     "sum_upsell",
+     "margin",
+     "margin_main",
+     "margin_upsell"
+    ],
+    "title": "StatsProduct",
+    "type": "object"
+   },
+   "StatsStatus": {
+    "properties": {
+     "count": {
+      "title": "Count",
+      "type": "integer"
+     },
+     "share": {
+      "title": "Share",
+      "type": "number"
+     },
+     "status_id": {
+      "title": "Status Id",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "status_id",
+     "count",
+     "share"
+    ],
+    "title": "StatsStatus",
+    "type": "object"
+   },
+   "StatsSummary": {
+    "properties": {
+     "avg_check": {
+      "title": "Avg Check",
+      "type": "number"
+     },
+     "margin": {
+      "title": "Margin",
+      "type": "number"
+     },
+     "margin_avg": {
+      "title": "Margin Avg",
+      "type": "number"
+     },
+     "margin_main": {
+      "title": "Margin Main",
+      "type": "number"
+     },
+     "margin_upsell": {
+      "title": "Margin Upsell",
+      "type": "number"
+     },
+     "orders": {
+      "title": "Orders",
+      "type": "integer"
+     },
+     "orders_plain": {
+      "title": "Orders Plain",
+      "type": "integer"
+     },
+     "orders_upsell": {
+      "title": "Orders Upsell",
+      "type": "integer"
+     },
+     "qty": {
+      "title": "Qty",
+      "type": "integer"
+     },
+     "qty_main": {
+      "title": "Qty Main",
+      "type": "integer"
+     },
+     "qty_upsell": {
+      "title": "Qty Upsell",
+      "type": "integer"
+     },
+     "qty_upsell_rate": {
+      "title": "Qty Upsell Rate",
+      "type": "number"
+     },
+     "sum": {
+      "title": "Sum",
+      "type": "number"
+     },
+     "sum_main": {
+      "title": "Sum Main",
+      "type": "number"
+     },
+     "sum_upsell": {
+      "title": "Sum Upsell",
+      "type": "number"
+     },
+     "upsell_rate": {
+      "title": "Upsell Rate",
+      "type": "number"
+     }
+    },
+    "required": [
+     "orders",
+     "orders_plain",
+     "orders_upsell",
+     "upsell_rate",
+     "qty",
+     "qty_main",
+     "qty_upsell",
+     "qty_upsell_rate",
+     "margin",
+     "margin_main",
+     "margin_upsell",
+     "margin_avg",
+     "sum",
+     "sum_main",
+     "sum_upsell",
+     "avg_check"
+    ],
+    "title": "StatsSummary",
+    "type": "object"
+   },
    "StatusIn": {
     "additionalProperties": false,
     "properties": {
@@ -8987,6 +9245,180 @@
     "summary": "Settings Save",
     "tags": [
      "admin"
+    ]
+   }
+  },
+  "/api/stats": {
+   "get": {
+    "operationId": "stats_api_stats_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "date_from",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date From",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "date_to",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date To",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "date_field",
+      "required": false,
+      "schema": {
+       "default": "created",
+       "pattern": "^(created|shipped|changed)$",
+       "title": "Date Field",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "product",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Product",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "payment",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Payment",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "delivery",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Delivery",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "office",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Office",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "source",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Source",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "manager",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Manager",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "country",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Country",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_source",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Source",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "site",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Site",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "search_extra",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Search Extra",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StatsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Stats",
+    "tags": [
+     "stats"
     ]
    }
   },

@@ -823,6 +823,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stats */
+        get: operations["stats_api_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/suppliers": {
         parameters: {
             query?: never;
@@ -2864,6 +2881,102 @@ export interface components {
             name: string;
             /** Sort */
             sort: number;
+        };
+        /** StatsDay */
+        StatsDay: {
+            /** By Status */
+            by_status: {
+                [key: string]: number;
+            };
+            /** Day */
+            day: string;
+            /** Total */
+            total: number;
+        };
+        /** StatsOut */
+        StatsOut: {
+            /** Date Field */
+            date_field: string;
+            /** Date From */
+            date_from: string;
+            /** Date To */
+            date_to: string;
+            /** Days */
+            days: components["schemas"]["StatsDay"][];
+            /** Products */
+            products: components["schemas"]["StatsProduct"][];
+            /** Statuses */
+            statuses: components["schemas"]["StatsStatus"][];
+            summary: components["schemas"]["StatsSummary"];
+        };
+        /** StatsProduct */
+        StatsProduct: {
+            /** Margin */
+            margin: number;
+            /** Margin Main */
+            margin_main: number;
+            /** Margin Upsell */
+            margin_upsell: number;
+            /** Name */
+            name: string;
+            /** Product Id */
+            product_id: number | null;
+            /** Qty */
+            qty: number;
+            /** Qty Main */
+            qty_main: number;
+            /** Qty Upsell */
+            qty_upsell: number;
+            /** Sum */
+            sum: number;
+            /** Sum Main */
+            sum_main: number;
+            /** Sum Upsell */
+            sum_upsell: number;
+        };
+        /** StatsStatus */
+        StatsStatus: {
+            /** Count */
+            count: number;
+            /** Share */
+            share: number;
+            /** Status Id */
+            status_id: number;
+        };
+        /** StatsSummary */
+        StatsSummary: {
+            /** Avg Check */
+            avg_check: number;
+            /** Margin */
+            margin: number;
+            /** Margin Avg */
+            margin_avg: number;
+            /** Margin Main */
+            margin_main: number;
+            /** Margin Upsell */
+            margin_upsell: number;
+            /** Orders */
+            orders: number;
+            /** Orders Plain */
+            orders_plain: number;
+            /** Orders Upsell */
+            orders_upsell: number;
+            /** Qty */
+            qty: number;
+            /** Qty Main */
+            qty_main: number;
+            /** Qty Upsell */
+            qty_upsell: number;
+            /** Qty Upsell Rate */
+            qty_upsell_rate: number;
+            /** Sum */
+            sum: number;
+            /** Sum Main */
+            sum_main: number;
+            /** Sum Upsell */
+            sum_upsell: number;
+            /** Upsell Rate */
+            upsell_rate: number;
         };
         /** StatusIn */
         StatusIn: {
@@ -5026,6 +5139,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stats_api_stats_get: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+                date_field?: string;
+                status?: string;
+                product?: string;
+                payment?: string;
+                delivery?: string;
+                office?: string;
+                source?: string;
+                manager?: string;
+                country?: string;
+                utm_source?: string;
+                site?: string;
+                search_extra?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatsOut"];
                 };
             };
             /** @description Validation Error */

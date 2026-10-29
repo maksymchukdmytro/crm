@@ -556,3 +556,17 @@ def test_checkbox_cashiers_and_receipts(api, db, products, monkeypatch):
     assert api.get(f"/api/orders/{o2['id']}").json()["receipts"][0]["kind"] == "sell"
     api.post(f"/api/orders/{o2['id']}/receipts", json={"kind": "return"})
     assert all(g["is_return"] for g in sent[-1][1]["goods"])
+
+
+def test_stats_main_vs_upsell(api, db, products):
+    cream, soap = products
+    new_order(api, products)  # крем ×2 (основний) + мило ×1 (допродаж)
+    new_order(api, products, items=[{"product_id": cream.id, "name": cream.name, "qty": 1, "price": 399}])
+    r = api.get("/api/stats?date_field=created").json()
+    s = r["summary"]
+    assert s["orders"] == 2 and s["orders_upsell"] == 1 and s["upsell_rate"] == 50
+    assert s["qty_main"] == 3 and s["qty_upsell"] == 1 and s["sum_upsell"] == 99 and s["sum_main"] == 1197
+    assert s["margin_upsell"] == 99 - 30 and r["days"][-1]["total"] == 2
+    top = r["products"][0]
+    assert top["product_id"] == cream.id and top["qty_main"] == 3
+    assert api.get(f"/api/stats?product={soap.id}").json()["summary"]["orders"] == 1

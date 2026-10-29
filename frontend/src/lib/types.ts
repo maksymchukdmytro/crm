@@ -29,6 +29,7 @@ export type PaymentMethod = S["PaymentMethodOut"];
 export type NpAccount = S["NpAccountOut"];
 export type Shop = S["ShopOut"];
 export type Cashier = S["CashierOut"];
+export type Stats = S["StatsOut"];
 export type Receipt = S["ReceiptOut"];
 export type ShopCheck = S["ShopCheckOut"];
 export type ShopSync = S["ShopSyncOut"];
