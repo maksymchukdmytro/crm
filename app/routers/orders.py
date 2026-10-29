@@ -64,6 +64,12 @@ def _apply(q, f: dict, with_status: bool = True):
     return q
 
 
+def _card(request: Request, order: Order, anchor: str = "") -> str:
+    """Адреса картки замовлення; у вбудованому режимі (вікно поверх списку) зберігає ?embed=1."""
+    q = "?embed=1" if request.query_params.get("embed") == "1" else ""
+    return f"/orders/{order.id}{q}{anchor}"
+
+
 def _get_order(db: Session, order_id: int, user: User) -> Order:
     order = db.get(Order, order_id)
     if order is None:
@@ -231,7 +237,7 @@ def order_create(request: Request, form: FormData = Depends(form_data), db: Sess
     svc.add_comment(db, order, form.get("new_comment", ""), user)
     db.commit()
     flash(request, f"Замовлення №{order.id} створено")
-    return redirect(f"/orders/{order.id}")
+    return redirect(_card(request, order))
 
 
 # ---------------------------------------------------------------- card
@@ -264,7 +270,7 @@ def order_save(order_id: int, request: Request, form: FormData = Depends(form_da
     version = form.get("version", "")
     if version and order.updated_at and version != order.updated_at.isoformat():
         flash(request, "Замовлення щойно змінив інший користувач. Перевірте дані і збережіть ще раз.", "error")
-        return redirect(f"/orders/{order.id}")
+        return redirect(_card(request, order))
     svc.update_order(db, order, _fields_from_form(form), user)
     if "item_name" in form or form.get("items_present") == "1":
         svc.set_items(db, order, _items_from_form(form), user)
@@ -278,11 +284,20 @@ def order_save(order_id: int, request: Request, form: FormData = Depends(form_da
             svc.change_status(db, order, status, user)
     svc.add_comment(db, order, form.get("new_comment", ""), user)
     db.commit()
+    if form.get("then") == "ttn":
+        try:
+            ttn = delivery.create_ttn(db, order, user)
+            db.commit()
+            flash(request, f"Збережено. ТТН {ttn} створено")
+        except CarrierError as e:
+            db.rollback()
+            flash(request, f"Збережено, але ТТН не створено: {e}", "error")
+        return redirect(_card(request, order))
     flash(request, "Збережено")
     nxt = form.get("next")
     if nxt == "list":
         return redirect("/orders")
-    return redirect(f"/orders/{order.id}")
+    return redirect(_card(request, order))
 
 
 @router.post("/orders/{order_id}/take")
@@ -295,7 +310,7 @@ def order_take(order_id: int, request: Request, db: Session = Depends(get_db), u
     else:
         svc.assign(db, order, user, user)
         db.commit()
-    return redirect(f"/orders/{order.id}")
+    return redirect(_card(request, order))
 
 
 @router.post("/orders/{order_id}/comment")
@@ -304,7 +319,7 @@ def order_comment(order_id: int, request: Request, form: FormData = Depends(form
     order = _get_order(db, order_id, user)
     if svc.add_comment(db, order, form.get("text", ""), user):
         db.commit()
-    return redirect(f"/orders/{order.id}#comments")
+    return redirect(_card(request, order, '#comments'))
 
 
 @router.post("/orders/{order_id}/ttn")
@@ -317,7 +332,7 @@ def order_ttn(order_id: int, request: Request, db: Session = Depends(get_db), us
     except CarrierError as e:
         db.rollback()
         flash(request, str(e), "error")
-    return redirect(f"/orders/{order.id}")
+    return redirect(_card(request, order))
 
 
 @router.post("/orders/{order_id}/ttn/delete")
@@ -330,7 +345,7 @@ def order_ttn_delete(order_id: int, request: Request, db: Session = Depends(get_
     except CarrierError as e:
         db.rollback()
         flash(request, str(e), "error")
-    return redirect(f"/orders/{order.id}")
+    return redirect(_card(request, order))
 
 
 @router.post("/orders/{order_id}/track")
@@ -341,7 +356,7 @@ def order_track(order_id: int, request: Request, db: Session = Depends(get_db), 
         flash(request, e, "error")
     if not res["errors"]:
         flash(request, "Статус доставки оновлено" if res["changed"] else "Статус доставки без змін")
-    return redirect(f"/orders/{order.id}")
+    return redirect(_card(request, order))
 
 
 @router.get("/orders/{order_id}/label")
@@ -354,7 +369,7 @@ def order_label(order_id: int, request: Request, db: Session = Depends(get_db), 
         pdf = carrier.label_pdf(order)
     except CarrierError as e:
         flash(request, str(e), "error")
-        return redirect(f"/orders/{order.id}")
+        return redirect(_card(request, order))
     return Response(pdf, media_type="application/pdf",
                     headers={"Content-Disposition": f'inline; filename="label-{order.ttn}.pdf"'})
 
@@ -376,7 +391,7 @@ def order_sms(order_id: int, request: Request, form: FormData = Depends(form_dat
         audit.log(db, user, "order", order.id, "sms", {"текст": text, "канал": channel})
         db.commit()
         flash(request, "Повідомлення поставлено в чергу на відправку")
-    return redirect(f"/orders/{order.id}#sms")
+    return redirect(_card(request, order, '#sms'))
 
 
 @router.post("/orders/{order_id}/payment")
@@ -386,7 +401,7 @@ def order_payment(order_id: int, request: Request, form: FormData = Depends(form
     amount = svc.to_money(form.get("amount"))
     if amount <= 0:
         flash(request, "Вкажіть суму", "error")
-        return redirect(f"/orders/{order.id}#payments")
+        return redirect(_card(request, order, '#payments'))
     p = Payment(kind="prepayment", amount=amount, status="received", method=form.get("method") or "card",
                 reference=(form.get("reference") or "")[:255], received_amount=amount)
     from ..models import utcnow
@@ -403,4 +418,4 @@ def order_payment(order_id: int, request: Request, form: FormData = Depends(form
     audit.log(db, user, "order", order.id, "payment", {"передоплата": amount, "метод": p.method})
     db.commit()
     flash(request, f"Передоплату {amount} грн додано")
-    return redirect(f"/orders/{order.id}#payments")
+    return redirect(_card(request, order, '#payments'))

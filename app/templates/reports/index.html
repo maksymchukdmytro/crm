@@ -26,7 +26,7 @@
 </div>
 
 <div class="card">
-  <div class="card-head"><h2>Заявки по днях</h2><div class="legend"><span><i style="background:var(--accent)"></i>заявки</span><span><i style="background:#16a34a"></i>підтверджено</span></div></div>
+  <div class="card-head"><h2>Заявки по днях</h2><div class="legend"><span><i style="background:#a9c9ec"></i>заявки</span><span><i style="background:var(--accent)"></i>підтверджено</span></div></div>
   <div class="bars">
     {% for d, b in r.days %}
     {% set h = (b.leads / r.max_day_leads * 100) if r.max_day_leads else 0 %}

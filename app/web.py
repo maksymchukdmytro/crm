@@ -128,6 +128,7 @@ def render(request: Request, name: str, ctx: dict | None = None, status_code: in
     context = dict(ctx or {})
     context.setdefault("user", user)
     context.setdefault("active", active)
+    context.setdefault("embed", request.query_params.get("embed") == "1")
     context["flashes"] = request.session.pop("_flash", [])
     context["nav"] = [n for n in NAV if user and user.role in n[3]]
     context["company"] = getattr(request.state, "company", "CRM")
@@ -178,4 +179,17 @@ def qs(params: dict, **override) -> str:
     return urlencode({k: v for k, v in merged.items() if v not in (None, "", 0, "0") or k == "page"})
 
 
-templates.env.globals.update(qs=qs, date_presets=date_presets, R=config.ROOT_PATH)
+def icon(name: str, cls: str = "") -> Markup:
+    """Лінійна іконка з SVG-спрайту /static/icons.svg (вбудовується через <use>)."""
+    return Markup(f'<svg class="i {cls}" aria-hidden="true"><use href="#{name}"/></svg>')
+
+
+_SPRITE = (BASE_DIR / "static" / "icons.svg").read_text(encoding="utf-8")
+
+
+def sprite() -> Markup:
+    """Спрайт іконок вставляється в сторінку один раз — без додаткових запитів і проблем із префіксом /crm."""
+    return Markup(_SPRITE)
+
+
+templates.env.globals.update(qs=qs, date_presets=date_presets, R=config.ROOT_PATH, icon=icon, sprite=sprite)

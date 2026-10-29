@@ -5,46 +5,45 @@
 <div class="head">
   <h1>Замовлення <small class="muted">{{ total }}</small></h1>
   <div class="actions">
-    <a class="btn" href="{{ R }}/orders/export.csv?{{ fq }}">Експорт CSV</a>
-    <a class="btn primary" href="{{ R }}/orders/new">+ Нове замовлення</a>
+    <a class="btn ghost" href="{{ R }}/orders/export.csv?{{ fq }}">{{ icon('download', 'sm') }} CSV</a>
+    <a class="btn primary" href="{{ R }}/orders/new" data-modal>{{ icon('plus', 'sm') }} Нове замовлення</a>
   </div>
 </div>
 
 <div class="tabs">
-  <a href="{{ R }}/orders?{{ qs(f, status='') }}" class="{{ 'on' if not f.status }}">Усі <span class="n">{{ all_count }}</span></a>
-  {% for s in statuses %}
-  <a href="{{ R }}/orders?{{ qs(f, status=s.id) }}" class="{{ 'on' if f.status == s.id|string }}" style="--c: {{ s.color }}">
-    <span class="dot"></span>{{ s.name }} <span class="n">{{ counts.get(s.id, 0) }}</span></a>
+  <a href="{{ R }}/orders?{{ qs(f, status='') }}" class="{{ 'on' if not f.status }}" style="--c: #37352f">Усі <span class="n">{{ all_count }}</span></a>
+  {% for s in statuses %}{% set n = counts.get(s.id, 0) %}
+  <a href="{{ R }}/orders?{{ qs(f, status=s.id) }}" class="{{ 'on' if f.status == s.id|string }} {{ 'empty-tab' if not n }}" style="--c: {{ s.color }}">{{ s.name }} <span class="n">{{ n }}</span></a>
   {% endfor %}
 </div>
 
 <form class="filters" method="get" action="{{ R }}/orders">
   {% if f.status %}<input type="hidden" name="status" value="{{ f.status }}">{% endif %}
-  <input type="search" name="q" value="{{ f.q }}" placeholder="Пошук: №, телефон, ПІБ, ТТН">
-  <select name="manager">
+  <input type="search" name="q" value="{{ f.q }}" placeholder="№, телефон, ПІБ або ТТН">
+  <select name="manager" onchange="this.form.submit()">
     <option value="">Усі менеджери</option>
     <option value="none" {{ 'selected' if f.manager == 'none' }}>Не призначено</option>
     {% for m in managers %}<option value="{{ m.id }}" {{ 'selected' if f.manager == m.id|string }}>{{ m.display }}</option>{% endfor %}
   </select>
-  <select name="delivery">
+  <select name="delivery" onchange="this.form.submit()">
     <option value="">Будь-яка доставка</option>
     {% for k, v in DELIVERY_METHODS.items() %}<option value="{{ k }}" {{ 'selected' if f.delivery == k }}>{{ v }}</option>{% endfor %}
   </select>
-  <select name="source">
+  <select name="source" onchange="this.form.submit()">
     <option value="">Усі джерела</option>
     {% for s in sources %}<option {{ 'selected' if f.source == s }}>{{ s }}</option>{% endfor %}
   </select>
   <input type="date" name="date_from" value="{{ f.date_from }}" title="Дата від">
   <input type="date" name="date_to" value="{{ f.date_to }}" title="Дата до">
-  <label class="check"><input type="checkbox" name="dup" value="1" {{ 'checked' if f.dup }}> Дублі</label>
-  <button class="btn">Застосувати</button>
-  {% if f.q or f.manager or f.delivery or f.source or f.date_from or f.date_to or f.dup %}<a href="{{ R }}/orders{{ '?status=' ~ f.status if f.status }}" class="btn">Скинути</a>{% endif %}
+  <label class="check"><input type="checkbox" name="dup" value="1" {{ 'checked' if f.dup }} onchange="this.form.submit()"> Дублі</label>
+  <button class="btn sm">{{ icon('filter', 'sm') }} Застосувати</button>
+  {% if f.q or f.manager or f.delivery or f.source or f.date_from or f.date_to or f.dup %}<a href="{{ R }}/orders{{ '?status=' ~ f.status if f.status }}" class="btn sm ghost">{{ icon('x', 'sm') }} Скинути</a>{% endif %}
 </form>
 
 <form method="post" action="{{ R }}/orders/bulk" class="card flush" id="bulkform">
   <input type="hidden" name="back" value="/orders?{{ fq }}&page={{ page }}">
   <div class="bulk" id="bulkbar">
-    <strong id="bulkcount">0</strong> вибрано
+    Вибрано: <strong id="bulkcount">0</strong>
     <select name="action" required>
       <option value="">Дія…</option>
       <optgroup label="Змінити статус">
@@ -64,33 +63,33 @@
     <button class="btn primary sm">Виконати</button>
   </div>
   <div class="tablewrap">
-  <table class="t">
+  <table class="t dense">
     <thead><tr>
       <th class="sel"><input type="checkbox" data-check-all></th>
-      <th>№ / дата</th><th>Клієнт</th><th>Товари</th><th class="num">Сума</th><th>Статус</th>
-      <th>Доставка</th><th>Менеджер</th><th>Джерело</th>
+      <th>№</th><th>Статус</th><th>{{ icon('user') }}Клієнт</th><th>{{ icon('phone') }}Телефон</th><th>{{ icon('box') }}Товари</th>
+      <th class="num">{{ icon('cash') }}Сума</th><th>{{ icon('truck') }}Доставка</th><th>{{ icon('barcode') }}ТТН</th><th class="w-m">{{ icon('hand') }}Менеджер</th><th class="w-s">{{ icon('tag') }}Джерело</th><th>{{ icon('calendar') }}Дата</th>
     </tr></thead>
     <tbody>
     {% for o in orders %}
-    <tr class="clickable" data-href="{{ R }}/orders/{{ o.id }}">
+    <tr class="clickable" data-href="{{ R }}/orders/{{ o.id }}" data-modal>
       <td class="sel"><input type="checkbox" name="ids" value="{{ o.id }}"></td>
       <td class="nowrap"><a href="{{ R }}/orders/{{ o.id }}"><strong>{{ o.id }}</strong></a>
-        {% if o.duplicate_of_id %}<span class="badge warn" title="Повторне замовлення з цього номера: №{{ o.duplicate_of_id }}">дубль</span>{% endif %}
-        <span class="sub">{{ o.created_at|dt }}</span></td>
-      <td>{{ o.customer_name or '—' }}<span class="sub">{{ o.phone|phone }}</span></td>
-      <td>{% for i in o.items[:3] %}<div>{{ i.name }}{% if i.qty > 1 %} <small>× {{ i.qty }}</small>{% endif %}{% if i.is_upsell %} <span class="badge info">апсел</span>{% endif %}</div>{% endfor %}
-        {% if o.items|length > 3 %}<small>+ ще {{ o.items|length - 3 }}</small>{% endif %}</td>
-      <td class="num"><strong>{{ o.total|money }}</strong>
-        {% if o.payment_type != 'cod' %}<span class="sub">{{ 'передопл.' if o.payment_type == 'prepaid' else 'накл. ' ~ (o.cod_amount|money) }}</span>{% endif %}</td>
+        {% if o.duplicate_of_id %} <span class="badge warn" title="Повторне замовлення з цього номера: №{{ o.duplicate_of_id }}">дубль</span>{% endif %}</td>
       <td><span class="pill" style="--c: {{ o.status.color }}">{{ o.status.name }}</span></td>
-      <td>{{ o.delivery_method_name }}
-        {% if o.ttn %}<span class="sub mono">{{ o.ttn }}</span>{% elif o.city_name %}<span class="sub">{{ o.city_name }}</span>{% endif %}
-        {% if o.delivery_status %}<span class="sub" title="{{ o.delivery_status }}">{{ o.delivery_state_name }}</span>{% endif %}</td>
-      <td>{{ o.manager.display if o.manager else '—' }}</td>
-      <td>{{ o.utm_source or '—' }}{% if o.utm_campaign %}<span class="sub">{{ o.utm_campaign }}</span>{% endif %}</td>
+      <td class="ell" style="max-width:180px">{{ o.customer_name or '—' }}</td>
+      <td class="nowrap">{{ o.phone|phone }}</td>
+      <td class="ell" title="{% for i in o.items %}{{ i.name }} × {{ i.qty }}{% if not loop.last %}, {% endif %}{% endfor %}">
+        {% for i in o.items[:2] %}{{ i.name }}{% if i.qty > 1 %} <small>×{{ i.qty }}</small>{% endif %}{% if i.is_upsell %} <span class="badge info">апсел</span>{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
+        {% if o.items|length > 2 %}<small>+{{ o.items|length - 2 }}</small>{% endif %}</td>
+      <td class="num"><strong>{{ o.total|money }}</strong>{% if o.payment_type == 'prepaid' %} <span class="badge ok" title="Повна передоплата">оплач.</span>{% elif o.payment_type == 'partial' %} <span class="badge info" title="Накладений {{ o.cod_amount|money }}">част.</span>{% endif %}</td>
+      <td class="ell" style="max-width:170px">{{ o.delivery_method_name }}{% if o.city_name %}<small> · {{ o.city_name }}</small>{% endif %}</td>
+      <td class="nowrap">{% if o.ttn %}<span class="mono">{{ o.ttn }}</span>{% if o.delivery_state %} <span class="dstate {{ o.delivery_state }}" title="{{ o.delivery_state_name }}: {{ o.delivery_status }}"></span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>
+      <td class="nowrap w-m">{{ o.manager.display if o.manager else '—' }}</td>
+      <td class="ell w-s" style="max-width:140px">{{ o.utm_source or '—' }}{% if o.utm_campaign %}<small> · {{ o.utm_campaign }}</small>{% endif %}</td>
+      <td class="nowrap muted">{{ o.created_at|dt('%d.%m %H:%M') }}</td>
     </tr>
     {% else %}
-    <tr><td colspan="9"><div class="empty">Замовлень не знайдено</div></td></tr>
+    <tr><td colspan="12"><div class="empty">Замовлень не знайдено</div></td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -99,8 +98,8 @@
   <div class="pager">
     <span>Сторінка {{ page }} з {{ pages }}</span>
     <span>
-      {% if page > 1 %}<a class="btn sm" href="{{ R }}/orders?{{ fq }}&page={{ page - 1 }}">← Назад</a>{% endif %}
-      {% if page < pages %}<a class="btn sm" href="{{ R }}/orders?{{ fq }}&page={{ page + 1 }}">Далі →</a>{% endif %}
+      {% if page > 1 %}<a class="btn sm" href="{{ R }}/orders?{{ fq }}&page={{ page - 1 }}">{{ icon('back', 'sm') }} Назад</a>{% endif %}
+      {% if page < pages %}<a class="btn sm" href="{{ R }}/orders?{{ fq }}&page={{ page + 1 }}">Далі {{ icon('chevron', 'sm') }}</a>{% endif %}
     </span>
   </div>
   {% endif %}
