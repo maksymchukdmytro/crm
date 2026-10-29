@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Bell, Building2, CreditCard, ExternalLink, Globe, Hand, MessageCircle, Package, Phone, Plus, Printer, Receipt, RefreshCw, Send, Sparkles, Stamp, Tag, Trash2, Truck, User, UserRound } from "lucide-react";
+import { Ban, Bell, Building2, CornerDownRight, CreditCard, ExternalLink, Globe, Hand, MessageCircle, Package, Phone, Plus, Printer, Receipt, RefreshCw, Send, Sparkles, Stamp, Tag, Trash2, Truck, User, UserRound } from "lucide-react";
 import { api, ApiError, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num, phone as fmtPhone } from "../lib/format";
@@ -479,15 +479,34 @@ function NameField({ value, onChange, saved }: { value: string; onChange: (v: st
 }
 
 // ---------------------------------------------------------------- товари в замовленні
-function Goods({ items, products, onChange }: { items: OrderItem[]; products: Product[]; onChange: (i: OrderItem[]) => void }) {
+/** Порядок позицій: основний товар → його допродажі; допродажі без свого товару — у кінці. Так і зберігається. */
+function arrange(items: OrderItem[]): OrderItem[] {
+  const ups = items.filter((i) => i.upsell);
+  const used = new Set<string | undefined>();
+  const out: OrderItem[] = [];
+  for (const m of items.filter((i) => !i.upsell)) {
+    out.push(m);
+    for (const u of ups) if (!used.has(u.key) && m.product_id && u.upsell_for === m.product_id) { out.push(u); used.add(u.key); }
+  }
+  return [...out, ...ups.filter((u) => !used.has(u.key))];
+}
+
+type Pick = { p: Product; v?: Variant };
+
+/** Пошук товару (з варіантами) зі списком під полем; Enter / стрілки. free — дозволити довільну позицію без товару. */
+function ProductSearch({ products, onPick, placeholder, free = false, autoFocus = false, onCancel, className = "", exclude, prefer }: {
+  products: Product[]; onPick: (x?: Pick, text?: string) => void; placeholder: string; free?: boolean; autoFocus?: boolean; onCancel?: () => void; className?: string;
+  exclude?: Set<number>; prefer?: (p: Product) => boolean;
+}) {
   const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoFocus);
   const [hl, setHl] = useState(0);
   const list = useMemo(() => {
     const t = q.trim().toLowerCase();
-    // товар із варіантами — окремий рядок на кожен варіант («Лампа — Чорний»)
-    const rows: { p: Product; v?: Variant }[] = [];
-    for (const p of products) {
+    const rows: Pick[] = [];
+    const pool = products.filter((p) => !exclude?.has(p.id));
+    if (prefer) pool.sort((a, b) => Number(prefer(b)) - Number(prefer(a)));
+    for (const p of pool) {
       const vs = (p.variants ?? []).filter((v) => v.active);
       if (vs.length) {
         for (const v of vs) if (!t || `${p.name} ${v.name} ${p.sku} ${v.sku}`.toLowerCase().includes(t)) rows.push({ p, v });
@@ -495,109 +514,151 @@ function Goods({ items, products, onChange }: { items: OrderItem[]; products: Pr
       if (rows.length >= 40) break;
     }
     return rows;
-  }, [q, products]);
-  const byId = useMemo(() => Object.fromEntries(products.map((p) => [p.id, p])), [products]);
-  // основні товари замовлення — до них можна привʼязати допродаж
-  const mains = items.filter((i) => !i.upsell && i.product_id);
-  const inOrder = new Set(items.map((i) => i.product_id).filter(Boolean));
-  // що запропонувати: товари-допродажі, привʼязані до товарів у замовленні (або до будь-якого замовлення)
-  const offers = mains.length ? products.filter((p) => p.upsell && !inOrder.has(p.id) && (!p.upsell_for?.length || mains.some((m) => p.upsell_for!.includes(m.product_id!)))).slice(0, 6) : [];
+  }, [q, products, exclude, prefer]);
+  const n = list.length + (free ? 1 : 0);
+  const pick = (x?: Pick) => { onPick(x, q.trim()); setQ(""); setHl(0); setOpen(false); };
+  return (
+    <div className={`goods-add ac ${className}`}>
+      <input value={q} placeholder={placeholder} autoFocus={autoFocus} onChange={(e) => { setQ(e.target.value); setHl(0); setOpen(true); }}
+        onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => { setOpen(false); if (!q.trim()) onCancel?.(); }, 150)}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown") { e.preventDefault(); setHl((h) => (h + 1) % Math.max(n, 1)); }
+          else if (e.key === "ArrowUp") { e.preventDefault(); setHl((h) => (h - 1 + n) % Math.max(n, 1)); }
+          else if (e.key === "Enter") { e.preventDefault(); if (hl < list.length) pick(list[hl]); else if (free) pick(); }
+          else if (e.key === "Escape") { e.preventDefault(); setOpen(false); onCancel?.(); }
+        }} />
+      {open && n > 0 && (
+        <div className="ac-list on">
+          {list.map(({ p, v }, i) => (
+            <div key={`${p.id}-${v?.id ?? 0}`} className={`goods-opt ${i === hl ? "hl" : ""}`} onMouseDown={(e) => { e.preventDefault(); pick({ p, v }); }}>
+              {p.photo ? <img src={`${ROOT}${p.photo}`} alt="" /> : <span className="ph"><Package size={14} /></span>}
+              <span className="nm">{p.name}{v && <b> · {v.name}</b>}{p.upsell && <span className="badge info">допродаж</span>}{p.discount_percent > 0 && <span className="badge warn">−{p.discount_percent}%</span>}</span>
+              <small>{money(v?.price ?? p.sale_price ?? p.price)} ₴ · {(v ?? p).available} шт</small>
+            </div>
+          ))}
+          {free && (
+            <div className={hl === list.length ? "hl" : ""} onMouseDown={(e) => { e.preventDefault(); pick(); }}>
+              <span>{q.trim() ? `Довільна позиція «${q.trim()}»` : "Довільна позиція (без товару зі складу)"}</span><small>Enter</small>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
-  const add = (p?: Product, asUpsell = false, v?: Variant) => {
-    if (p) {
-      const ex = items.find((i) => i.product_id === p.id && (i.variant_id ?? null) === (v?.id ?? null));
-      if (ex) onChange(items.map((i) => (i === ex ? { ...i, qty: i.qty + 1 } : i)));
-      else {
-        const upsell = asUpsell || (p.upsell && mains.length > 0);
-        const main = upsell ? (mains.find((m) => p.upsell_for?.includes(m.product_id!)) ?? mains[0]) : undefined;
-        const price = v?.price ?? p.sale_price ?? p.price;
-        onChange([...items, { product_id: p.id, variant_id: v?.id ?? null, variant_name: v?.name ?? "", name: v ? `${p.name} (${v.name})` : p.name,
-          price: String(price), qty: 1, upsell, upsell_for: main?.product_id ?? null, base_price: price, photo: p.photo, key: k() }]);
-      }
-    } else onChange([...items, { product_id: null, name: q.trim(), price: "", qty: 1, upsell: false, upsell_for: null, key: k() }]);
-    setQ(""); setHl(0); setOpen(false);
+function Goods({ items: raw, products, onChange: emit }: { items: OrderItem[]; products: Product[]; onChange: (i: OrderItem[]) => void }) {
+  const items = useMemo(() => arrange(raw), [raw]);
+  const onChange = (next: OrderItem[]) => emit(arrange(next));
+  const [upFor, setUpFor] = useState<string | null>(null); // ключ основного товару, до якого зараз додають допродаж
+  const byId = useMemo(() => Object.fromEntries(products.map((p) => [p.id, p])), [products]);
+  const mains = items.filter((i) => !i.upsell);
+  const mainProducts = mains.filter((i) => i.product_id);
+  const inOrder = new Set(items.map((i) => i.product_id).filter(Boolean));
+  // що запропонувати під кожним товаром: допродажі, привʼязані до нього в каталозі; загальні — під першим товаром
+  const offersFor = (m: OrderItem) => !m.product_id ? [] : products.filter((p) => p.upsell && !inOrder.has(p.id) && (
+    p.upsell_for?.length ? p.upsell_for.includes(m.product_id!) : m === mainProducts[0])).slice(0, 4);
+
+  const line = (x: Pick, upsell: boolean, mainPid: number | null): OrderItem => {
+    const { p, v } = x;
+    const price = v?.price ?? p.sale_price ?? p.price;
+    return { product_id: p.id, variant_id: v?.id ?? null, variant_name: v?.name ?? "", name: v ? `${p.name} (${v.name})` : p.name,
+      price: String(price), qty: 1, upsell, upsell_for: upsell ? mainPid : null, base_price: price, photo: p.photo, key: k() };
+  };
+  const addMain = (x?: Pick, text = "") => {
+    if (!x) { onChange([...items, { product_id: null, name: text, price: "", qty: 1, upsell: false, upsell_for: null, key: k() }]); return; }
+    const ex = items.find((i) => i.product_id === x.p.id && (i.variant_id ?? null) === (x.v?.id ?? null));
+    if (ex) { onChange(items.map((i) => (i === ex ? { ...i, qty: i.qty + 1 } : i))); return; }
+    // товар-допродаж, доданий через загальний пошук, сам стає під свій основний товар
+    const main = x.p.upsell ? mainProducts.find((m) => x.p.upsell_for?.includes(m.product_id!)) ?? (x.p.upsell_for?.length ? undefined : mainProducts[0]) : undefined;
+    onChange([...items, line(x, !!main, main?.product_id ?? null)]);
+  };
+  const addUpsell = (m: OrderItem, x: Pick) => {
+    const ex = items.find((i) => i.product_id === x.p.id && (i.variant_id ?? null) === (x.v?.id ?? null));
+    if (ex) onChange(items.map((i) => (i === ex ? { ...i, qty: i.qty + 1, upsell: true, upsell_for: m.product_id ?? null } : i)));
+    else onChange([...items, line(x, true, m.product_id ?? null)]);
+    setUpFor(null);
   };
   const upd = (key: string | undefined, patch: Partial<OrderItem>) => onChange(items.map((i) => (i.key === key ? { ...i, ...patch } : i)));
+  const remove = (it: OrderItem) => onChange(items.filter((x) => x.key !== it.key).map((x) =>
+    // прибрали основний товар — його допродажі лишаються, але вже «до замовлення»
+    x.upsell && it.product_id && !it.upsell && x.upsell_for === it.product_id && !items.some((o) => o !== it && !o.upsell && o.product_id === it.product_id) ? { ...x, upsell_for: null } : x));
+  const upsellSum = items.filter((i) => i.upsell).reduce((a, i) => a + num(i.price) * i.qty, 0);
+
+  const row = (i: OrderItem) => {
+    const p = i.product_id ? byId[i.product_id] : undefined;
+    const base = i.base_price ?? p?.price;
+    const changed = base != null && num(i.price) !== Number(base);
+    const parent = i.upsell ? mainProducts.find((m) => m.product_id === i.upsell_for) : undefined;
+    return (
+      <tr key={i.key} className={i.upsell ? "is-upsell" : "is-main"}>
+        <td className="item-cell">
+          {i.upsell && <CornerDownRight className="up-arrow" size={15} aria-hidden />}
+          {(i.photo ?? p?.photo) ? <img className="item-ph" src={`${ROOT}${i.photo ?? p?.photo}`} alt="" /> : <span className="item-ph empty"><Package size={14} /></span>}
+          <div className="item-main">
+            <input className="name" value={i.name} onChange={(e) => upd(i.key, { name: e.target.value })} placeholder="Назва позиції" aria-label="Назва позиції" />
+            <div className="meta-line">
+              {i.upsell && <span className="up-tag">Допродаж{mainProducts.length > 1
+                ? <> до <select className="mini-sel" value={i.upsell_for ?? ""} aria-label="До якого товару" onChange={(e) => upd(i.key, { upsell_for: e.target.value ? Number(e.target.value) : null })}>
+                    <option value="">замовлення</option>{mainProducts.map((m) => <option key={m.key} value={m.product_id!}>«{m.name}»</option>)}</select></>
+                : !parent && " до замовлення"}</span>}
+              {p && (p.variants ?? []).some((x) => x.active) && (
+                <select className="mini-sel" value={i.variant_id ?? ""} title="Варіант"
+                  onChange={(e) => { const nv = (p.variants ?? []).find((x) => x.id === Number(e.target.value)); upd(i.key, { variant_id: nv?.id ?? null, variant_name: nv?.name ?? "", name: nv ? `${p.name} (${nv.name})` : p.name, price: String(nv?.price ?? p.sale_price ?? p.price) }); }}>
+                  <option value="">варіант…</option>
+                  {(p.variants ?? []).filter((x) => x.active || x.id === i.variant_id).map((x) => <option key={x.id} value={x.id}>{x.name} · {x.available} шт</option>)}
+                </select>
+              )}
+              {p && <span>{p.sku && `${p.sku} · `}залишок {i.variant_id ? (p.variants ?? []).find((x) => x.id === i.variant_id)?.available ?? "—" : p.available}</span>}
+              {i.upsell
+                ? <button type="button" className="link-btn" onClick={() => upd(i.key, { upsell: false, upsell_for: null })}>зробити основним</button>
+                : i.product_id && <button type="button" className="add-up" onClick={() => setUpFor(upFor === i.key ? null : i.key ?? null)}><Plus size={12} /> Допродаж</button>}
+            </div>
+          </div>
+        </td>
+        <td className="qty num"><input type="number" min={1} value={i.qty} aria-label="Кількість" onChange={(e) => upd(i.key, { qty: Math.max(1, Number(e.target.value) || 1) })} /></td>
+        <td className="price num">
+          <input value={i.price} inputMode="decimal" aria-label="Ціна" onChange={(e) => upd(i.key, { price: e.target.value })} title="Ціну можна змінити лише для цього замовлення" />
+          {changed && <span className="was" title="Ціна в каталозі">{money(base!)}</span>}
+        </td>
+        <td className="num sum">{money(num(i.price) * i.qty)}</td>
+        <td><button type="button" className="x" title="Прибрати" aria-label="Прибрати позицію" onClick={() => remove(i)}>×</button></td>
+      </tr>
+    );
+  };
+
+  // рядки таблиці: товар → його допродажі → (поле допродажу / пропозиції) — усе одним блоком
+  const body: React.ReactNode[] = [];
+  items.forEach((i, idx) => {
+    body.push(row(i));
+    const next = items[idx + 1];
+    const groupEnds = !next || !next.upsell || (i.upsell ? next.upsell_for !== i.upsell_for : next.upsell_for !== i.product_id);
+    if (!groupEnds) return;
+    const m = i.upsell ? mains.find((x) => x.product_id && x.product_id === i.upsell_for) : i;
+    if (!m || m.upsell) return;
+    const offers = offersFor(m);
+    if (upFor === m.key) body.push(
+      <tr key={`${m.key}-up`} className="up-add-row"><td colSpan={5}>
+        <ProductSearch products={products} autoFocus placeholder={`Допродаж до «${m.name}»: назва або артикул…`}
+          exclude={inOrder as Set<number>} prefer={(p) => !!p.upsell && (!p.upsell_for?.length || p.upsell_for.includes(m.product_id!))} onPick={(x) => x && addUpsell(m, x)} onCancel={() => setUpFor(null)} className="up-search" />
+      </td></tr>);
+    else if (offers.length) body.push(
+      <tr key={`${m.key}-of`} className="up-offer-row"><td colSpan={5}><div className="up-offers">
+        <span className="offers-l"><Sparkles size={13} /> Запропонуйте</span>
+        {offers.map((p) => <button type="button" key={p.id} className="offer" onClick={() => addUpsell(m, { p })}><Plus size={12} /> {p.name} <b>{money(p.sale_price ?? p.price)} ₴</b></button>)}
+      </div></td></tr>);
+  });
 
   return (
     <>
-      {items.length > 0 ? (
+      {items.length > 0 && (
         <table className="t items">
           <thead><tr><th>Товар</th><th className="num">Кількість</th><th className="num">Ціна, ₴</th><th className="num">Сума</th><th /></tr></thead>
-          <tbody>
-            {items.map((i) => {
-              const p = i.product_id ? byId[i.product_id] : undefined;
-              const base = i.base_price ?? p?.price;
-              const changed = base != null && num(i.price) !== Number(base);
-              const others = items.filter((x) => x.key !== i.key && !x.upsell && x.product_id);
-              return (
-                <tr key={i.key} className={i.upsell ? "is-upsell" : ""}>
-                  <td className="item-cell">
-                    {(i.photo ?? p?.photo) ? <img className="item-ph" src={`${ROOT}${i.photo ?? p?.photo}`} alt="" /> : <span className="item-ph empty"><Package size={14} /></span>}
-                    <div className="item-main">
-                    <input className="name" value={i.name} onChange={(e) => upd(i.key, { name: e.target.value })} placeholder="Назва позиції" />
-                    <div className="meta-line">
-                      {p && (p.variants ?? []).some((x) => x.active) && (
-                        <select className="mini-sel" value={i.variant_id ?? ""} title="Варіант"
-                          onChange={(e) => { const nv = (p.variants ?? []).find((x) => x.id === Number(e.target.value)); upd(i.key, { variant_id: nv?.id ?? null, variant_name: nv?.name ?? "", name: nv ? `${p.name} (${nv.name})` : p.name, price: String(nv?.price ?? p.sale_price ?? p.price) }); }}>
-                          <option value="">варіант…</option>
-                          {(p.variants ?? []).filter((x) => x.active || x.id === i.variant_id).map((x) => <option key={x.id} value={x.id}>{x.name} · {x.available} шт</option>)}
-                        </select>
-                      )}
-                      {p && <span>{p.sku && `${p.sku} · `}залишок {i.variant_id ? (p.variants ?? []).find((x) => x.id === i.variant_id)?.available ?? "—" : p.available}</span>}
-                      <label className="mini-check"><input type="checkbox" checked={i.upsell} onChange={(e) => upd(i.key, { upsell: e.target.checked, upsell_for: e.target.checked ? others[0]?.product_id ?? null : null })} /> допродаж</label>
-                      {i.upsell && others.length > 0 && (
-                        <select className="mini-sel" value={i.upsell_for ?? ""} onChange={(e) => upd(i.key, { upsell_for: e.target.value ? Number(e.target.value) : null })}>
-                          <option value="">до замовлення</option>
-                          {others.map((o) => <option key={o.key} value={o.product_id!}>до «{o.name}»</option>)}
-                        </select>
-                      )}
-                    </div>
-                    </div>
-                  </td>
-                  <td className="qty num"><input type="number" min={1} value={i.qty} onChange={(e) => upd(i.key, { qty: Math.max(1, Number(e.target.value) || 1) })} /></td>
-                  <td className="price num">
-                    <input value={i.price} inputMode="decimal" onChange={(e) => upd(i.key, { price: e.target.value })} title="Ціну можна змінити лише для цього замовлення" />
-                    {changed && <span className="was" title="Ціна в каталозі">{money(base!)}</span>}
-                  </td>
-                  <td className="num sum">{money(num(i.price) * i.qty)}</td>
-                  <td><button type="button" className="x" title="Прибрати" onClick={() => onChange(items.filter((x) => x.key !== i.key))}>×</button></td>
-                </tr>
-              );
-            })}
-          </tbody>
+          <tbody>{body}</tbody>
         </table>
-      ) : null}
-      <div className={`goods-add ac ${items.length ? "" : "first"}`}>
-        <input value={q} placeholder="Додати товар: назва або артикул…" onChange={(e) => { setQ(e.target.value); setHl(0); setOpen(true); }}
-          onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)}
-          onKeyDown={(e) => {
-            const n = list.length + 1;
-            if (e.key === "ArrowDown") { e.preventDefault(); setHl((h) => (h + 1) % n); }
-            else if (e.key === "ArrowUp") { e.preventDefault(); setHl((h) => (h - 1 + n) % n); }
-            else if (e.key === "Enter") { e.preventDefault(); if (hl < list.length) add(list[hl].p, false, list[hl].v); else add(); }
-            else if (e.key === "Escape") { e.preventDefault(); setOpen(false); }
-          }} />
-        {open && (
-          <div className="ac-list on">
-            {list.map(({ p, v }, i) => (
-              <div key={`${p.id}-${v?.id ?? 0}`} className={`goods-opt ${i === hl ? "hl" : ""}`} onMouseDown={(e) => { e.preventDefault(); add(p, false, v); }}>
-                {p.photo ? <img src={`${ROOT}${p.photo}`} alt="" /> : <span className="ph"><Package size={14} /></span>}
-                <span className="nm">{p.name}{v && <b> · {v.name}</b>}{p.upsell && <span className="badge info">допродаж</span>}{p.discount_percent > 0 && <span className="badge warn">−{p.discount_percent}%</span>}</span>
-                <small>{money(v?.price ?? p.sale_price ?? p.price)} ₴ · {(v ?? p).available} шт</small>
-              </div>
-            ))}
-            <div className={hl === list.length ? "hl" : ""} onMouseDown={(e) => { e.preventDefault(); add(); }}>
-              <span>{q.trim() ? `Довільна позиція «${q.trim()}»` : "Довільна позиція (без товару зі складу)"}</span><small>Enter</small>
-            </div>
-          </div>
-        )}
-      </div>
-      {offers.length > 0 && (
-        <div className="offers"><span className="offers-l"><Sparkles size={14} /> Запропонуйте допродаж</span>
-          {offers.map((p) => <button type="button" key={p.id} className="offer" onClick={() => add(p, true)}><Plus size={13} /> {p.name} <b>{money(p.price)} ₴</b></button>)}
-        </div>
       )}
+      <ProductSearch products={products} free className={items.length ? "" : "first"} placeholder="Додати товар: назва або артикул…" onPick={addMain} />
+      {upsellSum > 0 && <p className="up-total">З них допродаж: <b>{money(upsellSum)} ₴</b></p>}
     </>
   );
 }

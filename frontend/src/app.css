@@ -212,7 +212,7 @@ details.ocs > summary .muted { overflow: hidden; text-overflow: ellipsis; white-
   .oc-actions { margin-left: 0; width: 100%; }
   .fl { grid-template-columns: 96px minmax(0, 1fr); }
   .oc-sum { max-width: none; }
-  .oc-main .items th:nth-child(4), .oc-main .items td.sum { display: none; }
+  .oc-main .items th:nth-child(4) { display: none; }
   .oc-main .items td.price input { width: 86px; }
   .oc-bar .btn.primary { flex: 1; }
 }

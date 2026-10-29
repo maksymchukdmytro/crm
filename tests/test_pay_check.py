@@ -98,3 +98,4 @@ def test_changed_ttn_resets_check_and_api_shows_it(api, admin, db, products, moc
     order_svc.update_order(db, o, {"delivery_method": "pickup"}, None)
     db.commit()
     assert pay_check.check(fresh(db, o)) is None
+

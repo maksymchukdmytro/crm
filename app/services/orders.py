@@ -145,7 +145,21 @@ def build_items(db: Session, items_data: list[dict]) -> list[OrderItem]:
                 upsell_for_id=upsell_for or None,
             )
         )
-    return result
+    return arrange_items(result)
+
+
+def arrange_items(items: list[OrderItem]) -> list[OrderItem]:
+    """Допродаж — одразу під своїм основним товаром, «до замовлення» — у кінці (позиції зберігаються в цьому порядку,
+    тож так само йдуть у картці, друку, ТТН і чеку)."""
+    ups = [i for i in items if i.is_upsell]
+    out, used = [], set()
+    for m in (i for i in items if not i.is_upsell):
+        out.append(m)
+        for u in ups:
+            if id(u) not in used and m.product_id and u.upsell_for_id == m.product_id:
+                out.append(u)
+                used.add(id(u))
+    return out + [u for u in ups if id(u) not in used]
 
 
 def _names(data: dict, order: Order | None) -> dict:
