@@ -120,10 +120,16 @@ def create_app(database_url: str | None = None, run_seed: bool = True) -> FastAP
     async def _validation(request: Request, exc: RequestValidationError):
         return JSONResponse({"error": "Некоректні дані запиту", "details": exc.errors()[:5]}, status_code=422)
 
+    def _version() -> str:
+        try:  # VERSION пише deploy/install.sh: «коміт · дата»
+            return (Path(__file__).resolve().parent.parent / "VERSION").read_text(encoding="utf-8").strip()
+        except OSError:
+            return ""
+
     @app.get("/healthz", include_in_schema=False)
     def healthz():
-        """Чи живий веб-процес (для systemd/Docker і скрипта встановлення)."""
-        return {"ok": True}
+        """Чи живий веб-процес (для systemd/Docker і скрипта встановлення) і яка версія коду працює."""
+        return {"ok": True, "version": _version()}
 
     @app.get("/healthz/full", include_in_schema=False)
     def healthz_full():

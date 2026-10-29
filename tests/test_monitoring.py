@@ -15,7 +15,7 @@ from .test_api import H, api  # noqa: F401  (фікстура)
 
 def test_healthz_full_reflects_worker(app, db):
     with TestClient(app) as c:
-        assert c.get("/healthz").json() == {"ok": True}
+        assert c.get("/healthz").json()["ok"] is True
         r = c.get("/healthz/full")
         assert r.status_code == 503 and r.json()["checks"]["worker"]["ok"] is False
         monitoring.beat(db)  # без Redis пульс пишеться в налаштування
