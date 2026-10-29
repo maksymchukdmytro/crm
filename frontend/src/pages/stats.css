@@ -3,10 +3,10 @@
 
 /* верхня смуга: тип дати, період, групування */
 .st-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
-.st-sel { position: relative; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 6px;
+.st-sel { position: relative; display: inline-flex; flex-direction: row; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 400; border: 1px solid var(--line); border-radius: 6px;
   background: #fff; padding: 0 8px; height: 32px; color: var(--ink-2); }
 .st-sel:hover { border-color: #d6d6d3; }
-.st-sel select { appearance: none; border: 0; background: transparent; font: inherit; font-size: 13.5px; color: var(--ink); padding: 0 16px 0 0;
+.st-sel select { appearance: none; border: 0; background: transparent; box-shadow: none; font: inherit; font-size: 13.5px; color: var(--ink); padding: 0 16px 0 0;
   margin-right: -14px; cursor: pointer; outline: none; min-width: 0; width: auto; height: 30px; }
 .st-sel > svg:last-child { pointer-events: none; color: var(--muted); }
 .st-period { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -58,7 +58,7 @@
 
 /* графік */
 .st-chart { padding: 14px 12px 10px 4px; }
-.st-chart-in { display: grid; grid-template-columns: minmax(0, 1fr) 210px; gap: 8px; align-items: start; }
+.st-chart-in { display: grid; grid-template-columns: minmax(0, 1fr) 236px; gap: 8px; align-items: start; }
 .sc { position: relative; min-width: 0; }
 .sc svg { display: block; overflow: visible; }
 .sc-grid { stroke: var(--line-2); }
@@ -141,7 +141,8 @@
 .rate.hi { color: var(--ok); }
 .rate.mid { color: var(--warn); }
 .rate.lo { color: var(--bad); }
-.st-orders td { font-size: 12.5px; }
+.st-orders td { font-size: 12.5px; white-space: nowrap; }
+.st-orders td.st-items, .st-orders td.st-utm { white-space: normal; }
 .st-items { min-width: 260px; max-width: 380px; }
 .st-items > div { line-height: 1.45; }
 .st-items > div.up { color: #1a62ad; }

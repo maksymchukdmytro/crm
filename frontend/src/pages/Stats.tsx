@@ -181,7 +181,7 @@ export default function StatsPage() {
                       return (
                         <button key={x.status_id} className={`lg ${off ? "off" : ""}`} title={off ? "Показати" : "Сховати на графіку"}
                           onClick={() => setHidden((h) => { const n = new Set(h); if (n.has(x.status_id)) n.delete(x.status_id); else n.add(x.status_id); return n; })}>
-                          <span className="lg-dot" style={{ background: s?.color ?? "#999" }} /><b>{x.share}%</b><span className="lg-n">({x.count})</span><span className="lg-name">{s?.name ?? "—"}</span>
+                          <span className="lg-dot" style={{ background: s?.color ?? "#999" }} /><b>{x.share}%</b><span className="lg-n">({x.count})</span><span className="lg-name" title={s?.name}>{s?.name ?? "—"}</span>
                         </button>
                       );
                     })}
@@ -205,7 +205,7 @@ export default function StatsPage() {
               <Kpi label="Відправлено" value={data.summary.shipped} sub={data.summary.orders ? `${Math.round(data.summary.shipped * 100 / data.summary.orders)}% від замовлень` : ""} d={delta(data, "shipped")} />
               <Kpi label="Середній чек" value={`${money(data.summary.avg_check)} ₴`} sub={`маржа ${money(data.summary.margin_avg)} ₴`} d={delta(data, "avg_check")} />
               <Kpi label="Час підтвердження" value={data.summary.confirm_avg_min == null ? "—" : minutes(data.summary.confirm_avg_min)} sub="від додавання до апруву"
-                d={data.prev?.confirm_avg_min && data.summary.confirm_avg_min != null ? { v: pct(data.summary.confirm_avg_min, data.prev.confirm_avg_min), good: data.summary.confirm_avg_min <= data.prev.confirm_avg_min, unit: "%" } : null} />
+                d={data.prev && data.prev.orders >= MIN_PREV_ORDERS && data.prev.confirm_avg_min && data.summary.confirm_avg_min != null ? { v: pct(data.summary.confirm_avg_min, data.prev.confirm_avg_min), good: data.summary.confirm_avg_min <= data.prev.confirm_avg_min, unit: "%" } : null} />
               {data.summary.duplicates > 0 && <Kpi label="Дублі" value={data.summary.duplicates} sub="не псують апрув, якщо не підтверджені" d={null} />}
             </div>
             {data.prev && <p className="hint st-prev">Порівняння з попереднім періодом {data.prev.date_from.split("-").reverse().join(".")} — {data.prev.date_to.split("-").reverse().join(".")}: {data.prev.orders} замовлень, {money(data.prev.sum)} ₴.</p>}
@@ -236,13 +236,15 @@ type D = { v: number; good: boolean; unit: string } | null;
 function pct(cur: number, prev: number): number {
   return prev ? Math.round(((cur - prev) / Math.abs(prev)) * 1000) / 10 : 0;
 }
+// порівняння має сенс, лише коли в попередньому періоді було з чим порівнювати
+const MIN_PREV_ORDERS = 5;
 function delta(s: Stats, k: keyof StatsSummary): D {
   const p = s.prev?.[k], c = s.summary[k];
-  if (typeof p !== "number" || typeof c !== "number" || !p) return null;
+  if (!s.prev || s.prev.orders < MIN_PREV_ORDERS || typeof p !== "number" || typeof c !== "number" || !p) return null;
   return { v: pct(c, p), good: c >= p, unit: "%" };
 }
 function pp(s: Stats, k: "approve_rate" | "buyout_rate"): D {
-  if (!s.prev || !(s.prev.orders)) return null;
+  if (!s.prev || s.prev.orders < MIN_PREV_ORDERS) return null;
   const v = Math.round((s.summary[k] - s.prev[k]) * 10) / 10;
   return { v, good: v >= 0, unit: " п.п." };
 }
@@ -331,7 +333,7 @@ function BreakdownTab({ qkey, params, dims, extraName, exportHref, onPick }: {
   qkey: string; params: Record<string, string>; dims: Record<string, string>; extraName: (i: number) => string;
   exportHref: (dim: string) => string; onPick: (dim: string, v: string) => void;
 }) {
-  const [dim, setDim] = useState("source");
+  const [dim, setDim] = useState("utm_source");
   const { data, isFetching } = useQuery({ queryKey: ["stats-breakdown", qkey, dim], queryFn: () => api.get<StatsBreakdown>(`/stats/breakdown${qs({ ...params, dim })}`), placeholderData: (p) => p });
   const rows = data?.rows ?? [];
   const { sorted, th } = useSort(rows, dim === "hour" || dim === "weekday" ? "key" : "orders", dim === "hour" || dim === "weekday" ? 1 : -1);

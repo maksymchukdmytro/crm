@@ -36,11 +36,13 @@ export function fullLabel(t: string, group: string): string {
   return `${DAYS[x.wd]}, ${p2(x.d)}.${p2(x.m)}.${x.y}`;
 }
 
-function niceMax(v: number): number {
-  if (v <= 4) return 4;
-  const p = Math.pow(10, Math.floor(Math.log10(v)));
-  for (const k of [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (k * p >= v) return k * p;
-  return 10 * p;
+// Ціла «гарна» вісь: крок 1, 2, 5 × 10ⁿ, близько 4–5 поділок
+export function niceAxis(v: number, parts = 4): { max: number; step: number } {
+  const raw = Math.max(v, 1) / parts;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = Math.max(1, [1, 2, 2.5, 5, 10].map((k) => k * p).find((s) => s >= raw) ?? 10 * p);
+  const st = step < 1 ? 1 : Number.isInteger(step) ? step : Math.ceil(step);
+  return { max: Math.max(st, Math.ceil(v / st) * st), step: st };
 }
 
 function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, number] {
@@ -74,8 +76,9 @@ export default function StatsChart({ points, statuses, hidden, showTotal, group,
   const W = width, H = height;
   const pw = W - L - R, ph = H - T - B;
   const stackOf = (p: ChartPoint) => visible.reduce((acc, s) => acc + (p.by_status[String(s.id)] ?? 0), 0);
-  const max = niceMax(Math.max(1, ...view.map((p) => Math.max(stackOf(p), showTotal ? p.total : 0))));
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map((k) => Math.round(max * k * 100) / 100);
+  const axis = niceAxis(Math.max(1, ...view.map((p) => Math.max(stackOf(p), showTotal ? p.total : 0))));
+  const max = axis.max;
+  const ticks = Array.from({ length: Math.round(max / axis.step) + 1 }, (_, i) => i * axis.step);
   const bw = pw / Math.max(view.length, 1);
   const barW = Math.max(1, Math.min(42, bw * 0.68));
   const y = (v: number) => T + ph * (1 - v / max);
@@ -97,7 +100,7 @@ export default function StatsChart({ points, statuses, hidden, showTotal, group,
         {ticks.map((t) => (
           <g key={t}>
             <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} className={t === 0 ? "sc-axis" : "sc-grid"} />
-            <text x={L - 8} y={y(t) + 4} className="sc-tick" textAnchor="end">{t % 1 ? t.toFixed(1) : t}</text>
+            <text x={L - 8} y={y(t) + 4} className="sc-tick" textAnchor="end">{t}</text>
           </g>
         ))}
         {hover != null && <rect x={L + bw * hover} y={T} width={bw} height={ph} className="sc-hover" />}
