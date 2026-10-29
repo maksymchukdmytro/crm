@@ -33,8 +33,8 @@ jobs:
     env:
       TEST_DATABASE_URL: postgresql+psycopg://crm:crm@localhost:5432/crm_test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -52,20 +52,33 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # на гілках wip/** CI сам комітить оновлені типи API
     defaults:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --no-audit --no-fund
-      - name: Типи API збігаються зі схемою
+      - name: Типи API зі схеми (на wip/** — оновити й закомітити, на main — лише перевірити)
         run: |
           npm run gen:api
-          git diff --exit-code -- src/lib/api-schema.d.ts
+          if git diff --quiet -- src/lib/api-schema.d.ts; then exit 0; fi
+          if [[ "$GITHUB_REF" == refs/heads/wip/* ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/lib/api-schema.d.ts
+            git commit -m "Оновлено типи API з openapi.json"
+            git push
+          else
+            git diff --stat -- src/lib/api-schema.d.ts
+            echo "::error::src/lib/api-schema.d.ts не збігається з openapi.json — запустіть npm run gen:api"
+            exit 1
+          fi
       - name: Перевірка TypeScript і збірка
         run: npm run build

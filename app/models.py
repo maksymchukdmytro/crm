@@ -15,7 +15,8 @@ from sqlalchemy import (
     Text,
     text,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import event, inspect
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from .db import Base
 
@@ -452,10 +453,12 @@ class Order(Base):
     stock_shipped: Mapped[bool] = mapped_column(Boolean, default=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
-    status_changed_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    shipped_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow, index=True)
+    status_changed_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    assigned_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)  # закріплене за менеджером
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)  # перший статус «апрув»
+    shipped_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
 
     status: Mapped[Status] = relationship()
     manager: Mapped[User | None] = relationship()
@@ -604,3 +607,27 @@ class AuditLog(Base):
 
 
 Index("ix_audit_entity", AuditLog.entity, AuditLog.entity_id)
+
+
+# ---------------------------------------------------------------- автоматичні дати замовлення
+@event.listens_for(Session, "before_flush")
+def _order_dates(session: Session, _ctx, _instances):
+    """«Закріплене» — коли замовлення отримало менеджера; «підтверджене» — перший статус, що рахується апрувом.
+    Працює для будь-якого шляху зміни: картка, API, масові дії, webhook, маркетплейси."""
+    now = utcnow()
+    for o in [*session.new, *session.dirty]:
+        if not isinstance(o, Order):
+            continue
+        state = inspect(o)
+        is_new = o in session.new
+        if is_new or state.attrs.manager_id.history.has_changes() or state.attrs.manager.history.has_changes():
+            has_manager = o.manager_id is not None or o.__dict__.get("manager") is not None
+            if not has_manager:
+                o.assigned_at = None
+            elif not (is_new and o.assigned_at):
+                o.assigned_at = now
+        if o.confirmed_at is None and (is_new or state.attrs.status_id.history.has_changes()
+                                       or state.attrs.status.history.has_changes()):
+            st = o.__dict__.get("status") or (session.get(Status, o.status_id) if o.status_id else None)
+            if st is not None and st.counts_as_approved:
+                o.confirmed_at = now

@@ -5189,181 +5189,71 @@
     "title": "SourceOut",
     "type": "object"
    },
-   "StatsDay": {
+   "StatsBreakdownOut": {
     "properties": {
-     "by_status": {
-      "additionalProperties": {
-       "type": "integer"
-      },
-      "title": "By Status",
-      "type": "object"
-     },
-     "day": {
-      "title": "Day",
+     "dim": {
+      "title": "Dim",
       "type": "string"
      },
-     "total": {
-      "title": "Total",
+     "rows": {
+      "items": {
+       "$ref": "#/components/schemas/StatsBreakdownRow"
+      },
+      "title": "Rows",
+      "type": "array"
+     }
+    },
+    "required": [
+     "dim",
+     "rows"
+    ],
+    "title": "StatsBreakdownOut",
+    "type": "object"
+   },
+   "StatsBreakdownRow": {
+    "properties": {
+     "approve_rate": {
+      "title": "Approve Rate",
+      "type": "number"
+     },
+     "approved": {
+      "title": "Approved",
       "type": "integer"
-     }
-    },
-    "required": [
-     "day",
-     "total",
-     "by_status"
-    ],
-    "title": "StatsDay",
-    "type": "object"
-   },
-   "StatsOut": {
-    "properties": {
-     "date_field": {
-      "title": "Date Field",
-      "type": "string"
      },
-     "date_from": {
-      "title": "Date From",
-      "type": "string"
-     },
-     "date_to": {
-      "title": "Date To",
-      "type": "string"
-     },
-     "days": {
-      "items": {
-       "$ref": "#/components/schemas/StatsDay"
-      },
-      "title": "Days",
-      "type": "array"
-     },
-     "products": {
-      "items": {
-       "$ref": "#/components/schemas/StatsProduct"
-      },
-      "title": "Products",
-      "type": "array"
-     },
-     "statuses": {
-      "items": {
-       "$ref": "#/components/schemas/StatsStatus"
-      },
-      "title": "Statuses",
-      "type": "array"
-     },
-     "summary": {
-      "$ref": "#/components/schemas/StatsSummary"
-     }
-    },
-    "required": [
-     "date_from",
-     "date_to",
-     "date_field",
-     "days",
-     "statuses",
-     "summary",
-     "products"
-    ],
-    "title": "StatsOut",
-    "type": "object"
-   },
-   "StatsProduct": {
-    "properties": {
-     "margin": {
-      "title": "Margin",
+     "avg_check": {
+      "title": "Avg Check",
       "type": "number"
      },
-     "margin_main": {
-      "title": "Margin Main",
+     "buyout_rate": {
+      "title": "Buyout Rate",
       "type": "number"
      },
-     "margin_upsell": {
-      "title": "Margin Upsell",
-      "type": "number"
-     },
-     "name": {
-      "title": "Name",
-      "type": "string"
-     },
-     "product_id": {
+     "confirm_avg_min": {
       "anyOf": [
        {
-        "type": "integer"
+        "type": "number"
        },
        {
         "type": "null"
        }
       ],
-      "title": "Product Id"
+      "title": "Confirm Avg Min"
      },
-     "qty": {
-      "title": "Qty",
+     "delivered": {
+      "title": "Delivered",
       "type": "integer"
      },
-     "qty_main": {
-      "title": "Qty Main",
+     "duplicates": {
+      "title": "Duplicates",
       "type": "integer"
      },
-     "qty_upsell": {
-      "title": "Qty Upsell",
-      "type": "integer"
+     "key": {
+      "title": "Key",
+      "type": "string"
      },
-     "sum": {
-      "title": "Sum",
-      "type": "number"
-     },
-     "sum_main": {
-      "title": "Sum Main",
-      "type": "number"
-     },
-     "sum_upsell": {
-      "title": "Sum Upsell",
-      "type": "number"
-     }
-    },
-    "required": [
-     "product_id",
-     "name",
-     "qty",
-     "qty_main",
-     "qty_upsell",
-     "sum",
-     "sum_main",
-     "sum_upsell",
-     "margin",
-     "margin_main",
-     "margin_upsell"
-    ],
-    "title": "StatsProduct",
-    "type": "object"
-   },
-   "StatsStatus": {
-    "properties": {
-     "count": {
-      "title": "Count",
-      "type": "integer"
-     },
-     "share": {
-      "title": "Share",
-      "type": "number"
-     },
-     "status_id": {
-      "title": "Status Id",
-      "type": "integer"
-     }
-    },
-    "required": [
-     "status_id",
-     "count",
-     "share"
-    ],
-    "title": "StatsStatus",
-    "type": "object"
-   },
-   "StatsSummary": {
-    "properties": {
-     "avg_check": {
-      "title": "Avg Check",
-      "type": "number"
+     "label": {
+      "title": "Label",
+      "type": "string"
      },
      "margin": {
       "title": "Margin",
@@ -5409,6 +5299,14 @@
       "title": "Qty Upsell Rate",
       "type": "number"
      },
+     "refused": {
+      "title": "Refused",
+      "type": "integer"
+     },
+     "shipped": {
+      "title": "Shipped",
+      "type": "integer"
+     },
      "sum": {
       "title": "Sum",
       "type": "number"
@@ -5442,7 +5340,903 @@
      "sum",
      "sum_main",
      "sum_upsell",
-     "avg_check"
+     "avg_check",
+     "duplicates",
+     "approved",
+     "approve_rate",
+     "shipped",
+     "delivered",
+     "refused",
+     "buyout_rate",
+     "key",
+     "label"
+    ],
+    "title": "StatsBreakdownRow",
+    "type": "object"
+   },
+   "StatsOption": {
+    "properties": {
+     "count": {
+      "title": "Count",
+      "type": "integer"
+     },
+     "value": {
+      "title": "Value",
+      "type": "string"
+     }
+    },
+    "required": [
+     "value",
+     "count"
+    ],
+    "title": "StatsOption",
+    "type": "object"
+   },
+   "StatsOptionsOut": {
+    "properties": {
+     "date_fields": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Date Fields",
+      "type": "object"
+     },
+     "dimensions": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Dimensions",
+      "type": "object"
+     },
+     "segment_metrics": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Segment Metrics",
+      "type": "object"
+     },
+     "values": {
+      "additionalProperties": {
+       "items": {
+        "$ref": "#/components/schemas/StatsOption"
+       },
+       "type": "array"
+      },
+      "description": "Значення фільтрів-рядків: site, utm_*, extra1–4",
+      "title": "Values",
+      "type": "object"
+     }
+    },
+    "required": [
+     "values",
+     "date_fields",
+     "dimensions",
+     "segment_metrics"
+    ],
+    "title": "StatsOptionsOut",
+    "type": "object"
+   },
+   "StatsOrderItem": {
+    "properties": {
+     "cost": {
+      "title": "Cost",
+      "type": "number"
+     },
+     "is_upsell": {
+      "title": "Is Upsell",
+      "type": "boolean"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "price": {
+      "title": "Price",
+      "type": "number"
+     },
+     "qty": {
+      "title": "Qty",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "name",
+     "qty",
+     "price",
+     "cost",
+     "is_upsell"
+    ],
+    "title": "StatsOrderItem",
+    "type": "object"
+   },
+   "StatsOrderRow": {
+    "properties": {
+     "assigned_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Assigned At"
+     },
+     "confirm_secs": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Confirm Secs"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "customer_name": {
+      "title": "Customer Name",
+      "type": "string"
+     },
+     "delivered_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Delivered At"
+     },
+     "delivery": {
+      "title": "Delivery",
+      "type": "string"
+     },
+     "external_id": {
+      "title": "External Id",
+      "type": "string"
+     },
+     "extra1": {
+      "title": "Extra1",
+      "type": "string"
+     },
+     "extra2": {
+      "title": "Extra2",
+      "type": "string"
+     },
+     "extra3": {
+      "title": "Extra3",
+      "type": "string"
+     },
+     "extra4": {
+      "title": "Extra4",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/StatsOrderItem"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "manager": {
+      "title": "Manager",
+      "type": "string"
+     },
+     "margin": {
+      "title": "Margin",
+      "type": "number"
+     },
+     "office": {
+      "title": "Office",
+      "type": "string"
+     },
+     "payment": {
+      "title": "Payment",
+      "type": "string"
+     },
+     "phone": {
+      "title": "Phone",
+      "type": "string"
+     },
+     "shipped_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shipped At"
+     },
+     "site": {
+      "title": "Site",
+      "type": "string"
+     },
+     "status_id": {
+      "title": "Status Id",
+      "type": "integer"
+     },
+     "total": {
+      "title": "Total",
+      "type": "number"
+     },
+     "ttn": {
+      "title": "Ttn",
+      "type": "string"
+     },
+     "updated_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated At"
+     },
+     "utm_campaign": {
+      "title": "Utm Campaign",
+      "type": "string"
+     },
+     "utm_content": {
+      "title": "Utm Content",
+      "type": "string"
+     },
+     "utm_medium": {
+      "title": "Utm Medium",
+      "type": "string"
+     },
+     "utm_source": {
+      "title": "Utm Source",
+      "type": "string"
+     },
+     "utm_term": {
+      "title": "Utm Term",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "external_id",
+     "status_id",
+     "customer_name",
+     "phone",
+     "items",
+     "total",
+     "margin",
+     "payment",
+     "delivery",
+     "ttn",
+     "created_at",
+     "confirm_secs",
+     "assigned_at",
+     "shipped_at",
+     "delivered_at",
+     "updated_at",
+     "office",
+     "manager",
+     "site",
+     "utm_source",
+     "utm_medium",
+     "utm_term",
+     "utm_content",
+     "utm_campaign",
+     "extra1",
+     "extra2",
+     "extra3",
+     "extra4"
+    ],
+    "title": "StatsOrderRow",
+    "type": "object"
+   },
+   "StatsOrdersOut": {
+    "properties": {
+     "offset": {
+      "title": "Offset",
+      "type": "integer"
+     },
+     "rows": {
+      "items": {
+       "$ref": "#/components/schemas/StatsOrderRow"
+      },
+      "title": "Rows",
+      "type": "array"
+     },
+     "total": {
+      "title": "Total",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "total",
+     "offset",
+     "rows"
+    ],
+    "title": "StatsOrdersOut",
+    "type": "object"
+   },
+   "StatsOut": {
+    "properties": {
+     "date_field": {
+      "title": "Date Field",
+      "type": "string"
+     },
+     "date_from": {
+      "title": "Date From",
+      "type": "string"
+     },
+     "date_to": {
+      "title": "Date To",
+      "type": "string"
+     },
+     "group": {
+      "title": "Group",
+      "type": "string"
+     },
+     "prev": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/StatsPrev"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "series": {
+      "items": {
+       "$ref": "#/components/schemas/StatsPoint"
+      },
+      "title": "Series",
+      "type": "array"
+     },
+     "statuses": {
+      "items": {
+       "$ref": "#/components/schemas/StatsStatus"
+      },
+      "title": "Statuses",
+      "type": "array"
+     },
+     "summary": {
+      "$ref": "#/components/schemas/StatsSummary"
+     }
+    },
+    "required": [
+     "date_from",
+     "date_to",
+     "date_field",
+     "group",
+     "series",
+     "statuses",
+     "summary"
+    ],
+    "title": "StatsOut",
+    "type": "object"
+   },
+   "StatsPoint": {
+    "properties": {
+     "by_status": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "By Status",
+      "type": "object"
+     },
+     "t": {
+      "description": "Початок відрізка, місцевий час (YYYY-MM-DDTHH:MM)",
+      "title": "T",
+      "type": "string"
+     },
+     "total": {
+      "title": "Total",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "t",
+     "total",
+     "by_status"
+    ],
+    "title": "StatsPoint",
+    "type": "object"
+   },
+   "StatsPrev": {
+    "properties": {
+     "approve_rate": {
+      "title": "Approve Rate",
+      "type": "number"
+     },
+     "approved": {
+      "title": "Approved",
+      "type": "integer"
+     },
+     "avg_check": {
+      "title": "Avg Check",
+      "type": "number"
+     },
+     "buyout_rate": {
+      "title": "Buyout Rate",
+      "type": "number"
+     },
+     "confirm_avg_min": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Confirm Avg Min"
+     },
+     "date_from": {
+      "title": "Date From",
+      "type": "string"
+     },
+     "date_to": {
+      "title": "Date To",
+      "type": "string"
+     },
+     "delivered": {
+      "title": "Delivered",
+      "type": "integer"
+     },
+     "duplicates": {
+      "title": "Duplicates",
+      "type": "integer"
+     },
+     "margin": {
+      "title": "Margin",
+      "type": "number"
+     },
+     "margin_avg": {
+      "title": "Margin Avg",
+      "type": "number"
+     },
+     "margin_main": {
+      "title": "Margin Main",
+      "type": "number"
+     },
+     "margin_upsell": {
+      "title": "Margin Upsell",
+      "type": "number"
+     },
+     "orders": {
+      "title": "Orders",
+      "type": "integer"
+     },
+     "orders_plain": {
+      "title": "Orders Plain",
+      "type": "integer"
+     },
+     "orders_upsell": {
+      "title": "Orders Upsell",
+      "type": "integer"
+     },
+     "qty": {
+      "title": "Qty",
+      "type": "integer"
+     },
+     "qty_main": {
+      "title": "Qty Main",
+      "type": "integer"
+     },
+     "qty_upsell": {
+      "title": "Qty Upsell",
+      "type": "integer"
+     },
+     "qty_upsell_rate": {
+      "title": "Qty Upsell Rate",
+      "type": "number"
+     },
+     "refused": {
+      "title": "Refused",
+      "type": "integer"
+     },
+     "shipped": {
+      "title": "Shipped",
+      "type": "integer"
+     },
+     "sum": {
+      "title": "Sum",
+      "type": "number"
+     },
+     "sum_main": {
+      "title": "Sum Main",
+      "type": "number"
+     },
+     "sum_upsell": {
+      "title": "Sum Upsell",
+      "type": "number"
+     },
+     "upsell_rate": {
+      "title": "Upsell Rate",
+      "type": "number"
+     }
+    },
+    "required": [
+     "orders",
+     "orders_plain",
+     "orders_upsell",
+     "upsell_rate",
+     "qty",
+     "qty_main",
+     "qty_upsell",
+     "qty_upsell_rate",
+     "margin",
+     "margin_main",
+     "margin_upsell",
+     "margin_avg",
+     "sum",
+     "sum_main",
+     "sum_upsell",
+     "avg_check",
+     "duplicates",
+     "approved",
+     "approve_rate",
+     "shipped",
+     "delivered",
+     "refused",
+     "buyout_rate",
+     "date_from",
+     "date_to"
+    ],
+    "title": "StatsPrev",
+    "type": "object"
+   },
+   "StatsProduct": {
+    "properties": {
+     "category": {
+      "title": "Category",
+      "type": "string"
+     },
+     "margin": {
+      "title": "Margin",
+      "type": "number"
+     },
+     "margin_main": {
+      "title": "Margin Main",
+      "type": "number"
+     },
+     "margin_upsell": {
+      "title": "Margin Upsell",
+      "type": "number"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "orders": {
+      "title": "Orders",
+      "type": "integer"
+     },
+     "product_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Id"
+     },
+     "qty": {
+      "title": "Qty",
+      "type": "integer"
+     },
+     "qty_main": {
+      "title": "Qty Main",
+      "type": "integer"
+     },
+     "qty_upsell": {
+      "title": "Qty Upsell",
+      "type": "integer"
+     },
+     "sku": {
+      "title": "Sku",
+      "type": "string"
+     },
+     "sum": {
+      "title": "Sum",
+      "type": "number"
+     },
+     "sum_main": {
+      "title": "Sum Main",
+      "type": "number"
+     },
+     "sum_upsell": {
+      "title": "Sum Upsell",
+      "type": "number"
+     }
+    },
+    "required": [
+     "product_id",
+     "name",
+     "sku",
+     "category",
+     "orders",
+     "qty",
+     "qty_main",
+     "qty_upsell",
+     "sum",
+     "sum_main",
+     "sum_upsell",
+     "margin",
+     "margin_main",
+     "margin_upsell"
+    ],
+    "title": "StatsProduct",
+    "type": "object"
+   },
+   "StatsProductsOut": {
+    "properties": {
+     "rows": {
+      "items": {
+       "$ref": "#/components/schemas/StatsProduct"
+      },
+      "title": "Rows",
+      "type": "array"
+     }
+    },
+    "required": [
+     "rows"
+    ],
+    "title": "StatsProductsOut",
+    "type": "object"
+   },
+   "StatsSegment": {
+    "properties": {
+     "delivered": {
+      "title": "Delivered",
+      "type": "integer"
+     },
+     "from": {
+      "title": "From",
+      "type": "number"
+     },
+     "orders": {
+      "title": "Orders",
+      "type": "integer"
+     },
+     "refused": {
+      "title": "Refused",
+      "type": "integer"
+     },
+     "return_rate": {
+      "title": "Return Rate",
+      "type": "number"
+     },
+     "to": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "To"
+     },
+     "upsell": {
+      "title": "Upsell",
+      "type": "integer"
+     },
+     "upsell_rate": {
+      "title": "Upsell Rate",
+      "type": "number"
+     }
+    },
+    "required": [
+     "from",
+     "to",
+     "orders",
+     "upsell",
+     "delivered",
+     "refused",
+     "upsell_rate",
+     "return_rate"
+    ],
+    "title": "StatsSegment",
+    "type": "object"
+   },
+   "StatsSegmentsOut": {
+    "properties": {
+     "buckets": {
+      "items": {
+       "$ref": "#/components/schemas/StatsSegment"
+      },
+      "title": "Buckets",
+      "type": "array"
+     },
+     "metric": {
+      "title": "Metric",
+      "type": "string"
+     },
+     "step": {
+      "title": "Step",
+      "type": "number"
+     }
+    },
+    "required": [
+     "metric",
+     "step",
+     "buckets"
+    ],
+    "title": "StatsSegmentsOut",
+    "type": "object"
+   },
+   "StatsStatus": {
+    "properties": {
+     "count": {
+      "title": "Count",
+      "type": "integer"
+     },
+     "share": {
+      "title": "Share",
+      "type": "number"
+     },
+     "status_id": {
+      "title": "Status Id",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "status_id",
+     "count",
+     "share"
+    ],
+    "title": "StatsStatus",
+    "type": "object"
+   },
+   "StatsSummary": {
+    "properties": {
+     "approve_rate": {
+      "title": "Approve Rate",
+      "type": "number"
+     },
+     "approved": {
+      "title": "Approved",
+      "type": "integer"
+     },
+     "avg_check": {
+      "title": "Avg Check",
+      "type": "number"
+     },
+     "buyout_rate": {
+      "title": "Buyout Rate",
+      "type": "number"
+     },
+     "confirm_avg_min": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Confirm Avg Min"
+     },
+     "delivered": {
+      "title": "Delivered",
+      "type": "integer"
+     },
+     "duplicates": {
+      "title": "Duplicates",
+      "type": "integer"
+     },
+     "margin": {
+      "title": "Margin",
+      "type": "number"
+     },
+     "margin_avg": {
+      "title": "Margin Avg",
+      "type": "number"
+     },
+     "margin_main": {
+      "title": "Margin Main",
+      "type": "number"
+     },
+     "margin_upsell": {
+      "title": "Margin Upsell",
+      "type": "number"
+     },
+     "orders": {
+      "title": "Orders",
+      "type": "integer"
+     },
+     "orders_plain": {
+      "title": "Orders Plain",
+      "type": "integer"
+     },
+     "orders_upsell": {
+      "title": "Orders Upsell",
+      "type": "integer"
+     },
+     "qty": {
+      "title": "Qty",
+      "type": "integer"
+     },
+     "qty_main": {
+      "title": "Qty Main",
+      "type": "integer"
+     },
+     "qty_upsell": {
+      "title": "Qty Upsell",
+      "type": "integer"
+     },
+     "qty_upsell_rate": {
+      "title": "Qty Upsell Rate",
+      "type": "number"
+     },
+     "refused": {
+      "title": "Refused",
+      "type": "integer"
+     },
+     "shipped": {
+      "title": "Shipped",
+      "type": "integer"
+     },
+     "sum": {
+      "title": "Sum",
+      "type": "number"
+     },
+     "sum_main": {
+      "title": "Sum Main",
+      "type": "number"
+     },
+     "sum_upsell": {
+      "title": "Sum Upsell",
+      "type": "number"
+     },
+     "upsell_rate": {
+      "title": "Upsell Rate",
+      "type": "number"
+     }
+    },
+    "required": [
+     "orders",
+     "orders_plain",
+     "orders_upsell",
+     "upsell_rate",
+     "qty",
+     "qty_main",
+     "qty_upsell",
+     "qty_upsell_rate",
+     "margin",
+     "margin_main",
+     "margin_upsell",
+     "margin_avg",
+     "sum",
+     "sum_main",
+     "sum_upsell",
+     "avg_check",
+     "duplicates",
+     "approved",
+     "approve_rate",
+     "shipped",
+     "delivered",
+     "refused",
+     "buyout_rate"
     ],
     "title": "StatsSummary",
     "type": "object"
@@ -9254,6 +10048,25 @@
     "parameters": [
      {
       "in": "query",
+      "name": "date_field",
+      "required": false,
+      "schema": {
+       "default": "created",
+       "enum": [
+        "created",
+        "assigned",
+        "confirmed",
+        "shipped",
+        "delivered",
+        "status",
+        "changed"
+       ],
+       "title": "Date Field",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
       "name": "date_from",
       "required": false,
       "schema": {
@@ -9274,12 +10087,28 @@
      },
      {
       "in": "query",
-      "name": "date_field",
+      "name": "all_time",
       "required": false,
       "schema": {
-       "default": "created",
-       "pattern": "^(created|shipped|changed)$",
-       "title": "Date Field",
+       "default": false,
+       "title": "All Time",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
+      "name": "group",
+      "required": false,
+      "schema": {
+       "default": "auto",
+       "enum": [
+        "auto",
+        "hour",
+        "day",
+        "week",
+        "month"
+       ],
+       "title": "Group",
        "type": "string"
       }
      },
@@ -9295,11 +10124,31 @@
      },
      {
       "in": "query",
+      "name": "reason",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Reason",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
       "name": "product",
       "required": false,
       "schema": {
        "default": "",
        "title": "Product",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "category",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Category",
        "type": "string"
       }
      },
@@ -9355,21 +10204,41 @@
      },
      {
       "in": "query",
-      "name": "country",
+      "name": "shop",
       "required": false,
       "schema": {
        "default": "",
-       "title": "Country",
+       "title": "Shop",
        "type": "string"
       }
      },
      {
       "in": "query",
-      "name": "utm_source",
+      "name": "np_account",
       "required": false,
       "schema": {
        "default": "",
-       "title": "Utm Source",
+       "title": "Np Account",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "mark",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Mark",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "country",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Country",
        "type": "string"
       }
      },
@@ -9385,11 +10254,116 @@
      },
      {
       "in": "query",
-      "name": "search_extra",
+      "name": "utm_source",
       "required": false,
       "schema": {
        "default": "",
-       "title": "Search Extra",
+       "title": "Utm Source",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_medium",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Medium",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_term",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Term",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_content",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Content",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_campaign",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Campaign",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra1",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra1",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra2",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra2",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra3",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra3",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra4",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra4",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "upsell",
+      "required": false,
+      "schema": {
+       "default": "",
+       "enum": [
+        "",
+        "with",
+        "without"
+       ],
+       "title": "Upsell",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Search",
        "type": "string"
       }
      }
@@ -9417,6 +10391,1483 @@
      }
     },
     "summary": "Stats",
+    "tags": [
+     "stats"
+    ]
+   }
+  },
+  "/api/stats/breakdown": {
+   "get": {
+    "operationId": "stats_breakdown_api_stats_breakdown_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "date_field",
+      "required": false,
+      "schema": {
+       "default": "created",
+       "enum": [
+        "created",
+        "assigned",
+        "confirmed",
+        "shipped",
+        "delivered",
+        "status",
+        "changed"
+       ],
+       "title": "Date Field",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "date_from",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date From",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "date_to",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date To",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "all_time",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "All Time",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
+      "name": "group",
+      "required": false,
+      "schema": {
+       "default": "auto",
+       "enum": [
+        "auto",
+        "hour",
+        "day",
+        "week",
+        "month"
+       ],
+       "title": "Group",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "reason",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Reason",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "product",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Product",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "category",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Category",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "payment",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Payment",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "delivery",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Delivery",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "office",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Office",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "source",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Source",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "manager",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Manager",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "shop",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Shop",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "np_account",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Np Account",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "mark",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Mark",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "country",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Country",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "site",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Site",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_source",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Source",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_medium",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Medium",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_term",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Term",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_content",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Content",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_campaign",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Campaign",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra1",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra1",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra2",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra2",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra3",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra3",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra4",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra4",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "upsell",
+      "required": false,
+      "schema": {
+       "default": "",
+       "enum": [
+        "",
+        "with",
+        "without"
+       ],
+       "title": "Upsell",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Search",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "dim",
+      "required": false,
+      "schema": {
+       "default": "source",
+       "title": "Dim",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StatsBreakdownOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Stats Breakdown",
+    "tags": [
+     "stats"
+    ]
+   }
+  },
+  "/api/stats/options": {
+   "get": {
+    "operationId": "stats_options_api_stats_options_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StatsOptionsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Stats Options",
+    "tags": [
+     "stats"
+    ]
+   }
+  },
+  "/api/stats/orders": {
+   "get": {
+    "operationId": "stats_orders_api_stats_orders_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "date_field",
+      "required": false,
+      "schema": {
+       "default": "created",
+       "enum": [
+        "created",
+        "assigned",
+        "confirmed",
+        "shipped",
+        "delivered",
+        "status",
+        "changed"
+       ],
+       "title": "Date Field",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "date_from",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date From",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "date_to",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date To",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "all_time",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "All Time",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
+      "name": "group",
+      "required": false,
+      "schema": {
+       "default": "auto",
+       "enum": [
+        "auto",
+        "hour",
+        "day",
+        "week",
+        "month"
+       ],
+       "title": "Group",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "reason",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Reason",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "product",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Product",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "category",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Category",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "payment",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Payment",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "delivery",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Delivery",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "office",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Office",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "source",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Source",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "manager",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Manager",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "shop",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Shop",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "np_account",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Np Account",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "mark",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Mark",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "country",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Country",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "site",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Site",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_source",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Source",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_medium",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Medium",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_term",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Term",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_content",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Content",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_campaign",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Campaign",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra1",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra1",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra2",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra2",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra3",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra3",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra4",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra4",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "upsell",
+      "required": false,
+      "schema": {
+       "default": "",
+       "enum": [
+        "",
+        "with",
+        "without"
+       ],
+       "title": "Upsell",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Search",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Offset",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 100,
+       "title": "Limit",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StatsOrdersOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Stats Orders",
+    "tags": [
+     "stats"
+    ]
+   }
+  },
+  "/api/stats/products": {
+   "get": {
+    "operationId": "stats_products_api_stats_products_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "date_field",
+      "required": false,
+      "schema": {
+       "default": "created",
+       "enum": [
+        "created",
+        "assigned",
+        "confirmed",
+        "shipped",
+        "delivered",
+        "status",
+        "changed"
+       ],
+       "title": "Date Field",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "date_from",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date From",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "date_to",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date To",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "all_time",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "All Time",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
+      "name": "group",
+      "required": false,
+      "schema": {
+       "default": "auto",
+       "enum": [
+        "auto",
+        "hour",
+        "day",
+        "week",
+        "month"
+       ],
+       "title": "Group",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "reason",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Reason",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "product",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Product",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "category",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Category",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "payment",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Payment",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "delivery",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Delivery",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "office",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Office",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "source",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Source",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "manager",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Manager",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "shop",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Shop",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "np_account",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Np Account",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "mark",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Mark",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "country",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Country",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "site",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Site",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_source",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Source",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_medium",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Medium",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_term",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Term",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_content",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Content",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_campaign",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Campaign",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra1",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra1",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra2",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra2",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra3",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra3",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra4",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra4",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "upsell",
+      "required": false,
+      "schema": {
+       "default": "",
+       "enum": [
+        "",
+        "with",
+        "without"
+       ],
+       "title": "Upsell",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Search",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StatsProductsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Stats Products",
+    "tags": [
+     "stats"
+    ]
+   }
+  },
+  "/api/stats/segments": {
+   "get": {
+    "operationId": "stats_segments_api_stats_segments_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "date_field",
+      "required": false,
+      "schema": {
+       "default": "created",
+       "enum": [
+        "created",
+        "assigned",
+        "confirmed",
+        "shipped",
+        "delivered",
+        "status",
+        "changed"
+       ],
+       "title": "Date Field",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "date_from",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date From",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "date_to",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Date To",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "all_time",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "All Time",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
+      "name": "group",
+      "required": false,
+      "schema": {
+       "default": "auto",
+       "enum": [
+        "auto",
+        "hour",
+        "day",
+        "week",
+        "month"
+       ],
+       "title": "Group",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "reason",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Reason",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "product",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Product",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "category",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Category",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "payment",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Payment",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "delivery",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Delivery",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "office",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Office",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "source",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Source",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "manager",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Manager",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "shop",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Shop",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "np_account",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Np Account",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "mark",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Mark",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "country",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Country",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "site",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Site",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_source",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Source",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_medium",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Medium",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_term",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Term",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_content",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Content",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "utm_campaign",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Utm Campaign",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra1",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra1",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra2",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra2",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra3",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra3",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "extra4",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Extra4",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "upsell",
+      "required": false,
+      "schema": {
+       "default": "",
+       "enum": [
+        "",
+        "with",
+        "without"
+       ],
+       "title": "Upsell",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Search",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "metric",
+      "required": false,
+      "schema": {
+       "default": "orders_total",
+       "title": "Metric",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StatsSegmentsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Stats Segments",
     "tags": [
      "stats"
     ]
