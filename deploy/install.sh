@@ -144,6 +144,16 @@ for _ in $(seq 1 30); do sleep 1; curl -fsS "http://127.0.0.1:$PORT/healthz" >/d
 curl -fsS "http://127.0.0.1:$PORT/healthz" >/dev/null || { journalctl -u crm-web -n 40 --no-pager; die "CRM не запустилася (журнал вище)"; }
 echo "CRM працює на 127.0.0.1:$PORT"
 
+# Разова заміна пароля admin (хеш PBKDF2, сам пароль не зберігається в репозиторії).
+# Діє лише поки admin ще жодного разу не входив; після першого входу нічого не змінює.
+ADMIN_RESET_HASH='pbkdf2_sha256$260000$e634822d0f0317f87ed5395de2f9155f$f04f9fca70bef501068dfba3418da195d56af9a18e16497ff5e5d0dd01187ad6'
+if sudo -u postgres psql -d crm -tAc "SELECT 1 FROM users WHERE username='admin' AND last_login_at IS NULL" | grep -q 1 \
+   && ! sudo -u postgres psql -d crm -tAc "SELECT 1 FROM users WHERE username='admin' AND password_hash='$ADMIN_RESET_HASH'" | grep -q 1; then
+  sudo -u postgres psql -d crm -q -c "UPDATE users SET password_hash='$ADMIN_RESET_HASH' WHERE username='admin' AND last_login_at IS NULL"
+  echo "admin / пароль, який Claude надіслав у чаті" > "$ETC/initial-admin.txt"
+  echo "Пароль admin замінено на той, що надіслано в чаті"
+fi
+
 say "4/5 Nginx: $DOMAIN$ROOT/"
 mkdir -p /etc/nginx/snippets
 cat > /etc/nginx/snippets/crm.conf <<EOF
