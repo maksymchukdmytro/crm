@@ -3,6 +3,8 @@
 Revision ID: 0004
 Revises: 0003
 """
+import re
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -51,22 +53,38 @@ def upgrade():
         op.add_column("products", sa.Column(col, sa.Numeric(7, 1), nullable=False, server_default="0"))
     op.add_column("products", sa.Column("ship_description", sa.String(255), nullable=False, server_default=""))
 
-    # перенести наявні налаштування НП (один ключ) у перший акаунт
+    # перенести наявні налаштування НП (один ключ) у перший акаунт.
+    # Старі налаштування зберігалися без перевірки, тож значення чистимо: «0,5 кг» → 0.5, задовгі рядки обрізаємо.
     conn = op.get_bind()
-    st = {k: v for k, v in conn.execute(sa.text("SELECT key, value FROM settings WHERE key LIKE 'np\\_%'")).fetchall()}
+    st = {k: (v or "").strip() for k, v in conn.execute(sa.text("SELECT key, value FROM settings WHERE key LIKE 'np%'")).fetchall()}
+
+    def cut(key, n, default=""):
+        return (st.get(key) or default)[:n]
+
+    def weight():
+        m = re.search(r"\d+(?:[.,]\d+)?", st.get("np_default_weight", ""))
+        try:
+            w = float(m.group(0).replace(",", ".")) if m else 0.5
+        except ValueError:
+            w = 0.5
+        return w if 0 < w < 10000 else 0.5
+
+    def pick(key, allowed, default):
+        v = st.get(key, "")
+        return v if v in allowed else default
+
     if st.get("np_api_key"):
         conn.execute(sa.text(
             "INSERT INTO np_accounts (name, api_key, sender_ref, contact_ref, sender_phone, city_name, city_ref, "
             "warehouse_name, warehouse_ref, payer, cod_mode, default_weight, seat_size, description, is_default) "
             "VALUES (:name, :key, :sref, :cref, :phone, :city, :cityref, :wh, :whref, :payer, :cod, :w, :size, :descr, true)"),
-            {"name": "Основний ключ", "key": st.get("np_api_key", ""), "sref": st.get("np_sender_ref", ""),
-             "cref": st.get("np_contact_ref", ""), "phone": st.get("np_sender_phone", ""),
-             "city": st.get("np_city_name", ""), "cityref": st.get("np_city_ref", ""),
-             "wh": st.get("np_warehouse_name", ""), "whref": st.get("np_warehouse_ref", ""),
-             "payer": st.get("np_payer") or "Recipient", "cod": st.get("np_cod_mode") or "backward",
-             "w": st.get("np_default_weight") or "0.5", "size": st.get("np_seat_size") or "20x15x10",
-             "descr": st.get("np_description") or "Товар"})
-
+            {"name": "Основний ключ", "key": cut("np_api_key", 64), "sref": cut("np_sender_ref", 255),
+             "cref": cut("np_contact_ref", 255), "phone": cut("np_sender_phone", 255),
+             "city": cut("np_city_name", 255), "cityref": cut("np_city_ref", 255),
+             "wh": cut("np_warehouse_name", 255), "whref": cut("np_warehouse_ref", 255),
+             "payer": pick("np_payer", ("Recipient", "Sender", "ThirdPerson"), "Recipient"),
+             "cod": pick("np_cod_mode", ("backward", "afterpayment", "none"), "backward"),
+             "w": weight(), "size": cut("np_seat_size", 32, "20x15x10"), "descr": cut("np_description", 255, "Товар")})
 
 def downgrade():
     op.drop_column("products", "ship_description")
