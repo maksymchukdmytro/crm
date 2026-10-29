@@ -840,6 +840,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stats/breakdown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stats Breakdown */
+        get: operations["stats_breakdown_api_stats_breakdown_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stats Options */
+        get: operations["stats_options_api_stats_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stats Orders */
+        get: operations["stats_orders_api_stats_orders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stats Products */
+        get: operations["stats_products_api_stats_products_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/segments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stats Segments */
+        get: operations["stats_segments_api_stats_segments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/suppliers": {
         parameters: {
             query?: never;
@@ -2882,71 +2967,33 @@ export interface components {
             /** Sort */
             sort: number;
         };
-        /** StatsDay */
-        StatsDay: {
-            /** By Status */
-            by_status: {
-                [key: string]: number;
-            };
-            /** Day */
-            day: string;
-            /** Total */
-            total: number;
+        /** StatsBreakdownOut */
+        StatsBreakdownOut: {
+            /** Dim */
+            dim: string;
+            /** Rows */
+            rows: components["schemas"]["StatsBreakdownRow"][];
         };
-        /** StatsOut */
-        StatsOut: {
-            /** Date Field */
-            date_field: string;
-            /** Date From */
-            date_from: string;
-            /** Date To */
-            date_to: string;
-            /** Days */
-            days: components["schemas"]["StatsDay"][];
-            /** Products */
-            products: components["schemas"]["StatsProduct"][];
-            /** Statuses */
-            statuses: components["schemas"]["StatsStatus"][];
-            summary: components["schemas"]["StatsSummary"];
-        };
-        /** StatsProduct */
-        StatsProduct: {
-            /** Margin */
-            margin: number;
-            /** Margin Main */
-            margin_main: number;
-            /** Margin Upsell */
-            margin_upsell: number;
-            /** Name */
-            name: string;
-            /** Product Id */
-            product_id: number | null;
-            /** Qty */
-            qty: number;
-            /** Qty Main */
-            qty_main: number;
-            /** Qty Upsell */
-            qty_upsell: number;
-            /** Sum */
-            sum: number;
-            /** Sum Main */
-            sum_main: number;
-            /** Sum Upsell */
-            sum_upsell: number;
-        };
-        /** StatsStatus */
-        StatsStatus: {
-            /** Count */
-            count: number;
-            /** Share */
-            share: number;
-            /** Status Id */
-            status_id: number;
-        };
-        /** StatsSummary */
-        StatsSummary: {
+        /** StatsBreakdownRow */
+        StatsBreakdownRow: {
+            /** Approve Rate */
+            approve_rate: number;
+            /** Approved */
+            approved: number;
             /** Avg Check */
             avg_check: number;
+            /** Buyout Rate */
+            buyout_rate: number;
+            /** Confirm Avg Min */
+            confirm_avg_min?: number | null;
+            /** Delivered */
+            delivered: number;
+            /** Duplicates */
+            duplicates: number;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
             /** Margin */
             margin: number;
             /** Margin Avg */
@@ -2969,6 +3016,332 @@ export interface components {
             qty_upsell: number;
             /** Qty Upsell Rate */
             qty_upsell_rate: number;
+            /** Refused */
+            refused: number;
+            /** Shipped */
+            shipped: number;
+            /** Sum */
+            sum: number;
+            /** Sum Main */
+            sum_main: number;
+            /** Sum Upsell */
+            sum_upsell: number;
+            /** Upsell Rate */
+            upsell_rate: number;
+        };
+        /** StatsOption */
+        StatsOption: {
+            /** Count */
+            count: number;
+            /** Value */
+            value: string;
+        };
+        /** StatsOptionsOut */
+        StatsOptionsOut: {
+            /** Date Fields */
+            date_fields: {
+                [key: string]: string;
+            };
+            /** Dimensions */
+            dimensions: {
+                [key: string]: string;
+            };
+            /** Segment Metrics */
+            segment_metrics: {
+                [key: string]: string;
+            };
+            /**
+             * Values
+             * @description Значення фільтрів-рядків: site, utm_*, extra1–4
+             */
+            values: {
+                [key: string]: components["schemas"]["StatsOption"][];
+            };
+        };
+        /** StatsOrderItem */
+        StatsOrderItem: {
+            /** Cost */
+            cost: number;
+            /** Is Upsell */
+            is_upsell: boolean;
+            /** Name */
+            name: string;
+            /** Price */
+            price: number;
+            /** Qty */
+            qty: number;
+        };
+        /** StatsOrderRow */
+        StatsOrderRow: {
+            /** Assigned At */
+            assigned_at: string | null;
+            /** Confirm Secs */
+            confirm_secs: number | null;
+            /** Created At */
+            created_at: string | null;
+            /** Customer Name */
+            customer_name: string;
+            /** Delivered At */
+            delivered_at: string | null;
+            /** Delivery */
+            delivery: string;
+            /** External Id */
+            external_id: string;
+            /** Extra1 */
+            extra1: string;
+            /** Extra2 */
+            extra2: string;
+            /** Extra3 */
+            extra3: string;
+            /** Extra4 */
+            extra4: string;
+            /** Id */
+            id: number;
+            /** Items */
+            items: components["schemas"]["StatsOrderItem"][];
+            /** Manager */
+            manager: string;
+            /** Margin */
+            margin: number;
+            /** Office */
+            office: string;
+            /** Payment */
+            payment: string;
+            /** Phone */
+            phone: string;
+            /** Shipped At */
+            shipped_at: string | null;
+            /** Site */
+            site: string;
+            /** Status Id */
+            status_id: number;
+            /** Total */
+            total: number;
+            /** Ttn */
+            ttn: string;
+            /** Updated At */
+            updated_at: string | null;
+            /** Utm Campaign */
+            utm_campaign: string;
+            /** Utm Content */
+            utm_content: string;
+            /** Utm Medium */
+            utm_medium: string;
+            /** Utm Source */
+            utm_source: string;
+            /** Utm Term */
+            utm_term: string;
+        };
+        /** StatsOrdersOut */
+        StatsOrdersOut: {
+            /** Offset */
+            offset: number;
+            /** Rows */
+            rows: components["schemas"]["StatsOrderRow"][];
+            /** Total */
+            total: number;
+        };
+        /** StatsOut */
+        StatsOut: {
+            /** Date Field */
+            date_field: string;
+            /** Date From */
+            date_from: string;
+            /** Date To */
+            date_to: string;
+            /** Group */
+            group: string;
+            prev?: components["schemas"]["StatsPrev"] | null;
+            /** Series */
+            series: components["schemas"]["StatsPoint"][];
+            /** Statuses */
+            statuses: components["schemas"]["StatsStatus"][];
+            summary: components["schemas"]["StatsSummary"];
+        };
+        /** StatsPoint */
+        StatsPoint: {
+            /** By Status */
+            by_status: {
+                [key: string]: number;
+            };
+            /**
+             * T
+             * @description Початок відрізка, місцевий час (YYYY-MM-DDTHH:MM)
+             */
+            t: string;
+            /** Total */
+            total: number;
+        };
+        /** StatsPrev */
+        StatsPrev: {
+            /** Approve Rate */
+            approve_rate: number;
+            /** Approved */
+            approved: number;
+            /** Avg Check */
+            avg_check: number;
+            /** Buyout Rate */
+            buyout_rate: number;
+            /** Confirm Avg Min */
+            confirm_avg_min?: number | null;
+            /** Date From */
+            date_from: string;
+            /** Date To */
+            date_to: string;
+            /** Delivered */
+            delivered: number;
+            /** Duplicates */
+            duplicates: number;
+            /** Margin */
+            margin: number;
+            /** Margin Avg */
+            margin_avg: number;
+            /** Margin Main */
+            margin_main: number;
+            /** Margin Upsell */
+            margin_upsell: number;
+            /** Orders */
+            orders: number;
+            /** Orders Plain */
+            orders_plain: number;
+            /** Orders Upsell */
+            orders_upsell: number;
+            /** Qty */
+            qty: number;
+            /** Qty Main */
+            qty_main: number;
+            /** Qty Upsell */
+            qty_upsell: number;
+            /** Qty Upsell Rate */
+            qty_upsell_rate: number;
+            /** Refused */
+            refused: number;
+            /** Shipped */
+            shipped: number;
+            /** Sum */
+            sum: number;
+            /** Sum Main */
+            sum_main: number;
+            /** Sum Upsell */
+            sum_upsell: number;
+            /** Upsell Rate */
+            upsell_rate: number;
+        };
+        /** StatsProduct */
+        StatsProduct: {
+            /** Category */
+            category: string;
+            /** Margin */
+            margin: number;
+            /** Margin Main */
+            margin_main: number;
+            /** Margin Upsell */
+            margin_upsell: number;
+            /** Name */
+            name: string;
+            /** Orders */
+            orders: number;
+            /** Product Id */
+            product_id: number | null;
+            /** Qty */
+            qty: number;
+            /** Qty Main */
+            qty_main: number;
+            /** Qty Upsell */
+            qty_upsell: number;
+            /** Sku */
+            sku: string;
+            /** Sum */
+            sum: number;
+            /** Sum Main */
+            sum_main: number;
+            /** Sum Upsell */
+            sum_upsell: number;
+        };
+        /** StatsProductsOut */
+        StatsProductsOut: {
+            /** Rows */
+            rows: components["schemas"]["StatsProduct"][];
+        };
+        /** StatsSegment */
+        StatsSegment: {
+            /** Delivered */
+            delivered: number;
+            /** From */
+            from: number;
+            /** Orders */
+            orders: number;
+            /** Refused */
+            refused: number;
+            /** Return Rate */
+            return_rate: number;
+            /** To */
+            to: number | null;
+            /** Upsell */
+            upsell: number;
+            /** Upsell Rate */
+            upsell_rate: number;
+        };
+        /** StatsSegmentsOut */
+        StatsSegmentsOut: {
+            /** Buckets */
+            buckets: components["schemas"]["StatsSegment"][];
+            /** Metric */
+            metric: string;
+            /** Step */
+            step: number;
+        };
+        /** StatsStatus */
+        StatsStatus: {
+            /** Count */
+            count: number;
+            /** Share */
+            share: number;
+            /** Status Id */
+            status_id: number;
+        };
+        /** StatsSummary */
+        StatsSummary: {
+            /** Approve Rate */
+            approve_rate: number;
+            /** Approved */
+            approved: number;
+            /** Avg Check */
+            avg_check: number;
+            /** Buyout Rate */
+            buyout_rate: number;
+            /** Confirm Avg Min */
+            confirm_avg_min?: number | null;
+            /** Delivered */
+            delivered: number;
+            /** Duplicates */
+            duplicates: number;
+            /** Margin */
+            margin: number;
+            /** Margin Avg */
+            margin_avg: number;
+            /** Margin Main */
+            margin_main: number;
+            /** Margin Upsell */
+            margin_upsell: number;
+            /** Orders */
+            orders: number;
+            /** Orders Plain */
+            orders_plain: number;
+            /** Orders Upsell */
+            orders_upsell: number;
+            /** Qty */
+            qty: number;
+            /** Qty Main */
+            qty_main: number;
+            /** Qty Upsell */
+            qty_upsell: number;
+            /** Qty Upsell Rate */
+            qty_upsell_rate: number;
+            /** Refused */
+            refused: number;
+            /** Shipped */
+            shipped: number;
             /** Sum */
             sum: number;
             /** Sum Main */
@@ -5155,20 +5528,36 @@ export interface operations {
     stats_api_stats_get: {
         parameters: {
             query?: {
+                date_field?: "created" | "assigned" | "confirmed" | "shipped" | "delivered" | "status" | "changed";
                 date_from?: string;
                 date_to?: string;
-                date_field?: string;
+                all_time?: boolean;
+                group?: "auto" | "hour" | "day" | "week" | "month";
                 status?: string;
+                reason?: string;
                 product?: string;
+                category?: string;
                 payment?: string;
                 delivery?: string;
                 office?: string;
                 source?: string;
                 manager?: string;
+                shop?: string;
+                np_account?: string;
+                mark?: string;
                 country?: string;
-                utm_source?: string;
                 site?: string;
-                search_extra?: string;
+                utm_source?: string;
+                utm_medium?: string;
+                utm_term?: string;
+                utm_content?: string;
+                utm_campaign?: string;
+                extra1?: string;
+                extra2?: string;
+                extra3?: string;
+                extra4?: string;
+                upsell?: "" | "with" | "without";
+                search?: string;
             };
             header?: never;
             path?: never;
@@ -5183,6 +5572,270 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stats_breakdown_api_stats_breakdown_get: {
+        parameters: {
+            query?: {
+                date_field?: "created" | "assigned" | "confirmed" | "shipped" | "delivered" | "status" | "changed";
+                date_from?: string;
+                date_to?: string;
+                all_time?: boolean;
+                group?: "auto" | "hour" | "day" | "week" | "month";
+                status?: string;
+                reason?: string;
+                product?: string;
+                category?: string;
+                payment?: string;
+                delivery?: string;
+                office?: string;
+                source?: string;
+                manager?: string;
+                shop?: string;
+                np_account?: string;
+                mark?: string;
+                country?: string;
+                site?: string;
+                utm_source?: string;
+                utm_medium?: string;
+                utm_term?: string;
+                utm_content?: string;
+                utm_campaign?: string;
+                extra1?: string;
+                extra2?: string;
+                extra3?: string;
+                extra4?: string;
+                upsell?: "" | "with" | "without";
+                search?: string;
+                dim?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatsBreakdownOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stats_options_api_stats_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatsOptionsOut"];
+                };
+            };
+        };
+    };
+    stats_orders_api_stats_orders_get: {
+        parameters: {
+            query?: {
+                date_field?: "created" | "assigned" | "confirmed" | "shipped" | "delivered" | "status" | "changed";
+                date_from?: string;
+                date_to?: string;
+                all_time?: boolean;
+                group?: "auto" | "hour" | "day" | "week" | "month";
+                status?: string;
+                reason?: string;
+                product?: string;
+                category?: string;
+                payment?: string;
+                delivery?: string;
+                office?: string;
+                source?: string;
+                manager?: string;
+                shop?: string;
+                np_account?: string;
+                mark?: string;
+                country?: string;
+                site?: string;
+                utm_source?: string;
+                utm_medium?: string;
+                utm_term?: string;
+                utm_content?: string;
+                utm_campaign?: string;
+                extra1?: string;
+                extra2?: string;
+                extra3?: string;
+                extra4?: string;
+                upsell?: "" | "with" | "without";
+                search?: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatsOrdersOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stats_products_api_stats_products_get: {
+        parameters: {
+            query?: {
+                date_field?: "created" | "assigned" | "confirmed" | "shipped" | "delivered" | "status" | "changed";
+                date_from?: string;
+                date_to?: string;
+                all_time?: boolean;
+                group?: "auto" | "hour" | "day" | "week" | "month";
+                status?: string;
+                reason?: string;
+                product?: string;
+                category?: string;
+                payment?: string;
+                delivery?: string;
+                office?: string;
+                source?: string;
+                manager?: string;
+                shop?: string;
+                np_account?: string;
+                mark?: string;
+                country?: string;
+                site?: string;
+                utm_source?: string;
+                utm_medium?: string;
+                utm_term?: string;
+                utm_content?: string;
+                utm_campaign?: string;
+                extra1?: string;
+                extra2?: string;
+                extra3?: string;
+                extra4?: string;
+                upsell?: "" | "with" | "without";
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatsProductsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stats_segments_api_stats_segments_get: {
+        parameters: {
+            query?: {
+                date_field?: "created" | "assigned" | "confirmed" | "shipped" | "delivered" | "status" | "changed";
+                date_from?: string;
+                date_to?: string;
+                all_time?: boolean;
+                group?: "auto" | "hour" | "day" | "week" | "month";
+                status?: string;
+                reason?: string;
+                product?: string;
+                category?: string;
+                payment?: string;
+                delivery?: string;
+                office?: string;
+                source?: string;
+                manager?: string;
+                shop?: string;
+                np_account?: string;
+                mark?: string;
+                country?: string;
+                site?: string;
+                utm_source?: string;
+                utm_medium?: string;
+                utm_term?: string;
+                utm_content?: string;
+                utm_campaign?: string;
+                extra1?: string;
+                extra2?: string;
+                extra3?: string;
+                extra4?: string;
+                upsell?: "" | "with" | "without";
+                search?: string;
+                metric?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatsSegmentsOut"];
                 };
             };
             /** @description Validation Error */
