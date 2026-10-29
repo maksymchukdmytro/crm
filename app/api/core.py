@@ -49,6 +49,7 @@ NAV = [  # розділ, ролі
     ("warehouse", ("admin", "warehouse")),
     ("purchases", ("admin", "warehouse")),
     ("payments", ("admin",)),
+    ("stats", ("admin", "manager")),
     ("reports", ("admin", "manager")),
     ("audit", ("admin",)),
     ("settings", ("admin",)),

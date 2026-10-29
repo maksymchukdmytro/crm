@@ -14,6 +14,7 @@ import { AuditPage, PaymentsPage, ReportsPage } from "./pages/Finance";
 import SettingsPage from "./pages/Settings";
 import { LoginPage, ProfilePage } from "./pages/Auth";
 import SystemPage from "./pages/System";
+import StatsPage from "./pages/Stats";
 import { ErrorBoundary } from "./lib/monitoring";
 
 const qc = new QueryClient({
@@ -51,6 +52,7 @@ function Gate() {
           {can("warehouse") && <Route path="warehouse" element={<WarehousePage />} />}
           {can("purchases") && <Route path="purchases" element={<PurchasesPage />} />}
           {can("payments") && <Route path="payments" element={<PaymentsPage />} />}
+          {can("stats") && <Route path="stats" element={<StatsPage />} />}
           {can("reports") && <Route path="reports" element={<ReportsPage />} />}
           {can("audit") && <Route path="audit" element={<AuditPage />} />}
           {can("settings") && <Route path="settings" element={<SettingsPage />} />}

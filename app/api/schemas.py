@@ -965,3 +965,212 @@ class CashierIn(In):
 class CashierCheckOut(Out):
     shift: str
     message: str
+
+
+# ---------------------------------------------------------------- статистика
+class StatsQuery(BaseModel):
+    """Фільтри статистики. Списки — через кому; «__empty__» — «Пусте поле»."""
+    model_config = ConfigDict(extra="ignore")
+    date_field: Literal["created", "assigned", "confirmed", "shipped", "delivered", "status", "changed"] = "created"
+    date_from: str = ""
+    date_to: str = ""
+    all_time: bool = False
+    group: Literal["auto", "hour", "day", "week", "month"] = "auto"
+    status: str = ""
+    reason: str = ""
+    product: str = ""
+    category: str = ""
+    payment: str = ""
+    delivery: str = ""
+    office: str = ""
+    source: str = ""
+    manager: str = ""
+    shop: str = ""
+    np_account: str = ""
+    mark: str = ""
+    country: str = ""
+    site: str = ""
+    utm_source: str = ""
+    utm_medium: str = ""
+    utm_term: str = ""
+    utm_content: str = ""
+    utm_campaign: str = ""
+    extra1: str = ""
+    extra2: str = ""
+    extra3: str = ""
+    extra4: str = ""
+    upsell: Literal["", "with", "without"] = ""
+    search: str = ""
+
+
+class StatsPoint(Out):
+    t: str = Field(description="Початок відрізка, місцевий час (YYYY-MM-DDTHH:MM)")
+    total: int
+    by_status: dict[str, int]
+
+
+class StatsStatus(Out):
+    status_id: int
+    count: int
+    share: float
+
+
+class StatsSummary(Out):
+    orders: int
+    orders_plain: int
+    orders_upsell: int
+    upsell_rate: float
+    qty: int
+    qty_main: int
+    qty_upsell: int
+    qty_upsell_rate: float
+    margin: float
+    margin_main: float
+    margin_upsell: float
+    margin_avg: float
+    sum: float
+    sum_main: float
+    sum_upsell: float
+    avg_check: float
+    duplicates: int
+    approved: int
+    approve_rate: float
+    shipped: int
+    delivered: int
+    refused: int
+    buyout_rate: float
+    confirm_avg_min: float | None = None
+
+
+class StatsPrev(StatsSummary):
+    date_from: str
+    date_to: str
+
+
+class StatsOut(Out):
+    date_from: str
+    date_to: str
+    date_field: str
+    group: str
+    series: list[StatsPoint]
+    statuses: list[StatsStatus]
+    summary: StatsSummary
+    prev: StatsPrev | None = None
+
+
+class StatsProduct(Out):
+    product_id: int | None
+    name: str
+    sku: str
+    category: str
+    orders: int
+    qty: int
+    qty_main: int
+    qty_upsell: int
+    sum: float
+    sum_main: float
+    sum_upsell: float
+    margin: float
+    margin_main: float
+    margin_upsell: float
+
+
+class StatsProductsOut(Out):
+    rows: list[StatsProduct]
+
+
+class StatsBreakdownRow(StatsSummary):
+    key: str
+    label: str
+
+
+class StatsBreakdownOut(Out):
+    dim: str
+    rows: list[StatsBreakdownRow]
+
+
+class StatsSegment(Out):
+    from_: float = Field(alias="from")
+    to: float | None
+    orders: int
+    upsell: int
+    delivered: int
+    refused: int
+    upsell_rate: float
+    return_rate: float
+    model_config = ConfigDict(populate_by_name=True, serialize_by_alias=True)
+
+
+class StatsSegmentsOut(Out):
+    metric: str
+    step: float
+    buckets: list[StatsSegment]
+
+
+class StatsOrderItem(Out):
+    name: str
+    qty: int
+    price: float
+    cost: float
+    is_upsell: bool
+
+
+class StatsOrderRow(Out):
+    id: int
+    external_id: str
+    status_id: int
+    customer_name: str
+    phone: str
+    items: list[StatsOrderItem]
+    total: float
+    margin: float
+    payment: str
+    delivery: str
+    ttn: str
+    created_at: str | None
+    confirm_secs: int | None
+    assigned_at: str | None
+    shipped_at: str | None
+    delivered_at: str | None
+    updated_at: str | None
+    office: str
+    manager: str
+    site: str
+    utm_source: str
+    utm_medium: str
+    utm_term: str
+    utm_content: str
+    utm_campaign: str
+    extra1: str
+    extra2: str
+    extra3: str
+    extra4: str
+
+
+class StatsOrdersOut(Out):
+    total: int
+    offset: int
+    rows: list[StatsOrderRow]
+
+
+class StatsOption(Out):
+    value: str
+    count: int
+
+
+class StatsOptionsOut(Out):
+    values: dict[str, list[StatsOption]] = Field(description="Значення фільтрів-рядків: site, utm_*, extra1–4")
+    date_fields: dict[str, str]
+    dimensions: dict[str, str]
+    segment_metrics: dict[str, str]
+
+
+# ---------------------------------------------------------------- тестові дані
+class TestDataIn(In):
+    action: Literal["create", "delete"]
+
+
+class TestDataOut(Out):
+    products: int
+    orders: int
+    message: str

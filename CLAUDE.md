@@ -35,6 +35,15 @@
 Повна перевірка (база, Redis, воркер): `/crm/healthz/full`. Доступ до сервера по SSH для звичайної
 роботи не потрібен — лише якщо оновлення не застосувалось і треба читати журнали.
 
+## CI (GitHub Actions)
+
+`.github/workflows/ci.yml` на кожен пуш у `main` і `wip/**`: pytest на PostgreSQL + Redis, міграції з нуля
+й `alembic check` (модель = міграції), збірка інтерфейсу. На гілках `wip/**` CI сам перегенеровує
+`frontend/src/lib/api-schema.d.ts` з `openapi.json` і комітить його («Оновлено типи API…») — після пушу
+зроби `git pull --rebase`. Зібраний інтерфейс лежить в артефакті `frontend-dist` (3 дні):
+`gh run download <id> -n frontend-dist -D frontend/dist` — щоб подивитися сторінки локально.
+Статус: `gh run list -R maksymchukdmytro/crm -b <гілка>`.
+
 ## Як запускати тести
 
 Потрібні PostgreSQL з базою `crm_test` і (для тестів черги й подій) Redis на localhost.
@@ -43,6 +52,12 @@ pip install -r requirements.txt pytest
 TEST_DATABASE_URL=postgresql+psycopg://crm:crm@localhost:5432/crm_test pytest -q
 ```
 Фронтенд: `cd frontend && npm ci && npm run build` (перевірка TypeScript + збірка).
+
+Якщо в сесії закриті PyPI / npm: залежності Python можна взяти з GitHub (`git clone --depth 1 --branch <тег>`
+fastapi, sqlalchemy, psycopg, alembic, mako, python-multipart, httpx, httpcore, redis-py, arq, sentry-python,
+client_python, annotated-doc) і підключити через `.pth`-файл у site-packages + мінімальні `*.dist-info/METADATA`
+(psycopg і SQLAlchemy перевіряють версію). TypeScript перевіряє CI. Скриншоти: Playwright + Chromium з
+`/opt/pw-browsers`, локальний сервер `uvicorn app.main:app --port 8077` на базі з `python demo_data.py`.
 
 ## Будова
 
@@ -54,7 +69,7 @@ app/carriers/        перевізники: novaposhta, ukrposhta, meest (сп�
 app/tasks.py         задачі воркера arq: SMS, ТТН, трекінг, маркетплейси, чеки, сповіщення
 app/routers/, templates/  класичний інтерфейс /classic (запасний) і webhook прийому заявок
 frontend/src/pages/  React-сторінки: Orders, OrderCard, TtnDialog, Board, Catalog, Finance, Settings, System
-migrations/versions/ 0001…0006
+migrations/versions/ 0001…0007
 ```
 Стек: Python 3.12, FastAPI, SQLAlchemy 2, PostgreSQL 16, Redis + arq, Alembic; React 19, TypeScript, Vite.
 

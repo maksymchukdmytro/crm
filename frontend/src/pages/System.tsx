@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, BellRing, CheckCircle2, CircleAlert, Copy } from "lucide-react";
+import { Activity, BellRing, CheckCircle2, CircleAlert, Copy, FlaskConical } from "lucide-react";
 import { api, ROOT } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { ago, dt } from "../lib/format";
-import type { Settings, SystemStatus } from "../lib/types";
-import { Badge, Empty, Field, Kpi, Spinner } from "../components/ui";
+import type { Settings, SystemStatus, TestData } from "../lib/types";
+import { Badge, Empty, Field, Kpi, Spinner, confirmAction } from "../components/ui";
 
 const CHECK_NAMES: Record<string, string> = { database: "База даних", redis: "Redis (черга й події)", worker: "Фоновий воркер" };
 const ALERT_NAMES: Record<string, string> = { sms_failed: "Помилки SMS/Viber", queue: "Переповнена черга", no_leads: "Немає нових заявок" };
@@ -24,6 +24,13 @@ export default function SystemPage() {
     onError: (e) => toast(errText(e), "error"),
   });
   const test = useMutation({ mutationFn: () => api.post("/system/alert-test"), onSuccess: () => toast("Тестове сповіщення надіслано в Telegram"), onError: (e) => toast(errText(e), "error") });
+
+  const td = useQuery({ queryKey: ["test-data"], queryFn: () => api.get<TestData>("/system/test-data") });
+  const tdAction = useMutation({
+    mutationFn: (action: "create" | "delete") => api.post<TestData>("/system/test-data", { action }),
+    onSuccess: (r) => { qc.setQueryData(["test-data"], r); qc.invalidateQueries(); toast(r.message); },
+    onError: (e) => toast(errText(e), "error"),
+  });
 
   if (!data) return <Empty><Spinner /></Empty>;
   const allOk = Object.values(data.checks).every((c) => c.ok);
@@ -80,6 +87,19 @@ export default function SystemPage() {
           </div>
         </div>
 
+        <div className="stack">
+        <div className="card">
+          <h2><FlaskConical size={16} style={{ verticalAlign: -2 }} /> Тестові дані для статистики</h2>
+          <p className="hint">Додає 10 тестових товарів (артикул TEST-…) і 10 замовлень, розкиданих по останніх 30 днях, у різних статусах,
+            з допродажами й UTM-мітками. Склад, SMS/Viber, чеки й маркетплейси не зачіпаються. Тестові замовлення мають сайт «test-data» —
+            їх можна відфільтрувати в статистиці й видалити одним кліком.</p>
+          <p>Зараз: <b>{td.data?.products ?? "…"}</b> тестових товарів, <b>{td.data?.orders ?? "…"}</b> тестових замовлень.</p>
+          <div className="form-actions">
+            <button className="btn" disabled={tdAction.isPending} onClick={() => tdAction.mutate("create")}>Створити 10 замовлень</button>
+            {!!(td.data?.orders || td.data?.products) && <button className="btn danger" disabled={tdAction.isPending}
+              onClick={() => confirmAction("Видалити всі тестові замовлення й товари? Справжні дані не зачіпаються.") && tdAction.mutate("delete")}>Видалити тестові дані</button>}
+          </div>
+        </div>
         <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
           <h2><BellRing size={16} style={{ verticalAlign: -2 }} /> Сповіщення в Telegram</h2>
           <p className="hint">CRM напише, коли: не відправляються SMS, перевізник не відповідає 3 перевірки поспіль, черга задач переповнена, давно немає заявок з лендингів. І ще раз — коли все відновиться.</p>
@@ -89,6 +109,7 @@ export default function SystemPage() {
           <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button>
             <button type="button" className="btn" onClick={() => test.mutate()} disabled={test.isPending}>Надіслати тестове</button></div>
         </form>
+        </div>
       </div>
     </div>
   );

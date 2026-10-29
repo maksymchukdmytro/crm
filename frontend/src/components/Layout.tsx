@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3, Boxes, History, KanbanSquare, ListOrdered, LogOut, Menu, Package, Plus, Search, Settings,
-  ShoppingCart, Activity, Wallet,
+  ShoppingCart, Activity, Wallet, ChartColumnStacked,
 } from "lucide-react";
 import { api, ROOT } from "../lib/api";
 import { useLive, useMeta } from "../lib/app";
@@ -17,6 +17,7 @@ const NAV: Record<string, { to: string; label: string; icon: typeof ListOrdered 
   warehouse: { to: "/warehouse", label: "Склад", icon: Boxes },
   purchases: { to: "/purchases", label: "Закупівлі", icon: ShoppingCart },
   payments: { to: "/payments", label: "Оплати", icon: Wallet },
+  stats: { to: "/stats", label: "Статистика", icon: ChartColumnStacked },
   reports: { to: "/reports", label: "Звіти", icon: BarChart3 },
   audit: { to: "/audit", label: "Журнал дій", icon: History },
   settings: { to: "/settings", label: "Налаштування", icon: Settings },

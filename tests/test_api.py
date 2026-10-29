@@ -556,3 +556,4 @@ def test_checkbox_cashiers_and_receipts(api, db, products, monkeypatch):
     assert api.get(f"/api/orders/{o2['id']}").json()["receipts"][0]["kind"] == "sell"
     api.post(f"/api/orders/{o2['id']}/receipts", json={"kind": "return"})
     assert all(g["is_return"] for g in sent[-1][1]["goods"])
+

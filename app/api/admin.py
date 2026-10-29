@@ -28,7 +28,7 @@ from ..services.audit import ACTION_NAMES
 from ..services.orders import normalize_phone, to_int
 from ..services.reports import period_bounds
 from ..web import f_details, parse_date, today_local
-from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn, NpAccountIn, NpRuleIn, ShopCheckOut, ShopIn, ShopSyncOut, CashierCheckOut, CashierIn
+from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn, NpAccountIn, NpRuleIn, ShopCheckOut, ShopIn, ShopSyncOut, CashierCheckOut, CashierIn, TestDataIn, TestDataOut
 from .common import admin, bad, iso, j_payment, j_payment_method, j_source, j_status, j_user, sales
 
 router = APIRouter(prefix="/api", tags=["admin"])
@@ -154,6 +154,29 @@ def alert_test(db: Session = Depends(get_db), user: User = Depends(admin)):
     if not ok:
         bad(f"Telegram відповів помилкою: {info}", 422)
     return {"ok": True}
+
+
+@router.get("/system/test-data", response_model=TestDataOut)
+def test_data_counts(db: Session = Depends(get_db), user: User = Depends(admin)):
+    from ..services import test_data
+    return {**test_data.counts(db), "message": ""}
+
+
+@router.post("/system/test-data", response_model=TestDataOut)
+def test_data_action(body: TestDataIn, db: Session = Depends(get_db), user: User = Depends(admin)):
+    """Тестові товари й замовлення для перевірки статистики (позначені, видаляються одним кліком)."""
+    from ..services import test_data
+    if body.action == "create":
+        r = test_data.create(db, user)
+        msg = f"Створено {r['created_orders']} тестових замовлень за останні 30 днів і 10 тестових товарів"
+    else:
+        r = test_data.delete(db)
+        msg = f"Видалено тестових замовлень: {r['deleted_orders']}, товарів: {r['deleted_products']}"
+        if r["disabled_products"]:
+            msg += f" (ще {r['disabled_products']} вимкнено — вони є в справжніх замовленнях)"
+    audit.log(db, user, "system", None, f"test_data_{body.action}", {"повідомлення": msg})
+    db.commit()
+    return {"products": r["products"], "orders": r["orders"], "message": msg}
 
 
 # ---------------------------------------------------------------- налаштування
