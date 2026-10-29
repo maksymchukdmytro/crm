@@ -1457,6 +1457,376 @@
     "title": "CustomerOut",
     "type": "object"
    },
+   "DashAttention": {
+    "properties": {
+     "arrived": {
+      "title": "Arrived",
+      "type": "integer"
+     },
+     "cod_collected": {
+      "title": "Cod Collected",
+      "type": "number"
+     },
+     "cod_expected": {
+      "title": "Cod Expected",
+      "type": "number"
+     },
+     "leads_new": {
+      "title": "Leads New",
+      "type": "integer"
+     },
+     "leads_open": {
+      "title": "Leads Open",
+      "type": "integer"
+     },
+     "low_stock": {
+      "title": "Low Stock",
+      "type": "integer"
+     },
+     "on_way": {
+      "title": "On Way",
+      "type": "integer"
+     },
+     "reminders": {
+      "title": "Reminders",
+      "type": "integer"
+     },
+     "to_ship": {
+      "title": "To Ship",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "leads_new",
+     "leads_open",
+     "to_ship",
+     "on_way",
+     "arrived",
+     "reminders",
+     "low_stock",
+     "cod_expected",
+     "cod_collected"
+    ],
+    "title": "DashAttention",
+    "type": "object"
+   },
+   "DashCustomers": {
+    "properties": {
+     "new": {
+      "title": "New",
+      "type": "integer"
+     },
+     "new_delta": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "New Delta"
+     },
+     "total": {
+      "title": "Total",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "total",
+     "new"
+    ],
+    "title": "DashCustomers",
+    "type": "object"
+   },
+   "DashDay": {
+    "properties": {
+     "day": {
+      "title": "Day",
+      "type": "string"
+     },
+     "orders": {
+      "title": "Orders",
+      "type": "integer"
+     },
+     "sum": {
+      "title": "Sum",
+      "type": "number"
+     }
+    },
+    "required": [
+     "day",
+     "orders",
+     "sum"
+    ],
+    "title": "DashDay",
+    "type": "object"
+   },
+   "DashMonth": {
+    "properties": {
+     "approve_rate": {
+      "title": "Approve Rate",
+      "type": "number"
+     },
+     "avg_check": {
+      "title": "Avg Check",
+      "type": "number"
+     },
+     "buyout_rate": {
+      "title": "Buyout Rate",
+      "type": "number"
+     },
+     "date_from": {
+      "title": "Date From",
+      "type": "string"
+     },
+     "margin": {
+      "title": "Margin",
+      "type": "number"
+     },
+     "orders": {
+      "title": "Orders",
+      "type": "integer"
+     },
+     "orders_delta": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "зміна до того самого відрізка минулого місяця, %",
+      "title": "Orders Delta"
+     },
+     "prev_orders": {
+      "title": "Prev Orders",
+      "type": "integer"
+     },
+     "prev_sum": {
+      "title": "Prev Sum",
+      "type": "number"
+     },
+     "sum": {
+      "title": "Sum",
+      "type": "number"
+     },
+     "sum_delta": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sum Delta"
+     },
+     "upsell_rate": {
+      "title": "Upsell Rate",
+      "type": "number"
+     }
+    },
+    "required": [
+     "date_from",
+     "orders",
+     "sum",
+     "avg_check",
+     "prev_orders",
+     "prev_sum",
+     "approve_rate",
+     "buyout_rate",
+     "upsell_rate",
+     "margin"
+    ],
+    "title": "DashMonth",
+    "type": "object"
+   },
+   "DashTeam": {
+    "properties": {
+     "confirmed": {
+      "description": "підтверджено сьогодні",
+      "title": "Confirmed",
+      "type": "integer"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "last_login": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Login"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "new": {
+      "description": "нових замовлень на ньому сьогодні",
+      "title": "New",
+      "type": "integer"
+     },
+     "role": {
+      "title": "Role",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "role",
+     "confirmed",
+     "new"
+    ],
+    "title": "DashTeam",
+    "type": "object"
+   },
+   "DashToday": {
+    "properties": {
+     "date": {
+      "title": "Date",
+      "type": "string"
+     },
+     "orders": {
+      "title": "Orders",
+      "type": "integer"
+     },
+     "orders_delta": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "зміна до вчора, %",
+      "title": "Orders Delta"
+     },
+     "sum": {
+      "title": "Sum",
+      "type": "number"
+     },
+     "sum_delta": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sum Delta"
+     },
+     "yesterday_orders": {
+      "title": "Yesterday Orders",
+      "type": "integer"
+     },
+     "yesterday_sum": {
+      "title": "Yesterday Sum",
+      "type": "number"
+     }
+    },
+    "required": [
+     "date",
+     "orders",
+     "sum",
+     "yesterday_orders",
+     "yesterday_sum"
+    ],
+    "title": "DashToday",
+    "type": "object"
+   },
+   "DashTop": {
+    "properties": {
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "product_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Id"
+     },
+     "qty": {
+      "title": "Qty",
+      "type": "integer"
+     },
+     "sum": {
+      "title": "Sum",
+      "type": "number"
+     }
+    },
+    "required": [
+     "product_id",
+     "name",
+     "qty",
+     "sum"
+    ],
+    "title": "DashTop",
+    "type": "object"
+   },
+   "DashboardOut": {
+    "properties": {
+     "attention": {
+      "$ref": "#/components/schemas/DashAttention"
+     },
+     "customers": {
+      "$ref": "#/components/schemas/DashCustomers"
+     },
+     "days": {
+      "items": {
+       "$ref": "#/components/schemas/DashDay"
+      },
+      "title": "Days",
+      "type": "array"
+     },
+     "month": {
+      "$ref": "#/components/schemas/DashMonth"
+     },
+     "team": {
+      "items": {
+       "$ref": "#/components/schemas/DashTeam"
+      },
+      "title": "Team",
+      "type": "array"
+     },
+     "today": {
+      "$ref": "#/components/schemas/DashToday"
+     },
+     "top": {
+      "items": {
+       "$ref": "#/components/schemas/DashTop"
+      },
+      "title": "Top",
+      "type": "array"
+     }
+    },
+    "required": [
+     "today",
+     "month",
+     "customers",
+     "attention",
+     "days",
+     "top"
+    ],
+    "title": "DashboardOut",
+    "type": "object"
+   },
    "DayRow": {
     "properties": {
      "approved": {
@@ -1973,6 +2343,14 @@
        "type": "string"
       },
       "title": "Extra Fields",
+      "type": "array"
+     },
+     "extra_on": {
+      "description": "Які з полів 1–4 показувати в картці",
+      "items": {
+       "type": "boolean"
+      },
+      "title": "Extra On",
       "type": "array"
      },
      "legal_entities": {
@@ -5790,6 +6168,30 @@
       "title": "Active",
       "type": "boolean"
      },
+     "color": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Лише для позначок: колір значка",
+      "title": "Color"
+     },
+     "icon": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Лише для позначок: ключ значка",
+      "title": "Icon"
+     },
      "id": {
       "title": "Id",
       "type": "integer"
@@ -6905,10 +7307,36 @@
       "title": "Active",
       "type": "boolean"
      },
+     "color": {
+      "anyOf": [
+       {
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Лише для позначок: колір",
+      "title": "Color"
+     },
      "delete": {
       "default": false,
       "title": "Delete",
       "type": "boolean"
+     },
+     "icon": {
+      "anyOf": [
+       {
+        "maxLength": 24,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Лише для позначок: ключ значка",
+      "title": "Icon"
      },
      "id": {
       "anyOf": [
@@ -6972,6 +7400,30 @@
      "active": {
       "title": "Active",
       "type": "boolean"
+     },
+     "color": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Лише для позначок: колір значка",
+      "title": "Color"
+     },
+     "icon": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Лише для позначок: ключ значка",
+      "title": "Icon"
      },
      "id": {
       "title": "Id",
@@ -10737,6 +11189,27 @@
     "summary": "Customer Update",
     "tags": [
      "customers"
+    ]
+   }
+  },
+  "/api/dashboard": {
+   "get": {
+    "operationId": "dashboard_api_dashboard_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DashboardOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Dashboard",
+    "tags": [
+     "dashboard"
     ]
    }
   },

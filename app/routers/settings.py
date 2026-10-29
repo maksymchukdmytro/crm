@@ -30,7 +30,7 @@ TABS = {
 }
 
 SECTION_KEYS = {
-    "fields": ["extra1_name", "extra2_name", "extra3_name", "extra4_name"],
+    "fields": ["extra1_name", "extra2_name", "extra3_name", "extra4_name", "extra1_on", "extra2_on", "extra3_on", "extra4_on"],
     "checkbox": ["cb_sell_status", "cb_return_status", "cb_prepay_status", "cb_postpay_status"],
     "general": ["company_name", "duplicate_days", "auto_assign", "managers_see_own_only",
                 "auto_status_from_tracking", "tracking_interval_min"],

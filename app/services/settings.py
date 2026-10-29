@@ -8,6 +8,7 @@ from ..models import Setting
 DEFAULTS: dict[str, str] = {
     # Загальні
     "company_name": "Моя CRM",
+    "extra1_on": "1", "extra2_on": "1", "extra3_on": "1", "extra4_on": "1",  # які з полів 1–4 показувати
     "extra1_name": "Поле 1",  # назви додаткових полів замовлення
     "extra2_name": "Поле 2",
     "extra3_name": "Поле 3",

@@ -122,7 +122,7 @@ export default function StatsPage() {
     { key: "utm_term", label: "utm_term", icon: <Hash size={15} />, options: strOpts("utm_term"), empty: true },
     { key: "utm_content", label: "utm_content", icon: <Hash size={15} />, options: strOpts("utm_content"), empty: true },
     { key: "utm_campaign", label: "utm_campaign", icon: <Hash size={15} />, options: strOpts("utm_campaign"), empty: true },
-    ...[1, 2, 3, 4].map((i) => ({ key: `extra${i}` as ListKey, label: extraName(i), icon: <PencilLine size={15} />, options: strOpts(`extra${i}`), empty: true })),
+    ...[1, 2, 3, 4].filter((i) => meta.extra_on?.[i - 1] ?? true).map((i) => ({ key: `extra${i}` as ListKey, label: extraName(i), icon: <PencilLine size={15} />, options: strOpts(`extra${i}`), empty: true })),
   ];
 
   const exportHref = (kind: string, extra: Record<string, string> = {}) => `${ROOT}/api/stats/export.csv${qs({ ...params, kind, ...extra })}`;

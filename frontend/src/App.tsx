@@ -16,6 +16,7 @@ import SettingsPage from "./pages/Settings";
 import { LoginPage, ProfilePage } from "./pages/Auth";
 import SystemPage from "./pages/System";
 import StatsPage from "./pages/Stats";
+import HomePage from "./pages/Home";
 import CustomersPage from "./pages/Customers";
 import { ErrorBoundary } from "./lib/monitoring";
 
@@ -45,7 +46,8 @@ function Gate() {
     <RealtimeProvider>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<Navigate to="/orders" replace />} />
+          <Route index element={<Navigate to={can("home") ? "/home" : "/orders"} replace />} />
+          {can("home") && <Route path="home" element={<HomePage />} />}
           {can("leads") && <Route path="leads" element={<OrdersPage stage="lead" key="lead" />} />}
           {can("leads") && <Route path="leads/:id" element={<OrdersPage stage="lead" key="lead" />} />}
           <Route path="orders" element={<OrdersPage key="order" />} />

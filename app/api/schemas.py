@@ -130,6 +130,8 @@ class SourceOut(Out):
     active: bool
     sort: int
     office_id: int | None = Field(None, description="Лише для джерел: відділ, до якого належить джерело")
+    icon: str | None = Field(None, description="Лише для позначок: ключ значка")
+    color: str | None = Field(None, description="Лише для позначок: колір значка")
 
 
 class ReasonOut(SourceOut):
@@ -155,6 +157,7 @@ class MetaOut(Out):
     np_accounts: list[NpAccountShort] = Field(default_factory=list)
     shops: dict[str, str] = Field(default_factory=dict, description="id магазину → «Rozetka · назва»")
     extra_fields: list[str] = Field(default_factory=list, description="Назви додаткових полів 1–4")
+    extra_on: list[bool] = Field(default_factory=lambda: [True] * 4, description="Які з полів 1–4 показувати в картці")
     checkbox_payments: dict[str, str] = Field(default_factory=dict)
     payment_kinds: dict[str, str]
     payment_statuses: dict[str, str]
@@ -791,6 +794,8 @@ class SourceIn(In):
     delete: bool = False
     status_ids: list[int] | None = Field(None, description="Лише для причин")
     office_id: int | None = Field(None, description="Лише для джерел: відділ")
+    icon: str | None = Field(None, max_length=24, description="Лише для позначок: ключ значка")
+    color: str | None = Field(None, pattern=r"^#[0-9a-fA-F]{6}$", description="Лише для позначок: колір")
 
 
 class StatusIn(In):
@@ -1464,3 +1469,80 @@ class NameSplitOut(Out):
     first_name: str
     middle_name: str
     full: str = Field(description="Як збережеться: «Прізвище Ім'я По батькові»")
+
+
+# ---------------------------------------------------------------- головна сторінка
+class DashToday(Out):
+    date: str
+    orders: int
+    sum: float
+    orders_delta: float | None = Field(None, description="зміна до вчора, %")
+    sum_delta: float | None = None
+    yesterday_orders: int
+    yesterday_sum: float
+
+
+class DashMonth(Out):
+    date_from: str
+    orders: int
+    sum: float
+    avg_check: float
+    orders_delta: float | None = Field(None, description="зміна до того самого відрізка минулого місяця, %")
+    sum_delta: float | None = None
+    prev_orders: int
+    prev_sum: float
+    approve_rate: float
+    buyout_rate: float
+    upsell_rate: float
+    margin: float
+
+
+class DashCustomers(Out):
+    total: int
+    new: int
+    new_delta: float | None = None
+
+
+class DashAttention(Out):
+    leads_new: int
+    leads_open: int
+    to_ship: int
+    on_way: int
+    arrived: int
+    reminders: int
+    low_stock: int
+    cod_expected: float
+    cod_collected: float
+
+
+class DashDay(Out):
+    day: str
+    orders: int
+    sum: float
+
+
+class DashTop(Out):
+    product_id: int | None
+    name: str
+    qty: int
+    sum: float
+
+
+class DashTeam(Out):
+    id: int
+    name: str
+    role: str
+    confirmed: int = Field(description="підтверджено сьогодні")
+    new: int = Field(description="нових замовлень на ньому сьогодні")
+    last_login: str | None = None
+
+
+class DashboardOut(Out):
+    today: DashToday
+    month: DashMonth
+    customers: DashCustomers
+    attention: DashAttention
+    days: list[DashDay]
+    team: list[DashTeam] = Field(default_factory=list)
+    top: list[DashTop]
+

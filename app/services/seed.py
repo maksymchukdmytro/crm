@@ -64,6 +64,25 @@ DEFAULT_MARKS = [
     "Написати в WhatsApp", "Попросити відгук",
 ]
 
+# значки й кольори позначок — за змістом, як у LP-CRM (ключі — frontend/src/components/marks.tsx)
+MARK_LOOKS = {
+    "Терміново": ("alert", "#dc2626"), "Очікує": ("clock", "#ca8a04"), "Переробити": ("pencil", "#475569"),
+    "Перевірити": ("eye", "#475569"), "Виконано": ("check", "#16a34a"), "Не виконано": ("x", "#dc2626"),
+    "Подарунок до замовлення": ("gift", "#475569"), "Покласти гарантію": ("file", "#475569"), "Покласти чек": ("receipt", "#475569"),
+    "Перевірити перед відправленням": ("package", "#475569"), "Відправити сьогодні": ("truck", "#2563eb"),
+    "Відправити по дропу": ("handshake", "#475569"), "Роздрукувати (гарантію, інструкцію, чек, ТТН)": ("printer", "#475569"),
+    "Відправити (гарантію, інструкцію, чек, ТТН)": ("mail", "#475569"), "Перевірити ТТН": ("barcode", "#475569"),
+    "Перевірити чек": ("qr", "#475569"), "Очікує дзвінка": ("phone-wait", "#2563eb"), "Недодзвон": ("phone-missed", "#64748b"),
+    "Поганий сигнал": ("signal", "#64748b"), "Відмова під час дзвінка": ("phone-off", "#dc2626"),
+    "Відмова навіть з подарунком": ("gift", "#dc2626"), "Відмова навіть зі знижкою": ("percent", "#dc2626"),
+    "Не забирати з пошти": ("trash", "#dc2626"), "Повернути відправлення": ("undo", "#475569"),
+    "Написати покупцеві": ("message", "#475569"), "Написати в Telegram": ("send", "#229ed9"), "Написати в TikTok": ("music", "#111827"),
+    "Написати у Viber": ("message", "#7360f2"), "Написати в Instagram": ("camera", "#e1306c"),
+    "Написати у Messenger": ("message", "#0084ff"), "Написати у Facebook": ("message", "#1877f2"),
+    "Написати в Rozetka": ("bag", "#00a046"), "Написати в Prom": ("store", "#7c3aed"), "Написати в OLX": ("tag", "#0f766e"),
+    "Написати в WhatsApp": ("message", "#25d366"), "Попросити відгук": ("star", "#ca8a04"),
+}
+
 LEAD_CODES = ("new", "no_answer", "callback", "duplicate")  # статуси розділу «Ліди»
 
 DEFAULT_CUSTOMER_GROUPS = [("Покупець", "#64748b"), ("Оптовик", "#0ea5e9"), ("Дропшипер", "#a855f7"), ("Партнер", "#16a34a")]
@@ -110,7 +129,8 @@ def seed_directories(db: Session):
             db.add(StatusReason(name=name, status_ids=refuse, sort=sort * 10))
     if db.query(OrderMark).count() == 0:
         for sort, name in enumerate(DEFAULT_MARKS):
-            db.add(OrderMark(name=name, sort=sort * 10))
+            icon, color = MARK_LOOKS.get(name, ("tag", "#475569"))
+            db.add(OrderMark(name=name, icon=icon, color=color, sort=sort * 10))
     from ..models import CustomerGroup
     if db.query(CustomerGroup).count() == 0:
         for sort, (name, color) in enumerate(DEFAULT_CUSTOMER_GROUPS):

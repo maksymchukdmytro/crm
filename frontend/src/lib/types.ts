@@ -69,3 +69,4 @@ export type AttributeGroup = S["AttributeGroupOut"];
 export type LegalEntity = S["LegalEntityOut"];
 export type BlockedIp = S["BlockedIpOut"];
 export type Variant = S["VariantOut"];
+export type Dashboard = S["DashboardOut"];

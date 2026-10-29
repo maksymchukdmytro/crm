@@ -7,7 +7,8 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num, phone as fmtPhone } from "../lib/format";
 import type { Order, OrderItem, Product, Variant } from "../lib/types";
 import { Badge, deliveryKind, Modal, NpAutocomplete, PayCheck, Pill, Spinner } from "../components/ui";
-import { flag, PayIcon } from "../components/payicons";
+import { flag, PayLabel } from "../components/payicons";
+import { IconPick, MarkIcon } from "../components/marks";
 import TtnDialog from "./TtnDialog";
 
 type Form = {
@@ -100,6 +101,7 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
   const [baseline, setBaseline] = useState("");
   const [loadedVersion, setLoadedVersion] = useState<string>("");
   const [ttnOpen, setTtnOpen] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
   const wantTtn = useRef(false);
   // замовлення щойно створили кнопкою «Створити ТТН» — відкриваємо вікно ТТН одразу
   useEffect(() => {
@@ -263,16 +265,17 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
         <div className="oc-side">
           <section className="ocs">
             <h3 className="ocs-h"><User size={15} /> Клієнт</h3>
-            <div className="fl"><span>Країна</span>
-              <select value={form.country} onChange={(e) => set({ country: e.target.value })}>
-                {Object.entries(meta.countries).map(([c, n]) => <option key={c} value={c}>{flag(c)} {n}</option>)}
-              </select></div>
-            <div className="fl"><span>Телефон</span>
-              <div className="fl-in"><input value={form.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="+380…" inputMode="tel" required autoFocus={isNew && !fromId} />
+            <div className="fl phone-row"><span>Телефон</span>
+              <div className="fl-in phone-in">
+                <select className="country-sel" value={form.country} onChange={(e) => set({ country: e.target.value })} title={meta.countries[form.country] ?? "Країна"} aria-label="Країна">
+                  {Object.entries(meta.countries).map(([c, n]) => <option key={c} value={c} title={n}>{flag(c)} {c}</option>)}
+                </select>
+                <input value={form.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="+380…" inputMode="tel" required autoFocus={isNew && !fromId} />
                 {order?.phone && <span className="acts"><a href={`tel:+${order.phone}`} title="Подзвонити"><Phone size={14} /></a><a href={`viber://chat?number=%2B${order.phone}`} title="Viber"><MessageCircle size={14} /></a></span>}
               </div></div>
             <NameField value={form.customer_name} onChange={(v) => set({ customer_name: v })} saved={order?.customer_name ?? ""} />
-            <div className="fl"><span>Email</span><input type="email" value={form.email} onChange={(e) => set({ email: e.target.value })} placeholder="—" /></div>
+            {(form.email || showEmail) ? <div className="fl"><span>Email</span><input type="email" value={form.email} autoFocus={showEmail && !form.email} onChange={(e) => set({ email: e.target.value })} placeholder="name@example.com" /></div>
+              : <button type="button" className="add-field" onClick={() => setShowEmail(true)}><Plus size={13} /> Email</button>}
             {order?.customer && (
               <a className="cust-line" href={`${ROOT}/customers/${order.customer.id}`} onClick={(e) => { e.preventDefault(); navigate(`/customers/${order.customer!.id}`); }}>
                 <UserRound size={14} />
@@ -328,10 +331,9 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
                   </span>}
                 </div></div>
               {order?.pay_check && <div className={`pc-line pc-${order.pay_check.state}`}><PayCheck check={order.pay_check} text /></div>}
-              <div className="fl"><span>Вартість</span><div className="fl-in"><input value={form.delivery_cost} onChange={(e) => set({ delivery_cost: e.target.value })} placeholder="0" inputMode="decimal" /><span className="unit">грн</span></div></div>
               {order?.ttn && order.delivery_status && (
                 <div className="ship-card"><Badge kind={deliveryKind(order.delivery_state)}>{meta.delivery_states[order.delivery_state] ?? order.delivery_state}</Badge>
-                  <span className="hint">{order.delivery_status}{order.delivery_checked_at && ` · ${dt(order.delivery_checked_at, true)}`}</span></div>
+                  <span className="hint">{order.delivery_status}{order.delivery_checked_at && ` · ${dt(order.delivery_checked_at, true)}`}{num(order.delivery_cost) > 0 && ` · доставка ${money(order.delivery_cost)} грн`}</span></div>
               )}
               {!order?.ttn && carrier && (
                 <div className="ship-card">
@@ -351,16 +353,10 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
           </section>
 
           <section className="ocs">
-            <h3 className="ocs-h"><CreditCard size={15} /> Оплата {method && <span className="muted">{method.name}</span>}</h3>
-            <div className="pay-grid" role="radiogroup" aria-label="Вид оплати">
-              {meta.payment_methods.map((m) => (
-                <button type="button" key={m.id} role="radio" aria-checked={form.payment_method_id === m.id} title={m.name}
-                  className={`pay-tile ${form.payment_method_id === m.id ? "on" : ""}`}
-                  onClick={() => set({ payment_method_id: m.id, payment_type: m.kind })}>
-                  <PayIcon icon={m.icon} size={26} /><span>{m.name}</span>
-                </button>
-              ))}
-            </div>
+            <h3 className="ocs-h"><CreditCard size={15} /> Оплата</h3>
+            <IconPick items={meta.payment_methods} value={form.payment_method_id || null} ariaLabel="Вид оплати"
+              onChange={(id) => { const m = meta.payment_methods.find((x) => x.id === id); set({ payment_method_id: id ?? "", payment_type: m?.kind ?? "cod" }); }}
+              render={(m) => <PayLabel icon={m.icon} name={m.name} size={20} />} placeholder={<span>Оберіть вид оплати</span>} />
             {method && <p className="hint pay-note">{method.kind === "prepaid" ? "Оплачено повністю — ТТН без післяплати" : method.kind === "partial" ? "Передоплата, решта — післяплатою" : "Уся сума — при отриманні"}</p>}
             {form.payment_type === "partial" && <div className="fl"><span>Передоплата</span><div className="fl-in"><input value={form.prepayment} onChange={(e) => set({ prepayment: e.target.value })} placeholder="0" inputMode="decimal" /><span className="unit">грн</span></div></div>}
           </section>
@@ -368,7 +364,7 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
           {order?.checkbox_ready && (
             <section className="ocs">
               <h3 className="ocs-h"><Receipt size={15} /> ПРРО · Checkbox</h3>
-              {(order.receipts ?? []).length === 0 ? <p className="hint fl-note">Чеків ще немає.</p> : (
+              {(order.receipts ?? []).length > 0 && (
                 <div className="rc-list">{(order.receipts ?? []).map((r) => (
                   <div className={`rc ${r.status}`} key={r.id} title={r.error || undefined}>
                     <span>{r.kind_name}{r.test && <span className="badge">тест</span>}</span>
@@ -386,14 +382,14 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
           )}
 
           <section className="ocs">
-            <h3 className="ocs-h"><Tag size={15} /> Джерело й додаткові поля</h3>
+            <h3 className="ocs-h"><Tag size={15} /> Джерело{(meta.extra_on ?? [true]).some(Boolean) ? " і додаткові поля" : ""}</h3>
             <div className="fl"><span>Джерело</span>
               <select value={form.source_id} onChange={(e) => set({ source_id: e.target.value ? Number(e.target.value) : "" })}>
                 <option value="">не вказано</option>
                 {meta.order_sources.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
               </select></div>
-            {meta.offices.length > 0 && <div className="fl"><span>Відділ</span><span className="val">{officeName || <span className="muted">визначається джерелом</span>}</span></div>}
-            {EXTRA.map((f, i) => (
+            {meta.offices.length > 0 && officeName && <p className="hint fl-note">Відділ: {officeName}</p>}
+            {EXTRA.map((f, i) => (meta.extra_on?.[i] ?? true) && (
               <div className="fl" key={f}><span>{meta.extra_fields[i] || `Поле ${i + 1}`}</span>
                 <div className="fl-in"><input value={form[f]} onChange={(e) => set({ [f]: e.target.value } as Partial<Form>)} placeholder="—" />
                   {/^https?:\/\//.test(form[f]) && <span className="acts"><a href={form[f]} target="_blank" rel="noreferrer" title="Перейти за посиланням"><ExternalLink size={14} /></a></span>}
@@ -423,16 +419,13 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
             </div>
           </section>
           <section className="ocs">
-            <h3 className="ocs-h"><MessageCircle size={15} /> Позначка й коментар</h3>
+            <h3 className="ocs-h"><MessageCircle size={15} /> Коментар і позначка</h3>
             <div className="mark-row">
-              <select value={form.mark_id} onChange={(e) => set({ mark_id: e.target.value ? Number(e.target.value) : "" })} aria-label="Позначка">
-                <option value="">Без позначки</option>
-                {meta.marks.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-              <label className={`remind ${form.remind_at ? "on" : ""}`} title="Нагадати про замовлення"><Bell size={15} />
-                <input type="datetime-local" value={form.remind_at} onChange={(e) => set({ remind_at: e.target.value })} aria-label="Нагадати" />
-                {form.remind_at && <button type="button" className="x" title="Прибрати нагадування" onClick={() => set({ remind_at: "" })}>×</button>}
-              </label>
+              <IconPick items={meta.marks} value={form.mark_id || null} ariaLabel="Позначка" emptyLabel="Без позначки" className="mark-pick"
+                onChange={(id) => set({ mark_id: id ?? "" })}
+                render={(m) => <span className="mark-line"><MarkIcon icon={m.icon} color={m.color} size={17} /><span>{m.name}</span></span>}
+                placeholder={<span className="mark-line"><Tag size={16} /><span>Позначка</span></span>} />
+              <RemindButton value={form.remind_at} onChange={(v) => set({ remind_at: v })} />
             </div>
             <textarea className="oc-note" rows={3} value={form.comment} onChange={(e) => set({ comment: e.target.value })} placeholder="Від клієнта з лендингу або для складу" />
           </section>
@@ -447,6 +440,43 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
         <span className={`oc-dirty ${dirty ? "on" : ""}`}>{dirty ? "Є незбережені зміни · Ctrl+S" : isNew ? "" : "Усі зміни збережено"}</span>
         <button type="submit" form="oc-form" className="btn primary" disabled={save.isPending}>{save.isPending ? "Збереження…" : isNew ? "Створити замовлення" : "Зберегти"}</button>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- нагадування: дзвіночок із підписом і швидкими варіантами
+function RemindButton({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [up, setUp] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+  const local = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  const at = (days: number, h: number) => { const d = new Date(); d.setDate(d.getDate() + days); d.setHours(h, 0, 0, 0); return local(d); };
+  const presets: [string, () => string][] = [
+    ["Через годину", () => local(new Date(Date.now() + 3600_000))], ["Сьогодні о 18:00", () => at(0, 18)],
+    ["Завтра о 10:00", () => at(1, 10)], ["Через 3 дні", () => at(3, 10)],
+  ];
+  const due = value && new Date(value) <= new Date();
+  const label = value ? `${value.slice(8, 10)}.${value.slice(5, 7)} о ${value.slice(11, 16)}` : "Нагадати";
+  return (
+    <div className="remind-wrap" ref={ref}>
+      <button type="button" className={`remind-btn ${value ? (due ? "due" : "on") : ""}`} aria-expanded={open} onClick={() => { const r = ref.current?.getBoundingClientRect(); setUp(!!r && window.innerHeight - r.bottom < 300); setOpen(!open); }}
+        title="Нагадати про замовлення: у вказаний час воно позначиться дзвіночком у списку й на головній">
+        <Bell size={15} /><span>{label}</span>
+      </button>
+      {open && (
+        <div className={`remind-pop ${up ? "up" : ""}`} role="dialog" aria-label="Нагадування">
+          <b>Нагадати про замовлення</b>
+          <div className="remind-presets">{presets.map(([t, f]) => <button type="button" key={t} className="btn sm" onClick={() => { onChange(f()); setOpen(false); }}>{t}</button>)}</div>
+          <label className="lbl">Свій час<input type="datetime-local" value={value} onChange={(e) => onChange(e.target.value)} /></label>
+          {value && <button type="button" className="btn sm ghost danger" onClick={() => { onChange(""); setOpen(false); }}>Прибрати нагадування</button>}
+        </div>
+      )}
     </div>
   );
 }

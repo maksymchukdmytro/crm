@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity, BarChart3, Boxes, ChartColumnStacked, Contact, History, Inbox, KanbanSquare, LogOut, Menu, Package, PackagePlus,
-  Plus, ReceiptText, Search, Settings, ShoppingCart, Wallet,
+  Plus, ReceiptText, Search, Settings, ShoppingCart, Wallet, House,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { useLive, useMeta } from "../lib/app";
@@ -13,6 +13,7 @@ import { ErrorBoundary } from "../lib/monitoring";
 
 type Item = { to: string; label: string; icon: typeof Inbox };
 const NAV: Record<string, Item> = {
+  home: { to: "/home", label: "Головна", icon: House },
   leads: { to: "/leads", label: "Ліди", icon: Inbox },
   orders: { to: "/orders", label: "Замовлення", icon: ReceiptText },
   board: { to: "/board", label: "Дошка", icon: KanbanSquare },
@@ -29,6 +30,7 @@ const NAV: Record<string, Item> = {
 };
 // групи меню — за видом роботи
 const GROUPS: [string, string[]][] = [
+  ["", ["home"]],
   ["Продажі", ["leads", "orders", "board", "customers"]],
   ["Склад", ["products", "warehouse", "purchases"]],
   ["Гроші й аналітика", ["payments", "stats", "reports"]],
@@ -85,7 +87,7 @@ export default function Layout() {
             if (!items.length) return null;
             return (
               <div className="nav-group" key={title}>
-                <div className="nav-title">{title}</div>
+                {title && <div className="nav-title">{title}</div>}
                 {items.map((k) => {
                   const n = NAV[k];
                   const Icon = n.icon;

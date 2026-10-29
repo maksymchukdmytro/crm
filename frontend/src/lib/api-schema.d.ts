@@ -300,6 +300,23 @@ export interface paths {
         patch: operations["customer_update_api_customers__cid__patch"];
         trace?: never;
     };
+    "/api/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dashboard */
+        get: operations["dashboard_api_dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events": {
         parameters: {
             query?: never;
@@ -1914,6 +1931,140 @@ export interface components {
             /** Sum Total */
             sum_total: number;
         };
+        /** DashAttention */
+        DashAttention: {
+            /** Arrived */
+            arrived: number;
+            /** Cod Collected */
+            cod_collected: number;
+            /** Cod Expected */
+            cod_expected: number;
+            /** Leads New */
+            leads_new: number;
+            /** Leads Open */
+            leads_open: number;
+            /** Low Stock */
+            low_stock: number;
+            /** On Way */
+            on_way: number;
+            /** Reminders */
+            reminders: number;
+            /** To Ship */
+            to_ship: number;
+        };
+        /** DashCustomers */
+        DashCustomers: {
+            /** New */
+            new: number;
+            /** New Delta */
+            new_delta?: number | null;
+            /** Total */
+            total: number;
+        };
+        /** DashDay */
+        DashDay: {
+            /** Day */
+            day: string;
+            /** Orders */
+            orders: number;
+            /** Sum */
+            sum: number;
+        };
+        /** DashMonth */
+        DashMonth: {
+            /** Approve Rate */
+            approve_rate: number;
+            /** Avg Check */
+            avg_check: number;
+            /** Buyout Rate */
+            buyout_rate: number;
+            /** Date From */
+            date_from: string;
+            /** Margin */
+            margin: number;
+            /** Orders */
+            orders: number;
+            /**
+             * Orders Delta
+             * @description зміна до того самого відрізка минулого місяця, %
+             */
+            orders_delta?: number | null;
+            /** Prev Orders */
+            prev_orders: number;
+            /** Prev Sum */
+            prev_sum: number;
+            /** Sum */
+            sum: number;
+            /** Sum Delta */
+            sum_delta?: number | null;
+            /** Upsell Rate */
+            upsell_rate: number;
+        };
+        /** DashTeam */
+        DashTeam: {
+            /**
+             * Confirmed
+             * @description підтверджено сьогодні
+             */
+            confirmed: number;
+            /** Id */
+            id: number;
+            /** Last Login */
+            last_login?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * New
+             * @description нових замовлень на ньому сьогодні
+             */
+            new: number;
+            /** Role */
+            role: string;
+        };
+        /** DashToday */
+        DashToday: {
+            /** Date */
+            date: string;
+            /** Orders */
+            orders: number;
+            /**
+             * Orders Delta
+             * @description зміна до вчора, %
+             */
+            orders_delta?: number | null;
+            /** Sum */
+            sum: number;
+            /** Sum Delta */
+            sum_delta?: number | null;
+            /** Yesterday Orders */
+            yesterday_orders: number;
+            /** Yesterday Sum */
+            yesterday_sum: number;
+        };
+        /** DashTop */
+        DashTop: {
+            /** Name */
+            name: string;
+            /** Product Id */
+            product_id: number | null;
+            /** Qty */
+            qty: number;
+            /** Sum */
+            sum: number;
+        };
+        /** DashboardOut */
+        DashboardOut: {
+            attention: components["schemas"]["DashAttention"];
+            customers: components["schemas"]["DashCustomers"];
+            /** Days */
+            days: components["schemas"]["DashDay"][];
+            month: components["schemas"]["DashMonth"];
+            /** Team */
+            team?: components["schemas"]["DashTeam"][];
+            today: components["schemas"]["DashToday"];
+            /** Top */
+            top: components["schemas"]["DashTop"][];
+        };
         /** DayRow */
         DayRow: {
             /** Approved */
@@ -2136,6 +2287,11 @@ export interface components {
              * @description Назви додаткових полів 1–4
              */
             extra_fields?: string[];
+            /**
+             * Extra On
+             * @description Які з полів 1–4 показувати в картці
+             */
+            extra_on?: boolean[];
             /** Legal Entities */
             legal_entities?: components["schemas"]["EntityShort"][];
             /** Managers */
@@ -3497,6 +3653,16 @@ export interface components {
         ReasonOut: {
             /** Active */
             active: boolean;
+            /**
+             * Color
+             * @description Лише для позначок: колір значка
+             */
+            color?: string | null;
+            /**
+             * Icon
+             * @description Лише для позначок: ключ значка
+             */
+            icon?: string | null;
             /** Id */
             id: number;
             /** Name */
@@ -3931,10 +4097,20 @@ export interface components {
              */
             active: boolean;
             /**
+             * Color
+             * @description Лише для позначок: колір
+             */
+            color?: string | null;
+            /**
              * Delete
              * @default false
              */
             delete: boolean;
+            /**
+             * Icon
+             * @description Лише для позначок: ключ значка
+             */
+            icon?: string | null;
             /** Id */
             id?: number | null;
             /** Name */
@@ -3962,6 +4138,16 @@ export interface components {
         SourceOut: {
             /** Active */
             active: boolean;
+            /**
+             * Color
+             * @description Лише для позначок: колір значка
+             */
+            color?: string | null;
+            /**
+             * Icon
+             * @description Лише для позначок: ключ значка
+             */
+            icon?: string | null;
             /** Id */
             id: number;
             /** Name */
@@ -5621,6 +5807,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dashboard_api_dashboard_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOut"];
                 };
             };
         };

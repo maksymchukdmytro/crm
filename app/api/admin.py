@@ -385,6 +385,9 @@ def directory_save(kind: str, request: Request, body: list[SourceIn], db: Sessio
         x.name, x.is_active, x.sort = b.name.strip()[:120], b.active, b.sort
         if kind == "reasons" and b.status_ids is not None:
             x.status_ids = sorted({int(i) for i in b.status_ids})
+        if kind == "marks":
+            x.icon = (b.icon or x.icon or "tag")[:24]
+            x.color = b.color or x.color or "#475569"
         if kind == "sources":
             office = b.office_id if b.office_id and db.get(Office, b.office_id) else None
             if x.id and x.office_id != office:  # відділ = сукупність джерел: переносимо й наявні замовлення
