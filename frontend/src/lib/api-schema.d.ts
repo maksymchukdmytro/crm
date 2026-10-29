@@ -355,6 +355,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/names/split": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Names Split
+         * @description Розбір ПІБ одним рядком — для підказки в картці замовлення (що буде прізвищем, ім'ям, по батькові).
+         */
+        get: operations["names_split_api_names_split_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/np/cities": {
         parameters: {
             query?: never;
@@ -2206,6 +2226,20 @@ export interface components {
             stock_delta: number;
             /** User */
             user: string;
+        };
+        /** NameSplitOut */
+        NameSplitOut: {
+            /** First Name */
+            first_name: string;
+            /**
+             * Full
+             * @description Як збережеться: «Прізвище Ім'я По батькові»
+             */
+            full: string;
+            /** Last Name */
+            last_name: string;
+            /** Middle Name */
+            middle_name: string;
         };
         /** NamedShort */
         NamedShort: {
@@ -5633,6 +5667,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MetaOut"];
+                };
+            };
+        };
+    };
+    names_split_api_names_split_get: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NameSplitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
