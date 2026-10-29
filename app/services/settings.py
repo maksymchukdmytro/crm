@@ -28,6 +28,7 @@ DEFAULTS: dict[str, str] = {
     "np_cod_mode": "backward",  # backward — грошовий переказ, afterpayment — контроль оплати
     "np_payer": "Recipient",  # хто платить за доставку: Recipient / Sender
     "np_default_weight": "0.5",
+    "np_seat_size": "20x15x10",  # розміри посилки, см (Д×Ш×В) — для OptionsSeat
     "np_description": "Товар",
     # Укрпошта
     "up_bearer": "",

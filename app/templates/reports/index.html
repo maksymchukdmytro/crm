@@ -65,7 +65,7 @@
   <div style="padding:14px 16px 4px"><h2>Товари (у підтверджених замовленнях)</h2></div>
   <div class="tablewrap">
   <table class="t">
-    <thead><tr><th>Товар</th><th class="num">Замовлень</th><th class="num">Штук</th><th class="num">з них апсел</th><th class="num">Сума</th><th class="num">Собівартість</th><th class="num">Маржа</th></tr></thead>
+    <thead><tr><th>Товар</th><th class="num">Замовлень</th><th class="num">Штук</th><th class="num">з них допродаж</th><th class="num">Сума</th><th class="num">Собівартість</th><th class="num">Маржа</th></tr></thead>
     {% for name, p in r.products %}
     <tr><td>{{ name }}</td><td class="num">{{ p.orders }}</td><td class="num">{{ p.qty }}</td><td class="num">{{ p.upsell_qty or '' }}</td>
       <td class="num">{{ p.revenue|money }}</td><td class="num">{{ p.cost|money }}</td><td class="num">{{ (p.revenue - p.cost)|money }}</td></tr>

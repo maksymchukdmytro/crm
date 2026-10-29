@@ -86,7 +86,7 @@ export default function SystemPage() {
           <Field label="Токен бота" hint="Створіть бота в @BotFather і вставте його токен"><input className="mono" placeholder="не вказано" value={v.alert_tg_token} onChange={(e) => setF({ ...v, alert_tg_token: e.target.value })} autoComplete="off" /></Field>
           <Field label="ID чату" hint="Напишіть боту будь-що, потім дізнайтесь ID у @userinfobot (для групи — ID групи з мінусом)"><input value={v.alert_tg_chat} onChange={(e) => setF({ ...v, alert_tg_chat: e.target.value })} /></Field>
           <Field label="Сповістити, якщо немає заявок, год" hint="Лише з 8:00 до 22:00. 0 — не стежити"><input type="number" min={0} value={v.alert_no_leads_hours} onChange={(e) => setF({ ...v, alert_no_leads_hours: e.target.value })} /></Field>
-          <div className="row mt"><button className="btn primary" disabled={save.isPending}>Зберегти</button>
+          <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button>
             <button type="button" className="btn" onClick={() => test.mutate()} disabled={test.isPending}>Надіслати тестове</button></div>
         </form>
       </div>

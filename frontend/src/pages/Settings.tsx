@@ -60,10 +60,12 @@ function General({ s }: { s: S }) {
       <Field label="Назва компанії"><input {...bind("company_name")} /></Field>
       <Field label="Пошук дублів за телефоном, днів" hint="0 — вимкнути"><input type="number" min={0} {...bind("duplicate_days")} /></Field>
       <Field label="Розподіл нових заявок"><select {...bind("auto_assign")}><option value="off">Вручну — менеджер бере сам</option><option value="round_robin">По черзі між менеджерами</option></select></Field>
-      <label className="check mt"><input type="checkbox" {...check("managers_see_own_only")} /> Менеджери бачать лише свої та нерозподілені замовлення</label>
-      <label className="check"><input type="checkbox" {...check("auto_status_from_tracking")} /> Змінювати статус за трекінгом (Відправлено → Отримано / Відмова)</label>
       <Field label="Перевіряти статуси посилок кожні, хв"><input type="number" min={5} {...bind("tracking_interval_min")} /></Field>
-      <button className="btn primary mt" disabled={save.isPending}>Зберегти</button>
+      <div className="checks">
+        <label className="check"><input type="checkbox" {...check("managers_see_own_only")} /> Менеджери бачать лише свої та нерозподілені замовлення</label>
+        <label className="check"><input type="checkbox" {...check("auto_status_from_tracking")} /> Змінювати статус за трекінгом (Відправлено → Отримано / Відмова)</label>
+      </div>
+      <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button></div>
     </form>
   );
 }
@@ -112,7 +114,7 @@ var p = new URLSearchParams(location.search), f = document.forms[0];
 
 function Delivery({ s }: { s: S }) {
   const save = useSave();
-  const np = useForm(s, ["np_api_key", "np_city_name", "np_city_ref", "np_warehouse_name", "np_warehouse_ref", "np_sender_phone", "np_cod_mode", "np_payer", "np_default_weight", "np_description"]);
+  const np = useForm(s, ["np_api_key", "np_city_name", "np_city_ref", "np_warehouse_name", "np_warehouse_ref", "np_sender_phone", "np_cod_mode", "np_payer", "np_default_weight", "np_seat_size", "np_description"]);
   const up = useForm(s, ["up_bearer", "up_token", "up_tracking_bearer", "up_sender_uuid", "up_sandbox", "up_type"]);
   const me = useForm(s, ["meest_username", "meest_password", "meest_sender_branch_id", "meest_sender_name", "meest_sender_phone"]);
   return (
@@ -124,17 +126,18 @@ function Delivery({ s }: { s: S }) {
           onType={(t) => np.setV({ ...np.v, np_city_name: t, np_city_ref: "" })} onPick={(o) => np.setV({ ...np.v, np_city_name: o.name, np_city_ref: o.ref, np_warehouse_name: "", np_warehouse_ref: "" })} /></Field>
         <Field label="Відділення відправки"><NpAutocomplete kind="warehouses" cityRef={np.v.np_city_ref} value={np.v.np_warehouse_name} refValue={np.v.np_warehouse_ref} placeholder="Номер або адреса"
           onType={(t) => np.setV({ ...np.v, np_warehouse_name: t, np_warehouse_ref: "" })} onPick={(o) => np.setV({ ...np.v, np_warehouse_name: o.name, np_warehouse_ref: o.ref })} /></Field>
-        <div className="row">
+        <div className="cols">
           <Field label="Хто платить за доставку"><select {...np.bind("np_payer")}><option value="Recipient">Отримувач</option><option value="Sender">Відправник</option></select></Field>
           <Field label="Накладений платіж"><select {...np.bind("np_cod_mode")}><option value="backward">Грошовий переказ</option><option value="afterpayment">Контроль оплати</option></select></Field>
         </div>
-        <div className="row">
-          <Field label="Вага за замовчуванням, кг"><input {...np.bind("np_default_weight")} /></Field>
-          <Field label="Опис відправлення"><input {...np.bind("np_description")} /></Field>
+        <div className="cols">
+          <Field label="Вага за замовчуванням, кг" hint="Якщо в товарах вага не вказана"><input {...np.bind("np_default_weight")} inputMode="decimal" /></Field>
+          <Field label="Розміри посилки, см" hint="Довжина × ширина × висота, напр. 20x15x10"><input {...np.bind("np_seat_size")} /></Field>
         </div>
+        <Field label="Опис відправлення"><input {...np.bind("np_description")} /></Field>
         <Field label="Телефон відправника"><input {...np.bind("np_sender_phone")} /></Field>
         <p className="hint">Відправник: {s.values.np_sender_ref ? <Badge kind="ok">завантажено</Badge> : <Badge>не завантажено</Badge>} — після збереження ключа натисніть «Завантажити відправника».</p>
-        <div className="row"><button className="btn primary" disabled={save.isPending}>Зберегти</button>
+        <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button>
           <button type="button" className="btn" disabled={!s.values.np_api_key} onClick={() => save.mutate({ path: "/settings/np/load-sender", method: "post" })}>Завантажити відправника</button></div>
       </form>
       <div className="stack">
@@ -142,17 +145,19 @@ function Delivery({ s }: { s: S }) {
           <h2>Укрпошта <Badge kind="warn">бета</Badge></h2>
           <Secret label="Bearer eCom" k="up_bearer" bind={up.bind} /><Secret label="Counterparty token" k="up_token" bind={up.bind} />
           <Secret label="Bearer StatusTracking" k="up_tracking_bearer" bind={up.bind} hint="Якщо порожньо — Bearer eCom" />
-          <Field label="UUID клієнта-відправника"><input className="mono" {...up.bind("up_sender_uuid")} /></Field>
-          <Field label="Тип відправлення"><select {...up.bind("up_type")}><option value="STANDARD">Стандарт</option><option value="EXPRESS">Експрес</option></select></Field>
-          <label className="check mt"><input type="checkbox" {...up.check("up_sandbox")} /> Тестове середовище</label>
-          <button className="btn primary mt">Зберегти</button>
+          <div className="cols">
+            <Field label="UUID клієнта-відправника"><input className="mono" {...up.bind("up_sender_uuid")} /></Field>
+            <Field label="Тип відправлення"><select {...up.bind("up_type")}><option value="STANDARD">Стандарт</option><option value="EXPRESS">Експрес</option></select></Field>
+          </div>
+          <label className="check"><input type="checkbox" {...up.check("up_sandbox")} /> Тестове середовище</label>
+          <div className="form-actions"><button className="btn primary">Зберегти</button></div>
         </form>
         <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/meest", body: me.v }); }}>
           <h2>Meest <Badge kind="warn">бета</Badge></h2>
-          <div className="row"><Field label="Логін API"><input {...me.bind("meest_username")} /></Field><Secret label="Пароль API" k="meest_password" bind={me.bind} /></div>
+          <div className="cols"><Field label="Логін API"><input {...me.bind("meest_username")} /></Field><Secret label="Пароль API" k="meest_password" bind={me.bind} /></div>
           <Field label="ID відділення відправника"><input className="mono" {...me.bind("meest_sender_branch_id")} /></Field>
-          <div className="row"><Field label="Відправник"><input {...me.bind("meest_sender_name")} /></Field><Field label="Телефон"><input {...me.bind("meest_sender_phone")} /></Field></div>
-          <button className="btn primary mt">Зберегти</button>
+          <div className="cols"><Field label="Відправник"><input {...me.bind("meest_sender_name")} /></Field><Field label="Телефон"><input {...me.bind("meest_sender_phone")} /></Field></div>
+          <div className="form-actions"><button className="btn primary">Зберегти</button></div>
         </form>
       </div>
     </div>
@@ -173,14 +178,14 @@ function Sms({ s }: { s: S }) {
           <h2>TurboSMS</h2>
           <label className="check"><input type="checkbox" {...f.check("sms_enabled")} /> Автоматично надсилати при зміні статусу</label>
           <Secret label="Токен API" k="sms_token" bind={f.bind} hint="turbosms.ua → Підключення → API (HTTP)" />
-          <div className="row"><Field label="Альфа-ім'я SMS"><input {...f.bind("sms_sender")} /></Field><Field label="Відправник Viber"><input {...f.bind("viber_sender")} /></Field></div>
-          <button className="btn primary mt">Зберегти</button>
+          <div className="cols"><Field label="Альфа-ім'я SMS"><input {...f.bind("sms_sender")} /></Field><Field label="Відправник Viber"><input {...f.bind("viber_sender")} /></Field></div>
+          <div className="form-actions"><button className="btn primary">Зберегти</button></div>
         </form>
         <form className="card form" onSubmit={(e) => { e.preventDefault(); testMut.mutate(); }}>
           <h2>Тестове повідомлення</h2>
-          <div className="row"><Field label="Телефон"><input value={test.phone} onChange={(e) => setTest({ ...test, phone: e.target.value })} required /></Field>
+          <div className="cols"><Field label="Телефон"><input value={test.phone} onChange={(e) => setTest({ ...test, phone: e.target.value })} required /></Field>
             <Field label="Канал"><select value={test.channel} onChange={(e) => setTest({ ...test, channel: e.target.value })}><option value="sms">SMS</option><option value="viber">Viber</option></select></Field></div>
-          <button className="btn mt" disabled={testMut.isPending}>Надіслати</button>
+          <div className="form-actions"><button className="btn" disabled={testMut.isPending}>Надіслати</button></div>
         </form>
         <div className="card flush"><div style={{ padding: "14px 16px 4px" }}><h2>Останні повідомлення</h2></div>
           <table className="t dense"><tbody>{s.sms_log.map((m) => (
@@ -196,10 +201,10 @@ function Sms({ s }: { s: S }) {
         </div>
         <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/sms-templates", body: { ...nt, active: true }, method: "post" }); setNt({ ...nt, text: "" }); }}>
           <h2>Новий шаблон</h2>
-          <div className="row"><Field label="Статус"><select value={nt.status_id} onChange={(e) => setNt({ ...nt, status_id: Number(e.target.value) })}>{s.statuses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
+          <div className="cols"><Field label="Статус"><select value={nt.status_id} onChange={(e) => setNt({ ...nt, status_id: Number(e.target.value) })}>{s.statuses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
             <Field label="Канал"><select value={nt.channel} onChange={(e) => setNt({ ...nt, channel: e.target.value })}><option value="sms">SMS</option><option value="viber">Viber</option><option value="hybrid">Viber → SMS</option></select></Field></div>
           <Field label="Текст"><textarea rows={3} value={nt.text} onChange={(e) => setNt({ ...nt, text: e.target.value })} required /></Field>
-          <button className="btn primary mt"><Plus size={14} /> Додати</button>
+          <div className="form-actions"><button className="btn primary"><Plus size={14} /> Додати</button></div>
         </form>
       </div>
     </div>
@@ -274,11 +279,13 @@ function Users({ s }: { s: S }) {
       </table></div>
       <form className="card form" onSubmit={(e) => { e.preventDefault(); mut.mutate({ body: nw }); }}>
         <h2>Новий користувач</h2>
-        <Field label="Логін"><input value={nw.username} onChange={(e) => setNw({ ...nw, username: e.target.value })} required autoComplete="off" /></Field>
-        <Field label="Ім'я"><input value={nw.full_name} onChange={(e) => setNw({ ...nw, full_name: e.target.value })} /></Field>
+        <div className="cols">
+          <Field label="Логін"><input value={nw.username} onChange={(e) => setNw({ ...nw, username: e.target.value })} required autoComplete="off" /></Field>
+          <Field label="Ім'я"><input value={nw.full_name} onChange={(e) => setNw({ ...nw, full_name: e.target.value })} /></Field>
+        </div>
         <Field label="Роль"><select value={nw.role} onChange={(e) => setNw({ ...nw, role: e.target.value })}>{Object.entries(s.roles).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
         <Field label="Пароль"><input type="password" minLength={8} value={nw.password} onChange={(e) => setNw({ ...nw, password: e.target.value })} required autoComplete="new-password" /></Field>
-        <button className="btn primary mt"><Plus size={14} /> Додати</button>
+        <div className="form-actions"><button className="btn primary"><Plus size={14} /> Додати</button></div>
         <hr /><p className="hint"><b>Менеджер</b> — замовлення, дошка, товари (перегляд), свої звіти. <b>Склад</b> — замовлення, ТТН, склад, закупівлі. <b>Адміністратор</b> — усе.</p>
       </form>
     </div>

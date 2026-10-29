@@ -58,6 +58,14 @@ class Carrier:
         raise CarrierError("Друк наклейки для цієї служби не підтримується")
 
 
+def name_parts(order: Order) -> tuple[str, str, str]:
+    """(прізвище, ім'я, по батькові) з окремих полів замовлення; для старих записів — розбір рядка."""
+    if order.last_name or order.first_name:
+        return order.last_name or "", order.first_name or "", order.middle_name or ""
+    from ..services.names import split_full_name
+    return split_full_name(order.customer_name)
+
+
 def split_name(full: str) -> tuple[str, str, str]:
     """'Прізвище Ім'я По батькові' -> (прізвище, ім'я, по батькові)."""
     parts = (full or "").split()

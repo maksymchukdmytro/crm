@@ -271,7 +271,7 @@
           return !q || p.name.toLowerCase().indexOf(q) >= 0 || (p.sku || "").toLowerCase().indexOf(q) >= 0;
         }).slice(0, 30);
         var html = gitems.map(function (p, i) {
-          return '<div data-g="' + i + '" class="' + (i === ghl ? "hl" : "") + '"><span>' + esc(p.name) + (p.upsell ? ' <span class="badge info">апсел</span>' : "") +
+          return '<div data-g="' + i + '" class="' + (i === ghl ? "hl" : "") + '"><span>' + esc(p.name) + (p.upsell ? ' <span class="badge info">допродаж</span>' : "") +
             '</span><small>' + money(num(p.price)) + " ₴ · " + p.available + " шт</small></div>";
         }).join("");
         var custom = gs.value.trim() ? "Довільна позиція «" + esc(gs.value.trim()) + "»" : "Довільна позиція (без товару зі складу)";

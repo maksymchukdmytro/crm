@@ -8,9 +8,11 @@ from sqlalchemy.orm import Session
 from ..models import Order, OrderComment, OrderItem, Product, Status, User, utcnow
 from . import audit, events, payments, sms, stock
 from . import settings as st
+from .names import join_name, split_full_name
 
+NAME_PARTS = ("last_name", "first_name", "middle_name")
 ORDER_FIELDS = [
-    "customer_name", "phone", "email", "comment",
+    "customer_name", *NAME_PARTS, "phone", "email", "comment",
     "delivery_method", "city_name", "city_ref", "warehouse_name", "warehouse_ref", "address", "postcode",
     "ttn", "delivery_cost", "payment_type", "prepayment", "discount",
     "site", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
@@ -107,6 +109,7 @@ def build_items(db: Session, items_data: list[dict]) -> list[OrderItem]:
         price = d.get("price")
         price = to_money(price) if price not in (None, "") else (Decimal(product.price) if product else Decimal(0))
         is_upsell = str(d.get("is_upsell", "")).lower() in ("1", "true", "on", "yes")
+        upsell_for = to_int(d.get("upsell_for"), 0) if is_upsell else 0
         result.append(
             OrderItem(
                 product_id=product.id if product else None,
@@ -115,15 +118,30 @@ def build_items(db: Session, items_data: list[dict]) -> list[OrderItem]:
                 cost=Decimal(product.cost) if product else Decimal(0),
                 qty=qty,
                 is_upsell=is_upsell,
+                upsell_for_id=upsell_for or None,
             )
         )
     return result
 
 
-def _clean_fields(data: dict) -> dict:
-    clean = {}
+def _names(data: dict, order: Order | None) -> dict:
+    """ПІБ: окремі поля мають перевагу; один рядок (з лендингу, старі клієнти API) розбираємо самі."""
+    if any(k in data for k in NAME_PARTS):
+        parts = {k: (str(data[k]) if data.get(k) is not None else "").strip()[:100] if k in data
+                 else (getattr(order, k, "") if order else "") or "" for k in NAME_PARTS}
+    elif "customer_name" in data:
+        last, first, middle = split_full_name(str(data.get("customer_name") or ""))
+        parts = {"last_name": last[:100], "first_name": first[:100], "middle_name": middle[:100]}
+    else:
+        return {}
+    parts["customer_name"] = join_name(parts["last_name"], parts["first_name"], parts["middle_name"])[:255]
+    return parts
+
+
+def _clean_fields(data: dict, order: Order | None = None) -> dict:
+    clean = _names(data, order)
     for f in ORDER_FIELDS:
-        if f not in data:
+        if f not in data or f in clean:
             continue
         v = data[f]
         if f in MONEY_FIELDS:
@@ -174,7 +192,7 @@ def create_order(db: Session, data: dict, items_data: list[dict], user: User | N
 
 
 def update_order(db: Session, order: Order, data: dict, user: User | None) -> dict:
-    fields = _clean_fields(data)
+    fields = _clean_fields(data, order)
     changes = audit.diff(order, fields, list(fields))
     if "phone" in changes:
         dup = find_duplicate(db, order.phone, exclude_id=order.id)

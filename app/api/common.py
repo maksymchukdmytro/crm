@@ -75,12 +75,15 @@ def j_status(s: Status) -> dict:
 def j_product(p: Product) -> dict:
     return {"id": p.id, "sku": p.sku or "", "name": p.name, "price": money(p.price), "cost": money(p.cost),
             "weight": float(p.weight or 0), "stock": p.stock, "reserved": p.reserved, "available": p.available,
-            "min_stock": p.min_stock, "upsell": p.is_upsell, "active": p.is_active}
+            "min_stock": p.min_stock, "upsell": p.is_upsell,
+            "upsell_for": [int(x) for x in (p.upsell_for or [])] if p.is_upsell else [], "active": p.is_active}
 
 
 def j_item(i: OrderItem) -> dict:
     return {"id": i.id, "product_id": i.product_id, "name": i.name, "price": money(i.price), "qty": i.qty,
-            "upsell": i.is_upsell, "sku": i.product.sku if i.product and i.product.sku else "",
+            "upsell": i.is_upsell, "upsell_for": i.upsell_for_id, "upsell_for_name": i.upsell_for.name if i.upsell_for else "",
+            "base_price": money(i.product.price) if i.product else None,
+            "sku": i.product.sku if i.product and i.product.sku else "",
             "available": i.product.available if i.product else None}
 
 
@@ -92,7 +95,7 @@ def j_payment(p: Payment) -> dict:
 
 
 ORDER_SCALARS = [
-    "customer_name", "phone", "email", "comment", "delivery_method", "city_name", "city_ref", "warehouse_name",
+    "customer_name", "last_name", "first_name", "middle_name", "phone", "email", "comment", "delivery_method", "city_name", "city_ref", "warehouse_name",
     "warehouse_ref", "address", "postcode", "ttn", "carrier_ref", "delivery_state", "delivery_status",
     "payment_type", "site", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "ip",
 ]

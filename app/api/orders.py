@@ -57,7 +57,8 @@ def _items(data: dict) -> list[dict] | None:
     if not isinstance(items, list):
         bad("items має бути списком")
     return [{"product_id": i.get("product_id") or "", "name": i.get("name", ""), "qty": i.get("qty", 1),
-             "price": i.get("price", ""), "is_upsell": "1" if i.get("upsell") else "0"} for i in items if isinstance(i, dict)]
+             "price": i.get("price", ""), "is_upsell": "1" if i.get("upsell") else "0",
+             "upsell_for": i.get("upsell_for") or ""} for i in items if isinstance(i, dict)]
 
 
 def _fields(data: dict) -> dict:

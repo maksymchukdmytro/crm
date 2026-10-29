@@ -117,7 +117,9 @@ class Product(Base):
     stock: Mapped[int] = mapped_column(Integer, default=0)  # фізично на складі
     reserved: Mapped[int] = mapped_column(Integer, default=0)  # у резерві під замовлення
     min_stock: Mapped[int] = mapped_column(Integer, default=0)  # поріг для попередження
-    is_upsell: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_upsell: Mapped[bool] = mapped_column(Boolean, default=False)  # товар для допродажу
+    # до яких основних товарів пропонувати допродаж (id товарів); порожньо — до будь-якого замовлення
+    upsell_for: Mapped[list] = mapped_column(JSON, default=list)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
@@ -189,7 +191,10 @@ class Order(Base):
     status_id: Mapped[int] = mapped_column(ForeignKey("statuses.id"), index=True)
     manager_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
 
-    customer_name: Mapped[str] = mapped_column(String(255), default="")
+    customer_name: Mapped[str] = mapped_column(String(255), default="")  # «Прізвище Ім'я По батькові» — для пошуку й показу
+    last_name: Mapped[str] = mapped_column(String(100), default="")
+    first_name: Mapped[str] = mapped_column(String(100), default="")
+    middle_name: Mapped[str] = mapped_column(String(100), default="")
     phone: Mapped[str] = mapped_column(String(32), default="", index=True)
     email: Mapped[str] = mapped_column(String(255), default="")
     comment: Mapped[str] = mapped_column(Text, default="")  # коментар клієнта / з лендингу
@@ -264,12 +269,6 @@ class Order(Base):
     def items_cost(self) -> Decimal:
         return sum((Decimal(i.cost or 0) * i.qty for i in self.items), Decimal(0))
 
-    @property
-    def first_name(self) -> str:
-        parts = (self.customer_name or "").split()
-        if len(parts) >= 2:
-            return parts[1]
-        return parts[0] if parts else ""
 
 
 Index("ix_orders_status_created", Order.status_id, Order.created_at)
@@ -285,9 +284,12 @@ class OrderItem(Base):
     cost: Mapped[Decimal] = mapped_column(Money, default=0)  # собівартість на момент продажу
     qty: Mapped[int] = mapped_column(Integer, default=1)
     is_upsell: Mapped[bool] = mapped_column(Boolean, default=False)
+    # допродаж до якого основного товару (id товару); NULL — не допродаж або «до замовлення загалом»
+    upsell_for_id: Mapped[int | None] = mapped_column(ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
 
     order: Mapped[Order] = relationship(back_populates="items")
-    product: Mapped[Product | None] = relationship()
+    product: Mapped[Product | None] = relationship(foreign_keys=[product_id])
+    upsell_for: Mapped[Product | None] = relationship(foreign_keys=[upsell_for_id])
 
     @property
     def sum(self) -> Decimal:

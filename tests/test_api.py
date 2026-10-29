@@ -321,3 +321,32 @@ def test_request_validation(api):
     assert r.status_code == 422
     r = api.post("/api/orders", json={"phone": "0671234567", "unknown_field": 1})
     assert r.status_code == 422
+
+
+# ------------------------------------------------------------------ ПІБ і допродаж
+def test_name_parts(api, products):
+    from app.services.names import split_full_name
+    assert split_full_name("Іван Петренко") == ("Петренко", "Іван", "")
+    assert split_full_name("петренко іван іванович") == ("Петренко", "Іван", "Іванович")
+    assert split_full_name("Олена Петрівна Коваль") == ("Коваль", "Олена", "Петрівна")
+    assert split_full_name("Марина") == ("", "Марина", "")
+
+    o = new_order(api, products, customer_name="Тарас Шевченко")
+    assert (o["last_name"], o["first_name"], o["customer_name"]) == ("Шевченко", "Тарас", "Шевченко Тарас")
+    # окремі поля мають перевагу, PATCH міняє лише передане
+    o = api.patch(f"/api/orders/{o['id']}", json={"middle_name": "Григорович", "version": o["version"]}).json()
+    assert o["customer_name"] == "Шевченко Тарас Григорович" and o["first_name"] == "Тарас"
+
+
+def test_upsell_links_and_item_price(api, db, products):
+    cream, soap = products
+    p = api.patch(f"/api/products/{soap.id}", json={"upsell": True, "upsell_for": [cream.id, soap.id]}).json()
+    assert p["upsell"] is True and p["upsell_for"] == [cream.id]  # сам до себе не привʼязується
+    body = {"phone": "0501112233", "first_name": "Тарас", "last_name": "Шевченко",
+            "items": [{"product_id": cream.id, "name": cream.name, "qty": 1, "price": 350},
+                      {"product_id": soap.id, "name": soap.name, "qty": 1, "upsell": True, "upsell_for": cream.id}]}
+    o = api.post("/api/orders", json=body).json()
+    main, extra = o["items"]
+    assert main["price"] == 350 and main["base_price"] == float(cream.price)  # ціну змінено лише в замовленні
+    assert extra["upsell"] and extra["upsell_for"] == cream.id and extra["upsell_for_name"] == cream.name
+    assert o["total"] == 350 + float(soap.price)

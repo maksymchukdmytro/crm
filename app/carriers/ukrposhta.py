@@ -8,7 +8,7 @@ from decimal import Decimal
 import httpx
 
 from ..models import Order
-from .base import Carrier, CarrierError, ShipmentResult, TrackResult, order_weight, split_name
+from .base import Carrier, CarrierError, ShipmentResult, TrackResult, name_parts, order_weight
 
 
 def up_state(event_name: str, code: str = "") -> str:
@@ -66,7 +66,7 @@ class Ukrposhta(Carrier):
         postcode = (order.postcode or "").strip()
         if len(postcode) != 5 or not postcode.isdigit():
             raise CarrierError("Для Укрпошти вкажіть 5-значний індекс відділення отримувача")
-        last, first, middle = split_name(order.customer_name)
+        last, first, middle = name_parts(order)
         if not first or not last:
             raise CarrierError("Для Укрпошти потрібні прізвище та ім'я отримувача")
         address = self._req("POST", "addresses", {"postcode": postcode, "city": order.city_name or None},

@@ -21,7 +21,7 @@
   <tbody>
   {% for p in products %}
   <tr class="clickable" data-href="{{ R }}/products/{{ p.id }}">
-    <td><a href="{{ R }}/products/{{ p.id }}">{{ p.name }}</a> {% if p.is_upsell %}<span class="badge info">апсел</span>{% endif %}{% if not p.is_active %} <span class="badge">архів</span>{% endif %}</td>
+    <td><a href="{{ R }}/products/{{ p.id }}">{{ p.name }}</a> {% if p.is_upsell %}<span class="badge info">допродаж</span>{% endif %}{% if not p.is_active %} <span class="badge">архів</span>{% endif %}</td>
     <td class="mono">{{ p.sku or '' }}</td>
     <td class="num">{{ p.price|money(true) }}</td>
     <td class="num">{{ p.cost|money(true) }}</td>

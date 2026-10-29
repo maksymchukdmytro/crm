@@ -24,6 +24,9 @@ CORS = {
 
 ALIASES = {
     "customer_name": ("name", "customer_name", "fio", "full_name", "pib"),
+    "last_name": ("last_name", "surname", "lastname"),
+    "first_name": ("first_name", "firstname"),
+    "middle_name": ("middle_name", "patronymic", "middlename"),
     "phone": ("phone", "tel", "telephone", "phone_number"),
     "email": ("email",),
     "comment": ("comment", "comments", "message", "note"),

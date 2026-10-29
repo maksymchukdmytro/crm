@@ -31,6 +31,6 @@ export type BulkResult = S["BulkOut"];
 export type OrderInput = S["OrderIn"];
 
 // Рядок товару у формі картки: ціна редагується як текст, key — для React
-export type OrderItem = Omit<S["OrderItemOut"], "price" | "sku" | "available"> & {
-  price: number | string; sku?: string; available?: number | null; key?: string;
+export type OrderItem = Omit<S["OrderItemOut"], "price" | "sku" | "available" | "upsell_for_name" | "base_price"> & {
+  price: number | string; sku?: string; available?: number | null; key?: string; upsell_for_name?: string; base_price?: number | null;
 };

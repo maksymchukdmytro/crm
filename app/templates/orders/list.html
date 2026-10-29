@@ -79,7 +79,7 @@
       <td class="ell" style="max-width:180px">{{ o.customer_name or '—' }}</td>
       <td class="nowrap">{{ o.phone|phone }}</td>
       <td class="ell" title="{% for i in o.items %}{{ i.name }} × {{ i.qty }}{% if not loop.last %}, {% endif %}{% endfor %}">
-        {% for i in o.items[:2] %}{{ i.name }}{% if i.qty > 1 %} <small>×{{ i.qty }}</small>{% endif %}{% if i.is_upsell %} <span class="badge info">апсел</span>{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
+        {% for i in o.items[:2] %}{{ i.name }}{% if i.qty > 1 %} <small>×{{ i.qty }}</small>{% endif %}{% if i.is_upsell %} <span class="badge info">допродаж</span>{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
         {% if o.items|length > 2 %}<small>+{{ o.items|length - 2 }}</small>{% endif %}</td>
       <td class="num"><strong>{{ o.total|money }}</strong>{% if o.payment_type == 'prepaid' %} <span class="badge ok" title="Повна передоплата">оплач.</span>{% elif o.payment_type == 'partial' %} <span class="badge info" title="Накладений {{ o.cod_amount|money }}">част.</span>{% endif %}</td>
       <td class="ell" style="max-width:170px">{{ o.delivery_method_name }}{% if o.city_name %}<small> · {{ o.city_name }}</small>{% endif %}</td>

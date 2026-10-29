@@ -19,7 +19,7 @@ export function deliveryKind(state: string): "ok" | "bad" | "info" | "" {
   return state ? "info" : "";
 }
 
-export function Modal({ onClose, children, wide = false, title }: { onClose: () => void; children: ReactNode; wide?: boolean; title?: ReactNode }) {
+export function Modal({ onClose, children, wide = false, size = "md", title }: { onClose: () => void; children: ReactNode; wide?: boolean; size?: "sm" | "md" | "lg"; title?: ReactNode }) {
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   useEffect(() => {
@@ -31,7 +31,7 @@ export function Modal({ onClose, children, wide = false, title }: { onClose: () 
   }, []);
   return createPortal(
     <div className="modal" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={`modal-box ${wide ? "wide" : "small"}`} role="dialog" aria-modal="true">
+      <div className={`modal-box ${wide ? "wide" : size}`} role="dialog" aria-modal="true">
         <button className="modal-close" onClick={onClose} title="Закрити (Esc)"><X size={20} /></button>
         {title && <div className="modal-title">{title}</div>}
         <div className="modal-body">{children}</div>
@@ -50,7 +50,7 @@ export function Spinner() {
 }
 
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: ReactNode }) {
-  return <label>{label}{children}{hint && <span className="hint">{hint}</span>}</label>;
+  return <label><span className="lbl">{label}</span>{children}{hint && <span className="hint">{hint}</span>}</label>;
 }
 
 export function Kpi({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {

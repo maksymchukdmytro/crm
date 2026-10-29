@@ -833,7 +833,7 @@
    },
    "OrderIn": {
     "additionalProperties": false,
-    "description": "Створення або зміна замовлення. У PATCH змінюються лише передані поля.",
+    "description": "Створення або зміна замовлення. У PATCH змінюються лише передані поля.\nПІБ — окремими полями last_name / first_name / middle_name; customer_name (одним рядком) CRM розбере сама.",
     "properties": {
      "address": {
       "anyOf": [
@@ -953,6 +953,18 @@
       ],
       "title": "Email"
      },
+     "first_name": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "First Name"
+     },
      "items": {
       "anyOf": [
        {
@@ -967,6 +979,18 @@
       ],
       "title": "Items"
      },
+     "last_name": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Name"
+     },
      "manager_id": {
       "anyOf": [
        {
@@ -977,6 +1001,18 @@
        }
       ],
       "title": "Manager Id"
+     },
+     "middle_name": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Middle Name"
      },
      "note": {
       "anyOf": [
@@ -1218,6 +1254,18 @@
       "default": false,
       "title": "Upsell",
       "type": "boolean"
+     },
+     "upsell_for": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Допродаж до якого товару (id)",
+      "title": "Upsell For"
      }
     },
     "title": "OrderItemIn",
@@ -1235,6 +1283,18 @@
        }
       ],
       "title": "Available"
+     },
+     "base_price": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Ціна товару в каталозі — щоб показати, що ціну в замовленні змінено",
+      "title": "Base Price"
      },
      "id": {
       "anyOf": [
@@ -1278,6 +1338,22 @@
      "upsell": {
       "title": "Upsell",
       "type": "boolean"
+     },
+     "upsell_for": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Upsell For"
+     },
+     "upsell_for_name": {
+      "default": "",
+      "title": "Upsell For Name",
+      "type": "string"
      }
     },
     "required": [
@@ -1459,6 +1535,11 @@
       "title": "Email",
       "type": "string"
      },
+     "first_name": {
+      "default": "",
+      "title": "First Name",
+      "type": "string"
+     },
      "history": {
       "items": {
        "$ref": "#/components/schemas/HistoryOut"
@@ -1481,6 +1562,11 @@
       "title": "Items",
       "type": "array"
      },
+     "last_name": {
+      "default": "",
+      "title": "Last Name",
+      "type": "string"
+     },
      "manager": {
       "anyOf": [
        {
@@ -1501,6 +1587,11 @@
        }
       ],
       "title": "Manager Id"
+     },
+     "middle_name": {
+      "default": "",
+      "title": "Middle Name",
+      "type": "string"
      },
      "others": {
       "items": {
@@ -2094,6 +2185,14 @@
       "title": "Upsell",
       "type": "boolean"
      },
+     "upsell_for": {
+      "description": "Допродаж: до яких товарів пропонувати (порожньо — до будь-якого)",
+      "items": {
+       "type": "integer"
+      },
+      "title": "Upsell For",
+      "type": "array"
+     },
      "weight": {
       "title": "Weight",
       "type": "number"
@@ -2228,6 +2327,20 @@
       ],
       "title": "Upsell"
      },
+     "upsell_for": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "integer"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Upsell For"
+     },
      "weight": {
       "anyOf": [
        {
@@ -2294,6 +2407,14 @@
      "upsell": {
       "title": "Upsell",
       "type": "boolean"
+     },
+     "upsell_for": {
+      "description": "Допродаж: до яких товарів пропонувати (порожньо — до будь-якого)",
+      "items": {
+       "type": "integer"
+      },
+      "title": "Upsell For",
+      "type": "array"
      },
      "weight": {
       "title": "Weight",
@@ -3529,6 +3650,11 @@
       "title": "Email",
       "type": "string"
      },
+     "first_name": {
+      "default": "",
+      "title": "First Name",
+      "type": "string"
+     },
      "history": {
       "items": {
        "$ref": "#/components/schemas/HistoryOut"
@@ -3551,6 +3677,11 @@
       "title": "Items",
       "type": "array"
      },
+     "last_name": {
+      "default": "",
+      "title": "Last Name",
+      "type": "string"
+     },
      "manager": {
       "anyOf": [
        {
@@ -3571,6 +3702,11 @@
        }
       ],
       "title": "Manager Id"
+     },
+     "middle_name": {
+      "default": "",
+      "title": "Middle Name",
+      "type": "string"
      },
      "others": {
       "items": {

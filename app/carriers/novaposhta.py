@@ -1,11 +1,12 @@
 """Нова Пошта, API 2.0: https://developers.novaposhta.ua/"""
+import re
 from datetime import datetime
 from decimal import Decimal
 
 import httpx
 
 from ..models import Order
-from .base import Carrier, CarrierError, ShipmentResult, TrackResult, order_weight, split_name
+from .base import Carrier, CarrierError, ShipmentResult, TrackResult, name_parts, order_weight
 
 API_URL = "https://api.novaposhta.ua/v2.0/json/"
 
@@ -25,6 +26,14 @@ def np_state(code: str) -> str:
     if c in ("4", "41", "5", "6", "101", "104", "111", "112", "14"):
         return "in_transit"
     return "in_transit" if c else "unknown"
+
+
+def seat_size(raw: str | None) -> tuple[int, int, int]:
+    """«20x15x10», «20*15*10», «20 15 10» → (20, 15, 10); некоректне — 20×15×10."""
+    nums = [int(n) for n in re.findall(r"\d+", raw or "")][:3]
+    if len(nums) != 3 or min(nums) <= 0:
+        return 20, 15, 10
+    return nums[0], nums[1], nums[2]
 
 
 class NovaPoshta(Carrier):
@@ -93,7 +102,7 @@ class NovaPoshta(Carrier):
 
     # --- ТТН ---------------------------------------------------------------
     def _recipient(self, order: Order) -> tuple[str, str]:
-        last, first, middle = split_name(order.customer_name)
+        last, first, middle = name_parts(order)
         if not first or not last:
             raise CarrierError("Для Нової Пошти потрібні прізвище та ім'я отримувача (кирилицею)")
         data = self.call("Counterparty", "save", {
@@ -121,6 +130,12 @@ class NovaPoshta(Carrier):
         recipient, contact = self._recipient(order)
         weight = order_weight(order, Decimal(s.get("np_default_weight") or "0.5"))
         declared = max(int(Decimal(order.total or 0)), 1)
+        length, width, height = seat_size(s.get("np_seat_size"))
+        seat = {  # НП вимагає опис кожного місця: розміри (см), об'ємна вага = Д×Ш×В / 4000, фактична вага
+            "volumetricLength": str(length), "volumetricWidth": str(width), "volumetricHeight": str(height),
+            "volumetricVolume": str((Decimal(length * width * height) / 4000).quantize(Decimal("0.001"))),
+            "weight": str(weight),
+        }
         props = {
             "PayerType": s.get("np_payer") or "Recipient",
             "PaymentMethod": "Cash",
@@ -129,6 +144,8 @@ class NovaPoshta(Carrier):
             "Weight": str(weight),
             "ServiceType": "WarehouseWarehouse",
             "SeatsAmount": "1",
+            "OptionsSeat": [seat],
+            "VolumeGeneral": str((Decimal(length * width * height) / 1_000_000).quantize(Decimal("0.0001"))),
             "Description": s.get("np_description") or "Товар",
             "Cost": str(declared),
             "CitySender": s["np_city_ref"],

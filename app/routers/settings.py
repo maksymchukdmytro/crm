@@ -33,7 +33,7 @@ SECTION_KEYS = {
     "general": ["company_name", "duplicate_days", "auto_assign", "managers_see_own_only",
                 "auto_status_from_tracking", "tracking_interval_min"],
     "np": ["np_api_key", "np_city_name", "np_city_ref", "np_warehouse_name", "np_warehouse_ref", "np_sender_phone",
-           "np_cod_mode", "np_payer", "np_default_weight", "np_description", "np_sender_ref", "np_contact_ref"],
+           "np_cod_mode", "np_payer", "np_default_weight", "np_seat_size", "np_description", "np_sender_ref", "np_contact_ref"],
     "up": ["up_bearer", "up_token", "up_tracking_bearer", "up_sender_uuid", "up_sandbox", "up_type"],
     "meest": ["meest_username", "meest_password", "meest_sender_branch_id", "meest_sender_name", "meest_sender_phone"],
     "sms": ["sms_enabled", "sms_token", "sms_sender", "viber_sender"],

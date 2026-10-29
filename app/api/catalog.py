@@ -41,6 +41,9 @@ def _apply_product(p: Product, d: dict):
         p.min_stock = to_int(d["min_stock"], 0)
     if "upsell" in d:
         p.is_upsell = bool(d["upsell"])
+    if "upsell_for" in d:
+        ids = d["upsell_for"] or []
+        p.upsell_for = sorted({int(x) for x in ids if str(x).isdigit() and int(x) != p.id})
     if "active" in d:
         p.is_active = bool(d["active"])
 

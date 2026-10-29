@@ -159,7 +159,7 @@ export default function OrdersPage() {
                   <span><Pill status={s} /></span>
                   <span className="ell">{o.customer_name || <span className="muted">—</span>}</span>
                   <span className="nowrap">{phone(o.phone)}</span>
-                  <span className="ell" title={itemsLabel(o.items)}>{itemsLabel(o.items)}{o.items.some((i) => i.upsell) && <span className="badge info">апсел</span>}</span>
+                  <span className="ell" title={itemsLabel(o.items)}>{itemsLabel(o.items)}{o.items.some((i) => i.upsell) && <span className="badge info">допродаж</span>}</span>
                   <span className="num"><b>{money(o.total)}</b>{o.payment_type === "prepaid" && <span className="badge ok">оплач.</span>}{o.payment_type === "partial" && <span className="badge info">част.</span>}</span>
                   <span className="ell">{meta.delivery_methods[o.delivery_method]}{o.city_name && <small> · {o.city_name}</small>}</span>
                   <span className="nowrap">{o.ttn ? <><span className="mono">{o.ttn}</span>{o.delivery_state && <span className={`dstate ${o.delivery_state}`} title={`${meta.delivery_states[o.delivery_state] ?? ""}: ${o.delivery_status}`} />}</> : <span className="muted">—</span>}</span>

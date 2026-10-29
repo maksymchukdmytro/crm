@@ -78,7 +78,11 @@ svg.i.lg { width: 18px; height: 18px; }
 .grid.wide-left { grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); align-items: start; }
 .row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
 .row > label { flex: 1 1 140px; }
-.form .row { align-items: flex-start; }
+.form .row { align-items: center; }
+/* Поля форми в колонках: однакова ширина, вирівнювання по верху — підказки під полем не зсувають сусідів */
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; align-items: start; }
+.cols.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cols > .span { grid-column: 1 / -1; }
 .stack > * + * { margin-top: 16px; }
 
 /* Картки */
@@ -92,12 +96,26 @@ svg.i.lg { width: 18px; height: 18px; }
 /* Поля */
 label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); font-weight: 500; }
 label.check { flex-direction: row; align-items: center; gap: 8px; font-size: 14px; color: var(--ink); font-weight: 400; cursor: pointer; }
-.form label + label, .form .row + label, .form label + .row, .form .row + .row { margin-top: 10px; }
-input, select, textarea { font: inherit; color: var(--ink); background: #fff; border: 1px solid #dfdfdc; border-radius: 6px; padding: 6px 9px; min-width: 0; width: 100%; transition: border-color .12s, box-shadow .12s; }
+.lbl { color: var(--ink-2); line-height: 1.3; }
+label > .hint { line-height: 1.35; }
+/* Форма — колонка з однаковими проміжками; без margin між сусідами, тому нічого не «стрибає» */
+.form, .form > fieldset { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.form > fieldset { border: 0; padding: 0; margin: 0; }
+.form > h2, .form > fieldset > h2 { margin: 0; display: flex; align-items: center; gap: 8px; }
+.form > p, .form > fieldset > p { margin: 0; }
+.form > h3, .form > fieldset > h3 { margin: 6px 0 -4px; }
+.form > hr { margin: 2px 0; }
+.form .mt { margin-top: 0; }
+.form > .btn, .form > fieldset > .btn { align-self: flex-start; }
+.checks { display: flex; flex-direction: column; gap: 10px; padding: 2px 0; }
+.form-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-top: 4px; }
+.form-actions .spacer { flex: 1; }
+input, select, textarea { font: inherit; color: var(--ink); background: #fff; border: 1px solid #dfdfdc; border-radius: 6px; padding: 6px 10px; min-width: 0; width: 100%; transition: border-color .12s, box-shadow .12s; }
 input::placeholder, textarea::placeholder { color: var(--faint); }
 input[type=checkbox], input[type=radio] { width: 15px; height: 15px; accent-color: var(--ink); }
 input[type=color] { padding: 2px; height: 32px; width: 44px; }
 textarea { min-height: 64px; resize: vertical; }
+.form input:not([type=checkbox]):not([type=radio]):not([type=color]), .form select { height: 36px; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: #9fc5ef; box-shadow: 0 0 0 3px rgba(35, 131, 226, .14); }
 input:disabled, fieldset:disabled input, fieldset:disabled select { background: var(--line-2); color: var(--muted); }
 select { appearance: none; padding-right: 26px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238f8e8a' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 7px center / 14px; }
@@ -251,7 +269,6 @@ details.box { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12
 details.box summary { cursor: pointer; font-weight: 500; font-size: 13.5px; }
 
 /* ============ Картка замовлення (як у LP-CRM: Контакт · Доставка · Товари) ============ */
-.oc { display: grid; grid-template-columns: minmax(250px, 1fr) minmax(250px, 1fr) minmax(360px, 1.7fr); gap: 0 28px; }
 .oc-col { min-width: 0; }
 .sec { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12.5px; font-weight: 500; margin: 2px 0 8px; }
 .sec::before, .sec::after { content: ""; flex: 1; height: 1px; background: var(--line); }
@@ -271,25 +288,8 @@ details.box summary { cursor: pointer; font-weight: 500; font-size: 13.5px; }
 .prop.top > svg.i { margin-top: 9px; }
 .prop .ac { flex: 1; min-width: 0; }
 .prop .status-sel { font-weight: 600; color: color-mix(in srgb, var(--c) 72%, black); background-color: color-mix(in srgb, var(--c) 14%, white) !important; border-radius: 5px; width: auto; padding: 3px 26px 3px 9px; }
-.oc .note-box { margin: 10px 0 0; }
-.oc .note-box textarea { min-height: 84px; background: #fbfbfa; border-color: var(--line); }
-.oc-goods { display: flex; flex-direction: column; height: 100%; }
-.oc-goods .items { margin-top: 2px; }
-.oc-goods .items th { background: transparent; }
-.oc-goods .items td { border-bottom-color: var(--line-2); vertical-align: middle; }
-.oc-goods .items td input { border-color: transparent; background: transparent; }
-.oc-goods .items td input:hover { background: #fff; border-color: var(--line); }
-.oc-goods .items .meta-line { display: block; font-size: 11.5px; color: var(--muted); padding-left: 7px; }
 .goods-add { position: relative; margin: 8px 0 0; }
 .goods-add input { padding-left: 32px; border-style: dashed; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238f8e8a' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E") no-repeat 10px center / 15px; }
-.goods-foot { margin-top: auto; padding-top: 16px; display: flex; gap: 16px; align-items: flex-end; }
-.goods-foot .disc { width: 130px; }
-.oc-bar { position: sticky; bottom: 0; z-index: 5; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 12px 0; margin-top: 18px; background: linear-gradient(to top, #fff 70%, rgba(255,255,255,0)); }
-.oc-bar .btn.primary { min-width: 150px; }
-.oc-top { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-.oc-top h1 { font-size: 22px; }
-.oc-top .meta { color: var(--muted); font-size: 13px; }
-.oc-top .actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
 .oc-tabs { margin-top: 26px; }
 .oc-tabs .subnav { margin-bottom: 14px; }
 .oc-tabs .subnav a { cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
@@ -316,13 +316,10 @@ details.box summary { cursor: pointer; font-weight: 500; font-size: 13.5px; }
 @keyframes pop { from { transform: translateY(10px) scale(.99); opacity: 0; } }
 body.embed { background: #fff; }
 body.embed .main { padding: 22px 30px 0; }
-body.embed .oc-top { padding-right: 40px; }
-
+body.embed 
 @media (max-width: 1760px) { .w-s { display: none; } }
 @media (max-width: 1640px) { .w-m { display: none; } }
 @media (max-width: 1180px) {
-  .oc { grid-template-columns: 1fr 1fr; }
-  .oc-goods-col { grid-column: 1 / -1; margin-top: 16px; }
 }
 @media (max-width: 1100px) {
   .grid.two, .grid.half, .grid.wide-left { grid-template-columns: 1fr; }
@@ -336,10 +333,12 @@ body.embed .oc-top { padding-right: 40px; }
   .filters input[type=search] { min-width: 0; width: 100%; }
   .kv { grid-template-columns: 110px 1fr; }
   .grid.three { grid-template-columns: 1fr; }
-  .oc { grid-template-columns: 1fr; }
-  .oc-col + .oc-col { margin-top: 14px; }
+  .cols.c3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .modal { padding: 0; }
   .modal-box { height: 100vh; border-radius: 0; }
+}
+@media (max-width: 520px) {
+  .cols, .cols.c3 { grid-template-columns: 1fr; }
 }
 @media print {
   .side, .burger, .no-print, .flash, .oc-bar, .modal-close { display: none !important; }

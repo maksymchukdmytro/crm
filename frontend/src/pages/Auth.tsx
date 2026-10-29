@@ -46,7 +46,7 @@ export function ProfilePage() {
         <h3>Зміна пароля</h3>
         <Field label="Поточний пароль"><input type="password" value={f.old_password} onChange={(e) => setF({ ...f, old_password: e.target.value })} autoComplete="current-password" /></Field>
         <Field label="Новий пароль" hint="Щонайменше 8 символів"><input type="password" minLength={8} value={f.new_password} onChange={(e) => setF({ ...f, new_password: e.target.value })} autoComplete="new-password" /></Field>
-        <button className="btn primary mt" disabled={save.isPending}>Зберегти</button>
+        <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button></div>
       </form>
     </div>
   );

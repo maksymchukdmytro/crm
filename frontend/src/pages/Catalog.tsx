@@ -34,7 +34,7 @@ export function ProductsPage() {
             {isLoading && <tr><td colSpan={8}><Empty><Spinner /></Empty></td></tr>}
             {data?.map((p) => (
               <tr key={p.id} className="clickable" onClick={() => setEdit(p.id)}>
-                <td>{p.name} {p.upsell && <Badge kind="info">апсел</Badge>} {!p.active && <Badge>архів</Badge>}</td>
+                <td>{p.name} {p.upsell && <Badge kind="info">допродаж</Badge>} {!p.active && <Badge>архів</Badge>}</td>
                 <td className="mono">{p.sku}</td><td className="num">{money(p.price, true)}</td><td className="num">{money(p.cost, true)}</td>
                 <td className="num">{money(p.price - p.cost, true)}</td><td className="num">{p.stock}</td><td className="num">{p.reserved}</td>
                 <td className={`num ${p.available <= p.min_stock ? "lowstock" : ""}`}>{p.available}</td>
@@ -53,42 +53,59 @@ function ProductModal({ id, editable, onClose }: { id: number | "new"; editable:
   const isNew = id === "new";
   const qc = useQueryClient();
   const toast = useToast();
+  const meta = useMeta();
   const { data } = useQuery({ queryKey: ["products", "one", id], queryFn: () => api.get<ProductDetail>(`/products/${id}`), enabled: !isNew });
   const [f, setF] = useState<Record<string, string | boolean>>({});
   const v = (k: string, d: string | boolean = "") => (k in f ? f[k] : data ? (data as unknown as Record<string, string | boolean>)[k] ?? d : d);
+  const [upsellFor, setUpsellFor] = useState<number[] | null>(null);
+  const curFor = upsellFor ?? data?.upsell_for ?? [];
+  const mains = meta.products.filter((p) => !p.upsell && p.id !== (isNew ? 0 : id));
   const save = useMutation({
     mutationFn: () => {
       const body = { name: v("name"), sku: v("sku"), price: v("price", "0"), cost: v("cost", "0"), weight: v("weight", "0.5"),
-        min_stock: v("min_stock", "0"), upsell: !!v("upsell", false), active: !!v("active", true), initial_stock: f.initial_stock };
+        min_stock: v("min_stock", "0"), upsell: !!v("upsell", false), upsell_for: curFor, active: !!v("active", true), initial_stock: f.initial_stock };
       return isNew ? api.post<Product>("/products", body) : api.patch<Product>(`/products/${id}`, body);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["products"] }); qc.invalidateQueries({ queryKey: ["meta"] }); toast("Збережено"); onClose(); },
     onError: (e) => toast(errText(e), "error"),
   });
-  if (!isNew && !data) return <Modal onClose={onClose}><Empty><Spinner /></Empty></Modal>;
+  if (!isNew && !data) return <Modal onClose={onClose} size="sm"><Empty><Spinner /></Empty></Modal>;
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
 
   return (
-    <Modal onClose={onClose} title={isNew ? "Новий товар" : String(v("name"))}>
-      <div className="grid half">
+    <Modal onClose={onClose} size={data ? "lg" : "sm"} title={isNew ? "Новий товар" : String(v("name"))}>
+      <div className={data ? "modal-split" : ""}>
         <form className="form" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
-          <fieldset disabled={!editable} style={{ border: 0, padding: 0, margin: 0 }}>
+          <fieldset disabled={!editable}>
             <Field label="Назва"><input value={String(v("name"))} onChange={set("name")} required autoFocus={isNew} /></Field>
-            <div className="row">
+            <div className="cols">
               <Field label="Артикул (SKU)" hint="Для прийому заявок з лендингу"><input className="mono" value={String(v("sku"))} onChange={set("sku")} /></Field>
               <Field label="Вага, кг"><input value={String(v("weight", "0.5"))} onChange={set("weight")} inputMode="decimal" /></Field>
             </div>
-            <div className="row">
+            <div className="cols">
               <Field label="Ціна продажу, грн"><input value={String(v("price", ""))} onChange={set("price")} inputMode="decimal" required /></Field>
               <Field label="Собівартість, грн" hint="Середня, оновлюється при оприбуткуванні"><input value={String(v("cost", ""))} onChange={set("cost")} inputMode="decimal" /></Field>
             </div>
-            <div className="row">
+            <div className="cols">
               {isNew && <Field label="Початковий залишок, шт"><input type="number" value={String(f.initial_stock ?? "0")} onChange={set("initial_stock")} /></Field>}
               <Field label="Мінімальний залишок" hint="Нижче — підсвічується"><input type="number" value={String(v("min_stock", "0"))} onChange={set("min_stock")} /></Field>
             </div>
-            <label className="check mt"><input type="checkbox" checked={!!v("upsell", false)} onChange={set("upsell")} /> Товар для допродажу (апсел)</label>
-            <label className="check"><input type="checkbox" checked={!!v("active", true)} onChange={set("active")} /> Активний (показується в замовленнях)</label>
-            {editable && <button className="btn primary mt" disabled={save.isPending}>Зберегти</button>}
+            <div className="checks">
+              <label className="check"><input type="checkbox" checked={!!v("upsell", false)} onChange={set("upsell")} /> Допродаж — пропонувати менеджеру до інших товарів</label>
+              {!!v("upsell", false) && (
+                <div className="upsell-box">
+                  <span className="lbl">До яких товарів пропонувати</span>
+                  {mains.length ? <div className="chips">{mains.map((p) => {
+                    const on = curFor.includes(p.id);
+                    return <button type="button" key={p.id} className={`chip ${on ? "on" : ""}`} onClick={() => setUpsellFor(on ? curFor.filter((x) => x !== p.id) : [...curFor, p.id])}>{p.name}</button>;
+                  })}</div> : <span className="hint">Спершу додайте основні товари.</span>}
+                  <span className="hint">{curFor.length ? "У картці замовлення з цими товарами CRM підкаже додати допродаж." : "Нічого не вибрано — підказка буде в будь-якому замовленні."}</span>
+                </div>
+              )}
+              <label className="check"><input type="checkbox" checked={!!v("active", true)} onChange={set("active")} /> Активний (показується в замовленнях)</label>
+            </div>
+            {editable && <div className="form-actions"><button className="btn primary" disabled={save.isPending}>{isNew ? "Створити товар" : "Зберегти"}</button>
+              <button type="button" className="btn" onClick={onClose}>Скасувати</button></div>}
           </fieldset>
         </form>
         {data && (
@@ -165,12 +182,12 @@ export function WarehousePage() {
           <h2>Коригування / інвентаризація</h2>
           <Field label="Товар"><select value={adj.product_id} onChange={(e) => setAdj({ ...adj, product_id: e.target.value })} required>
             <option value="">Оберіть товар…</option>{data.products.map((p) => <option key={p.id} value={p.id}>{p.name} (зараз {p.stock})</option>)}</select></Field>
-          <div className="row">
+          <div className="cols">
             <Field label="Режим"><select value={adj.mode} onChange={(e) => setAdj({ ...adj, mode: e.target.value })}><option value="set">Встановити фактичний залишок</option><option value="delta">Додати / відняти (+5, −2)</option></select></Field>
             <Field label="Кількість"><input value={adj.qty} onChange={(e) => setAdj({ ...adj, qty: e.target.value })} required inputMode="numeric" /></Field>
           </div>
           <Field label="Причина"><input value={adj.comment} onChange={(e) => setAdj({ ...adj, comment: e.target.value })} placeholder="Інвентаризація, брак, пересорт…" /></Field>
-          <button className="btn primary mt" disabled={adjust.isPending}>Застосувати</button>
+          <div className="form-actions"><button className="btn primary" disabled={adjust.isPending}>Застосувати</button></div>
         </form>
       </div>
       <div className="head mt"><h2 style={{ margin: 0 }}>Рух товарів {product ? `· ${data.products.find((p) => p.id === product)?.name ?? ""}` : ""}</h2>
@@ -244,15 +261,15 @@ function PurchaseModal({ id, onClose }: { id: number | "new"; onClose: () => voi
     if (patch.product_id && !items[i].cost) items[i].cost = String(productsById[patch.product_id]?.cost || "");
     setDraft({ ...cur, items });
   };
-  if (!isNew && !data) return <Modal onClose={onClose}><Empty><Spinner /></Empty></Modal>;
+  if (!isNew && !data) return <Modal onClose={onClose} size="lg"><Empty><Spinner /></Empty></Modal>;
   return (
-    <Modal onClose={onClose} title={isNew ? "Нова закупівля" : <>Закупівля №{id} <Badge kind={PSTATUS[data!.status]?.[1]}>{PSTATUS[data!.status]?.[0]}</Badge></>}>
+    <Modal onClose={onClose} size="lg" title={isNew ? "Нова закупівля" : <>Закупівля №{id} <Badge kind={PSTATUS[data!.status]?.[1]}>{PSTATUS[data!.status]?.[0]}</Badge></>}>
       <fieldset disabled={!editable} className="form" style={{ border: 0, padding: 0, margin: 0 }}>
-        <div className="row">
+        <div className="cols">
           <Field label="Постачальник"><select value={cur.supplier_id} onChange={(e) => setDraft({ ...cur, supplier_id: e.target.value })}><option value="">—</option>{sups.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
           <Field label="Коментар"><input value={cur.comment} onChange={(e) => setDraft({ ...cur, comment: e.target.value })} /></Field>
         </div>
-        <table className="t items mt">
+        <table className="t items">
           <thead><tr><th>Товар</th><th className="num">К-сть</th><th className="num">Ціна закупівлі</th><th className="num">Сума</th><th /></tr></thead>
           <tbody>{cur.items.map((it, i) => (
             <tr key={i}>
@@ -266,8 +283,8 @@ function PurchaseModal({ id, onClose }: { id: number | "new"; onClose: () => voi
           <tfoot><tr><td colSpan={3}>Разом</td><td className="num">{money(total, true)}</td><td /></tr></tfoot>
         </table>
         {editable && <>
-          <button type="button" className="btn sm mt" onClick={() => setDraft({ ...cur, items: [...cur.items, { product_id: "", qty: "1", cost: "" }] })}><Plus size={14} /> Рядок</button>
-          <div className="row mt">
+          <button type="button" className="btn sm" onClick={() => setDraft({ ...cur, items: [...cur.items, { product_id: "", qty: "1", cost: "" }] })}><Plus size={14} /> Рядок</button>
+          <div className="form-actions">
             <button className="btn" onClick={() => run.mutate("save")}>Зберегти</button>
             {(isNew || data?.status === "draft") && <button className="btn" onClick={() => run.mutate("ordered")}>Позначити «Замовлено»</button>}
             <button className="btn primary" onClick={() => { if (window.confirm("Оприбуткувати товар? Залишки на складі збільшаться.")) run.mutate("receive"); }}>Оприбуткувати на склад</button>
@@ -290,7 +307,7 @@ function SuppliersModal({ onClose }: { onClose: () => void }) {
     onError: (e) => toast(errText(e), "error"),
   });
   return (
-    <Modal onClose={onClose} title="Постачальники">
+    <Modal onClose={onClose} size="md" title="Постачальники">
       <div className="stack">
         {data.map((s) => <SupplierRow key={s.id} s={s} onSave={(x) => save.mutate(x)} />)}
         <form className="row" onSubmit={(e) => { e.preventDefault(); save.mutate(nw); }}>

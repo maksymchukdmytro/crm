@@ -145,7 +145,7 @@ export function ReportsPage() {
       <div className="card flush mt">
         <div style={{ padding: "14px 16px 4px" }}><h2>Товари (у підтверджених замовленнях)</h2></div>
         <div className="tablewrap"><table className="t dense">
-          <thead><tr><th>Товар</th><th className="num">Замовлень</th><th className="num">Штук</th><th className="num">з них апсел</th><th className="num">Сума</th><th className="num">Собівартість</th><th className="num">Маржа</th></tr></thead>
+          <thead><tr><th>Товар</th><th className="num">Замовлень</th><th className="num">Штук</th><th className="num">з них допродаж</th><th className="num">Сума</th><th className="num">Собівартість</th><th className="num">Маржа</th></tr></thead>
           <tbody>{data.products.map((r) => (
             <tr key={r.name}><td>{r.name}</td><td className="num">{r.orders}</td><td className="num">{r.qty}</td><td className="num">{r.upsell_qty || ""}</td><td className="num">{money(r.revenue)}</td><td className="num">{money(r.cost)}</td><td className="num">{money(r.revenue - r.cost)}</td></tr>
           ))}{!data.products.length && <tr><td colSpan={7}><Empty>Немає даних</Empty></td></tr>}</tbody>

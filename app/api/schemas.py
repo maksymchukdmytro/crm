@@ -62,6 +62,7 @@ class ProductOut(Out):
     available: int
     min_stock: int
     upsell: bool
+    upsell_for: list[int] = Field(default_factory=list, description="Допродаж: до яких товарів пропонувати (порожньо — до будь-якого)")
     active: bool
 
 
@@ -152,6 +153,9 @@ class OrderItemOut(Out):
     price: float
     qty: int
     upsell: bool
+    upsell_for: int | None = None
+    upsell_for_name: str = ""
+    base_price: float | None = Field(None, description="Ціна товару в каталозі — щоб показати, що ціну в замовленні змінено")
     sku: str = ""
     available: int | None = None
 
@@ -204,6 +208,9 @@ class OrderOut(Out):
     manager_id: int | None
     manager: UserOut | None
     customer_name: str
+    last_name: str = ""
+    first_name: str = ""
+    middle_name: str = ""
     phone: str
     email: str
     comment: str
@@ -254,11 +261,16 @@ class OrderItemIn(In):
     qty: int = Field(1, ge=1, le=100000)
     price: Money | None = None
     upsell: bool = False
+    upsell_for: int | None = Field(None, description="Допродаж до якого товару (id)")
 
 
 class OrderIn(In):
-    """Створення або зміна замовлення. У PATCH змінюються лише передані поля."""
+    """Створення або зміна замовлення. У PATCH змінюються лише передані поля.
+    ПІБ — окремими полями last_name / first_name / middle_name; customer_name (одним рядком) CRM розбере сама."""
     customer_name: str | None = None
+    last_name: str | None = Field(None, max_length=100)
+    first_name: str | None = Field(None, max_length=100)
+    middle_name: str | None = Field(None, max_length=100)
     phone: str | None = None
     email: str | None = None
     comment: str | None = None
@@ -347,6 +359,7 @@ class ProductIn(In):
     weight: Money | None = None
     min_stock: int | str | None = None
     upsell: bool | None = None
+    upsell_for: list[int] | None = None
     active: bool | None = None
     initial_stock: int | str | None = Field(None, description="Лише при створенні")
 

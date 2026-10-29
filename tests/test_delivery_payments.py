@@ -49,6 +49,11 @@ def test_np_create_ttn(admin, db, products, mock_api):
     assert props["BackwardDeliveryData"][0]["RedeliveryString"] == "897.00"
     assert props["RecipientAddress"] == "wh-ref" and props["Recipient"] == "REC"
     assert Decimal(props["Weight"]) == Decimal("0.7")  # 2 × 0.3 + 1 × 0.1
+    # місце відправлення обовʼязкове для НП (інакше «OptionsSeat is empty»)
+    seat = props["OptionsSeat"][0]
+    assert (seat["volumetricLength"], seat["volumetricWidth"], seat["volumetricHeight"]) == ("20", "15", "10")
+    assert Decimal(seat["volumetricVolume"]) == Decimal("0.75") and Decimal(seat["weight"]) == Decimal("0.7")
+    assert Decimal(props["VolumeGeneral"]) == Decimal("0.003")
     rec = next(c["json"] for c in mock_api.calls if c["json"].get("modelName") == "Counterparty")
     assert rec["methodProperties"]["LastName"] == "Шевченко" and rec["methodProperties"]["FirstName"] == "Тарас"
 
@@ -281,3 +286,10 @@ def test_reports_numbers(admin, db, products, webhook_key):
     assert r["total"].revenue == Decimal("798") and r["total"].profit == Decimal("558")
     page = admin.get("/reports?dim=utm_source").text
     assert "facebook" in page and "google" in page
+
+
+def test_np_seat_size_setting():
+    from app.carriers.novaposhta import seat_size
+    assert seat_size("30x20x15") == (30, 20, 15)
+    assert seat_size("30 * 20 * 15") == (30, 20, 15)
+    assert seat_size("") == (20, 15, 10) and seat_size("0x1x1") == (20, 15, 10)

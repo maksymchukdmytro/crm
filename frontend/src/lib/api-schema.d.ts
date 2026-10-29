@@ -1040,6 +1040,7 @@ export interface components {
         /**
          * OrderIn
          * @description Створення або зміна замовлення. У PATCH змінюються лише передані поля.
+         *     ПІБ — окремими полями last_name / first_name / middle_name; customer_name (одним рядком) CRM розбере сама.
          */
         OrderIn: {
             /** Address */
@@ -1060,10 +1061,16 @@ export interface components {
             discount?: number | string | null;
             /** Email */
             email?: string | null;
+            /** First Name */
+            first_name?: string | null;
             /** Items */
             items?: components["schemas"]["OrderItemIn"][] | null;
+            /** Last Name */
+            last_name?: string | null;
             /** Manager Id */
             manager_id?: number | null;
+            /** Middle Name */
+            middle_name?: string | null;
             /**
              * Note
              * @description Коментар менеджера, що додається разом зі створенням
@@ -1124,11 +1131,21 @@ export interface components {
              * @default false
              */
             upsell: boolean;
+            /**
+             * Upsell For
+             * @description Допродаж до якого товару (id)
+             */
+            upsell_for?: number | null;
         };
         /** OrderItemOut */
         OrderItemOut: {
             /** Available */
             available?: number | null;
+            /**
+             * Base Price
+             * @description Ціна товару в каталозі — щоб показати, що ціну в замовленні змінено
+             */
+            base_price?: number | null;
             /** Id */
             id?: number | null;
             /** Name */
@@ -1146,6 +1163,13 @@ export interface components {
             sku: string;
             /** Upsell */
             upsell: boolean;
+            /** Upsell For */
+            upsell_for?: number | null;
+            /**
+             * Upsell For Name
+             * @default
+             */
+            upsell_for_name: string;
         };
         /** OrderListOut */
         OrderListOut: {
@@ -1200,6 +1224,11 @@ export interface components {
             duplicate_of_id: number | null;
             /** Email */
             email: string;
+            /**
+             * First Name
+             * @default
+             */
+            first_name: string;
             /** History */
             history: components["schemas"]["HistoryOut"][];
             /** Id */
@@ -1208,9 +1237,19 @@ export interface components {
             ip: string;
             /** Items */
             items: components["schemas"]["OrderItemOut"][];
+            /**
+             * Last Name
+             * @default
+             */
+            last_name: string;
             manager: components["schemas"]["UserOut"] | null;
             /** Manager Id */
             manager_id: number | null;
+            /**
+             * Middle Name
+             * @default
+             */
+            middle_name: string;
             /** Others */
             others: components["schemas"]["OrderRowOut"][];
             /** Payment Type */
@@ -1403,6 +1442,11 @@ export interface components {
             stock: number;
             /** Upsell */
             upsell: boolean;
+            /**
+             * Upsell For
+             * @description Допродаж: до яких товарів пропонувати (порожньо — до будь-якого)
+             */
+            upsell_for?: number[];
             /** Weight */
             weight: number;
         };
@@ -1427,6 +1471,8 @@ export interface components {
             sku?: string | null;
             /** Upsell */
             upsell?: boolean | null;
+            /** Upsell For */
+            upsell_for?: number[] | null;
             /** Weight */
             weight?: number | string | null;
         };
@@ -1454,6 +1500,11 @@ export interface components {
             stock: number;
             /** Upsell */
             upsell: boolean;
+            /**
+             * Upsell For
+             * @description Допродаж: до яких товарів пропонувати (порожньо — до будь-якого)
+             */
+            upsell_for?: number[];
             /** Weight */
             weight: number;
         };
@@ -1875,6 +1926,11 @@ export interface components {
             duplicate_of_id: number | null;
             /** Email */
             email: string;
+            /**
+             * First Name
+             * @default
+             */
+            first_name: string;
             /** History */
             history: components["schemas"]["HistoryOut"][];
             /** Id */
@@ -1883,9 +1939,19 @@ export interface components {
             ip: string;
             /** Items */
             items: components["schemas"]["OrderItemOut"][];
+            /**
+             * Last Name
+             * @default
+             */
+            last_name: string;
             manager: components["schemas"]["UserOut"] | null;
             /** Manager Id */
             manager_id: number | null;
+            /**
+             * Middle Name
+             * @default
+             */
+            middle_name: string;
             /** Others */
             others: components["schemas"]["OrderRowOut"][];
             /** Payment Type */
