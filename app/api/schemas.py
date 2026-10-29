@@ -1446,3 +1446,10 @@ class LegalEntityIn(In):
 class ProductDeleteOut(Out):
     deleted: bool = Field(description="false — товар лише перенесено в архів (уже був у замовленнях)")
     message: str
+
+
+class NameSplitOut(Out):
+    last_name: str
+    first_name: str
+    middle_name: str
+    full: str = Field(description="Як збережеться: «Прізвище Ім'я По батькові»")

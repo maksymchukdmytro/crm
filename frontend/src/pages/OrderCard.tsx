@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, CreditCard, ExternalLink, Globe, Receipt, Tag, Hand, MessageCircle, Package, Phone, Plus, Printer, RefreshCw, Send, Sparkles, Trash2, Truck, User } from "lucide-react";
-import { api, ApiError, ROOT } from "../lib/api";
-import { errText, useMeta, useToast } from "../lib/app";
+import { Ban, Bell, Building2, CreditCard, ExternalLink, Globe, Hand, MessageCircle, Package, Phone, Plus, Printer, Receipt, RefreshCw, Send, Sparkles, Stamp, Tag, Trash2, Truck, User, UserRound } from "lucide-react";
+import { api, ApiError, qs, ROOT } from "../lib/api";
+import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num, phone as fmtPhone } from "../lib/format";
 import type { Order, OrderItem, Product } from "../lib/types";
 import { Badge, deliveryKind, Modal, NpAutocomplete, Pill, Spinner } from "../components/ui";
@@ -11,8 +11,9 @@ import { flag, PayIcon } from "../components/payicons";
 import TtnDialog from "./TtnDialog";
 
 type Form = {
-  last_name: string; first_name: string; middle_name: string; phone: string; email: string; comment: string; status_id: number; manager_id: number | "";
+  customer_name: string; phone: string; email: string; comment: string; status_id: number; manager_id: number | "";
   payment_type: string; payment_method_id: number | ""; source_id: number | ""; office_id: number | ""; np_account_id: number | ""; reason_id: number | "";
+  legal_entity_id: number | "";
   mark_id: number | ""; remind_at: string; country: string; extra1: string; extra2: string; extra3: string; extra4: string;
   prepayment: string; discount: string; delivery_method: string; delivery_cost: string;
   city_name: string; city_ref: string; warehouse_name: string; warehouse_ref: string; address: string; postcode: string;
@@ -29,7 +30,8 @@ function toForm(o: Partial<Order> | undefined, defaultStatus: number): Form {
   const s = (v: unknown) => (v === null || v === undefined ? "" : String(v));
   const m = (v: number | undefined) => (v ? String(v) : "");
   return {
-    last_name: s(o?.last_name), first_name: s(o?.first_name), middle_name: s(o?.middle_name), phone: fmtPhone(o?.phone ?? ""), email: s(o?.email), comment: s(o?.comment),
+    customer_name: s(o?.customer_name), phone: fmtPhone(o?.phone ?? ""), email: s(o?.email), comment: s(o?.comment),
+    legal_entity_id: o?.legal_entity_id ?? "",
     status_id: o?.status_id ?? defaultStatus, manager_id: o?.manager_id ?? "",
     payment_type: o?.payment_type || "cod", payment_method_id: o?.payment_method_id ?? "", source_id: o?.source_id ?? "",
     office_id: o?.office_id ?? "", np_account_id: o?.np_account_id ?? "", reason_id: o?.reason_id ?? "", mark_id: o?.mark_id ?? "", remind_at: toLocalInput(o?.remind_at),
@@ -53,13 +55,13 @@ function toLocalInput(iso?: string | null) {
 }
 
 function payload(f: Form, version?: string) {
-  const { items, manager_id, payment_method_id, source_id, office_id, np_account_id, reason_id, mark_id, remind_at, ...rest } = f;
+  const { items, manager_id, payment_method_id, source_id, office_id, np_account_id, reason_id, mark_id, remind_at, legal_entity_id, ...rest } = f;
   return {
-    ...rest, version, manager_id: manager_id || null,
+    ...rest, version, manager_id: manager_id || null, legal_entity_id: legal_entity_id || null,
     payment_method_id: payment_method_id || null, source_id: source_id || null, office_id: office_id || null,
     np_account_id: np_account_id || null,
     reason_id: reason_id || null, mark_id: mark_id || null, remind_at: remind_at ? new Date(remind_at).toISOString() : "",
-    items: items.filter((i) => i.name.trim()).map((i) => ({ product_id: i.product_id, name: i.name, qty: i.qty, price: i.price, upsell: i.upsell, upsell_for: i.upsell ? i.upsell_for ?? null : null })),
+    items: items.filter((i) => i.name.trim()).map((i) => ({ product_id: i.product_id, variant_id: i.variant_id ?? null, name: i.name, qty: i.qty, price: i.price, upsell: i.upsell, upsell_for: i.upsell ? i.upsell_for ?? null : null })),
   };
 }
 
@@ -98,12 +100,23 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
   const [baseline, setBaseline] = useState("");
   const [loadedVersion, setLoadedVersion] = useState<string>("");
   const [ttnOpen, setTtnOpen] = useState(false);
+  const wantTtn = useRef(false);
+  // замовлення щойно створили кнопкою «Створити ТТН» — відкриваємо вікно ТТН одразу
+  useEffect(() => {
+    if (!order) return;
+    let pending = "";
+    try { pending = sessionStorage.getItem("crm-open-ttn") || ""; } catch { /* */ }
+    if (pending === String(order.id)) {
+      try { sessionStorage.removeItem("crm-open-ttn"); } catch { /* */ }
+      if (order.delivery_method === "novaposhta") setTtnOpen(true); else action.mutate({ path: "/ttn" });
+    }
+  }, [order?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // заповнити форму даними замовлення (і оновлювати, якщо його змінили інші, а ми нічого не редагували)
   useEffect(() => {
     if (isNew) {
       if (source) {
-        const f = toForm({ country: source.country, office_id: source.office_id, last_name: source.last_name, first_name: source.first_name, middle_name: source.middle_name, phone: source.phone, email: source.email,
+        const f = toForm({ country: source.country, office_id: source.office_id, source_id: source.source_id, legal_entity_id: source.legal_entity_id, customer_name: source.customer_name, phone: source.phone, email: source.email,
           delivery_method: source.delivery_method, city_name: source.city_name, city_ref: source.city_ref,
           warehouse_name: source.warehouse_name, warehouse_ref: source.warehouse_ref, address: source.address,
           postcode: source.postcode }, newStatus);
@@ -140,7 +153,10 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
       setForm(f); setBaseline(JSON.stringify(f)); setLoadedVersion(o.version);
       dirtyRef.current = false;
       toast(isNew ? `Замовлення №${o.id} створено` : "Збережено");
-      if (isNew) onOpen(o.id);
+      if (isNew) {
+        if (wantTtn.current) { try { sessionStorage.setItem("crm-open-ttn", String(o.id)); } catch { /* */ } }
+        onOpen(o.id);
+      }
     },
     onError: (e) => {
       toast(errText(e), "error");
@@ -159,7 +175,8 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
       const f = toForm(o, newStatus);
       setForm(f); setBaseline(JSON.stringify(f)); setLoadedVersion(o.version);
       const msg: Record<string, string> = { "/ttn": `ТТН ${o.ttn} створено`, "/track": "Статус доставки оновлено", "/take": "Замовлення ваше",
-        "/comments": "Коментар додано", "/sms": "Повідомлення поставлено в чергу", "/payments": "Передоплату додано", "/receipts": "Чек створено" };
+        "/comments": "Коментар додано", "/sms": "Повідомлення поставлено в чергу", "/payments": "Передоплату додано", "/receipts": "Чек створено",
+        "/fiscalize": "Замовлення фіскалізовано — чек продажу створено" };
       toast(vars.method === "del" ? "ТТН видалено" : msg[vars.path] ?? "Готово");
     },
     onError: (e) => toast(errText(e), "error"),
@@ -185,6 +202,8 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
   const method = meta.payment_methods.find((m) => m.id === form.payment_method_id);
   const managerName = order?.manager?.name ?? (isNew && meta.user.role === "manager" ? "ви" : "");
   const units = form.items.reduce((n, i) => n + (i.qty || 0), 0);
+  const srcOffice = meta.order_sources.find((x) => x.id === form.source_id)?.office_id;
+  const officeName = meta.offices.find((o) => o.id === (srcOffice ?? form.office_id))?.name ?? "";
 
   return (
     <div className="order-card">
@@ -209,10 +228,10 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
               <option value="">не вказано</option>
               {reasons.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select></label>}
-          {meta.offices.length > 0 && <label className="ctl"><span>Відділ</span>
-            <select value={form.office_id} onChange={(e) => set({ office_id: e.target.value ? Number(e.target.value) : "" })}>
-              <option value="">не вказано</option>
-              {meta.offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+          {meta.legal_entities.length > 0 && <label className="ctl" title="Від чийого імені продаж: за юрособою обирається каса Checkbox і ключ Нової Пошти"><span><Building2 size={13} /> Юрособа</span>
+            <select value={form.legal_entity_id} onChange={(e) => set({ legal_entity_id: e.target.value ? Number(e.target.value) : "" })}>
+              <option value="">{meta.legal_entities.find((x) => x.is_default)?.name ?? "за замовчуванням"} (за замовч.)</option>
+              {meta.legal_entities.map((x) => <option key={x.id} value={x.id}>{x.name}{x.has_cashier ? "" : " · без каси"}</option>)}
             </select></label>}
           <label className="ctl"><span>Менеджер</span>
             {meta.user.role === "admin" ? (
@@ -223,6 +242,11 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
             ) : <b className={managerName ? "" : "muted"}>{managerName || "не призначений"}</b>}
           </label>
           {order && <div className="oc-actions">
+            {order.checkbox_ready && !(order.receipts ?? []).some((r) => r.kind === "sell" && r.status === "done") &&
+              <button type="button" className="btn sm accent" disabled={action.isPending} title="Чек продажу на суму замовлення через касу юрособи"
+                onClick={() => action.mutate({ path: "/fiscalize" })}><Stamp size={14} /> Фіскалізувати</button>}
+            {order.checkbox_ready && (order.receipts ?? []).some((r) => r.kind === "sell" && r.status === "done") &&
+              <span className="badge ok" title="Чек продажу вже створено"><Receipt size={12} /> фіскалізовано</span>}
             {canTake && <button type="button" className="btn sm" onClick={() => action.mutate({ path: "/take" })}><Hand size={14} /> Взяти собі</button>}
             <button type="button" className="btn sm" onClick={() => navigate(`/orders/new?from=${oid}`)} title="Нове замовлення цьому клієнту"><Plus size={14} /> Ще замовлення</button>
             <a className="btn sm icon" href={`${ROOT}/classic/orders/${oid}/print`} target="_blank" rel="noreferrer" title="Друк"><Printer size={15} /></a>
@@ -230,6 +254,10 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
         </div>
       </div>
 
+      {order?.customer?.blacklisted && (
+        <div className="oc-alert bad"><Ban size={16} /><span><b>Покупець у чорному списку.</b> {order.customer.blacklist_reason || "Причину не вказано"}</span>
+          <a href={`${ROOT}/customers/${order.customer.id}`} onClick={(e) => { e.preventDefault(); navigate(`/customers/${order.customer!.id}`); }}>Картка покупця</a></div>
+      )}
       <form id="oc-form" className="oc" onSubmit={(e) => { e.preventDefault(); save.mutate(); }} autoComplete="off">
         {/* ============ Ліва колонка: клієнт, доставка, оплата, джерело ============ */}
         <div className="oc-side">
@@ -243,10 +271,17 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
               <div className="fl-in"><input value={form.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="+380…" inputMode="tel" required autoFocus={isNew && !fromId} />
                 {order?.phone && <span className="acts"><a href={`tel:+${order.phone}`} title="Подзвонити"><Phone size={14} /></a><a href={`viber://chat?number=%2B${order.phone}`} title="Viber"><MessageCircle size={14} /></a></span>}
               </div></div>
-            <div className="fl"><span>Прізвище</span><input value={form.last_name} onChange={(e) => set({ last_name: e.target.value })} placeholder="Петренко" /></div>
-            <div className="fl"><span>Ім'я</span><input value={form.first_name} onChange={(e) => set({ first_name: e.target.value })} placeholder="Іван" /></div>
-            <div className="fl"><span>По батькові</span><input value={form.middle_name} onChange={(e) => set({ middle_name: e.target.value })} placeholder="необов'язково" /></div>
+            <NameField value={form.customer_name} onChange={(v) => set({ customer_name: v })} saved={order?.customer_name ?? ""} />
             <div className="fl"><span>Email</span><input type="email" value={form.email} onChange={(e) => set({ email: e.target.value })} placeholder="—" /></div>
+            {order?.customer && (
+              <a className="cust-line" href={`${ROOT}/customers/${order.customer.id}`} onClick={(e) => { e.preventDefault(); navigate(`/customers/${order.customer!.id}`); }}>
+                <UserRound size={14} />
+                {order.customer.group && <span className="pill" style={{ ["--c" as string]: order.customer.group_color || "#64748b" }}>{order.customer.group}</span>}
+                <span>{order.customer.orders} {plural(order.customer.orders, "замовлення", "замовлення", "замовлень")}</span>
+                {order.customer.buyout_rate != null && <span className={order.customer.buyout_rate < 50 ? "lowstock" : ""}>викуп {order.customer.buyout_rate}%</span>}
+                {order.customer.refused > 0 && <span className="lowstock">відмов {order.customer.refused}</span>}
+              </a>
+            )}
           </section>
 
           <section className="ocs">
@@ -297,11 +332,15 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
                 <div className="ship-card"><Badge kind={deliveryKind(order.delivery_state)}>{meta.delivery_states[order.delivery_state] ?? order.delivery_state}</Badge>
                   <span className="hint">{order.delivery_status}{order.delivery_checked_at && ` · ${dt(order.delivery_checked_at, true)}`}</span></div>
               )}
-              {!isNew && !order?.ttn && carrier && (
+              {!order?.ttn && carrier && (
                 <div className="ship-card">
                   {carrier.configured ? <>
-                    <button type="button" className="btn dark block" disabled={action.isPending}
-                      onClick={async () => { if (dm === "novaposhta") { if (dirty) await save.mutateAsync(); setTtnOpen(true); } else action.mutate({ path: "/ttn" }); }}>
+                    <button type="button" className="btn dark block" disabled={action.isPending || save.isPending}
+                      title={isNew ? "Замовлення збережеться автоматично" : undefined}
+                      onClick={async () => {
+                        if (isNew) { wantTtn.current = true; save.mutate(); return; }
+                        if (dm === "novaposhta") { if (dirty) await save.mutateAsync(); setTtnOpen(true); } else action.mutate({ path: "/ttn" });
+                      }}>
                       <Send size={14} /> Створити ТТН {carrier.name}</button>
                     <span className="hint">Накладений платіж: {money(cod)} грн{carrier.beta ? " · бета: перше відправлення зробіть тестовим" : ""}</span>
                   </> : <span className="hint">Щоб створювати ТТН, заповніть доступи в налаштуваннях доставки.</span>}
@@ -352,6 +391,7 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
                 <option value="">не вказано</option>
                 {meta.order_sources.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
               </select></div>
+            {meta.offices.length > 0 && <div className="fl"><span>Відділ</span><span className="val">{officeName || <span className="muted">визначається джерелом</span>}</span></div>}
             {EXTRA.map((f, i) => (
               <div className="fl" key={f}><span>{meta.extra_fields[i] || `Поле ${i + 1}`}</span>
                 <div className="fl-in"><input value={form[f]} onChange={(e) => set({ [f]: e.target.value } as Partial<Form>)} placeholder="—" />
@@ -410,6 +450,33 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
   );
 }
 
+function plural(n: number, one: string, few: string, many: string) {
+  const a = n % 10, b = n % 100;
+  return a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 12 || b > 14) ? few : many;
+}
+
+// ---------------------------------------------------------------- ПІБ одним рядком з розпізнаванням
+function NameField({ value, onChange, saved }: { value: string; onChange: (v: string) => void; saved: string }) {
+  const dv = useDebounced(value.trim(), 250);
+  const { data } = useQuery({
+    queryKey: ["name-split", dv], enabled: dv.length > 1 && dv !== saved,
+    queryFn: () => api.get<{ last_name: string; first_name: string; middle_name: string; full: string }>(`/names/split${qs({ q: dv })}`),
+    staleTime: Infinity,
+  });
+  const show = data && dv.length > 1 && dv !== saved;
+  return (
+    <>
+      <div className="fl"><span>ПІБ</span><input value={value} onChange={(e) => onChange(e.target.value)} placeholder="Прізвище Ім'я По батькові — у будь-якому порядку" /></div>
+      {show && (
+        <div className="name-parts" title="Як CRM розпізнала ПІБ. Порядок слів можна вводити будь-який">
+          <span><small>Прізвище</small>{data.last_name || "—"}</span><span><small>Ім'я</small>{data.first_name || "—"}</span>
+          <span><small>По батькові</small>{data.middle_name || "—"}</span>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ---------------------------------------------------------------- товари в замовленні
 function Goods({ items, products, onChange }: { items: OrderItem[]; products: Product[]; onChange: (i: OrderItem[]) => void }) {
   const [q, setQ] = useState("");
@@ -417,7 +484,16 @@ function Goods({ items, products, onChange }: { items: OrderItem[]; products: Pr
   const [hl, setHl] = useState(0);
   const list = useMemo(() => {
     const t = q.trim().toLowerCase();
-    return products.filter((p) => !t || p.name.toLowerCase().includes(t) || p.sku.toLowerCase().includes(t)).slice(0, 30);
+    // товар із варіантами — окремий рядок на кожен варіант («Лампа — Чорний»)
+    const rows: { p: Product; v?: Product["variants"][number] }[] = [];
+    for (const p of products) {
+      const vs = (p.variants ?? []).filter((v) => v.active);
+      if (vs.length) {
+        for (const v of vs) if (!t || `${p.name} ${v.name} ${p.sku} ${v.sku}`.toLowerCase().includes(t)) rows.push({ p, v });
+      } else if (!t || p.name.toLowerCase().includes(t) || p.sku.toLowerCase().includes(t)) rows.push({ p });
+      if (rows.length >= 40) break;
+    }
+    return rows;
   }, [q, products]);
   const byId = useMemo(() => Object.fromEntries(products.map((p) => [p.id, p])), [products]);
   // основні товари замовлення — до них можна привʼязати допродаж
@@ -426,14 +502,16 @@ function Goods({ items, products, onChange }: { items: OrderItem[]; products: Pr
   // що запропонувати: товари-допродажі, привʼязані до товарів у замовленні (або до будь-якого замовлення)
   const offers = mains.length ? products.filter((p) => p.upsell && !inOrder.has(p.id) && (!p.upsell_for?.length || mains.some((m) => p.upsell_for!.includes(m.product_id!)))).slice(0, 6) : [];
 
-  const add = (p?: Product, asUpsell = false) => {
+  const add = (p?: Product, asUpsell = false, v?: Product["variants"][number]) => {
     if (p) {
-      const ex = items.find((i) => i.product_id === p.id);
+      const ex = items.find((i) => i.product_id === p.id && (i.variant_id ?? null) === (v?.id ?? null));
       if (ex) onChange(items.map((i) => (i === ex ? { ...i, qty: i.qty + 1 } : i)));
       else {
         const upsell = asUpsell || (p.upsell && mains.length > 0);
         const main = upsell ? (mains.find((m) => p.upsell_for?.includes(m.product_id!)) ?? mains[0]) : undefined;
-        onChange([...items, { product_id: p.id, name: p.name, price: String(p.price), qty: 1, upsell, upsell_for: main?.product_id ?? null, base_price: p.price, key: k() }]);
+        const price = v?.price ?? p.sale_price ?? p.price;
+        onChange([...items, { product_id: p.id, variant_id: v?.id ?? null, variant_name: v?.name ?? "", name: v ? `${p.name} (${v.name})` : p.name,
+          price: String(price), qty: 1, upsell, upsell_for: main?.product_id ?? null, base_price: price, photo: p.photo, key: k() }]);
       }
     } else onChange([...items, { product_id: null, name: q.trim(), price: "", qty: 1, upsell: false, upsell_for: null, key: k() }]);
     setQ(""); setHl(0); setOpen(false);
@@ -453,10 +531,19 @@ function Goods({ items, products, onChange }: { items: OrderItem[]; products: Pr
               const others = items.filter((x) => x.key !== i.key && !x.upsell && x.product_id);
               return (
                 <tr key={i.key} className={i.upsell ? "is-upsell" : ""}>
-                  <td>
+                  <td className="item-cell">
+                    {(i.photo ?? p?.photo) ? <img className="item-ph" src={`${ROOT}${i.photo ?? p?.photo}`} alt="" /> : <span className="item-ph empty"><Package size={14} /></span>}
+                    <div className="item-main">
                     <input className="name" value={i.name} onChange={(e) => upd(i.key, { name: e.target.value })} placeholder="Назва позиції" />
                     <div className="meta-line">
-                      {p && <span>{p.sku && `${p.sku} · `}залишок {p.available}</span>}
+                      {p && (p.variants ?? []).some((x) => x.active) && (
+                        <select className="mini-sel" value={i.variant_id ?? ""} title="Варіант"
+                          onChange={(e) => { const nv = p.variants.find((x) => x.id === Number(e.target.value)); upd(i.key, { variant_id: nv?.id ?? null, variant_name: nv?.name ?? "", name: nv ? `${p.name} (${nv.name})` : p.name, price: String(nv?.price ?? p.sale_price ?? p.price) }); }}>
+                          <option value="">варіант…</option>
+                          {p.variants.filter((x) => x.active || x.id === i.variant_id).map((x) => <option key={x.id} value={x.id}>{x.name} · {x.available} шт</option>)}
+                        </select>
+                      )}
+                      {p && <span>{p.sku && `${p.sku} · `}залишок {i.variant_id ? p.variants.find((x) => x.id === i.variant_id)?.available ?? "—" : p.available}</span>}
                       <label className="mini-check"><input type="checkbox" checked={i.upsell} onChange={(e) => upd(i.key, { upsell: e.target.checked, upsell_for: e.target.checked ? others[0]?.product_id ?? null : null })} /> допродаж</label>
                       {i.upsell && others.length > 0 && (
                         <select className="mini-sel" value={i.upsell_for ?? ""} onChange={(e) => upd(i.key, { upsell_for: e.target.value ? Number(e.target.value) : null })}>
@@ -464,6 +551,7 @@ function Goods({ items, products, onChange }: { items: OrderItem[]; products: Pr
                           {others.map((o) => <option key={o.key} value={o.product_id!}>до «{o.name}»</option>)}
                         </select>
                       )}
+                    </div>
                     </div>
                   </td>
                   <td className="qty num"><input type="number" min={1} value={i.qty} onChange={(e) => upd(i.key, { qty: Math.max(1, Number(e.target.value) || 1) })} /></td>
@@ -486,14 +574,16 @@ function Goods({ items, products, onChange }: { items: OrderItem[]; products: Pr
             const n = list.length + 1;
             if (e.key === "ArrowDown") { e.preventDefault(); setHl((h) => (h + 1) % n); }
             else if (e.key === "ArrowUp") { e.preventDefault(); setHl((h) => (h - 1 + n) % n); }
-            else if (e.key === "Enter") { e.preventDefault(); add(hl < list.length ? list[hl] : undefined); }
+            else if (e.key === "Enter") { e.preventDefault(); if (hl < list.length) add(list[hl].p, false, list[hl].v); else add(); }
             else if (e.key === "Escape") { e.preventDefault(); setOpen(false); }
           }} />
         {open && (
           <div className="ac-list on">
-            {list.map((p, i) => (
-              <div key={p.id} className={i === hl ? "hl" : ""} onMouseDown={(e) => { e.preventDefault(); add(p); }}>
-                <span>{p.name}{p.upsell && <span className="badge info">допродаж</span>}</span><small>{money(p.price)} ₴ · {p.available} шт</small>
+            {list.map(({ p, v }, i) => (
+              <div key={`${p.id}-${v?.id ?? 0}`} className={`goods-opt ${i === hl ? "hl" : ""}`} onMouseDown={(e) => { e.preventDefault(); add(p, false, v); }}>
+                {p.photo ? <img src={`${ROOT}${p.photo}`} alt="" /> : <span className="ph"><Package size={14} /></span>}
+                <span className="nm">{p.name}{v && <b> · {v.name}</b>}{p.upsell && <span className="badge info">допродаж</span>}{p.discount_percent > 0 && <span className="badge warn">−{p.discount_percent}%</span>}</span>
+                <small>{money(v?.price ?? p.sale_price ?? p.price)} ₴ · {(v ?? p).available} шт</small>
               </div>
             ))}
             <div className={hl === list.length ? "hl" : ""} onMouseDown={(e) => { e.preventDefault(); add(); }}>

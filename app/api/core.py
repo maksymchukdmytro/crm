@@ -37,14 +37,16 @@ from ..services import audit
 from ..services import np as np_svc
 from ..services import settings as st
 from ..services.events import CHANNEL
-from .schemas import LoginIn, LoginOut, MeIn, MetaOut, Ok, UserOut
+from .schemas import LoginIn, LoginOut, MeIn, MetaOut, NameSplitOut, Ok, UserOut
 from .common import api_user, bad, j_payment_method, j_product, j_source, j_status, j_user
 
 router = APIRouter(prefix="/api", tags=["core"])
 
 NAV = [  # розділ, ролі
+    ("leads", ("admin", "manager")),
     ("orders", ("admin", "manager", "warehouse")),
     ("board", ("admin", "manager", "warehouse")),
+    ("customers", ("admin", "manager")),
     ("products", ("admin", "manager", "warehouse")),
     ("warehouse", ("admin", "warehouse")),
     ("purchases", ("admin", "warehouse")),
@@ -213,3 +215,11 @@ async def events_stream(request: Request, user: User = Depends(api_user)):
 
     return StreamingResponse(gen(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@router.get("/names/split", response_model=NameSplitOut)
+def names_split(q: str = "", user: User = Depends(api_user)):
+    """Розбір ПІБ одним рядком — для підказки в картці замовлення (що буде прізвищем, ім'ям, по батькові)."""
+    from ..services.names import join_name, split_full_name
+    last, first, middle = split_full_name(q[:255])
+    return {"last_name": last, "first_name": first, "middle_name": middle, "full": join_name(last, first, middle)}

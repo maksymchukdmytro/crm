@@ -2235,6 +2235,35 @@
     "title": "MoveOut",
     "type": "object"
    },
+   "NameSplitOut": {
+    "properties": {
+     "first_name": {
+      "title": "First Name",
+      "type": "string"
+     },
+     "full": {
+      "description": "Як збережеться: «Прізвище Ім'я По батькові»",
+      "title": "Full",
+      "type": "string"
+     },
+     "last_name": {
+      "title": "Last Name",
+      "type": "string"
+     },
+     "middle_name": {
+      "title": "Middle Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "last_name",
+     "first_name",
+     "middle_name",
+     "full"
+    ],
+    "title": "NameSplitOut",
+    "type": "object"
+   },
    "NamedShort": {
     "properties": {
      "id": {
@@ -10710,6 +10739,50 @@
      }
     },
     "summary": "Meta",
+    "tags": [
+     "core"
+    ]
+   }
+  },
+  "/api/names/split": {
+   "get": {
+    "description": "Розбір ПІБ одним рядком — для підказки в картці замовлення (що буде прізвищем, ім'ям, по батькові).",
+    "operationId": "names_split_api_names_split_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Q",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NameSplitOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Names Split",
     "tags": [
      "core"
     ]

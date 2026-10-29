@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Download, Plus, X, Bell } from "lucide-react";
+import { Ban, Bell, Download, Inbox, Plus, ReceiptText, X } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { dt, itemsLabel, money, phone } from "../lib/format";
@@ -14,7 +14,9 @@ import OrderModal from "./OrderCard";
 const FILTERS = ["status", "q", "manager", "delivery", "source", "date_from", "date_to", "dup"] as const;
 const ROW_H = 40;
 
-export default function OrdersPage() {
+// Один список для двох розділів: «Ліди» (обробка заявки) і «Замовлення» (після підтвердження), як у LP-CRM.
+export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "order" }) {
+  const base = stage === "lead" ? "/leads" : "/orders";
   const meta = useMeta();
   const nav = useNavigate();
   const { id } = useParams();
@@ -37,10 +39,11 @@ export default function OrdersPage() {
     setSp(next, { replace: true });
   }
 
-  const filterKey = FILTERS.map((k) => f[k]).join("|");
+  const filterKey = stage + "|" + FILTERS.map((k) => f[k]).join("|");
+  const stageStatuses = useMemo(() => meta.statuses.filter((s) => s.active && (s.stage ?? "order") === stage), [meta.statuses, stage]);
   const query = useInfiniteQuery({
     queryKey: ["orders", "list", filterKey],
-    queryFn: ({ pageParam }) => api.get<OrderList>(`/orders${qs({ ...f, before: pageParam || undefined, limit: 100, counts: pageParam ? 0 : 1 })}`),
+    queryFn: ({ pageParam }) => api.get<OrderList>(`/orders${qs({ ...f, stage, before: pageParam || undefined, limit: 100, counts: pageParam ? 0 : 1 })}`),
     initialPageParam: 0,
     getNextPageParam: (last) => last.next ?? undefined,
   });
@@ -80,16 +83,18 @@ export default function OrdersPage() {
   return (
     <div className="page-orders">
       <div className="head">
-        <h1>Замовлення <small className="muted">{head?.total ?? ""}</small></h1>
+        <h1><span className="h-ico">{stage === "lead" ? <Inbox size={18} /> : <ReceiptText size={18} />}</span>
+          {stage === "lead" ? "Ліди" : "Замовлення"} <small className="muted">{head?.total ?? ""}</small></h1>
         <div className="actions">
           <a className="btn ghost" href={exportUrl}><Download size={15} /> CSV</a>
-          <button className="btn primary" onClick={() => nav("/orders/new")}><Plus size={15} /> Нове замовлення</button>
+          <button className="btn primary" onClick={() => nav(`${base}/new`)}><Plus size={15} /> Нове замовлення</button>
         </div>
       </div>
+      {stage === "lead" && <p className="hint page-hint">Нові заявки з лендингів і ручні звернення. Після підтвердження лід переходить у «Замовлення».</p>}
 
       <div className="tabs">
-        <a className={!f.status ? "on" : ""} style={{ ["--c" as string]: "#37352f" }} onClick={() => setF({ status: "" })}>Усі <span className="n">{head?.all ?? ""}</span></a>
-        {meta.statuses.filter((s) => s.active).map((s) => {
+        <a className={!f.status ? "on" : ""} onClick={() => setF({ status: "" })}>Усі <span className="n">{head?.all ?? ""}</span></a>
+        {stageStatuses.map((s) => {
           const n = head?.counts?.[String(s.id)] ?? 0;
           return (
             <a key={s.id} className={`${f.status === String(s.id) ? "on" : ""} ${n ? "" : "empty-tab"}`} style={{ ["--c" as string]: s.color }}
@@ -129,7 +134,7 @@ export default function OrdersPage() {
               if (action) bulk.mutate({ action, value });
             }}>
               <option value="">Дія…</option>
-              <optgroup label="Змінити статус">{meta.statuses.filter((s) => s.active).map((s) => <option key={s.id} value={`status:${s.id}`}>→ {s.name}</option>)}</optgroup>
+              <optgroup label="Змінити статус">{meta.statuses.filter((s) => s.active).map((s) => <option key={s.id} value={`status:${s.id}`}>→ {s.name}{(s.stage ?? "order") !== stage ? (stage === "lead" ? " (у замовлення)" : " (у ліди)") : ""}</option>)}</optgroup>
               {meta.user.role !== "warehouse" && (
                 <optgroup label="Призначити менеджера">
                   {meta.managers.map((m) => <option key={m.id} value={`assign:${m.id}`}>→ {m.name}</option>)}
@@ -137,6 +142,7 @@ export default function OrdersPage() {
                 </optgroup>
               )}
               <optgroup label="Доставка"><option value="ttn:">Створити ТТН</option><option value="track:">Оновити статуси доставки</option></optgroup>
+              {meta.checkbox_ready && <optgroup label="Каса"><option value="fiscalize:">Фіскалізувати (чек продажу)</option></optgroup>}
             </select>
             <button className="btn sm ghost" onClick={() => setSel(new Set())}>Скасувати</button>
           </div>
@@ -148,7 +154,7 @@ export default function OrdersPage() {
         </div>
         <div className="gt-body" ref={scrollRef}>
           {query.isLoading && <div className="empty"><span className="spinner" /></div>}
-          {!query.isLoading && rows.length === 0 && <div className="empty">Замовлень не знайдено</div>}
+          {!query.isLoading && rows.length === 0 && <div className="empty">{stage === "lead" ? "Нових лідів немає — заявки з лендингів з'являться тут автоматично" : "Замовлень за цими фільтрами немає"}</div>}
           <div style={{ height: v.getTotalSize(), position: "relative" }}>
             {vItems.map((vi) => {
               const o = rows[vi.index];
@@ -156,11 +162,11 @@ export default function OrdersPage() {
               return (
                 <div key={o.id} className={`gt-row ${sel.has(o.id) ? "sel-on" : ""} ${String(o.id) === id ? "cur" : ""}`}
                   style={{ transform: `translateY(${vi.start}px)`, height: ROW_H }}
-                  onClick={(e) => { if (!(e.target as HTMLElement).closest("input")) nav(`/orders/${o.id}${window.location.search}`); }}>
+                  onClick={(e) => { if (!(e.target as HTMLElement).closest("input")) nav(`${base}/${o.id}${window.location.search}`); }}>
                   <span className="c-sel"><input type="checkbox" checked={sel.has(o.id)} onChange={() => toggle(o.id)} /></span>
                   <span className="nowrap"><b>{o.id}</b>{o.duplicate_of_id && <span className="badge warn" title={`Повтор з номера: №${o.duplicate_of_id}`}>дубль</span>}</span>
                   <span className="st-cell"><Pill status={s} />{o.remind_at && <span className={`remind-dot ${new Date(o.remind_at) <= new Date() ? "due" : ""}`} title={`Нагадування ${dt(o.remind_at, true)}`}><Bell size={12} /></span>}{o.mark_id && marks[o.mark_id] && <span className="badge" title="Позначка">{marks[o.mark_id]}</span>}</span>
-                  <span className="ell">{o.customer_name || <span className="muted">—</span>}</span>
+                  <span className="ell">{o.blacklisted && <span className="bl-mark" title="Покупець у чорному списку"><Ban size={13} /></span>}{o.customer_name || <span className="muted">—</span>}</span>
                   <span className="nowrap">{phone(o.phone)}</span>
                   <span className="ell" title={itemsLabel(o.items)}>{itemsLabel(o.items)}{o.items.some((i) => i.upsell) && <span className="badge info">допродаж</span>}</span>
                   <span className="num pay-cell">{pm[o.payment_method_id ?? 0] && <PayIcon icon={pm[o.payment_method_id!].icon} size={18} title={pm[o.payment_method_id!].name} />}<b>{money(o.total)}</b></span>
@@ -176,7 +182,7 @@ export default function OrdersPage() {
           {query.isFetchingNextPage && <div className="empty" style={{ padding: 12 }}><span className="spinner sm" /></div>}
         </div>
       </div>
-      {id && <OrderModal id={id} onClose={() => nav(`/orders${window.location.search}`)} onOpen={(oid) => nav(`/orders/${oid}${window.location.search}`)} />}
+      {id && <OrderModal id={id} onClose={() => nav(`${base}${window.location.search}`)} onOpen={(oid) => nav(`${base}/${oid}${window.location.search}`)} />}
     </div>
   );
 }

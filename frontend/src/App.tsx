@@ -9,12 +9,14 @@ import Layout from "./components/Layout";
 import { Spinner } from "./components/ui";
 import OrdersPage from "./pages/Orders";
 import BoardPage from "./pages/Board";
-import { ProductsPage, PurchasesPage, WarehousePage } from "./pages/Catalog";
+import { PurchasesPage, WarehousePage } from "./pages/Catalog";
+import ProductsPage from "./pages/Products";
 import { AuditPage, PaymentsPage, ReportsPage } from "./pages/Finance";
 import SettingsPage from "./pages/Settings";
 import { LoginPage, ProfilePage } from "./pages/Auth";
 import SystemPage from "./pages/System";
 import StatsPage from "./pages/Stats";
+import CustomersPage from "./pages/Customers";
 import { ErrorBoundary } from "./lib/monitoring";
 
 const qc = new QueryClient({
@@ -44,8 +46,12 @@ function Gate() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Navigate to="/orders" replace />} />
-          <Route path="orders" element={<OrdersPage />} />
-          <Route path="orders/:id" element={<OrdersPage />} />
+          {can("leads") && <Route path="leads" element={<OrdersPage stage="lead" key="lead" />} />}
+          {can("leads") && <Route path="leads/:id" element={<OrdersPage stage="lead" key="lead" />} />}
+          <Route path="orders" element={<OrdersPage key="order" />} />
+          <Route path="orders/:id" element={<OrdersPage key="order" />} />
+          {can("customers") && <Route path="customers" element={<CustomersPage />} />}
+          {can("customers") && <Route path="customers/:id" element={<CustomersPage />} />}
           <Route path="board" element={<BoardPage />} />
           <Route path="board/:id" element={<BoardPage />} />
           <Route path="products" element={<ProductsPage />} />
