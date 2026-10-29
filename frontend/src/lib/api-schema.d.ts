@@ -977,6 +977,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/system/test-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Test Data Counts */
+        get: operations["test_data_counts_api_system_test_data_get"];
+        put?: never;
+        /**
+         * Test Data Action
+         * @description Тестові товари й замовлення для перевірки статистики (позначені, видаляються одним кліком).
+         */
+        post: operations["test_data_action_api_system_test_data_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users": {
         parameters: {
             query?: never;
@@ -3465,6 +3486,23 @@ export interface components {
             /** Worker Seen At */
             worker_seen_at: string | null;
         };
+        /** TestDataIn */
+        TestDataIn: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "create" | "delete";
+        };
+        /** TestDataOut */
+        TestDataOut: {
+            /** Message */
+            message: string;
+            /** Orders */
+            orders: number;
+            /** Products */
+            products: number;
+        };
         /** TextIn */
         TextIn: {
             /** Text */
@@ -5938,6 +5976,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Ok"];
+                };
+            };
+        };
+    };
+    test_data_counts_api_system_test_data_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestDataOut"];
+                };
+            };
+        };
+    };
+    test_data_action_api_system_test_data_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestDataIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestDataOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
