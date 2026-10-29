@@ -8,7 +8,7 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { dt, itemsLabel, money, phone } from "../lib/format";
 import { PayIcon } from "../components/payicons";
 import type { OrderList, OrderRow } from "../lib/types";
-import { Pill } from "../components/ui";
+import { PayCheck, Pill } from "../components/ui";
 import OrderModal from "./OrderCard";
 
 const FILTERS = ["status", "q", "manager", "delivery", "source", "date_from", "date_to", "dup"] as const;
@@ -150,7 +150,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         <div className="gt-head gt-row">
           <span className="c-sel"><input type="checkbox" checked={allSel} onChange={() => setSel(allSel ? new Set() : new Set(rows.map((r) => r.id)))} /></span>
           <span>№</span><span>Статус</span><span>Клієнт</span><span>Телефон</span><span>Товари</span>
-          <span className="num">Сума</span><span>Доставка</span><span>ТТН</span><span className="c-m">Менеджер</span><span className="c-s">Джерело</span><span>Дата</span>
+          <span className="num">Сума</span><span className="c-pc" title="Чи відповідає ТТН Нової Пошти виду оплати: контроль оплати для NovaPay, без післяплати для оплачених">Перевірка оплати</span><span>Доставка</span><span>ТТН</span><span className="c-m">Менеджер</span><span className="c-s">Джерело</span><span>Дата</span>
         </div>
         <div className="gt-body" ref={scrollRef}>
           {query.isLoading && <div className="empty"><span className="spinner" /></div>}
@@ -170,6 +170,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
                   <span className="nowrap">{phone(o.phone)}</span>
                   <span className="ell" title={itemsLabel(o.items)}>{itemsLabel(o.items)}{o.items.some((i) => i.upsell) && <span className="badge info">допродаж</span>}</span>
                   <span className="num pay-cell">{pm[o.payment_method_id ?? 0] && <PayIcon icon={pm[o.payment_method_id!].icon} size={18} title={pm[o.payment_method_id!].name} />}<b>{money(o.total)}</b></span>
+                  <span className="c-pc"><PayCheck check={o.pay_check} /></span>
                   <span className="ell">{meta.delivery_methods[o.delivery_method]}{o.city_name && <small> · {o.city_name}</small>}</span>
                   <span className="nowrap">{o.ttn ? <><span className="mono">{o.ttn}</span>{o.delivery_state && <span className={`dstate ${o.delivery_state}`} title={`${meta.delivery_states[o.delivery_state] ?? ""}: ${o.delivery_status}`} />}</> : <span className="muted">—</span>}</span>
                   <span className="ell c-m">{o.manager_id ? managers[o.manager_id]?.name ?? "—" : <span className="muted">—</span>}</span>
@@ -186,4 +187,3 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     </div>
   );
 }
-

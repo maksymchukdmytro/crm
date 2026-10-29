@@ -24,6 +24,8 @@ class ShipmentResult:
     ttn: str
     ref: str = ""
     cost: Decimal = Decimal(0)
+    cod_kind: str = ""  # none / backward / control — що поставили в ТТН (для «Перевірки оплати»)
+    cod_sum: Decimal = Decimal(0)
 
 
 class Carrier:

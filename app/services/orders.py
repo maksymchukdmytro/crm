@@ -145,7 +145,21 @@ def build_items(db: Session, items_data: list[dict]) -> list[OrderItem]:
                 upsell_for_id=upsell_for or None,
             )
         )
-    return result
+    return arrange_items(result)
+
+
+def arrange_items(items: list[OrderItem]) -> list[OrderItem]:
+    """Допродаж — одразу під своїм основним товаром, «до замовлення» — у кінці (позиції зберігаються в цьому порядку,
+    тож так само йдуть у картці, друку, ТТН і чеку)."""
+    ups = [i for i in items if i.is_upsell]
+    out, used = [], set()
+    for m in (i for i in items if not i.is_upsell):
+        out.append(m)
+        for u in ups:
+            if id(u) not in used and m.product_id and u.upsell_for_id == m.product_id:
+                out.append(u)
+                used.add(id(u))
+    return out + [u for u in ups if id(u) not in used]
 
 
 def _names(data: dict, order: Order | None) -> dict:
@@ -259,6 +273,8 @@ def update_order(db: Session, order: Order, data: dict, user: User | None) -> di
     fields = _clean_fields(data, order)
     _apply_directories(db, fields)
     changes = audit.diff(order, fields, list(fields))
+    if "ttn" in changes:  # іншу ТТН вставили вручну — що в ній, дізнаємось із трекінгу
+        order.ttn_cod_kind, order.ttn_cod_sum = "", Decimal(0)
     if "phone" in changes:
         dup = find_duplicate(db, order.phone, exclude_id=order.id)
         order.duplicate_of_id = dup.id if dup and dup.id < order.id else None

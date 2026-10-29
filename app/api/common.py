@@ -7,6 +7,7 @@ from decimal import Decimal
 from fastapi import Depends, HTTPException, Request
 
 from ..deps import Forbidden, current_user
+from ..services import pay_check
 from ..models import (
     Order,
     OrderItem,
@@ -98,7 +99,7 @@ def j_product(p: Product) -> dict:
 
 def j_payment_method(m) -> dict:
     return {"id": m.id, "name": m.name, "icon": m.icon, "kind": m.kind, "checkbox_type": m.checkbox_type or "",
-            "active": m.is_active, "sort": m.sort}
+            "np_cod": m.np_cod or "", "active": m.is_active, "sort": m.sort}
 
 
 def j_source(x) -> dict:
@@ -149,6 +150,7 @@ def j_order_row(o: Order) -> dict:
         "duplicate_of_id": o.duplicate_of_id, "created_at": iso(o.created_at),
         "status_changed_at": iso(o.status_changed_at),
         "customer_id": o.customer_id, "blacklisted": bool(o.customer and o.customer.is_blacklisted),
+        "pay_check": pay_check.check(o),
     }
 
 
@@ -171,6 +173,8 @@ def j_order(o: Order) -> dict:
         "comments": [{"id": c.id, "text": c.text, "user": c.user.display if c.user else "Система",
                       "created_at": iso(c.created_at)} for c in reversed(o.comments)],
     })
+    d["pay_check"] = pay_check.check(o)
+    d["ttn_cod_kind"], d["ttn_cod_sum"] = o.ttn_cod_kind or "", float(o.ttn_cod_sum or 0)
     return d
 
 

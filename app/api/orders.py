@@ -90,7 +90,7 @@ def list_orders(request: Request, before: int = 0, limit: int = Query(100, le=50
     base = svc.visible_orders_query(db, user)
     q = _apply(base, f)
     page_q = q.filter(Order.id < before) if before else q
-    rows = (page_q.options(selectinload(Order.items), selectinload(Order.customer)).order_by(Order.id.desc()).limit(limit + 1).all())
+    rows = (page_q.options(selectinload(Order.items), selectinload(Order.customer), selectinload(Order.payment_method)).order_by(Order.id.desc()).limit(limit + 1).all())
     out = {"items": [j_order_row(o) for o in rows[:limit]],
            "next": rows[limit - 1].id if len(rows) > limit else None}
     if counts:

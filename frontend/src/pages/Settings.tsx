@@ -383,16 +383,16 @@ function PaymentMethods({ s }: { s: S }) {
   const [showOff, setShowOff] = useState(false);
   const upd = (key: string, patch: Partial<PaymentMethod>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const move = (i: number, d: number) => { const a = [...rows]; const j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; setRows(a); };
-  const submit = () => save.mutate({ path: "/settings/payment-methods", method: "put", body: rows.filter((r) => r.name.trim()).map((r, i) => ({ id: r.id || undefined, name: r.name, icon: r.icon, kind: r.kind, checkbox_type: r.checkbox_type, active: r.active, sort: i * 10 })) },
+  const submit = () => save.mutate({ path: "/settings/payment-methods", method: "put", body: rows.filter((r) => r.name.trim()).map((r, i) => ({ id: r.id || undefined, name: r.name, icon: r.icon, kind: r.kind, checkbox_type: r.checkbox_type, np_cod: r.np_cod ?? "", active: r.active, sort: i * 10 })) },
     { onSuccess: (x) => setRows((x as S).payment_methods.map((m) => ({ ...m, key: rk() }))) });
   const shown = rows.map((r, i) => [r, i] as const).filter(([r]) => showOff || r.active);
   return (
     <div className="card flush">
       <div className="card-head pad"><div><h2>Види оплат <span className="muted">{rows.filter((r) => r.active).length} з {rows.length}</span></h2>
-        <p className="hint">Вид оплати визначає розрахунок і тип оплати в чеку Checkbox. Номери (ID) такі ж, як у LP-CRM.</p></div>
+        <p className="hint">Вид оплати визначає розрахунок, тип оплати в чеку Checkbox і що має стояти в ТТН Нової Пошти (колонка «Перевірка оплати» в замовленнях). Номери (ID) такі ж, як у LP-CRM.</p></div>
         <label className="mini-check"><input type="checkbox" checked={showOff} onChange={(e) => setShowOff(e.target.checked)} /> показати вимкнені</label></div>
       <div className="tablewrap"><table className="t dense pm-table">
-        <thead><tr><th>ID</th><th>Значок</th><th>Назва</th><th>Розрахунок</th><th title="Тип оплати в чеку Checkbox">Checkbox</th><th>Активний</th><th /></tr></thead>
+        <thead><tr><th>ID</th><th>Значок</th><th>Назва</th><th>Розрахунок</th><th title="Тип оплати в чеку Checkbox">Checkbox</th><th title="Що має стояти в ТТН Нової Пошти — для колонки «Перевірка оплати»">ТТН Нової Пошти</th><th>Активний</th><th /></tr></thead>
         <tbody>{shown.map(([r, i]) => (
           <tr key={r.key} className={r.active ? "" : "off"}>
             <td className="muted mono">{r.id || "нов."}</td>
@@ -403,13 +403,16 @@ function PaymentMethods({ s }: { s: S }) {
               <option value="cod">Післяплата</option><option value="partial">Передоплата + післяплата</option><option value="prepaid">Оплачено (ТТН без післяплати)</option></select></td>
             <td><select value={r.checkbox_type} onChange={(e) => upd(r.key, { checkbox_type: e.target.value })}>
               <option value="">— не фіскалізувати</option>{Object.entries(s.checkbox_payments).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></td>
+            <td><select value={r.kind === "prepaid" ? "none" : r.np_cod ?? ""} disabled={r.kind === "prepaid"} title={r.kind === "prepaid" ? "Оплачено повністю — у ТТН не має бути післяплати" : undefined}
+              onChange={(e) => upd(r.key, { np_cod: e.target.value as PaymentMethod["np_cod"] })}>
+              <option value="">— не перевіряти</option><option value="control">Контроль оплати</option><option value="backward">Грошовий переказ</option><option value="none">Без післяплати</option></select></td>
             <td><input type="checkbox" checked={r.active} onChange={(e) => upd(r.key, { active: e.target.checked })} /></td>
             <td className="nowrap"><button type="button" className="x" title="Вище" onClick={() => move(i, -1)}><ArrowUp size={13} /></button><button type="button" className="x" title="Нижче" onClick={() => move(i, 1)}><ArrowDown size={13} /></button></td>
           </tr>
         ))}</tbody>
       </table></div>
       <div className="form-actions pad">
-        <button type="button" className="btn sm" onClick={() => { setShowOff(true); setRows([...rows, { id: 0, name: "", icon: "cash", kind: "cod", checkbox_type: "", active: true, sort: 0, key: rk() }]); }}><Plus size={14} /> Додати вид оплати</button>
+        <button type="button" className="btn sm" onClick={() => { setShowOff(true); setRows([...rows, { id: 0, name: "", icon: "cash", kind: "cod", checkbox_type: "", np_cod: "", active: true, sort: 0, key: rk() }]); }}><Plus size={14} /> Додати вид оплати</button>
         <span className="spacer" />
         <button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти види оплат</button>
       </div>

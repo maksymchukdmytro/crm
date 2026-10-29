@@ -208,3 +208,72 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .dir-row > input[type=color] { flex: none; width: 34px; height: 34px; padding: 2px; }
 .dir-row > .x { flex: none; }
 .dir-row > .dir-st-btn, .dir-row > .dir-statuses { flex: 1 0 100%; }
+
+/* «Перевірка оплати» (ТТН НП ↔ вид оплати) */
+.gt-row .c-pc { text-align: center; }
+.gt-head .c-pc { font-size: 11px; line-height: 1.15; white-space: normal; cursor: help; }
+.pc { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; }
+.pc-ok { color: var(--ok); }
+.pc-bad { color: var(--bad); }
+.pc-wait { color: var(--faint); }
+.pc-line { display: flex; align-items: flex-start; gap: 6px; font-size: 12.5px; padding: 6px 10px; border-radius: var(--radius-sm); margin: 4px 0 2px; }
+.pc-line .pc { align-items: flex-start; }
+.pc-line .pc svg { flex: none; margin-top: 1px; }
+.pc-line.pc-ok { background: var(--ok-soft); }
+.pc-line.pc-bad { background: var(--bad-soft); font-weight: 550; }
+.pc-line.pc-wait { background: var(--line-2); color: var(--muted); }
+
+/* Позиції замовлення: допродаж — вкладений рядок одразу під своїм товаром */
+.items tr.is-upsell td:first-child { box-shadow: none; }
+.oc-main .items tr.is-upsell td { background: #f7f9ff; border-bottom-color: #e8edfb; }
+.oc-main .items tr.is-upsell td.item-cell { padding-left: 10px; }
+.oc-main .items tr.is-main + tr.is-upsell td { border-top: 0; }
+.up-arrow { flex: none; color: var(--accent); margin: 10px -2px 0 0; }
+.up-tag { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--accent); }
+.up-tag .mini-sel { font-weight: 500; color: var(--ink-2); max-width: 220px; }
+.add-up { display: inline-flex; align-items: center; gap: 3px; font: inherit; font-size: 12px; font-weight: 600; color: var(--accent);
+  background: var(--accent-soft); border: 0; border-radius: 999px; padding: 2px 9px 2px 7px; cursor: pointer; min-height: 22px; }
+.add-up:hover { background: #dce5ff; }
+.link-btn { font: inherit; font-size: 12px; color: var(--muted); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.link-btn:hover { color: var(--ink); }
+.oc-main .items tr.up-add-row td, .oc-main .items tr.up-offer-row td { background: #f7f9ff; padding: 4px 8px 10px 40px; border-bottom: 1px solid var(--line-2); }
+.oc-main .up-search { margin: 0; }
+.oc-main .up-search input { height: 34px; border-style: solid; border-color: #b9c8f5; }
+.up-offers { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.up-offers .offers-l { font-size: 12px; color: var(--accent); }
+.up-offers .offer { font-size: 12.5px; padding: 3px 9px; }
+.up-total { margin: 8px 2px 0; font-size: 12.5px; color: var(--muted); text-align: right; }
+.up-total b { color: var(--accent); font-weight: 600; }
+@media (max-width: 760px) {
+  .oc-main .items tr.up-add-row td, .oc-main .items tr.up-offer-row td { padding-left: 10px; }
+  .add-up { min-height: 32px; padding: 4px 12px 4px 10px; }
+}
+.oc-main .items .item-ph { flex: none; width: 40px; height: 40px; align-self: flex-start; }
+@media (max-width: 760px) {
+  .oc-main .items .item-ph { display: none; }
+  .oc-main .items td.item-cell { gap: 4px; }
+  .oc-main .items .mini-sel { max-width: 150px; }
+  .oc-main .items .up-tag { flex-wrap: wrap; }
+}
+.item-ph.empty { padding: 0; }
+.oc-main .items .item-main { flex: 1; min-width: 0; }
+.oc-main .items input.name { width: 100%; min-width: 0; }
+@media (max-width: 760px) {
+  /* телефон: рядок позиції — назва на всю ширину, під нею кількість · ціна · прибрати */
+  .oc-main .items, .oc-main .items tbody { display: block; width: 100%; }
+  .oc-main .items thead { display: none; }
+  .oc-main .items tr.is-main, .oc-main .items tr.is-upsell { display: grid; grid-template-columns: minmax(0, 1fr) 60px 92px 32px;
+    grid-template-areas: "item item item item" "meta qty price x"; align-items: center; border-bottom: 1px solid var(--line-2); padding: 6px 0; }
+  .oc-main .items tr.is-main td, .oc-main .items tr.is-upsell td { display: block; border: 0; padding: 2px 4px; background: transparent; }
+  .oc-main .items tr.is-upsell { background: #f7f9ff; box-shadow: inset 3px 0 0 var(--accent); padding-left: 6px; }
+  .oc-main .items td.item-cell { grid-area: item; display: flex !important; }
+  .oc-main .items td.qty { grid-area: qty; }
+  .oc-main .items td.price { grid-area: price; }
+  .oc-main .items td.sum { display: block !important; grid-area: meta; text-align: left; padding-top: 2px !important; color: var(--ink); }
+  .oc-main .items tr > td:last-child { grid-area: x; text-align: center; }
+  .oc-main .items td.qty input { width: 56px; }
+  .oc-main .items td.price input { width: 88px; }
+  .oc-main .items td.item-cell .up-arrow { display: none; }
+  .oc-main .items tr.up-add-row, .oc-main .items tr.up-offer-row { display: block; }
+  .oc-main .items tr.up-add-row td, .oc-main .items tr.up-offer-row td { display: block; padding: 6px 6px 10px 12px; }
+}

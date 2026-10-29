@@ -81,6 +81,8 @@ COUNTRIES = {
     "KR": "Південна Корея", "TW": "Тайвань", "VN": "Вʼєтнам", "ID": "Індонезія", "MN": "Монголія",
 }
 
+NP_COD_KINDS = {"": "не перевіряти", "control": "контроль оплати", "backward": "грошовий переказ", "none": "без післяплати"}
+
 PAYMENT_TYPES = {
     "cod": "Накладений платіж",
     "partial": "Передоплата + накладений",
@@ -343,6 +345,9 @@ class PaymentMethod(Base):
     # prepaid — оплачено повністю, при створенні ТТН післяплати немає
     kind: Mapped[str] = mapped_column(String(10), default="cod")
     checkbox_type: Mapped[str] = mapped_column(String(20), default="")  # тип оплати в чеку Checkbox
+    # що має стояти в ТТН Нової Пошти (колонка «Перевірка оплати»): "" — не перевіряти,
+    # control — контроль оплати (NovaPay), backward — грошовий переказ, none — без післяплати
+    np_cod: Mapped[str] = mapped_column(String(10), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort: Mapped[int] = mapped_column(Integer, default=100)
 
@@ -580,6 +585,10 @@ class Order(Base):
     delivery_status: Mapped[str] = mapped_column(String(255), default="")
     delivery_status_code: Mapped[str] = mapped_column(String(16), default="")
     delivery_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # що фактично стоїть у ТТН (з відповіді НП при створенні або з трекінгу): "" — ще невідомо,
+    # none — без післяплати, backward — грошовий переказ, control — контроль оплати
+    ttn_cod_kind: Mapped[str] = mapped_column(String(10), default="")
+    ttn_cod_sum: Mapped[Decimal] = mapped_column(Money, default=0)
 
     # Гроші
     payment_type: Mapped[str] = mapped_column(String(10), default="cod")  # cod / partial / prepaid — із виду оплати
