@@ -38,6 +38,7 @@ export type StatsSegments = S["StatsSegmentsOut"];
 export type StatsOrders = S["StatsOrdersOut"];
 export type StatsOrderRow = S["StatsOrderRow"];
 export type StatsOptions = S["StatsOptionsOut"];
+export type TestData = S["TestDataOut"];
 export type Receipt = S["ReceiptOut"];
 export type ShopCheck = S["ShopCheckOut"];
 export type ShopSync = S["ShopSyncOut"];

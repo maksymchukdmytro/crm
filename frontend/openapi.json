@@ -6569,6 +6569,47 @@
     "title": "SystemOut",
     "type": "object"
    },
+   "TestDataIn": {
+    "additionalProperties": false,
+    "properties": {
+     "action": {
+      "enum": [
+       "create",
+       "delete"
+      ],
+      "title": "Action",
+      "type": "string"
+     }
+    },
+    "required": [
+     "action"
+    ],
+    "title": "TestDataIn",
+    "type": "object"
+   },
+   "TestDataOut": {
+    "properties": {
+     "message": {
+      "title": "Message",
+      "type": "string"
+     },
+     "orders": {
+      "title": "Orders",
+      "type": "integer"
+     },
+     "products": {
+      "title": "Products",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "products",
+     "orders",
+     "message"
+    ],
+    "title": "TestDataOut",
+    "type": "object"
+   },
    "TextIn": {
     "additionalProperties": false,
     "properties": {
@@ -11974,6 +12015,67 @@
      }
     },
     "summary": "Alert Test",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/system/test-data": {
+   "get": {
+    "operationId": "test_data_counts_api_system_test_data_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TestDataOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Test Data Counts",
+    "tags": [
+     "admin"
+    ]
+   },
+   "post": {
+    "description": "Тестові товари й замовлення для перевірки статистики (позначені, видаляються одним кліком).",
+    "operationId": "test_data_action_api_system_test_data_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TestDataIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TestDataOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Test Data Action",
     "tags": [
      "admin"
     ]

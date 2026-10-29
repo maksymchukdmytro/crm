@@ -192,3 +192,31 @@ def test_bucket_keys_cover_period():
     assert [k.month for k in svc.bucket_keys("month", d0, d1)] == [1, 2, 3]
     assert svc.bucket_keys("week", d0, d1)[0].weekday() == 0
     assert len(svc.bucket_keys("hour", d0, d0)) == 24
+
+
+def test_test_data_create_and_delete(api, db, products):
+    real = new_order(api, products)
+    r = api.post("/api/system/test-data", json={"action": "create"}).json()
+    assert r["products"] == 10 and r["orders"] == 10 and "Створено 10" in r["message"]
+    orders = db.query(Order).filter(Order.site == "test-data").all()
+    assert len(orders) == 10
+    oldest = min(o.created_at for o in orders)
+    assert utcnow() - oldest > timedelta(days=4)  # замовлення розкидані по місяцю заднім числом
+    assert all(o.created_at > utcnow() - timedelta(days=31) for o in orders)
+    assert all(o.confirmed_at is None or o.confirmed_at > o.created_at for o in orders)
+    from app.models import SmsMessage, StockMovement
+    assert db.query(StockMovement).count() == 0 and db.query(SmsMessage).count() == 0  # без складу й SMS
+    s = api.get("/api/stats?site=test-data").json()["summary"]
+    assert s["orders"] == 10 and s["delivered"] >= 4
+    assert api.get("/api/system/test-data").json()["orders"] == 10
+    # повторне створення не дублює товари
+    api.post("/api/system/test-data", json={"action": "create"})
+    assert api.get("/api/system/test-data").json() == {"products": 10, "orders": 20, "message": ""}
+    r = api.post("/api/system/test-data", json={"action": "delete"}).json()
+    assert r["orders"] == 0 and r["products"] == 0
+    db.expire_all()
+    assert db.get(Order, real["id"]) is not None  # справжнє замовлення на місці
+
+
+def test_test_data_admin_only(api_manager):
+    assert api_manager.post("/api/system/test-data", json={"action": "create"}).status_code == 403

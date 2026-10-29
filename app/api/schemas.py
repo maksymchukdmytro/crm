@@ -1163,3 +1163,14 @@ class StatsOptionsOut(Out):
     date_fields: dict[str, str]
     dimensions: dict[str, str]
     segment_metrics: dict[str, str]
+
+
+# ---------------------------------------------------------------- тестові дані
+class TestDataIn(In):
+    action: Literal["create", "delete"]
+
+
+class TestDataOut(Out):
+    products: int
+    orders: int
+    message: str
