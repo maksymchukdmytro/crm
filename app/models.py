@@ -288,6 +288,31 @@ class NpStatusRule(Base):
     sort: Mapped[int] = mapped_column(Integer, default=100)
 
 
+class MarketplaceShop(Base):
+    """Магазин на маркетплейсі (Rozetka, Prom): імпорт замовлень і передача статусів назад."""
+    __tablename__ = "marketplace_shops"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(16))  # rozetka / prom
+    name: Mapped[str] = mapped_column(String(160), default="")
+    login: Mapped[str] = mapped_column(String(160), default="")  # Rozetka: логін кабінету продавця
+    secret: Mapped[str] = mapped_column(String(255), default="")  # Rozetka: пароль; Prom: API-токен
+    office_id: Mapped[int | None] = mapped_column(ForeignKey("offices.id", ondelete="SET NULL"), nullable=True)
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("order_sources.id", ondelete="SET NULL"), nullable=True)
+    import_status_id: Mapped[int | None] = mapped_column(ForeignKey("statuses.id", ondelete="SET NULL"), nullable=True)
+    extra_field: Mapped[int] = mapped_column(Integer, default=1)  # у яке додаткове поле писати «Rozetka(магазин)», 0 — ні
+    status_map: Mapped[dict] = mapped_column(JSON, default=dict)  # id статусу CRM → статус маркетплейсу
+    payment_map: Mapped[dict] = mapped_column(JSON, default=dict)  # спосіб оплати маркетплейсу → id виду оплати
+    delivery_map: Mapped[dict] = mapped_column(JSON, default=dict)  # служба доставки маркетплейсу → код доставки CRM
+    directory: Mapped[dict] = mapped_column(JSON, default=dict)  # статуси маркетплейсу, бачені способи оплати й доставки
+    token: Mapped[str] = mapped_column(Text, default="")  # кеш токена Rozetka
+    token_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    since: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # з якої дати імпортувати
+    last_sync_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_error: Mapped[str] = mapped_column(Text, default="")
+    imported: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
 class Office(Base):
     """Відділ (ФОП, PROM, сайт, OLX…): доступ менеджерів, вибір каси Checkbox, замовлення маркетплейсів."""
     __tablename__ = "offices"
@@ -332,6 +357,9 @@ class Order(Base):
     manager_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     office_id: Mapped[int | None] = mapped_column(ForeignKey("offices.id"), nullable=True, index=True)
     np_account_id: Mapped[int | None] = mapped_column(ForeignKey("np_accounts.id", ondelete="SET NULL"), nullable=True)
+    shop_id: Mapped[int | None] = mapped_column(ForeignKey("marketplace_shops.id", ondelete="SET NULL"), nullable=True)
+    external_id: Mapped[str] = mapped_column(String(64), default="", index=True)  # номер замовлення на маркетплейсі
+    external_status: Mapped[str] = mapped_column(String(120), default="")
     reason_id: Mapped[int | None] = mapped_column(ForeignKey("status_reasons.id"), nullable=True)
     mark_id: Mapped[int | None] = mapped_column(ForeignKey("order_marks.id"), nullable=True)
     remind_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)  # нагадати менеджеру

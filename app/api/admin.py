@@ -14,7 +14,7 @@ from ..carriers import CarrierError
 from ..carriers.novaposhta import NovaPoshta
 from ..config import config
 from ..db import get_db
-from ..models import CHECKBOX_PAYMENTS, ROLES, STOCK_ACTIONS, AuditLog, NpAccount, NpStatusRule, Office, Order, OrderMark, OrderSource, Payment, PaymentMethod, StatusReason, SmsMessage, SmsTemplate, Status, User
+from ..models import CHECKBOX_PAYMENTS, ROLES, STOCK_ACTIONS, AuditLog, MarketplaceShop, NpAccount, NpStatusRule, Office, Order, OrderMark, OrderSource, Payment, PaymentMethod, StatusReason, SmsMessage, SmsTemplate, Status, User
 from ..routers.payments import parse_registry
 from ..routers.settings import CHECKBOXES, SECTION_KEYS
 from ..security import hash_password
@@ -28,7 +28,7 @@ from ..services.audit import ACTION_NAMES
 from ..services.orders import normalize_phone, to_int
 from ..services.reports import period_bounds
 from ..web import f_details, parse_date, today_local
-from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn, NpAccountIn, NpRuleIn
+from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn, NpAccountIn, NpRuleIn, ShopCheckOut, ShopIn, ShopSyncOut
 from .common import admin, bad, iso, j_payment, j_payment_method, j_source, j_status, j_user, sales
 
 router = APIRouter(prefix="/api", tags=["admin"])
@@ -169,6 +169,15 @@ def j_np_account(a: NpAccount) -> dict:
     return d
 
 
+def j_shop(x: MarketplaceShop) -> dict:
+    return {"id": x.id, "kind": x.kind, "name": x.name, "login": x.login, "secret": "********" if x.secret else "",
+            "office_id": x.office_id, "source_id": x.source_id, "import_status_id": x.import_status_id,
+            "extra_field": x.extra_field, "status_map": x.status_map or {}, "payment_map": x.payment_map or {},
+            "delivery_map": x.delivery_map or {}, "directory": x.directory or {}, "since": iso(x.since),
+            "last_sync_at": iso(x.last_sync_at), "last_error": x.last_error or "", "imported": x.imported or 0,
+            "is_active": x.is_active}
+
+
 def _settings_payload(request: Request, db: Session) -> dict:
     s = st.get_all(db)
     values = {k: ("********" if (k in st.SECRET_KEYS and v) else v) for k, v in s.items() if k not in st.INTERNAL_KEYS}
@@ -196,6 +205,7 @@ def _settings_payload(request: Request, db: Session) -> dict:
         "np_status_rules": [{"id": r.id, "np_code": r.np_code, "status_id": r.status_id,
                              "except_ids": [int(x) for x in r.except_ids or []]} for r in np_svc.rules(db)],
         "np_statuses": np_svc.NP_STATUSES,
+        "shops": [j_shop(x) for x in db.query(MarketplaceShop).order_by(MarketplaceShop.id)],
     }
 
 
@@ -401,6 +411,52 @@ def np_rules_save(request: Request, body: list[NpRuleIn], db: Session = Depends(
     audit.log(db, user, "settings", None, "update", {"поля": ["правила статусів НП"]})
     db.commit()
     return _settings_payload(request, db)
+
+
+@router.put("/settings/shops", response_model=SettingsOut)
+def shops_save(request: Request, body: list[ShopIn], db: Session = Depends(get_db), user: User = Depends(admin)):
+    """Магазини маркетплейсів цілим списком. secret «********» — не змінювати."""
+    by_id = {x.id: x for x in db.query(MarketplaceShop).all()}
+    for b in body:
+        x = by_id.get(b.id) if b.id else None
+        if b.delete:
+            if x is not None:
+                db.delete(x)
+            continue
+        if x is None:
+            x = MarketplaceShop(kind=b.kind)
+            db.add(x)
+        for f in ("name", "login", "office_id", "source_id", "import_status_id", "extra_field", "status_map",
+                  "payment_map", "delivery_map", "is_active"):
+            setattr(x, f, getattr(b, f))
+        if b.secret is not None and b.secret != "********":
+            x.secret, x.token = b.secret.strip(), ""
+        x.since = parse_date(b.since) if b.since else None
+    audit.log(db, user, "settings", None, "update", {"поля": ["маркетплейси"]})
+    db.commit()
+    return _settings_payload(request, db)
+
+
+@router.post("/settings/shops/{sid}/check", response_model=ShopCheckOut)
+def shop_check(sid: int, db: Session = Depends(get_db), user: User = Depends(admin)):
+    from ..services import marketplaces as mp
+    x = db.get(MarketplaceShop, sid)
+    if x is None:
+        raise HTTPException(404, "Магазин не знайдено")
+    try:
+        return mp.check(db, x)
+    except mp.MarketplaceError as e:
+        db.commit()
+        bad(str(e), 422)
+
+
+@router.post("/settings/shops/{sid}/sync", response_model=ShopSyncOut)
+def shop_sync(sid: int, db: Session = Depends(get_db), user: User = Depends(admin)):
+    from ..services import marketplaces as mp
+    x = db.get(MarketplaceShop, sid)
+    if x is None:
+        raise HTTPException(404, "Магазин не знайдено")
+    return mp.sync_shop(db, x)
 
 
 @router.post("/settings/sms-templates", response_model=SettingsOut)

@@ -21,6 +21,7 @@ from ..models import (
     COUNTRIES,
     ROLES,
     STOCK_ACTIONS,
+    MarketplaceShop,
     Office,
     OrderMark,
     OrderSource,
@@ -142,6 +143,8 @@ def meta(db: Session = Depends(get_db), user: User = Depends(api_user)):
         "carriers": {code: {"name": cls.name, "beta": cls.beta,
                             "configured": cls(np_svc.carrier_settings(db) if code == "novaposhta" else s).configured()}
                      for code, cls in CARRIERS.items()},
+        "shops": {str(x.id): f"{'Rozetka' if x.kind == 'rozetka' else 'Prom'} · {x.name}".rstrip(" ·")
+                  for x in db.query(MarketplaceShop).all()},
         "np_accounts": [{"id": a.id, "name": a.name or f"Ключ {a.id}", "office_id": a.office_id, "is_default": a.is_default}
                         for a in np_svc.accounts(db)],
         "sms_ready": bool(s.get("sms_token")),

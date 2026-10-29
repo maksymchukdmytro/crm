@@ -123,6 +123,7 @@ class MetaOut(Out):
     marks: list[SourceOut] = Field(default_factory=list)
     countries: dict[str, str] = Field(default_factory=dict)
     np_accounts: list[NpAccountShort] = Field(default_factory=list)
+    shops: dict[str, str] = Field(default_factory=dict, description="id магазину → «Rozetka · назва»")
     extra_fields: list[str] = Field(default_factory=list, description="Назви додаткових полів 1–4")
     checkbox_payments: dict[str, str] = Field(default_factory=dict)
     payment_kinds: dict[str, str]
@@ -164,6 +165,9 @@ class OrderRowOut(Out):
     manager_id: int | None
     office_id: int | None = None
     np_account_id: int | None = None
+    shop_id: int | None = None
+    external_id: str = ""
+    external_status: str = ""
     reason_id: int | None = None
     mark_id: int | None = None
     remind_at: str | None = None
@@ -259,6 +263,9 @@ class OrderOut(Out):
     manager_id: int | None
     office_id: int | None = None
     np_account_id: int | None = None
+    shop_id: int | None = None
+    external_id: str = ""
+    external_status: str = ""
     reason_id: int | None = None
     mark_id: int | None = None
     remind_at: str | None = None
@@ -641,6 +648,7 @@ class SettingsOut(Out):
     checkbox_payments: dict[str, str] = Field(default_factory=dict)
     np_accounts: list["NpAccountOut"] = Field(default_factory=list)
     np_status_rules: list["NpRuleOut"] = Field(default_factory=list)
+    shops: list["ShopOut"] = Field(default_factory=list)
     np_statuses: dict[str, str] = Field(default_factory=dict)
     message: str | None = None
 
@@ -846,3 +854,57 @@ class NpRuleIn(In):
     np_code: str = Field(..., max_length=8)
     status_id: int
     except_ids: list[int] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------- маркетплейси
+class ShopOut(Out):
+    id: int
+    kind: Literal["rozetka", "prom"]
+    name: str
+    login: str
+    secret: str = Field(description="Маскований: ******** якщо заданий")
+    office_id: int | None = None
+    source_id: int | None = None
+    import_status_id: int | None = None
+    extra_field: int
+    status_map: dict[str, str]
+    payment_map: dict[str, int]
+    delivery_map: dict[str, str]
+    directory: dict
+    since: str | None = None
+    last_sync_at: str | None = None
+    last_error: str
+    imported: int
+    is_active: bool
+
+
+class ShopIn(In):
+    id: int | None = None
+    kind: Literal["rozetka", "prom"]
+    name: str = Field("", max_length=160)
+    login: str = Field("", max_length=160)
+    secret: str | None = Field(None, max_length=255, description="******** — не змінювати")
+    office_id: int | None = None
+    source_id: int | None = None
+    import_status_id: int | None = None
+    extra_field: int = Field(1, ge=0, le=4)
+    status_map: dict[str, str] = Field(default_factory=dict)
+    payment_map: dict[str, int] = Field(default_factory=dict)
+    delivery_map: dict[str, str] = Field(default_factory=dict)
+    since: str | None = Field(None, description="Дата, з якої імпортувати замовлення (YYYY-MM-DD)")
+    is_active: bool = True
+    delete: bool = False
+
+
+class ShopCheckOut(Out):
+    statuses: dict[str, str]
+    orders_30d: int
+    sample_parsed: dict | None = None
+    sample_keys: list[str] = Field(default_factory=list)
+
+
+class ShopSyncOut(Out):
+    new: int
+    updated: int
+    seen: int
+    error: str

@@ -279,7 +279,21 @@ def change_status(db: Session, order: Order, new_status: Status, user: User | No
     events.order_changed(db, order.id)
     db.flush()
     sms.queue_for_status(db, order, new_status)
+    if order.shop_id and order.external_id:  # передати статус на маркетплейс (через чергу, без неї — одразу)
+        _push_marketplace(db, order)
     return True
+
+
+def _push_marketplace(db: Session, order: Order):
+    from . import queue
+    from .events import after_commit
+
+    if queue.available():
+        oid = order.id
+        after_commit(db, f"mp_push:{oid}", lambda: queue.enqueue("marketplace_push", oid, job_id=f"mp:{oid}:{utcnow().timestamp()}"))
+    else:
+        from .marketplaces import push_status
+        push_status(db, order)
 
 
 def assign(db: Session, order: Order, manager: User | None, user: User | None):

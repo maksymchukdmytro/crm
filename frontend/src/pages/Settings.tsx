@@ -4,12 +4,12 @@ import { ArrowDown, ArrowUp, Copy, Plus, RefreshCw, Trash2 } from "lucide-react"
 import { api } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, phone } from "../lib/format";
-import type { DirItem, NpAccount, PaymentMethod, Reason, Settings, Status, User } from "../lib/types";
+import type { DirItem, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { Badge, Empty, Field, NpAutocomplete, Spinner } from "../components/ui";
 
 type S = Settings;
-const TABS = { general: "Загальні", dirs: "Довідники", webhook: "Прийом заявок", delivery: "Доставка", sms: "SMS / Viber", statuses: "Статуси", users: "Користувачі" };
+const TABS = { general: "Загальні", dirs: "Довідники", market: "Маркетплейси", webhook: "Прийом заявок", delivery: "Доставка", sms: "SMS / Viber", statuses: "Статуси", users: "Користувачі" };
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<keyof typeof TABS>(() => (localStorage.getItem("crm-settings-tab") as keyof typeof TABS) || "general");
@@ -22,6 +22,7 @@ export default function SettingsPage() {
       {!data ? <Empty><Spinner /></Empty> : <>
         {tab === "general" && <General s={data} />}
         {tab === "dirs" && <Directories s={data} />}
+        {tab === "market" && <Shops s={data} />}
         {tab === "webhook" && <Webhook s={data} />}
         {tab === "delivery" && <Delivery s={data} />}
         {tab === "sms" && <Sms s={data} />}
@@ -541,6 +542,127 @@ function NpRules({ s }: { s: S }) {
       </div>}
       <div className="form-actions mt"><button type="button" className="btn primary" disabled={save.isPending}
         onClick={() => save.mutate({ path: "/settings/np-rules", method: "put", body: rows.map(({ key: _k, ...r }) => r) }, { onSuccess: (x) => setRows((x as S).np_status_rules.map((r) => ({ ...r, key: rk() }))) })}>Зберегти правила</button></div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- маркетплейси
+const PROM_ST: Record<string, string> = { pending: "Новий / в обробці", received: "Прийнятий", delivered: "Виконаний", canceled: "Скасований", paid: "Оплачений" };
+type ShopRow = Shop & { key: string; delete?: boolean };
+
+function Shops({ s }: { s: S }) {
+  const meta = useMeta();
+  const save = useSave();
+  const toast = useToast();
+  const [rows, setRows] = useState<ShopRow[]>(() => s.shops.map((x) => ({ ...x, key: rk() })));
+  const [open, setOpen] = useState("");
+  const [result, setResult] = useState<Record<number, { check?: ShopCheck; sync?: ShopSync }>>({});
+  const reset = (x: S) => setRows(x.shops.map((y) => ({ ...y, key: rk() })));
+  const upd = (key: string, patch: Partial<ShopRow>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  const submit = () => save.mutate({ path: "/settings/shops", method: "put", body: rows.map(({ key: _k, directory: _d, last_sync_at: _l, last_error: _e, imported: _i, ...r }) => ({ ...r, id: r.id || undefined, since: r.since ? r.since.slice(0, 10) : null })) },
+    { onSuccess: (x) => reset(x as S) });
+  const run = async (id: number, what: "check" | "sync") => {
+    try {
+      const res = await api.post<ShopCheck | ShopSync>(`/settings/shops/${id}/${what}`);
+      setResult((r) => ({ ...r, [id]: { ...r[id], [what]: res } }));
+      const fresh = await api.get<S>("/settings");
+      reset(fresh);
+      toast(what === "check" ? "Підключення працює" : `Синхронізовано: нових ${(res as ShopSync).new}`);
+    } catch (e) { toast(errText(e), "error"); }
+  };
+  const add = (kind: "rozetka" | "prom") => {
+    const r: ShopRow = { id: 0, kind, name: "", login: "", secret: "", office_id: null, source_id: null, import_status_id: null, extra_field: 1,
+      status_map: {}, payment_map: {}, delivery_map: {}, directory: {}, since: null, last_sync_at: null, last_error: "", imported: 0, is_active: true, key: rk() };
+    setRows([...rows, r]); setOpen(r.key);
+  };
+  const statuses = s.statuses.filter((x) => x.active);
+  const visible = rows.filter((r) => !r.delete);
+  return (
+    <div className="card">
+      <div className="card-head"><h2>Маркетплейси <span className="muted">{visible.length}</span></h2>
+        <div className="row"><button type="button" className="btn sm" onClick={() => add("rozetka")}><Plus size={14} /> Rozetka</button>
+          <button type="button" className="btn sm" onClick={() => add("prom")}><Plus size={14} /> Prom</button></div></div>
+      <p className="hint">Замовлення з маркетплейсів підтягуються самі кожні 5 хвилин, разом із ТТН, яку створив маркетплейс (тож дубля ТТН не буде). Коли в CRM змінюється статус, він передається назад за таблицею відповідностей.</p>
+      {visible.length === 0 && <Empty>Підключіть магазин Rozetka або Prom</Empty>}
+      <div className="np-accs">
+        {visible.map((x) => {
+          const isOpen = open === x.key;
+          const dir = (x.directory ?? {}) as { statuses?: Record<string, string>; payments?: string[]; deliveries?: string[] };
+          const mpStatuses = x.kind === "prom" ? PROM_ST : (dir.statuses ?? {});
+          const res = x.id ? result[x.id] : undefined;
+          return (
+            <div className={`np-acc ${isOpen ? "open" : ""}`} key={x.key}>
+              <button type="button" className="np-acc-h" onClick={() => setOpen(isOpen ? "" : x.key)}>
+                <b>{x.kind === "rozetka" ? "Rozetka" : "Prom"}{x.name ? ` · ${x.name}` : ""}</b>{!x.is_active && <Badge>вимкнено</Badge>}
+                {x.last_error ? <Badge kind="bad" title={x.last_error}>помилка</Badge> : x.last_sync_at ? <Badge kind="ok">працює</Badge> : null}
+                <span className="muted">{x.last_sync_at ? `оновлено ${dt(x.last_sync_at, true)} · імпортовано ${x.imported}` : "ще не синхронізувався"}</span>
+              </button>
+              {isOpen && (
+                <div className="form np-acc-b">
+                  <div className="cols">
+                    <Field label="Назва магазину" hint="Пишеться в додаткове поле замовлення, напр. «Rozetka(Antony_store)»"><input value={x.name} onChange={(e) => upd(x.key, { name: e.target.value })} /></Field>
+                    {x.kind === "rozetka"
+                      ? <Field label="Логін кабінету продавця" hint="Доступ має бути адміністраторським"><input value={x.login} autoComplete="off" onChange={(e) => upd(x.key, { login: e.target.value })} /></Field>
+                      : <Field label="API-токен Prom" hint="Кабінет Prom → Налаштування → Керування API-токенами"><input className="mono" autoComplete="off" placeholder="не вказано" value={x.secret} onChange={(e) => upd(x.key, { secret: e.target.value })} /></Field>}
+                  </div>
+                  {x.kind === "rozetka" && <div className="cols"><Field label="Пароль кабінету продавця"><input type="password" autoComplete="new-password" placeholder={x.secret ? "збережено" : "не вказано"} value={x.secret === "********" ? "" : x.secret} onChange={(e) => upd(x.key, { secret: e.target.value || (x.id ? "********" : "") })} /></Field>
+                    <Field label="Імпортувати з дати" hint="Порожньо — останні 14 днів"><input type="date" value={x.since ? x.since.slice(0, 10) : ""} onChange={(e) => upd(x.key, { since: e.target.value || null })} /></Field></div>}
+                  <div className="cols c3">
+                    <Field label="Відділ" hint="У який відділ іти замовленням"><select value={x.office_id ?? ""} onChange={(e) => upd(x.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
+                      <option value="">не вказано</option>{s.offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></Field>
+                    <Field label="Статус нових замовлень"><select value={x.import_status_id ?? ""} onChange={(e) => upd(x.key, { import_status_id: e.target.value ? Number(e.target.value) : null })}>
+                      <option value="">як усі нові</option>{statuses.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}</select></Field>
+                    <Field label="Назву магазину в поле"><select value={x.extra_field} onChange={(e) => upd(x.key, { extra_field: Number(e.target.value) })}>
+                      <option value={0}>не писати</option>{[1, 2, 3, 4].map((i) => <option key={i} value={i}>{meta.extra_fields[i - 1] || `Поле ${i}`}</option>)}</select></Field>
+                  </div>
+                  <div className="np-sync">
+                    <button type="button" className="btn sm" disabled={!x.id} onClick={() => run(x.id, "check")} title={x.id ? "" : "Спершу збережіть"}><RefreshCw size={14} /> Перевірити підключення</button>
+                    <button type="button" className="btn sm" disabled={!x.id} onClick={() => run(x.id, "sync")}>Синхронізувати зараз</button>
+                    {!x.id && <span className="hint">Збережіть магазин, потім перевірте підключення</span>}
+                  </div>
+                  {x.last_error && <p className="flash error">{x.last_error}</p>}
+                  {res?.check && <div className="mp-check">
+                    <b>Підключення працює.</b> Статусів маркетплейсу: {Object.keys(res.check.statuses).length}; замовлень за 30 днів: {res.check.orders_30d}.
+                    {res.check.sample_parsed && <div className="hint">Останнє замовлення: №{String(res.check.sample_parsed.external_id)} · {String(res.check.sample_parsed.last_name)} {String(res.check.sample_parsed.first_name)} · {String(res.check.sample_parsed.phone)} · {String(res.check.sample_parsed.delivery_service)} · ТТН {String(res.check.sample_parsed.ttn || "—")} · оплата: {String(res.check.sample_parsed.payment || "—")} · товарів {(res.check.sample_parsed.items as unknown[]).length}</div>}
+                  </div>}
+                  {res?.sync && <p className="hint">Остання синхронізація: нових {res.sync.new}, оновлено {res.sync.updated}{res.sync.error ? ` · помилка: ${res.sync.error}` : ""}</p>}
+
+                  <div className="mp-maps">
+                    <div><span className="lbl">Статус у CRM → статус на {x.kind === "rozetka" ? "Rozetka" : "Prom"}</span>
+                      {Object.keys(mpStatuses).length === 0 ? <p className="hint">Натисніть «Перевірити підключення», щоб завантажити статуси Rozetka.</p> :
+                        <div className="mp-map">{statuses.map((st) => (
+                          <div className="mp-map-row" key={st.id}><span>{st.name}</span>
+                            <select value={x.status_map[String(st.id)] ?? ""} onChange={(e) => { const m = { ...x.status_map }; if (e.target.value) m[String(st.id)] = e.target.value; else delete m[String(st.id)]; upd(x.key, { status_map: m }); }}>
+                              <option value="">не передавати</option>{Object.entries(mpStatuses).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
+                        ))}</div>}
+                    </div>
+                    <div><span className="lbl">Оплата на маркетплейсі → вид оплати</span>
+                      {(dir.payments ?? []).length === 0 ? <p className="hint">З'являться після першої синхронізації. Поки типово: оплачено — {x.kind === "rozetka" ? "RozetkaPay" : "Пром-оплата"}, інакше — {x.kind === "rozetka" ? "Післяплата Rozetka" : "Післяплата NovaPay"}.</p> :
+                        <div className="mp-map">{(dir.payments ?? []).map((n) => (
+                          <div className="mp-map-row" key={n}><span>{n}</span>
+                            <select value={x.payment_map[n] ?? ""} onChange={(e) => { const m = { ...x.payment_map }; if (e.target.value) m[n] = Number(e.target.value); else delete m[n]; upd(x.key, { payment_map: m }); }}>
+                              <option value="">типово</option>{meta.payment_methods.map((pm) => <option key={pm.id} value={pm.id}>{pm.name}</option>)}</select></div>
+                        ))}</div>}
+                      {(dir.deliveries ?? []).length > 0 && <><span className="lbl" style={{ marginTop: 10, display: "block" }}>Доставка на маркетплейсі → служба доставки</span>
+                        <div className="mp-map">{(dir.deliveries ?? []).map((n) => (
+                          <div className="mp-map-row" key={n}><span>{n}</span>
+                            <select value={x.delivery_map[n] ?? ""} onChange={(e) => { const m = { ...x.delivery_map }; if (e.target.value) m[n] = e.target.value; else delete m[n]; upd(x.key, { delivery_map: m }); }}>
+                              <option value="">за назвою</option>{Object.entries(meta.delivery_methods).map(([k, nm]) => <option key={k} value={k}>{nm}</option>)}</select></div>
+                        ))}</div></>}
+                    </div>
+                  </div>
+                  <div className="form-actions">
+                    <label className="check"><input type="checkbox" checked={x.is_active} onChange={(e) => upd(x.key, { is_active: e.target.checked })} /> Активний</label>
+                    <span className="spacer" />
+                    <button type="button" className="btn sm danger" onClick={() => { if (window.confirm("Відключити магазин? Імпортовані замовлення залишаться.")) { if (x.id) upd(x.key, { delete: true }); else setRows(rows.filter((r) => r.key !== x.key)); } }}><Trash2 size={13} /> Відключити</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {rows.length > 0 && <div className="form-actions mt"><button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти</button></div>}
     </div>
   );
 }

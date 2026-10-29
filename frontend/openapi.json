@@ -751,6 +751,14 @@
       "title": "Root",
       "type": "string"
      },
+     "shops": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "description": "id магазину → «Rozetka · назва»",
+      "title": "Shops",
+      "type": "object"
+     },
      "sms_ready": {
       "title": "Sms Ready",
       "type": "boolean"
@@ -2204,6 +2212,16 @@
       "title": "Email",
       "type": "string"
      },
+     "external_id": {
+      "default": "",
+      "title": "External Id",
+      "type": "string"
+     },
+     "external_status": {
+      "default": "",
+      "title": "External Status",
+      "type": "string"
+     },
      "extra1": {
       "default": "",
       "title": "Extra1",
@@ -2388,6 +2406,17 @@
        }
       ],
       "title": "Shipped At"
+     },
+     "shop_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shop Id"
      },
      "site": {
       "title": "Site",
@@ -2603,6 +2632,16 @@
       ],
       "title": "Duplicate Of Id"
      },
+     "external_id": {
+      "default": "",
+      "title": "External Id",
+      "type": "string"
+     },
+     "external_status": {
+      "default": "",
+      "title": "External Status",
+      "type": "string"
+     },
      "id": {
       "title": "Id",
       "type": "integer"
@@ -2698,6 +2737,17 @@
        }
       ],
       "title": "Remind At"
+     },
+     "shop_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shop Id"
      },
      "site": {
       "title": "Site",
@@ -4091,6 +4141,13 @@
       "title": "Secret Keys",
       "type": "array"
      },
+     "shops": {
+      "items": {
+       "$ref": "#/components/schemas/ShopOut"
+      },
+      "title": "Shops",
+      "type": "array"
+     },
      "sms_log": {
       "items": {
        "$ref": "#/components/schemas/SmsLogOut"
@@ -4151,6 +4208,354 @@
      "roles"
     ],
     "title": "SettingsOut",
+    "type": "object"
+   },
+   "ShopCheckOut": {
+    "properties": {
+     "orders_30d": {
+      "title": "Orders 30D",
+      "type": "integer"
+     },
+     "sample_keys": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Sample Keys",
+      "type": "array"
+     },
+     "sample_parsed": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sample Parsed"
+     },
+     "statuses": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Statuses",
+      "type": "object"
+     }
+    },
+    "required": [
+     "statuses",
+     "orders_30d"
+    ],
+    "title": "ShopCheckOut",
+    "type": "object"
+   },
+   "ShopIn": {
+    "additionalProperties": false,
+    "properties": {
+     "delete": {
+      "default": false,
+      "title": "Delete",
+      "type": "boolean"
+     },
+     "delivery_map": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Delivery Map",
+      "type": "object"
+     },
+     "extra_field": {
+      "default": 1,
+      "maximum": 4.0,
+      "minimum": 0.0,
+      "title": "Extra Field",
+      "type": "integer"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "import_status_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Import Status Id"
+     },
+     "is_active": {
+      "default": true,
+      "title": "Is Active",
+      "type": "boolean"
+     },
+     "kind": {
+      "enum": [
+       "rozetka",
+       "prom"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "login": {
+      "default": "",
+      "maxLength": 160,
+      "title": "Login",
+      "type": "string"
+     },
+     "name": {
+      "default": "",
+      "maxLength": 160,
+      "title": "Name",
+      "type": "string"
+     },
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Office Id"
+     },
+     "payment_map": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "Payment Map",
+      "type": "object"
+     },
+     "secret": {
+      "anyOf": [
+       {
+        "maxLength": 255,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "******** — не змінювати",
+      "title": "Secret"
+     },
+     "since": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Дата, з якої імпортувати замовлення (YYYY-MM-DD)",
+      "title": "Since"
+     },
+     "source_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Id"
+     },
+     "status_map": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Status Map",
+      "type": "object"
+     }
+    },
+    "required": [
+     "kind"
+    ],
+    "title": "ShopIn",
+    "type": "object"
+   },
+   "ShopOut": {
+    "properties": {
+     "delivery_map": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Delivery Map",
+      "type": "object"
+     },
+     "directory": {
+      "additionalProperties": true,
+      "title": "Directory",
+      "type": "object"
+     },
+     "extra_field": {
+      "title": "Extra Field",
+      "type": "integer"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "import_status_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Import Status Id"
+     },
+     "imported": {
+      "title": "Imported",
+      "type": "integer"
+     },
+     "is_active": {
+      "title": "Is Active",
+      "type": "boolean"
+     },
+     "kind": {
+      "enum": [
+       "rozetka",
+       "prom"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "last_error": {
+      "title": "Last Error",
+      "type": "string"
+     },
+     "last_sync_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Sync At"
+     },
+     "login": {
+      "title": "Login",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Office Id"
+     },
+     "payment_map": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "Payment Map",
+      "type": "object"
+     },
+     "secret": {
+      "description": "Маскований: ******** якщо заданий",
+      "title": "Secret",
+      "type": "string"
+     },
+     "since": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Since"
+     },
+     "source_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Id"
+     },
+     "status_map": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Status Map",
+      "type": "object"
+     }
+    },
+    "required": [
+     "id",
+     "kind",
+     "name",
+     "login",
+     "secret",
+     "extra_field",
+     "status_map",
+     "payment_map",
+     "delivery_map",
+     "directory",
+     "last_error",
+     "imported",
+     "is_active"
+    ],
+    "title": "ShopOut",
+    "type": "object"
+   },
+   "ShopSyncOut": {
+    "properties": {
+     "error": {
+      "title": "Error",
+      "type": "string"
+     },
+     "new": {
+      "title": "New",
+      "type": "integer"
+     },
+     "seen": {
+      "title": "Seen",
+      "type": "integer"
+     },
+     "updated": {
+      "title": "Updated",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "new",
+     "updated",
+     "seen",
+     "error"
+    ],
+    "title": "ShopSyncOut",
     "type": "object"
    },
    "SmsIn": {
@@ -4925,6 +5330,16 @@
       "title": "Email",
       "type": "string"
      },
+     "external_id": {
+      "default": "",
+      "title": "External Id",
+      "type": "string"
+     },
+     "external_status": {
+      "default": "",
+      "title": "External Status",
+      "type": "string"
+     },
      "extra1": {
       "default": "",
       "title": "Extra1",
@@ -5109,6 +5524,17 @@
        }
       ],
       "title": "Shipped At"
+     },
+     "shop_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shop Id"
      },
      "site": {
       "title": "Site",
@@ -7662,6 +8088,136 @@
      }
     },
     "summary": "Payment Methods Save",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/shops": {
+   "put": {
+    "description": "Магазини маркетплейсів цілим списком. secret «********» — не змінювати.",
+    "operationId": "shops_save_api_settings_shops_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "items": {
+         "$ref": "#/components/schemas/ShopIn"
+        },
+        "title": "Body",
+        "type": "array"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Shops Save",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/shops/{sid}/check": {
+   "post": {
+    "operationId": "shop_check_api_settings_shops__sid__check_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "sid",
+      "required": true,
+      "schema": {
+       "title": "Sid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ShopCheckOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Shop Check",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/shops/{sid}/sync": {
+   "post": {
+    "operationId": "shop_sync_api_settings_shops__sid__sync_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "sid",
+      "required": true,
+      "schema": {
+       "title": "Sid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ShopSyncOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Shop Sync",
     "tags": [
      "admin"
     ]

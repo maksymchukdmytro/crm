@@ -609,6 +609,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings/shops": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Shops Save
+         * @description Магазини маркетплейсів цілим списком. secret «********» — не змінювати.
+         */
+        put: operations["shops_save_api_settings_shops_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/shops/{sid}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Shop Check */
+        post: operations["shop_check_api_settings_shops__sid__check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/shops/{sid}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Shop Sync */
+        post: operations["shop_sync_api_settings_shops__sid__sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/settings/sms-templates": {
         parameters: {
             query?: never;
@@ -1138,6 +1192,13 @@ export interface components {
             };
             /** Root */
             root: string;
+            /**
+             * Shops
+             * @description id магазину → «Rozetka · назва»
+             */
+            shops?: {
+                [key: string]: string;
+            };
             /** Sms Ready */
             sms_ready: boolean;
             /** Statuses */
@@ -1648,6 +1709,16 @@ export interface components {
             /** Email */
             email: string;
             /**
+             * External Id
+             * @default
+             */
+            external_id: string;
+            /**
+             * External Status
+             * @default
+             */
+            external_status: string;
+            /**
              * Extra1
              * @default
              */
@@ -1719,6 +1790,8 @@ export interface components {
             remind_at?: string | null;
             /** Shipped At */
             shipped_at: string | null;
+            /** Shop Id */
+            shop_id?: number | null;
             /** Site */
             site: string;
             /** Sms */
@@ -1786,6 +1859,16 @@ export interface components {
             delivery_status: string;
             /** Duplicate Of Id */
             duplicate_of_id: number | null;
+            /**
+             * External Id
+             * @default
+             */
+            external_id: string;
+            /**
+             * External Status
+             * @default
+             */
+            external_status: string;
             /** Id */
             id: number;
             /** Items */
@@ -1808,6 +1891,8 @@ export interface components {
             reason_id?: number | null;
             /** Remind At */
             remind_at?: string | null;
+            /** Shop Id */
+            shop_id?: number | null;
             /** Site */
             site: string;
             /** Source Id */
@@ -2286,6 +2371,8 @@ export interface components {
             };
             /** Secret Keys */
             secret_keys: string[];
+            /** Shops */
+            shops?: components["schemas"]["ShopOut"][];
             /** Sms Log */
             sms_log: components["schemas"]["SmsLogOut"][];
             /** Sms Templates */
@@ -2304,6 +2391,148 @@ export interface components {
             };
             /** Webhook Url */
             webhook_url: string;
+        };
+        /** ShopCheckOut */
+        ShopCheckOut: {
+            /** Orders 30D */
+            orders_30d: number;
+            /** Sample Keys */
+            sample_keys?: string[];
+            /** Sample Parsed */
+            sample_parsed?: {
+                [key: string]: unknown;
+            } | null;
+            /** Statuses */
+            statuses: {
+                [key: string]: string;
+            };
+        };
+        /** ShopIn */
+        ShopIn: {
+            /**
+             * Delete
+             * @default false
+             */
+            delete: boolean;
+            /** Delivery Map */
+            delivery_map?: {
+                [key: string]: string;
+            };
+            /**
+             * Extra Field
+             * @default 1
+             */
+            extra_field: number;
+            /** Id */
+            id?: number | null;
+            /** Import Status Id */
+            import_status_id?: number | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "rozetka" | "prom";
+            /**
+             * Login
+             * @default
+             */
+            login: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** Office Id */
+            office_id?: number | null;
+            /** Payment Map */
+            payment_map?: {
+                [key: string]: number;
+            };
+            /**
+             * Secret
+             * @description ******** — не змінювати
+             */
+            secret?: string | null;
+            /**
+             * Since
+             * @description Дата, з якої імпортувати замовлення (YYYY-MM-DD)
+             */
+            since?: string | null;
+            /** Source Id */
+            source_id?: number | null;
+            /** Status Map */
+            status_map?: {
+                [key: string]: string;
+            };
+        };
+        /** ShopOut */
+        ShopOut: {
+            /** Delivery Map */
+            delivery_map: {
+                [key: string]: string;
+            };
+            /** Directory */
+            directory: {
+                [key: string]: unknown;
+            };
+            /** Extra Field */
+            extra_field: number;
+            /** Id */
+            id: number;
+            /** Import Status Id */
+            import_status_id?: number | null;
+            /** Imported */
+            imported: number;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "rozetka" | "prom";
+            /** Last Error */
+            last_error: string;
+            /** Last Sync At */
+            last_sync_at?: string | null;
+            /** Login */
+            login: string;
+            /** Name */
+            name: string;
+            /** Office Id */
+            office_id?: number | null;
+            /** Payment Map */
+            payment_map: {
+                [key: string]: number;
+            };
+            /**
+             * Secret
+             * @description Маскований: ******** якщо заданий
+             */
+            secret: string;
+            /** Since */
+            since?: string | null;
+            /** Source Id */
+            source_id?: number | null;
+            /** Status Map */
+            status_map: {
+                [key: string]: string;
+            };
+        };
+        /** ShopSyncOut */
+        ShopSyncOut: {
+            /** Error */
+            error: string;
+            /** New */
+            new: number;
+            /** Seen */
+            seen: number;
+            /** Updated */
+            updated: number;
         };
         /** SmsIn */
         SmsIn: {
@@ -2609,6 +2838,16 @@ export interface components {
             /** Email */
             email: string;
             /**
+             * External Id
+             * @default
+             */
+            external_id: string;
+            /**
+             * External Status
+             * @default
+             */
+            external_status: string;
+            /**
              * Extra1
              * @default
              */
@@ -2680,6 +2919,8 @@ export interface components {
             remind_at?: string | null;
             /** Shipped At */
             shipped_at: string | null;
+            /** Shop Id */
+            shop_id?: number | null;
             /** Site */
             site: string;
             /** Sms */
@@ -4169,6 +4410,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shops_save_api_settings_shops_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShopIn"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shop_check_api_settings_shops__sid__check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopCheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shop_sync_api_settings_shops__sid__sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopSyncOut"];
                 };
             };
             /** @description Validation Error */

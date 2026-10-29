@@ -56,6 +56,31 @@ def _track_job(carrier: str) -> dict:
     return stats
 
 
+def _marketplaces_job() -> dict:
+    from .services import marketplaces
+    with dbmod.SessionLocal() as db:
+        return marketplaces.sync_all(db)
+
+
+def _push_job(order_id: int) -> str | None:
+    from .services import marketplaces
+    with dbmod.SessionLocal() as db:
+        order = db.get(Order, order_id)
+        if order is None:
+            return None
+        err = marketplaces.push_status(db, order)
+        db.commit()
+        return err
+
+
+async def marketplaces_sync(ctx) -> dict:
+    return await asyncio.to_thread(_marketplaces_job)
+
+
+async def marketplace_push(ctx, order_id: int) -> str | None:
+    return await asyncio.to_thread(_push_job, order_id)
+
+
 def _alerts_job() -> dict:
     with dbmod.SessionLocal() as db:
         return monitoring.run_alerts(db)
@@ -121,12 +146,14 @@ class WorkerSettings:
         func(send_sms, keep_result=0, max_tries=3),
         func(create_ttn, keep_result=600, max_tries=1, timeout=90),
         func(track_carrier, keep_result=0, max_tries=1, timeout=600),
+        func(marketplace_push, keep_result=0, max_tries=3, timeout=60),
     ]
     cron_jobs = [
         cron(track_all, minute=set(range(0, 60, 5)), run_at_startup=True),
         cron(sweep_sms, second={10}),
         cron(heartbeat, second={0, 30}),
         cron(alerts, second={40}),
+        cron(marketplaces_sync, minute=set(range(2, 60, 5)), timeout=600),
     ]
     on_startup = startup
     max_jobs = 10

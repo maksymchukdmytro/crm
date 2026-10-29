@@ -440,3 +440,68 @@ def test_np_accounts_ttn_dialog_and_rules(api, db, products, mock_api):
     # вид оплати «Оплачено» прибирає післяплату з ТТН
     o2 = new_order(api, products, payment_method_id=1)
     assert api.get(f"/api/orders/{o2['id']}/ttn/preview").json()["params"]["cod_mode"] == "none"
+
+
+# ------------------------------------------------------------------ маркетплейси (етап 3)
+def test_rozetka_and_prom_import_and_status_push(api, db, products, monkeypatch):
+    import httpx
+    from app.services import marketplaces as mp
+    cream, soap = products
+    calls = []
+
+    def handler(req: httpx.Request):
+        calls.append((req.method, str(req.url), req.content.decode() if req.content else ""))
+        u = str(req.url)
+        if u.endswith("/sites"):
+            return httpx.Response(200, json={"success": True, "content": {"access_token": "TOK"}})
+        if "/orders/statuses" in u:
+            return httpx.Response(200, json={"success": True, "content": {"data": [{"id": 1, "name_uk": "Нове замовлення"}, {"id": 3, "name_uk": "Переданий в службу доставки"}]}})
+        if "/orders/search" in u:
+            return httpx.Response(200, json={"success": True, "content": {"orders": [{
+                "id": 905850113, "status": 1, "amount_with_discount": "3899.00", "ttn": "20451534560757",
+                "recipient_title": {"last_name": "Колодруб", "first_name": "Михайло", "second_name": "Юрійович"},
+                "recipient_phone": "380500345025", "comment": "",
+                "delivery": {"delivery_service_name": "Нова Пошта", "city": {"name_ua": "Кременчук"}, "place_number": "19", "place_street": "просп. Лесі Українки, 54А"},
+                "purchases": [{"item_name": cream.name, "quantity": 1, "price": "3899.00", "item": {"article": "CREAM-1"}}],
+                "payment": {"payment_method_name": "Google Pay", "payment_status": "paid"}}], "_meta": {"pageCount": 1}}})
+        if u.startswith("https://api-seller.rozetka.com.ua/orders/905850113") and req.method == "PUT":
+            return httpx.Response(200, json={"success": True, "content": {}})
+        if "/orders/list" in u:
+            return httpx.Response(200, json={"orders": [{"id": 777, "status": "pending", "client_first_name": "Оля", "client_last_name": "Коваль",
+                "phone": "+380671112233", "full_price": "499 грн", "delivery_option": {"name": "Нова Пошта"},
+                "delivery_provider_data": {"declaration_number": ""}, "payment_option": {"name": "Пром-оплата"},
+                "products": [{"name": "Невідомий товар", "sku": "", "price": "499", "quantity": 1}]}]})
+        if "/orders/set_status" in u:
+            return httpx.Response(200, json={"processed_ids": [777]})
+        return httpx.Response(404, json={"success": False, "errors": {"message": "not found"}})
+
+    monkeypatch.setattr(mp, "_client", httpx.Client(transport=httpx.MockTransport(handler)))
+    s = api.put("/api/settings/dir/offices", json=[{"name": "PROM"}]).json()
+    prom_office = s["offices"][0]["id"]
+    s = api.put("/api/settings/shops", json=[
+        {"kind": "rozetka", "name": "Antony_store", "login": "seller", "secret": "pass", "status_map": {str(sid(db, "shipped")): "3"}},
+        {"kind": "prom", "name": "PROM", "secret": "PROMTOKEN", "office_id": prom_office, "status_map": {str(sid(db, "cancelled")): "canceled"}},
+    ]).json()
+    roz, prom = s["shops"]
+    assert roz["secret"] == "********"
+    chk = api.post(f"/api/settings/shops/{roz['id']}/check").json()
+    assert chk["statuses"]["3"] == "Переданий в службу доставки" and chk["sample_parsed"]["last_name"] == "Колодруб"
+
+    r = api.post(f"/api/settings/shops/{roz['id']}/sync").json()
+    assert r == {"new": 1, "updated": 0, "seen": 1, "error": ""}
+    assert api.post(f"/api/settings/shops/{roz['id']}/sync").json()["new"] == 0  # повторно не дублює
+    o = db.query(Order).filter(Order.external_id == "905850113").one()
+    assert (o.last_name, o.first_name, o.middle_name) == ("Колодруб", "Михайло", "Юрійович")
+    assert o.ttn == "20451534560757" and o.payment_method_id == 14 and o.items[0].product_id == cream.id
+    assert o.extra1 == "Rozetka(Antony_store)" and o.source.name == "Маркетплейси"
+    # статус «Відправлено» в CRM → «3» на Rozetka
+    o2 = api.patch(f"/api/orders/{o.id}", json={"status_id": sid(db, "shipped"), "version": api.get(f"/api/orders/{o.id}").json()["version"]}).json()
+    assert o2["external_status"] == "3"
+    put = [c for c in calls if c[0] == "PUT"][-1]
+    assert '"status": 3' in put[2] or '"status":3' in put[2]
+
+    r = api.post(f"/api/settings/shops/{prom['id']}/sync").json()
+    assert r["new"] == 1
+    po = db.query(Order).filter(Order.external_id == "777").one()
+    assert po.office_id == prom_office and po.payment_method_id == 10 and po.items[0].product_id is None
+    assert po.total == 499

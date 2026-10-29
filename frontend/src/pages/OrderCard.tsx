@@ -193,6 +193,7 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
         <div className="oc-title">
           <h1>{isNew ? "Нове замовлення" : `Замовлення № ${oid}`}</h1>
           {order && <span className="meta">від {dt(order.created_at)}</span>}
+          {order?.shop_id && <span className="badge info" title={order.external_status ? `Статус на маркетплейсі: ${order.external_status}` : undefined}>{meta.shops[String(order.shop_id)] ?? "Маркетплейс"} №{order.external_id}</span>}
           {order?.duplicate_of_id && <a className="badge warn" onClick={() => onOpen(order.duplicate_of_id!)}>дубль №{order.duplicate_of_id}</a>}
           {order && (order.stock_shipped ? <Badge kind="ok">списано зі складу</Badge> : order.stock_reserved ? <Badge kind="info">зарезервовано</Badge> : null)}
         </div>

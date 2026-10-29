@@ -293,3 +293,12 @@ details.ocs > summary .muted { overflow: hidden; text-overflow: ellipsis; white-
 .np-rule .dir-st-btn { grid-column: auto; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .np-rule-ex { grid-column: 1 / -1; padding-bottom: 6px; }
 @media (max-width: 760px) { .np-rule { grid-template-columns: 1fr 24px; } .np-rule > .muted, .np-rule.head { display: none; } }
+
+/* Маркетплейси */
+.mp-check { padding: 10px 12px; border-radius: 8px; background: var(--ok-soft); color: var(--ink); font-size: 13.5px; }
+.mp-check .hint { margin-top: 4px; }
+.mp-maps { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.mp-map { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.mp-map-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 8px; align-items: center; font-size: 13px; }
+.mp-map-row select { height: 32px; }
+@media (max-width: 900px) { .mp-maps { grid-template-columns: 1fr; } }

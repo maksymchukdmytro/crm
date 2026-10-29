@@ -41,6 +41,15 @@ def tick():
             log.exception("Помилка відправки SMS")
     with dbmod.SessionLocal() as db:
         try:
+            from app.services import marketplaces
+            for sid, st_ in marketplaces.sync_all(db).items():
+                if st_["new"] or st_["error"]:
+                    log.info("Маркетплейс %s: нових %s, помилка: %s", sid, st_["new"], st_["error"] or "—")
+        except Exception:  # noqa: BLE001
+            db.rollback()
+            log.exception("Помилка синхронізації маркетплейсів")
+    with dbmod.SessionLocal() as db:
+        try:
             stats = delivery.sync_tracking(db)
             if stats["checked"]:
                 log.info("Трекінг: перевірено %s, змінено %s", stats["checked"], stats["changed"])
