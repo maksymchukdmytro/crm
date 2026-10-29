@@ -98,7 +98,7 @@ var p = new URLSearchParams(location.search), f = document.forms[0];
       <div className="card">
         <h2>Адреса для заявок</h2>
         <p className="hint">POST-запит з форми лендингу, конструктора сайтів або вашого сервера.</p>
-        <pre className="code">{url}</pre>
+        <pre className="code wrap">{url}</pre>
         <div className="row"><button className="btn sm" onClick={copy}><Copy size={14} /> Копіювати</button>
           <button className="btn sm danger" onClick={() => { if (window.confirm("Старий ключ перестане працювати. Продовжити?")) save.mutate({ path: "/settings/webhook/regenerate", method: "post" }); }}>Створити новий ключ</button></div>
         <h3>Поля</h3>
