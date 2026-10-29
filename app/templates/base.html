@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ company }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ R }}/static/app.css?v=3">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d4ed8'/%3E%3Cpath d='M9 16h14M16 9v14' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body>
+{% if user %}
+<div class="shell">
+  <aside class="side" id="side">
+    <a class="brand" href="{{ R }}/orders"><span class="brand-mark"></span><span>{{ company }}</span></a>
+    <nav>
+      {% for key, url, label, roles in nav %}
+      <a href="{{ R }}{{ url }}" class="{{ 'on' if active == key }}">{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="side-foot">
+      <a href="{{ R }}/profile" class="me">{{ user.display }}<small>{{ user.role_name }}</small></a>
+      <form method="post" action="{{ R }}/logout"><button class="link">Вийти</button></form>
+    </div>
+  </aside>
+  <main class="main">
+    <button class="burger" onclick="document.getElementById('side').classList.toggle('open')" aria-label="Меню">☰</button>
+    {% for kind, msg in flashes %}<div class="flash {{ kind }}">{{ msg }}</div>{% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% else %}
+  {% block bare %}{% endblock %}
+{% endif %}
+<script src="{{ R }}/static/app.js?v=3"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

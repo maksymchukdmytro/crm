@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Нова закупівля' if is_new else 'Закупівля №' ~ p.id }} — {{ company }}{% endblock %}
+{% block content %}
+{% set editable = is_new or p.status in ['draft', 'ordered'] %}
+<div class="head"><div class="order-head"><a href="{{ R }}/purchases" class="btn sm">←</a>
+  <h1>{{ 'Нова закупівля' if is_new else 'Закупівля №' ~ p.id }}</h1>
+  {% if not is_new %}<span class="badge {{ {'received':'ok','cancelled':'bad','ordered':'info'}.get(p.status, '') }}">{{ statuses[p.status] }}</span>
+  <span class="meta">від {{ p.created_at|dt }}{% if p.received_at %} · оприбутковано {{ p.received_at|dt }}{% endif %}</span>{% endif %}
+</div></div>
+
+<form method="post" class="card form" action="{{ R }}{{ '/purchases/new' if is_new else '/purchases/' ~ p.id }}">
+  <fieldset style="border:0;padding:0;margin:0" {{ 'disabled' if not editable }}>
+  <div class="row">
+    <label>Постачальник
+      <select name="supplier_id"><option value="">—</option>{% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if p.supplier_id == s.id }}>{{ s.name }}</option>{% endfor %}</select>
+      <span class="hint"><a href="{{ R }}/suppliers">Керувати постачальниками</a></span>
+    </label>
+    <label>Коментар<input name="comment" value="{{ p.comment or '' }}"></label>
+  </div>
+  <h3>Товари</h3>
+  <table class="t items" id="pitems">
+    <thead><tr><th>Товар</th><th class="num">К-сть</th><th class="num">Ціна закупівлі, грн</th><th class="num">Сума</th><th></th></tr></thead>
+    <tbody>
+    {% for i in p.items %}
+      <tr><td><select name="item_product_id">{% for pr in products %}<option value="{{ pr.id }}" {{ 'selected' if pr.id == i.product_id }}>{{ pr.name }}</option>{% endfor %}</select></td>
+        <td class="qty num"><input name="item_qty" type="number" min="1" value="{{ i.qty }}"></td>
+        <td class="price num"><input name="item_cost" inputmode="decimal" value="{{ i.cost }}"></td>
+        <td class="num sum">{{ (i.cost * i.qty)|money(true) }}</td><td><button type="button" class="x">×</button></td></tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr><td colspan="3">Разом</td><td class="num" id="ptotal">{{ p.total|money(true) if not is_new else '0' }}</td><td></td></tr></tfoot>
+  </table>
+  {% if editable %}<button type="button" class="btn sm mt" id="paddrow">+ Додати рядок</button>{% endif %}
+  {% if editable %}
+  <div class="row mt">
+    <button class="btn" name="then" value="save">Зберегти</button>
+    {% if is_new or p.status == 'draft' %}<button class="btn" name="then" value="ordered" {{ 'hidden' if is_new }}>Позначити «Замовлено»</button>{% endif %}
+    <button class="btn primary" name="then" value="receive" onclick="return confirm('Оприбуткувати товар? Залишки на складі збільшаться.')">Оприбуткувати на склад</button>
+    {% if not is_new %}<span class="spacer"></span><button class="btn danger" name="then" value="cancel" formnovalidate onclick="return confirm('Скасувати закупівлю?')">Скасувати</button>{% endif %}
+  </div>
+  {% endif %}
+  </fieldset>
+</form>
+<template id="prow"><tr><td><select name="item_product_id"><option value="">Оберіть…</option>{% for pr in products %}<option value="{{ pr.id }}" data-cost="{{ pr.cost }}">{{ pr.name }}</option>{% endfor %}</select></td>
+  <td class="qty num"><input name="item_qty" type="number" min="1" value="1"></td>
+  <td class="price num"><input name="item_cost" inputmode="decimal" value=""></td>
+  <td class="num sum">0</td><td><button type="button" class="x">×</button></td></tr></template>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var tb = document.querySelector("#pitems tbody"), tpl = document.getElementById("prow");
+  function n(v) { var x = parseFloat(String(v || "").replace(",", ".")); return isNaN(x) ? 0 : x; }
+  function recalc() {
+    var t = 0;
+    tb.querySelectorAll("tr").forEach(function (tr) {
+      var s = n(tr.querySelector("[name=item_qty]").value) * n(tr.querySelector("[name=item_cost]").value);
+      tr.querySelector(".sum").textContent = s.toFixed(2); t += s;
+    });
+    document.getElementById("ptotal").textContent = t.toFixed(2);
+  }
+  var add = document.getElementById("paddrow");
+  if (add) add.addEventListener("click", function () { tb.appendChild(tpl.content.cloneNode(true)); });
+  if (add && !tb.children.length) tb.appendChild(tpl.content.cloneNode(true));
+  tb.addEventListener("click", function (e) { if (e.target.classList.contains("x")) { e.target.closest("tr").remove(); recalc(); } });
+  tb.addEventListener("input", recalc);
+  tb.addEventListener("change", function (e) {
+    if (e.target.name === "item_product_id") {
+      var opt = e.target.selectedOptions[0], cost = e.target.closest("tr").querySelector("[name=item_cost]");
+      if (opt && opt.dataset.cost && !cost.value && n(opt.dataset.cost) > 0) cost.value = opt.dataset.cost;
+      recalc();
+    }
+  });
+})();
+</script>
+{% endblock %}

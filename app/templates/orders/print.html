@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><title>Замовлення №{{ order.id }}</title>
+<link rel="stylesheet" href="{{ R }}/static/app.css?v=3">
+<style>body{background:#fff;padding:28px;max-width:760px;margin:auto} .t td,.t th{padding:6px 8px}</style>
+</head><body>
+<div class="head"><h1>{{ company }} — замовлення №{{ order.id }}</h1><button class="btn no-print" onclick="print()">Друкувати</button></div>
+<p class="muted">від {{ order.created_at|dt }}</p>
+<dl class="kv">
+  <dt>Отримувач</dt><dd>{{ order.customer_name }}</dd>
+  <dt>Телефон</dt><dd>{{ order.phone|phone }}</dd>
+  <dt>Доставка</dt><dd>{{ order.delivery_method_name }}{% if order.city_name %}, {{ order.city_name }}{% endif %}{% if order.warehouse_name %}, {{ order.warehouse_name }}{% endif %}{% if order.address %}, {{ order.address }}{% endif %}{% if order.postcode %}, {{ order.postcode }}{% endif %}</dd>
+  {% if order.ttn %}<dt>ТТН</dt><dd class="mono">{{ order.ttn }}</dd>{% endif %}
+  <dt>Оплата</dt><dd>{{ order.payment_type_name }}</dd>
+</dl>
+<table class="t mt">
+  <thead><tr><th>#</th><th>Товар</th><th class="num">К-сть</th><th class="num">Ціна</th><th class="num">Сума</th></tr></thead>
+  <tbody>{% for i in order.items %}<tr><td>{{ loop.index }}</td><td>{{ i.name }}</td><td class="num">{{ i.qty }}</td><td class="num">{{ i.price|money(true) }}</td><td class="num">{{ i.sum|money(true) }}</td></tr>{% endfor %}</tbody>
+  <tfoot>
+    {% if order.discount %}<tr><td colspan="4">Знижка</td><td class="num">−{{ order.discount|money(true) }}</td></tr>{% endif %}
+    <tr><td colspan="4">Разом</td><td class="num">{{ order.total|money(true) }} грн</td></tr>
+    {% if order.prepayment %}<tr><td colspan="4">Передоплата</td><td class="num">{{ order.prepayment|money(true) }} грн</td></tr>{% endif %}
+    <tr><td colspan="4">До сплати при отриманні</td><td class="num">{{ order.cod_amount|money(true) }} грн</td></tr>
+  </tfoot>
+</table>
+{% if order.comment %}<p class="mt"><strong>Коментар:</strong> {{ order.comment }}</p>{% endif %}
+</body></html>

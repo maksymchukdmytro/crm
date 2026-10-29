@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Нове замовлення' if is_new else 'Замовлення №' ~ order.id }} — {{ company }}{% endblock %}
+{% block content %}
+{% set c = carriers %}
+<div class="head">
+  <div class="order-head">
+    <a href="{{ R }}/orders" class="btn sm no-print">←</a>
+    <h1>{{ 'Нове замовлення' if is_new else 'Замовлення №' ~ order.id }}</h1>
+    {% if not is_new %}
+      <span class="pill" style="--c: {{ order.status.color }}">{{ order.status.name }}</span>
+      <span class="meta">створено {{ order.created_at|dt }}{% if order.site %} · {{ order.site }}{% endif %}</span>
+    {% endif %}
+  </div>
+  {% if not is_new %}
+  <div class="actions no-print">
+    {% if user.role != 'warehouse' and order.manager_id != user.id and (not order.manager_id or user.role == 'admin') %}
+    <form method="post" action="{{ R }}/orders/{{ order.id }}/take" class="inline"><button class="btn">Взяти собі</button></form>
+    {% endif %}
+    <a class="btn" href="{{ R }}/orders/new?phone={{ order.phone }}">+ Ще замовлення клієнту</a>
+    <a class="btn" href="{{ R }}/orders/{{ order.id }}/print" target="_blank">Друк</a>
+  </div>
+  {% endif %}
+</div>
+
+{% if not is_new and order.duplicate_of_id %}
+<div class="dup">Можливий дубль: з цього номера вже було замовлення <a href="{{ R }}/orders/{{ order.duplicate_of_id }}">№{{ order.duplicate_of_id }}</a> за останні дні.</div><br>
+{% endif %}
+
+<div class="grid two">
+<form method="post" id="orderform" action="{{ R }}{{ '/orders/new' if is_new else '/orders/' ~ order.id }}" class="stack" autocomplete="off">
+  <input type="hidden" name="version" value="{{ version }}">
+  <input type="hidden" name="items_present" value="1">
+
+  <section class="card form">
+    <h2>Клієнт</h2>
+    <div class="row">
+      <label>ПІБ (Прізвище Ім'я По батькові)<input name="customer_name" value="{{ order.customer_name or '' }}" placeholder="Шевченко Тарас Григорович"></label>
+      <label>Телефон<input name="phone" value="{{ order.phone or '' }}" inputmode="tel" placeholder="0671234567" required>
+        {% if not is_new and order.phone %}<span class="hint"><a href="tel:+{{ order.phone }}">Подзвонити</a>{% if others %} · <a href="#others">інші замовлення: {{ others|length }}</a>{% endif %}</span>{% endif %}
+      </label>
+    </div>
+    <div class="row">
+      <label>Email<input name="email" type="email" value="{{ order.email or '' }}"></label>
+    </div>
+    <label>Коментар клієнта / до замовлення<textarea name="comment" rows="2">{{ order.comment or '' }}</textarea></label>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Товари</h2>
+      <div class="row">
+        <select id="addProduct" style="width:auto;max-width:280px">
+          <option value="">+ Додати товар…</option>
+          {% for p in products_js %}<option value="{{ p.id }}">{{ p.name }}{% if p.upsell %} (апсел){% endif %} — {{ p.price|money }} грн · залишок {{ p.available }}</option>{% endfor %}
+        </select>
+        <button type="button" class="btn sm" id="addCustom">Довільна позиція</button>
+      </div>
+    </div>
+    <div class="tablewrap">
+    <table class="t items" id="items">
+      <thead><tr><th>Назва</th><th class="num">К-сть</th><th class="num">Ціна</th><th title="Допродаж">Апсел</th><th class="num">Сума</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    </div>
+    <div class="empty" id="itemsEmpty" style="padding:16px">Товари ще не додано</div>
+    <hr>
+    <div class="row" style="align-items:start">
+      <label style="max-width:160px">Знижка, грн<input name="discount" id="discount" value="{{ order.discount|money(true) if order.discount else '' }}" inputmode="decimal" placeholder="0"></label>
+      <div class="totals">
+        <span>Товари</span><span id="tSubtotal" class="num">0</span>
+        <span>Знижка</span><span id="tDiscount" class="num">0</span>
+        <span class="big">Разом</span><span id="tTotal" class="num big">0</span>
+        <span>Передоплата</span><span id="tPrepay" class="num">0</span>
+        <span><strong>Накладений платіж</strong></span><span id="tCod" class="num"><strong>0</strong></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card form">
+    <h2>Доставка</h2>
+    <div class="row">
+      <label>Спосіб доставки
+        <select name="delivery_method" id="deliveryMethod">
+          {% for k, v in DELIVERY_METHODS.items() %}<option value="{{ k }}" {{ 'selected' if order.delivery_method == k }}>{{ v }}{% if c.get(k) and c[k].beta %} (бета){% endif %}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Вартість доставки, грн<input name="delivery_cost" value="{{ order.delivery_cost|money(true) if order.delivery_cost else '' }}" inputmode="decimal" placeholder="0"></label>
+    </div>
+
+    <div data-method="novaposhta">
+      <div class="row">
+        <label class="ac" data-ac="{{ R }}/api/np/cities">Місто (Нова Пошта)
+          <input name="city_name" value="{{ order.city_name or '' }}" data-ac-input placeholder="Почніть вводити назву" class="{{ 'ok' if order.city_ref }}">
+          <input type="hidden" name="city_ref" value="{{ order.city_ref if order.delivery_method == 'novaposhta' else '' }}" data-ac-ref id="cityRef">
+          <div class="ac-list"></div>
+        </label>
+      </div>
+      <div class="row">
+        <label class="ac" data-ac="{{ R }}/api/np/warehouses" data-ac-depends="cityRef" data-ac-min="0">Відділення / поштомат
+          <input name="warehouse_name" value="{{ order.warehouse_name if order.delivery_method == 'novaposhta' else '' }}" data-ac-input placeholder="Номер або адреса відділення" class="{{ 'ok' if order.warehouse_ref and order.delivery_method == 'novaposhta' }}">
+          <input type="hidden" name="warehouse_ref" value="{{ order.warehouse_ref if order.delivery_method == 'novaposhta' else '' }}" data-ac-ref>
+          <div class="ac-list"></div>
+        </label>
+      </div>
+      {% if not c.novaposhta.configured %}<p class="hint">Підказки міст і відділень з'являться після введення API-ключа Нової Пошти в налаштуваннях.</p>{% endif %}
+    </div>
+
+    <div data-method="ukrposhta">
+      <div class="row">
+        <label style="max-width:150px">Індекс відділення<input name="postcode" value="{{ order.postcode or '' }}" inputmode="numeric" maxlength="5" placeholder="01001"></label>
+        <label>Місто<input name="city_name" value="{{ order.city_name or '' }}" data-mirror="city_name"></label>
+      </div>
+    </div>
+
+    <div data-method="meest">
+      <div class="row">
+        <label>Місто<input name="city_name" value="{{ order.city_name or '' }}" data-mirror="city_name"></label>
+        <label>Відділення (назва / номер)<input name="warehouse_name" value="{{ order.warehouse_name if order.delivery_method == 'meest' else '' }}"></label>
+      </div>
+      <label>ID відділення Meest (UUID для створення ТТН)<input name="warehouse_ref" value="{{ order.warehouse_ref if order.delivery_method == 'meest' else '' }}" class="mono"></label>
+    </div>
+
+    <div data-method="courier">
+      <div class="row">
+        <label>Місто<input name="city_name" value="{{ order.city_name or '' }}" data-mirror="city_name"></label>
+        <label>Адреса<input name="address" value="{{ order.address or '' }}" placeholder="вул., будинок, квартира"></label>
+      </div>
+    </div>
+
+    <div data-method="pickup"><p class="hint">Клієнт забирає замовлення самостійно.</p></div>
+
+    <div class="row" data-method="novaposhta ukrposhta meest courier">
+      <label>ТТН (якщо створена поза CRM)<input name="ttn" value="{{ order.ttn or '' }}" class="mono" {{ 'readonly' if order.carrier_ref }} placeholder="Вставте номер, щоб відстежувати"></label>
+    </div>
+  </section>
+
+  <section class="card form">
+    <h2>Оплата</h2>
+    <div class="row">
+      <label>Тип оплати
+        <select name="payment_type" id="paymentType">
+          {% for k, v in PAYMENT_TYPES.items() %}<option value="{{ k }}" {{ 'selected' if order.payment_type == k }}>{{ v }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Передоплата, грн<input name="prepayment" id="prepayment" value="{{ order.prepayment|money(true) if order.prepayment else '' }}" inputmode="decimal" placeholder="0"></label>
+    </div>
+  </section>
+
+  <details class="box">
+    <summary>Джерело заявки (UTM)</summary>
+    <div class="form" style="margin-top:10px">
+      <div class="row">
+        <label>Сайт / лендинг<input name="site" value="{{ order.site or '' }}"></label>
+        <label>utm_source<input name="utm_source" value="{{ order.utm_source or '' }}"></label>
+        <label>utm_medium<input name="utm_medium" value="{{ order.utm_medium or '' }}"></label>
+      </div>
+      <div class="row">
+        <label>utm_campaign<input name="utm_campaign" value="{{ order.utm_campaign or '' }}"></label>
+        <label>utm_content<input name="utm_content" value="{{ order.utm_content or '' }}"></label>
+        <label>utm_term<input name="utm_term" value="{{ order.utm_term or '' }}"></label>
+      </div>
+      {% if order.ip %}<p class="hint">IP: {{ order.ip }}</p>{% endif %}
+    </div>
+  </details>
+
+  <section class="card form">
+    <label>Новий коментар менеджера<textarea name="new_comment" rows="2" placeholder="Видно лише працівникам"></textarea></label>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary" name="next" value="stay">Зберегти</button>
+      {% if not is_new %}<button class="btn" name="next" value="list">Зберегти і до списку</button>{% endif %}
+    </div>
+  </section>
+</form>
+
+<div class="stack">
+  <section class="card form">
+    <h2>Статус</h2>
+    <label>Статус замовлення
+      <select name="status_id" form="orderform" id="statusSelect">
+        {% for s in statuses %}<option value="{{ s.id }}" {{ 'selected' if (order.status_id == s.id) or (is_new and s.code == 'new') }}>{{ s.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Менеджер
+      {% if user.role == 'admin' %}
+      <select name="manager_id" form="orderform">
+        <option value="">— не призначено —</option>
+        {% for m in managers %}<option value="{{ m.id }}" {{ 'selected' if order.manager_id == m.id }}>{{ m.display }}</option>{% endfor %}
+      </select>
+      {% else %}
+      <input value="{{ order.manager.display if order.manager else ('буде призначено вас' if is_new and user.role == 'manager' else '—') }}" disabled>
+      {% endif %}
+    </label>
+    <div class="row" style="margin-top:12px"><button class="btn primary" form="orderform" name="next" value="stay">Зберегти</button></div>
+    {% if not is_new %}
+    <p class="hint" style="margin-top:10px">
+      Склад: {% if order.stock_shipped %}<span class="badge ok">списано</span>{% elif order.stock_reserved %}<span class="badge info">зарезервовано</span>{% else %}<span class="badge">не задіяно</span>{% endif %}
+    </p>
+    {% endif %}
+  </section>
+
+  {% if not is_new %}
+  <section class="card" id="ttn">
+    <h2>Відправлення</h2>
+    {% set carrier = c.get(order.delivery_method) %}
+    {% if order.ttn %}
+      <div class="ttn-box">
+        <span class="ttn">{{ order.ttn }}</span>
+        {% if order.delivery_state %}<span class="badge {{ 'ok' if order.delivery_state == 'delivered' else ('bad' if order.delivery_state in ['refused','returned'] else 'info') }}">{{ order.delivery_state_name }}</span>{% endif %}
+      </div>
+      {% if order.delivery_status %}<p class="hint" style="margin:8px 0 0">{{ order.delivery_status }}{% if order.delivery_checked_at %} · перевірено {{ order.delivery_checked_at|dt }}{% endif %}</p>{% endif %}
+      <div class="row" style="margin-top:12px">
+        {% if carrier %}
+        <form method="post" action="{{ R }}/orders/{{ order.id }}/track" class="inline"><button class="btn sm">Оновити статус</button></form>
+        <a class="btn sm" href="{{ R }}/orders/{{ order.id }}/label" target="_blank">Наклейка PDF</a>
+        {% endif %}
+        {% if order.carrier_ref %}
+        <form method="post" action="{{ R }}/orders/{{ order.id }}/ttn/delete" class="inline" data-confirm="Видалити ТТН {{ order.ttn }} у перевізника?"><button class="btn sm danger">Видалити ТТН</button></form>
+        {% endif %}
+      </div>
+    {% elif carrier %}
+      {% if carrier.configured %}
+        <p class="hint">Перевірте товари, адресу і суму накладеного платежу ({{ order.cod_amount|money }} грн), збережіть замовлення, потім створіть ТТН.</p>
+        <form method="post" action="{{ R }}/orders/{{ order.id }}/ttn"><button class="btn primary">Створити ТТН {{ carrier.name }}</button></form>
+        {% if carrier.beta %}<p class="hint">Інтеграція {{ carrier.name }} у статусі бета: зробіть перше відправлення тестовим.</p>{% endif %}
+      {% else %}
+        <p class="hint">Щоб створювати ТТН {{ carrier.name }}, заповніть доступи в <a href="{{ R }}/settings?tab=delivery">налаштуваннях доставки</a>. Або вставте номер ТТН вручну в блоці «Доставка».</p>
+      {% endif %}
+    {% else %}
+      <p class="hint">{{ order.delivery_method_name }}: ТТН не потрібна.</p>
+    {% endif %}
+  </section>
+
+  <section class="card" id="payments">
+    <h2>Оплати</h2>
+    {% if order.payments %}
+    <table class="t">
+      {% for p in order.payments %}
+      <tr><td>{{ p.kind_name }}<span class="sub">{{ p.created_at|d }}{% if p.reference %} · {{ p.reference }}{% endif %}</span></td>
+        <td class="num">{{ p.amount|money }}</td>
+        <td><span class="badge {{ 'ok' if p.status == 'received' else ('bad' if p.status == 'cancelled' else ('info' if p.status == 'collected' else 'warn')) }}">{{ p.status_name }}</span></td></tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="hint">Оплат ще немає. Накладений платіж з'явиться після відправки.</p>{% endif %}
+    <details class="box mt">
+      <summary>Додати передоплату</summary>
+      <form method="post" action="{{ R }}/orders/{{ order.id }}/payment" class="form" style="margin-top:10px">
+        <div class="row">
+          <label>Сума<input name="amount" inputmode="decimal" required></label>
+          <label>Спосіб<select name="method"><option value="card">Карта</option><option value="iban">Рахунок (IBAN)</option><option value="cash">Готівка</option><option value="other">Інше</option></select></label>
+        </div>
+        <label>Примітка / № квитанції<input name="reference"></label>
+        <button class="btn mt">Додати</button>
+      </form>
+    </details>
+  </section>
+
+  <section class="card" id="comments">
+    <h2>Коментарі менеджерів</h2>
+    {% for cm in order.comments|reverse %}
+      <div class="comment" style="margin-bottom:8px"><div class="hint"><strong>{{ cm.user.display if cm.user else 'Система' }}</strong> · {{ cm.created_at|dt }}</div>{{ cm.text }}</div>
+    {% else %}<p class="hint">Коментарів немає</p>{% endfor %}
+    <form method="post" action="{{ R }}/orders/{{ order.id }}/comment" class="form">
+      <textarea name="text" rows="2" placeholder="Напишіть коментар…" required></textarea>
+      <button class="btn sm mt">Додати</button>
+    </form>
+  </section>
+
+  <section class="card" id="sms">
+    <h2>SMS / Viber</h2>
+    {% for m in sms_list %}
+      <div style="margin-bottom:8px"><span class="badge {{ 'ok' if m.status == 'sent' else ('bad' if m.status == 'failed' else 'warn') }}">{{ {'sent':'відправлено','failed':'помилка','queued':'в черзі'}[m.status] }}</span>
+        <small>{{ m.channel }} · {{ m.created_at|dt }}</small><div>{{ m.text }}</div>{% if m.error %}<small class="lowstock">{{ m.error }}</small>{% endif %}</div>
+    {% endfor %}
+    {% if sms_ready %}
+    <form method="post" action="{{ R }}/orders/{{ order.id }}/sms" class="form">
+      <textarea name="text" rows="2" placeholder="Текст. Можна використати {ttn}, {total}, {first_name}…" required></textarea>
+      <div class="row mt"><select name="channel" style="width:auto"><option value="sms">SMS</option><option value="viber">Viber</option><option value="hybrid">Viber → SMS</option></select><button class="btn sm">Відправити</button></div>
+    </form>
+    {% else %}<p class="hint">Підключіть TurboSMS у <a href="{{ R }}/settings?tab=sms">налаштуваннях</a>.</p>{% endif %}
+  </section>
+
+  {% if others %}
+  <section class="card flush" id="others">
+    <div style="padding:14px 16px 4px"><h2>Інші замовлення клієнта</h2></div>
+    <table class="t">
+      {% for o in others %}
+      <tr class="clickable" data-href="{{ R }}/orders/{{ o.id }}"><td><a href="{{ R }}/orders/{{ o.id }}">№{{ o.id }}</a><span class="sub">{{ o.created_at|d }}</span></td>
+        <td class="num">{{ o.total|money }}</td><td><span class="pill" style="--c: {{ o.status.color }}">{{ o.status.name }}</span></td></tr>
+      {% endfor %}
+    </table>
+  </section>
+  {% endif %}
+
+  <section class="card">
+    <h2>Історія змін</h2>
+    <ul class="timeline">
+      {% for h in history %}
+      <li><span class="who">{{ h.user.display if h.user else 'Система' }} · {{ action_names.get(h.action, h.action) }}</span><span class="when">{{ h.created_at|dt }}</span>
+        {% if h.details %}<span class="what">{{ h.details|details }}</span>{% endif %}
+      </li>
+      {% else %}<li class="hint">Порожньо</li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  OrderForm.init({ products: {{ products_js|tojs }}, items: {{ items_js|tojs }} });
+</script>
+{% endblock %}

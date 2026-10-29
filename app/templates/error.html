@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="empty big">
+  <h1>{{ title }}</h1>
+  <p>{{ message }}</p>
+  <a class="btn" href="{{ R }}/orders">До замовлень</a>
+</div>
+{% endblock %}
+{% block bare %}<div class="login-wrap"><div class="card login"><h1>{{ title }}</h1><p>{{ message }}</p><a class="btn" href="{{ R }}/login">Увійти</a></div></div>{% endblock %}

@@ -1,0 +1,63 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: crm
+      POSTGRES_USER: crm
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Вкажіть DB_PASSWORD у файлі .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm -d crm"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build: .
+    restart: unless-stopped
+    command: web
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://crm:${DB_PASSWORD}@db:5432/crm
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  worker:
+    build: .
+    restart: unless-stopped
+    command: worker
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://crm:${DB_PASSWORD}@db:5432/crm
+    depends_on:
+      db:
+        condition: service_healthy
+      web:
+        condition: service_started
+
+  # HTTPS-сертифікат від Let's Encrypt отримується автоматично.
+  # Потрібен домен (наприклад crm.example.com), що вказує на IP сервера.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

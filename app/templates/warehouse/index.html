@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Склад — {{ company }}{% endblock %}
+{% block content %}
+<div class="head"><h1>Склад</h1>
+  <div class="actions"><a class="btn" href="{{ R }}/purchases/new">+ Закупівля</a></div></div>
+
+<div class="kpis">
+  <div class="kpi"><div class="l">Одиниць на складі</div><div class="v">{{ units }}</div></div>
+  <div class="kpi"><div class="l">У резерві</div><div class="v">{{ reserved }}</div></div>
+  <div class="kpi"><div class="l">Вартість залишків (за собівартістю)</div><div class="v">{{ value|money }} ₴</div></div>
+  <div class="kpi"><div class="l">Закінчуються</div><div class="v {{ 'lowstock' if low_count }}">{{ low_count }}</div><div class="s"><a href="{{ R }}/warehouse?low={{ 0 if low else 1 }}">{{ 'показати всі' if low else 'показати' }}</a></div></div>
+</div>
+
+<div class="grid two">
+  <div class="card flush tablewrap">
+    <table class="t">
+      <thead><tr><th>Товар</th><th class="num">На складі</th><th class="num">Резерв</th><th class="num">Доступно</th><th class="num">Мін.</th><th class="num">Вартість</th></tr></thead>
+      {% for p in products %}
+      <tr class="clickable" data-href="{{ R }}/warehouse?product={{ p.id }}">
+        <td><a href="{{ R }}/products/{{ p.id }}">{{ p.name }}</a>{% if p.sku %}<span class="sub mono">{{ p.sku }}</span>{% endif %}</td>
+        <td class="num">{{ p.stock }}</td><td class="num">{{ p.reserved }}</td>
+        <td class="num {{ 'lowstock' if p.available <= p.min_stock }}">{{ p.available }}</td>
+        <td class="num muted">{{ p.min_stock }}</td>
+        <td class="num">{{ (p.cost * (p.stock if p.stock > 0 else 0))|money }}</td></tr>
+      {% else %}<tr><td colspan="6"><div class="empty">Немає товарів</div></td></tr>{% endfor %}
+    </table>
+  </div>
+
+  <form method="post" action="{{ R }}/warehouse/adjust" class="card form">
+    <h2>Коригування / інвентаризація</h2>
+    <label>Товар
+      <select name="product_id" required>
+        <option value="">Оберіть товар…</option>
+        {% for p in all_products %}<option value="{{ p.id }}" {{ 'selected' if f_product == p.id }}>{{ p.name }} (зараз {{ p.stock }})</option>{% endfor %}
+      </select>
+    </label>
+    <div class="row">
+      <label>Режим<select name="mode"><option value="set">Встановити фактичний залишок</option><option value="delta">Додати / відняти (+5, −2)</option></select></label>
+      <label style="max-width:140px">Кількість<input name="qty" required inputmode="numeric" placeholder="0"></label>
+    </div>
+    <label>Причина<input name="comment" placeholder="Інвентаризація, брак, пересорт…"></label>
+    <button class="btn primary mt">Застосувати</button>
+  </form>
+</div>
+
+<div class="card flush mt">
+  <div style="padding:14px 16px 4px" class="card-head"><h2>Рух товарів</h2>
+    <form class="row" method="get">
+      <select name="product" style="width:auto"><option value="0">Усі товари</option>{% for p in all_products %}<option value="{{ p.id }}" {{ 'selected' if f_product == p.id }}>{{ p.name }}</option>{% endfor %}</select>
+      <select name="kind" style="width:auto"><option value="">Усі операції</option>{% for k, v in kinds.items() %}<option value="{{ k }}" {{ 'selected' if f_kind == k }}>{{ v }}</option>{% endfor %}</select>
+      <button class="btn sm">Фільтр</button>
+    </form>
+  </div>
+  <div class="tablewrap">
+  <table class="t">
+    <thead><tr><th>Дата</th><th>Товар</th><th>Операція</th><th class="num">Склад</th><th class="num">Резерв</th><th>Хто</th></tr></thead>
+    {% for m in moves %}
+    <tr><td class="nowrap">{{ m.created_at|dt }}</td><td>{{ m.product.name }}</td>
+      <td>{{ kinds[m.kind] }} {% if m.order_id %}<a href="{{ R }}/orders/{{ m.order_id }}">№{{ m.order_id }}</a>{% endif %}{% if m.purchase_id %}<a href="{{ R }}/purchases/{{ m.purchase_id }}">закупівля №{{ m.purchase_id }}</a>{% endif %}{% if m.comment %}<span class="sub">{{ m.comment }}</span>{% endif %}</td>
+      <td class="num">{{ '%+d'|format(m.stock_delta) if m.stock_delta else '' }}</td>
+      <td class="num">{{ '%+d'|format(m.reserved_delta) if m.reserved_delta else '' }}</td>
+      <td>{{ m.user.display if m.user else 'Система' }}</td></tr>
+    {% else %}<tr><td colspan="6"><div class="empty">Операцій немає</div></td></tr>{% endfor %}
+  </table>
+  </div>
+</div>
+{% endblock %}

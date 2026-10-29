@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Товари — {{ company }}{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Товари <small class="muted">{{ products|length }}</small></h1>
+  <div class="actions">{% if user.role in ['admin', 'warehouse'] %}<a class="btn primary" href="{{ R }}/products/new">+ Товар</a>{% endif %}</div>
+</div>
+<form class="filters">
+  <input type="search" name="q" value="{{ q }}" placeholder="Назва або артикул">
+  <select name="show" onchange="this.form.submit()">
+    <option value="active" {{ 'selected' if show == 'active' }}>Активні</option>
+    <option value="inactive" {{ 'selected' if show == 'inactive' }}>Архів</option>
+    <option value="all" {{ 'selected' if show == 'all' }}>Усі</option>
+  </select>
+  <button class="btn">Знайти</button>
+</form>
+<div class="card flush tablewrap">
+<table class="t">
+  <thead><tr><th>Назва</th><th>Артикул</th><th class="num">Ціна</th><th class="num">Собівартість</th><th class="num">Маржа</th>
+    <th class="num">На складі</th><th class="num">Резерв</th><th class="num">Доступно</th></tr></thead>
+  <tbody>
+  {% for p in products %}
+  <tr class="clickable" data-href="{{ R }}/products/{{ p.id }}">
+    <td><a href="{{ R }}/products/{{ p.id }}">{{ p.name }}</a> {% if p.is_upsell %}<span class="badge info">апсел</span>{% endif %}{% if not p.is_active %} <span class="badge">архів</span>{% endif %}</td>
+    <td class="mono">{{ p.sku or '' }}</td>
+    <td class="num">{{ p.price|money(true) }}</td>
+    <td class="num">{{ p.cost|money(true) }}</td>
+    <td class="num">{{ (p.price - p.cost)|money(true) }}</td>
+    <td class="num">{{ p.stock }}</td>
+    <td class="num">{{ p.reserved }}</td>
+    <td class="num {{ 'lowstock' if p.available <= p.min_stock }}">{{ p.available }}</td>
+  </tr>
+  {% else %}<tr><td colspan="8"><div class="empty">Товарів немає. {% if user.role in ['admin','warehouse'] %}<a href="{{ R }}/products/new">Додайте перший товар</a>{% endif %}</div></td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

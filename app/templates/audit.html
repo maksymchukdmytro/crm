@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Журнал дій — {{ company }}{% endblock %}
+{% block content %}
+<div class="head"><h1>Журнал дій</h1></div>
+<form class="filters">
+  <select name="entity"><option value="">Усі об'єкти</option>{% for k, v in entities.items() %}<option value="{{ k }}" {{ 'selected' if f.entity == k }}>{{ v }}</option>{% endfor %}</select>
+  <select name="action"><option value="">Усі дії</option>{% for k, v in actions.items() %}<option value="{{ k }}" {{ 'selected' if f.action == k }}>{{ v }}</option>{% endfor %}</select>
+  <select name="user_id"><option value="0">Усі користувачі</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if f.user_id == u.id }}>{{ u.display }}</option>{% endfor %}</select>
+  <input type="date" name="date_from" value="{{ f.date_from }}"><input type="date" name="date_to" value="{{ f.date_to }}">
+  <button class="btn">Фільтр</button>
+</form>
+<div class="card flush tablewrap">
+<table class="t">
+  <thead><tr><th>Час</th><th>Хто</th><th>Об'єкт</th><th>Дія</th><th>Деталі</th></tr></thead>
+  {% for r in rows %}
+  <tr><td class="nowrap">{{ r.created_at|dt }}</td><td>{{ r.user.display if r.user else 'Система' }}</td>
+    <td>{{ entities.get(r.entity, r.entity) }}
+      {% if r.entity == 'order' and r.entity_id %}<a href="{{ R }}/orders/{{ r.entity_id }}">№{{ r.entity_id }}</a>
+      {% elif r.entity == 'product' and r.entity_id %}<a href="{{ R }}/products/{{ r.entity_id }}">№{{ r.entity_id }}</a>
+      {% elif r.entity == 'purchase' and r.entity_id %}<a href="{{ R }}/purchases/{{ r.entity_id }}">№{{ r.entity_id }}</a>
+      {% elif r.entity_id %}№{{ r.entity_id }}{% endif %}</td>
+    <td>{{ actions.get(r.action, r.action) }}</td>
+    <td style="max-width:520px">{{ r.details|details if r.details else '' }}</td></tr>
+  {% else %}<tr><td colspan="5"><div class="empty">Записів немає</div></td></tr>{% endfor %}
+</table>
+<div class="pager"><span>Сторінка {{ page }}</span><span>
+  {% if page > 1 %}<a class="btn sm" href="?{{ qs(f, page=page-1) }}">← Новіші</a>{% endif %}
+  {% if has_next %}<a class="btn sm" href="?{{ qs(f, page=page+1) }}">Старіші →</a>{% endif %}</span></div>
+</div>
+{% endblock %}

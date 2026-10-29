@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Звіти — {{ company }}{% endblock %}
+{% block content %}
+{% set T = r.total %}
+<div class="head"><h1>Звіти</h1></div>
+<form class="filters" method="get">
+  <input type="hidden" name="dim" value="{{ dim }}">
+  <label>Від<input type="date" name="date_from" value="{{ date_from.isoformat() }}"></label>
+  <label>До<input type="date" name="date_to" value="{{ date_to.isoformat() }}"></label>
+  {% if user.role == 'admin' %}
+  <label>Менеджер<select name="manager"><option value="0">Усі</option>{% for m in managers %}<option value="{{ m.id }}" {{ 'selected' if f_manager == m.id }}>{{ m.display }}</option>{% endfor %}</select></label>
+  {% endif %}
+  <button class="btn">Показати</button>
+  <span class="spacer"></span>
+  {% for name, a, b in date_presets() %}<a class="btn sm" href="?dim={{ dim }}&manager={{ f_manager }}&date_from={{ a.isoformat() }}&date_to={{ b.isoformat() }}">{{ name }}</a>{% endfor %}
+</form>
+
+<div class="kpis">
+  <div class="kpi"><div class="l">Заявки</div><div class="v">{{ T.leads }}</div><div class="s">унікальних {{ T.unique }}</div></div>
+  <div class="kpi"><div class="l">Апрув</div><div class="v">{{ T.approve_rate|pct }}</div><div class="s">{{ T.approved }} підтверджено</div></div>
+  <div class="kpi"><div class="l">Середній чек</div><div class="v">{{ T.avg_check|money }} ₴</div><div class="s">підтверджених</div></div>
+  <div class="kpi"><div class="l">Відправлено</div><div class="v">{{ T.shipped }}</div></div>
+  <div class="kpi"><div class="l">Викуп</div><div class="v">{{ T.buyout_rate|pct }}</div><div class="s">{{ T.delivered }} отримано / {{ T.refused }} відмов</div></div>
+  <div class="kpi"><div class="l">Виручка (викуплені)</div><div class="v">{{ T.revenue|money }} ₴</div></div>
+  <div class="kpi"><div class="l">Валовий прибуток</div><div class="v">{{ T.profit|money }} ₴</div><div class="s">виручка − собівартість</div></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>Заявки по днях</h2><div class="legend"><span><i style="background:var(--accent)"></i>заявки</span><span><i style="background:#16a34a"></i>підтверджено</span></div></div>
+  <div class="bars">
+    {% for d, b in r.days %}
+    {% set h = (b.leads / r.max_day_leads * 100) if r.max_day_leads else 0 %}
+    {% set ha = (b.approved / r.max_day_leads * 100) if r.max_day_leads else 0 %}
+    <div class="b" title="{{ d.strftime('%d.%m') }}: заявок {{ b.leads }}, підтверджено {{ b.approved }}" style="flex-direction:row;align-items:flex-end;gap:1px">
+      <span style="height:{{ h }}%;flex:1"></span><span class="ap" style="height:{{ ha }}%;flex:1"></span>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="bars-x"><span>{{ date_from.strftime('%d.%m') }}</span><span>{{ date_to.strftime('%d.%m') }}</span></div>
+</div>
+
+<div class="card flush mt">
+  <div style="padding:14px 16px 0"><div class="subnav" style="margin-bottom:0">
+    {% for k, v in dims.items() %}{% if k != 'manager' or user.role == 'admin' %}<a href="?dim={{ k }}&manager={{ f_manager }}&date_from={{ date_from.isoformat() }}&date_to={{ date_to.isoformat() }}" class="{{ 'on' if dim == k }}">{{ v }}</a>{% endif %}{% endfor %}
+  </div></div>
+  <div class="tablewrap">
+  <table class="t">
+    <thead><tr><th>{{ dims[dim] }}</th><th class="num">Заявки</th><th class="num">Унікальні</th><th class="num">Апрув</th><th class="num">% апруву</th>
+      <th class="num">Сер. чек</th><th class="num">Відправлено</th><th class="num">Отримано</th><th class="num">Відмови</th><th class="num">% викупу</th><th class="num">Виручка</th><th class="num">Прибуток</th></tr></thead>
+    {% for name, b in r.groups %}
+    <tr><td>{{ name }}</td><td class="num">{{ b.leads }}</td><td class="num">{{ b.unique }}</td><td class="num">{{ b.approved }}</td>
+      <td class="num"><strong>{{ b.approve_rate|pct }}</strong></td><td class="num">{{ b.avg_check|money }}</td>
+      <td class="num">{{ b.shipped }}</td><td class="num">{{ b.delivered }}</td><td class="num">{{ b.refused }}</td>
+      <td class="num"><strong>{{ b.buyout_rate|pct }}</strong></td><td class="num">{{ b.revenue|money }}</td><td class="num">{{ b.profit|money }}</td></tr>
+    {% else %}<tr><td colspan="12"><div class="empty">Немає даних за період</div></td></tr>{% endfor %}
+    {% if r.groups %}
+    <tfoot><tr><td>Разом</td><td class="num">{{ T.leads }}</td><td class="num">{{ T.unique }}</td><td class="num">{{ T.approved }}</td><td class="num">{{ T.approve_rate|pct }}</td><td class="num">{{ T.avg_check|money }}</td>
+      <td class="num">{{ T.shipped }}</td><td class="num">{{ T.delivered }}</td><td class="num">{{ T.refused }}</td><td class="num">{{ T.buyout_rate|pct }}</td><td class="num">{{ T.revenue|money }}</td><td class="num">{{ T.profit|money }}</td></tr></tfoot>
+    {% endif %}
+  </table>
+  </div>
+</div>
+
+<div class="card flush mt">
+  <div style="padding:14px 16px 4px"><h2>Товари (у підтверджених замовленнях)</h2></div>
+  <div class="tablewrap">
+  <table class="t">
+    <thead><tr><th>Товар</th><th class="num">Замовлень</th><th class="num">Штук</th><th class="num">з них апсел</th><th class="num">Сума</th><th class="num">Собівартість</th><th class="num">Маржа</th></tr></thead>
+    {% for name, p in r.products %}
+    <tr><td>{{ name }}</td><td class="num">{{ p.orders }}</td><td class="num">{{ p.qty }}</td><td class="num">{{ p.upsell_qty or '' }}</td>
+      <td class="num">{{ p.revenue|money }}</td><td class="num">{{ p.cost|money }}</td><td class="num">{{ (p.revenue - p.cost)|money }}</td></tr>
+    {% else %}<tr><td colspan="7"><div class="empty">Немає даних</div></td></tr>{% endfor %}
+  </table>
+  </div>
+</div>
+<p class="hint mt">Апрув рахується від унікальних заявок (без дублів). Викуп = отримані / (отримані + відмови). Виручка та прибуток — лише по викуплених замовленнях, без урахування вартості реклами та доставки.</p>
+{% endblock %}
