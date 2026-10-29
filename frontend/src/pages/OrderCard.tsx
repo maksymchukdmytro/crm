@@ -459,12 +459,16 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
 function PrintMenu({ orderId, onError }: { orderId: number; onError: (m: string) => void }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [alignLeft, setAlignLeft] = useState(false);
+  const [shift, setShift] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const toggle = () => {
-    // на вузькому екрані кнопка буває біля лівого краю — тоді меню розкривається вправо, а не за край екрана
+    // меню завжди в межах екрана: на телефоні кнопка буває біля будь-якого краю
     const r = ref.current?.getBoundingClientRect();
-    if (r) setAlignLeft(r.right < Math.min(290, window.innerWidth - 32) + 16);
+    if (r) {
+      const w = Math.min(290, window.innerWidth - 32);
+      const left = Math.max(16, Math.min(r.right - w, window.innerWidth - 16 - w));
+      setShift(left - r.left);
+    }
     setOpen(!open);
   };
   useEffect(() => {
@@ -485,7 +489,7 @@ function PrintMenu({ orderId, onError }: { orderId: number; onError: (m: string)
         <Printer size={15} /> {busy ? "Готую…" : "Друк"}<ChevronDown size={14} />
       </button>
       {open && (
-        <div className={`print-pop ${alignLeft ? "left" : ""}`} role="menu">
+        <div className="print-pop" role="menu" style={shift === null ? undefined : { left: shift, right: "auto" }}>
           {items.map(([kind, Icon, hint]) => (
             <button type="button" role="menuitem" key={kind} onClick={async () => { setOpen(false); setBusy(true); await printDocument(kind, orderId, onError); setBusy(false); }}>
               <Icon size={17} /><span><b>{DOC_KINDS[kind].title}</b><small>{hint}</small></span>
