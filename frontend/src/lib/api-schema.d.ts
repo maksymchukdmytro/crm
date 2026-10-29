@@ -55,6 +55,251 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/blocked-ips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Blocked Ips */
+        get: operations["blocked_ips_api_blocked_ips_get"];
+        put?: never;
+        /** Blocked Ip Add */
+        post: operations["blocked_ip_add_api_blocked_ips_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blocked-ips/{bid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Blocked Ip Delete */
+        delete: operations["blocked_ip_delete_api_blocked_ips__bid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/attribute-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Attribute Group Save */
+        post: operations["attribute_group_save_api_catalog_attribute_groups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/attribute-groups/{gid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Attribute Group Delete */
+        delete: operations["attribute_group_delete_api_catalog_attribute_groups__gid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/attributes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Attributes */
+        get: operations["attributes_api_catalog_attributes_get"];
+        put?: never;
+        /** Attribute Save */
+        post: operations["attribute_save_api_catalog_attributes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/attributes/{aid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Attribute Delete */
+        delete: operations["attribute_delete_api_catalog_attributes__aid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Categories */
+        get: operations["categories_api_catalog_categories_get"];
+        put?: never;
+        /** Category Save */
+        post: operations["category_save_api_catalog_categories_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/categories/{cid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Category Delete */
+        delete: operations["category_delete_api_catalog_categories__cid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/manufacturers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Manufacturers */
+        get: operations["manufacturers_api_catalog_manufacturers_get"];
+        put?: never;
+        /** Manufacturer Save */
+        post: operations["manufacturer_save_api_catalog_manufacturers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/manufacturers/{mid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Manufacturer Delete */
+        delete: operations["manufacturer_delete_api_catalog_manufacturers__mid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/customer-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Groups */
+        get: operations["groups_api_customer_groups_get"];
+        put?: never;
+        /** Group Save */
+        post: operations["group_save_api_customer_groups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/customer-groups/{gid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Group Delete */
+        delete: operations["group_delete_api_customer_groups__gid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Customers */
+        get: operations["customers_api_customers_get"];
+        put?: never;
+        /** Customer Create */
+        post: operations["customer_create_api_customers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/customers/{cid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Customer */
+        get: operations["customer_api_customers__cid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Customer Update */
+        patch: operations["customer_update_api_customers__cid__patch"];
+        trace?: never;
+    };
     "/api/events": {
         parameters: {
             query?: never;
@@ -225,6 +470,26 @@ export interface paths {
         put?: never;
         /** Comment */
         post: operations["comment_api_orders__order_id__comments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{order_id}/fiscalize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fiscalize
+         * @description Ручна фіскалізація в один клік: чек продажу на суму замовлення через касу юрособи замовлення.
+         */
+        post: operations["fiscalize_api_orders__order_id__fiscalize_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -437,11 +702,51 @@ export interface paths {
         get: operations["product_api_products__pid__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Product Delete
+         * @description Видалити товар. Якщо він уже був у замовленнях, закупівлях чи русі складу — лише в архів (вимкнути),
+         *     щоб історія й статистика лишились цілими.
+         */
+        delete: operations["product_delete_api_products__pid__delete"];
         options?: never;
         head?: never;
         /** Product Update */
         patch: operations["product_update_api_products__pid__patch"];
+        trace?: never;
+    };
+    "/api/products/{pid}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Photo Order */
+        put: operations["photo_order_api_products__pid__photos_put"];
+        /** Photo Upload */
+        post: operations["photo_upload_api_products__pid__photos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/products/{pid}/photos/{photo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Photo Delete */
+        delete: operations["photo_delete_api_products__pid__photos__photo_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/purchases": {
@@ -565,6 +870,26 @@ export interface paths {
          *     (якщо є замовлення з цим значенням — лише вимикаємо, щоб не зламати історію).
          */
         put: operations["directory_save_api_settings_dir__kind__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/legal-entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Legal Entities Save
+         * @description Юридичні особи цілим списком. Рівно одна — за замовчуванням (для нових замовлень).
+         */
+        put: operations["legal_entities_save_api_settings_legal_entities_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1105,6 +1430,55 @@ export interface components {
             product_id: number;
             /** Qty */
             qty: number | string;
+            /** Variant Id */
+            variant_id?: number | null;
+        };
+        /** AttributeGroupIn */
+        AttributeGroupIn: {
+            /** Id */
+            id?: number | null;
+            /** Name */
+            name: string;
+            /** Sort */
+            sort?: number | null;
+        };
+        /** AttributeGroupOut */
+        AttributeGroupOut: {
+            /** Attributes */
+            attributes: components["schemas"]["AttributeOut"][];
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Sort */
+            sort: number;
+        };
+        /** AttributeIn */
+        AttributeIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Group Id */
+            group_id: number;
+            /** Id */
+            id?: number | null;
+            /** Name */
+            name: string;
+            /** Sort */
+            sort?: number | null;
+        };
+        /** AttributeOut */
+        AttributeOut: {
+            /** Active */
+            active: boolean;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Sort */
+            sort: number;
         };
         /** AuditOut */
         AuditOut: {
@@ -1136,10 +1510,33 @@ export interface components {
             /** User */
             user: string;
         };
+        /** BlockedIpIn */
+        BlockedIpIn: {
+            /** Comment */
+            comment?: string | null;
+            /** Ip */
+            ip: string;
+        };
+        /** BlockedIpOut */
+        BlockedIpOut: {
+            /** Comment */
+            comment: string;
+            /** Created At */
+            created_at: string | null;
+            /** Id */
+            id: number;
+            /** Ip */
+            ip: string;
+        };
         /** Body_payments_import_api_payments_import_post */
         Body_payments_import_api_payments_import_post: {
             /** File */
             file: string;
+        };
+        /** Body_photo_upload_api_products__pid__photos_post */
+        Body_photo_upload_api_products__pid__photos_post: {
+            /** Files */
+            files: string[];
         };
         /** Bucket */
         Bucket: {
@@ -1174,7 +1571,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "status" | "assign" | "ttn" | "track";
+            action: "status" | "assign" | "ttn" | "track" | "fiscalize";
             /** Ids */
             ids: number[];
             /** Value */
@@ -1232,6 +1629,8 @@ export interface components {
              * @default true
              */
             is_active: boolean;
+            /** Legal Entity Id */
+            legal_entity_id?: number | null;
             /** License Key */
             license_key?: string | null;
             /**
@@ -1269,6 +1668,8 @@ export interface components {
             is_active: boolean;
             /** Last Error */
             last_error: string;
+            /** Legal Entity Id */
+            legal_entity_id?: number | null;
             /**
              * License Key
              * @description Маскований
@@ -1287,6 +1688,46 @@ export interface components {
             sort: number;
             /** Test Mode */
             test_mode: boolean;
+        };
+        /** CategoryIn */
+        CategoryIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Id */
+            id?: number | null;
+            /** Name */
+            name: string;
+            /** Parent Id */
+            parent_id?: number | null;
+            /** Sort */
+            sort?: number | null;
+        };
+        /** CategoryOut */
+        CategoryOut: {
+            /** Active */
+            active: boolean;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Parent Id */
+            parent_id: number | null;
+            /** Products */
+            products: number;
+            /** Sort */
+            sort: number;
+        };
+        /** CategoryShort */
+        CategoryShort: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Parent Id */
+            parent_id: number | null;
         };
         /** CheckOut */
         CheckOut: {
@@ -1309,6 +1750,150 @@ export interface components {
             /** User */
             user: string;
         };
+        /** CustomerDetailOut */
+        CustomerDetailOut: {
+            /** Blacklist Reason */
+            blacklist_reason: string;
+            /** Blacklisted */
+            blacklisted: boolean;
+            /** Buyout Rate */
+            buyout_rate: number | null;
+            /** Cancelled */
+            cancelled: number;
+            /** Comment */
+            comment: string;
+            /** Country */
+            country: string;
+            /** Created At */
+            created_at: string | null;
+            /** Delivered */
+            delivered: number;
+            /** Email */
+            email: string;
+            /** First Order At */
+            first_order_at: string | null;
+            /** Group */
+            group: string;
+            /** Group Color */
+            group_color: string;
+            /** Group Id */
+            group_id: number | null;
+            /** History */
+            history: components["schemas"]["OrderRowOut"][];
+            /** Id */
+            id: number;
+            /** Last Order At */
+            last_order_at: string | null;
+            /** Name */
+            name: string;
+            /** Orders */
+            orders: number;
+            /** Phone */
+            phone: string;
+            /** Refused */
+            refused: number;
+            /** Sum Delivered */
+            sum_delivered: number;
+            /** Sum Total */
+            sum_total: number;
+        };
+        /** CustomerGroupIn */
+        CustomerGroupIn: {
+            /** Color */
+            color?: string | null;
+            /** Id */
+            id?: number | null;
+            /** Name */
+            name: string;
+            /** Sort */
+            sort?: number | null;
+        };
+        /** CustomerGroupOut */
+        CustomerGroupOut: {
+            /** Color */
+            color: string;
+            /** Customers */
+            customers: number;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Sort */
+            sort: number;
+        };
+        /** CustomerIn */
+        CustomerIn: {
+            /** Blacklist Reason */
+            blacklist_reason?: string | null;
+            /** Blacklisted */
+            blacklisted?: boolean | null;
+            /** Comment */
+            comment?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Group Id */
+            group_id?: number | null;
+            /** Name */
+            name?: string | null;
+            /** Phone */
+            phone?: string | null;
+        };
+        /** CustomerListOut */
+        CustomerListOut: {
+            /** Offset */
+            offset: number;
+            /** Rows */
+            rows: components["schemas"]["CustomerOut"][];
+            /** Total */
+            total: number;
+        };
+        /** CustomerOut */
+        CustomerOut: {
+            /** Blacklist Reason */
+            blacklist_reason: string;
+            /** Blacklisted */
+            blacklisted: boolean;
+            /** Buyout Rate */
+            buyout_rate: number | null;
+            /** Cancelled */
+            cancelled: number;
+            /** Comment */
+            comment: string;
+            /** Country */
+            country: string;
+            /** Created At */
+            created_at: string | null;
+            /** Delivered */
+            delivered: number;
+            /** Email */
+            email: string;
+            /** First Order At */
+            first_order_at: string | null;
+            /** Group */
+            group: string;
+            /** Group Color */
+            group_color: string;
+            /** Group Id */
+            group_id: number | null;
+            /** Id */
+            id: number;
+            /** Last Order At */
+            last_order_at: string | null;
+            /** Name */
+            name: string;
+            /** Orders */
+            orders: number;
+            /** Phone */
+            phone: string;
+            /** Refused */
+            refused: number;
+            /** Sum Delivered */
+            sum_delivered: number;
+            /** Sum Total */
+            sum_total: number;
+        };
         /** DayRow */
         DayRow: {
             /** Approved */
@@ -1322,6 +1907,17 @@ export interface components {
         DoneOut: {
             /** Done */
             done: number;
+        };
+        /** EntityShort */
+        EntityShort: {
+            /** Has Cashier */
+            has_cashier: boolean;
+            /** Id */
+            id: number;
+            /** Is Default */
+            is_default: boolean;
+            /** Name */
+            name: string;
         };
         /** GroupRow */
         GroupRow: {
@@ -1352,6 +1948,15 @@ export interface components {
             /** Unique */
             unique: number;
         };
+        /** GroupShort */
+        GroupShort: {
+            /** Color */
+            color: string;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1370,6 +1975,66 @@ export interface components {
             /** User */
             user: string;
         };
+        /** LegalEntityIn */
+        LegalEntityIn: {
+            /**
+             * Code
+             * @default
+             */
+            code: string;
+            /**
+             * Delete
+             * @default false
+             */
+            delete: boolean;
+            /**
+             * Iban
+             * @default
+             */
+            iban: string;
+            /** Id */
+            id?: number | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /**
+             * Is Default
+             * @default false
+             */
+            is_default: boolean;
+            /** Name */
+            name: string;
+        };
+        /** LegalEntityOut */
+        LegalEntityOut: {
+            /**
+             * Cashier
+             * @description Назва каси Checkbox цієї юрособи
+             * @default
+             */
+            cashier: string;
+            /** Code */
+            code: string;
+            /** Iban */
+            iban: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Is Default */
+            is_default: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Orders
+             * @default 0
+             */
+            orders: number;
+            /** Sort */
+            sort: number;
+        };
         /** LoginIn */
         LoginIn: {
             /** Password */
@@ -1380,6 +2045,29 @@ export interface components {
         /** LoginOut */
         LoginOut: {
             user: components["schemas"]["UserOut"];
+        };
+        /** ManufacturerIn */
+        ManufacturerIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Id */
+            id?: number | null;
+            /** Name */
+            name: string;
+        };
+        /** ManufacturerOut */
+        ManufacturerOut: {
+            /** Active */
+            active: boolean;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Products */
+            products: number;
         };
         /** MeIn */
         MeIn: {
@@ -1396,16 +2084,25 @@ export interface components {
             carriers: {
                 [key: string]: components["schemas"]["CarrierOut"];
             };
+            /** Categories */
+            categories?: components["schemas"]["CategoryShort"][];
             /** Checkbox Payments */
             checkbox_payments?: {
                 [key: string]: string;
             };
+            /**
+             * Checkbox Ready
+             * @default false
+             */
+            checkbox_ready: boolean;
             /** Company */
             company: string;
             /** Countries */
             countries?: {
                 [key: string]: string;
             };
+            /** Customer Groups */
+            customer_groups?: components["schemas"]["GroupShort"][];
             /** Delivery Methods */
             delivery_methods: {
                 [key: string]: string;
@@ -1419,10 +2116,14 @@ export interface components {
              * @description Назви додаткових полів 1–4
              */
             extra_fields?: string[];
+            /** Legal Entities */
+            legal_entities?: components["schemas"]["EntityShort"][];
             /** Managers */
             managers: components["schemas"]["UserOut"][];
             /** Managers See Own Only */
             managers_see_own_only: boolean;
+            /** Manufacturers */
+            manufacturers?: components["schemas"]["NamedShort"][];
             /** Marks */
             marks?: components["schemas"]["SourceOut"][];
             /** Nav */
@@ -1505,6 +2206,13 @@ export interface components {
             stock_delta: number;
             /** User */
             user: string;
+        };
+        /** NamedShort */
+        NamedShort: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
         };
         /** NpAccountIn */
         NpAccountIn: {
@@ -1597,6 +2305,8 @@ export interface components {
              * @default false
              */
             is_default: boolean;
+            /** Legal Entity Id */
+            legal_entity_id?: number | null;
             /**
              * Name
              * @default
@@ -1688,6 +2398,8 @@ export interface components {
             is_active: boolean;
             /** Is Default */
             is_default: boolean;
+            /** Legal Entity Id */
+            legal_entity_id?: number | null;
             /** Name */
             name: string;
             /** Office Id */
@@ -1753,6 +2465,33 @@ export interface components {
              */
             ok: boolean;
         };
+        /** OrderCustomer */
+        OrderCustomer: {
+            /** Blacklist Reason */
+            blacklist_reason: string;
+            /** Blacklisted */
+            blacklisted: boolean;
+            /** Buyout Rate */
+            buyout_rate: number | null;
+            /** Comment */
+            comment: string;
+            /** Delivered */
+            delivered: number;
+            /** Group */
+            group: string;
+            /** Group Color */
+            group_color: string;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Orders */
+            orders: number;
+            /** Refused */
+            refused: number;
+            /** Sum Delivered */
+            sum_delivered: number;
+        };
         /**
          * OrderIn
          * @description Створення або зміна замовлення. У PATCH змінюються лише передані поля.
@@ -1793,6 +2532,11 @@ export interface components {
             items?: components["schemas"]["OrderItemIn"][] | null;
             /** Last Name */
             last_name?: string | null;
+            /**
+             * Legal Entity Id
+             * @description Юридична особа: за нею обирається каса Checkbox
+             */
+            legal_entity_id?: number | null;
             /** Manager Id */
             manager_id?: number | null;
             /** Mark Id */
@@ -1885,6 +2629,11 @@ export interface components {
              * @description Допродаж до якого товару (id)
              */
             upsell_for?: number | null;
+            /**
+             * Variant Id
+             * @description Варіант товару (колір, розмір…)
+             */
+            variant_id?: number | null;
         };
         /** OrderItemOut */
         OrderItemOut: {
@@ -1899,6 +2648,8 @@ export interface components {
             id?: number | null;
             /** Name */
             name: string;
+            /** Photo */
+            photo?: string | null;
             /** Price */
             price: number;
             /** Product Id */
@@ -1919,6 +2670,13 @@ export interface components {
              * @default
              */
             upsell_for_name: string;
+            /** Variant Id */
+            variant_id?: number | null;
+            /**
+             * Variant Name
+             * @default
+             */
+            variant_name: string;
         };
         /** OrderListOut */
         OrderListOut: {
@@ -1963,6 +2721,7 @@ export interface components {
             country: string;
             /** Created At */
             created_at: string | null;
+            customer?: components["schemas"]["OrderCustomer"] | null;
             /** Customer Name */
             customer_name: string;
             /** Delivered At */
@@ -2031,6 +2790,8 @@ export interface components {
              * @default
              */
             last_name: string;
+            /** Legal Entity Id */
+            legal_entity_id?: number | null;
             manager: components["schemas"]["UserOut"] | null;
             /** Manager Id */
             manager_id: number | null;
@@ -2115,6 +2876,11 @@ export interface components {
         };
         /** OrderRowOut */
         OrderRowOut: {
+            /**
+             * Blacklisted
+             * @default false
+             */
+            blacklisted: boolean;
             /** City Name */
             city_name: string;
             /** Cod Amount */
@@ -2126,6 +2892,8 @@ export interface components {
             country: string;
             /** Created At */
             created_at: string | null;
+            /** Customer Id */
+            customer_id?: number | null;
             /** Customer Name */
             customer_name: string;
             /** Delivery Method */
@@ -2150,6 +2918,8 @@ export interface components {
             id: number;
             /** Items */
             items: components["schemas"]["OrderRowItem"][];
+            /** Legal Entity Id */
+            legal_entity_id?: number | null;
             /** Manager Id */
             manager_id: number | null;
             /** Mark Id */
@@ -2306,14 +3076,48 @@ export interface components {
                 [key: string]: components["schemas"]["PaymentTotal"];
             };
         };
+        /** PhotoOut */
+        PhotoOut: {
+            /** Id */
+            id: number;
+            /** Url */
+            url: string;
+        };
+        /** ProductDeleteOut */
+        ProductDeleteOut: {
+            /**
+             * Deleted
+             * @description false — товар лише перенесено в архів (уже був у замовленнях)
+             */
+            deleted: boolean;
+            /** Message */
+            message: string;
+        };
         /** ProductDetailOut */
         ProductDetailOut: {
             /** Active */
             active: boolean;
             /** Available */
             available: number;
+            /** Category Id */
+            category_id?: number | null;
             /** Cost */
             cost: number;
+            /**
+             * Countries
+             * @description Країни продажу; порожньо — усі
+             */
+            countries?: string[];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Discount Percent
+             * @default 0
+             */
+            discount_percent: number;
             /**
              * Height
              * @default 0
@@ -2326,16 +3130,36 @@ export interface components {
              * @default 0
              */
             length: number;
+            /** Manufacturer Id */
+            manufacturer_id?: number | null;
             /** Min Stock */
             min_stock: number;
+            /**
+             * Model
+             * @default
+             */
+            model: string;
             /** Moves */
             moves: components["schemas"]["MoveOut"][];
             /** Name */
             name: string;
+            /**
+             * Photo
+             * @description Головне фото: шлях від кореня CRM (/media/…)
+             */
+            photo?: string | null;
+            /** Photos */
+            photos?: components["schemas"]["PhotoOut"][];
             /** Price */
             price: number;
             /** Reserved */
             reserved: number;
+            /**
+             * Sale Price
+             * @description Ціна в замовленні: акційна або звичайна
+             * @default 0
+             */
+            sale_price: number;
             /**
              * Ship Description
              * @default
@@ -2345,6 +3169,12 @@ export interface components {
             sku: string;
             /** Sold */
             sold: number;
+            /**
+             * Spec Price
+             * @description Акційна ціна; 0 — без акції
+             * @default 0
+             */
+            spec_price: number;
             /** Stock */
             stock: number;
             /** Upsell */
@@ -2354,8 +3184,15 @@ export interface components {
              * @description Допродаж: до яких товарів пропонувати (порожньо — до будь-якого)
              */
             upsell_for?: number[];
+            /** Variants */
+            variants?: components["schemas"]["VariantOut"][];
             /** Weight */
             weight: number;
+            /**
+             * Wholesale Price
+             * @default 0
+             */
+            wholesale_price: number;
             /**
              * Width
              * @default 0
@@ -2366,8 +3203,14 @@ export interface components {
         ProductIn: {
             /** Active */
             active?: boolean | null;
+            /** Category Id */
+            category_id?: number | null;
             /** Cost */
             cost?: number | string | null;
+            /** Countries */
+            countries?: string[] | null;
+            /** Description */
+            description?: string | null;
             /** Height */
             height?: number | null;
             /**
@@ -2377,8 +3220,12 @@ export interface components {
             initial_stock?: number | string | null;
             /** Length */
             length?: number | null;
+            /** Manufacturer Id */
+            manufacturer_id?: number | null;
             /** Min Stock */
             min_stock?: number | string | null;
+            /** Model */
+            model?: string | null;
             /** Name */
             name?: string | null;
             /** Price */
@@ -2387,12 +3234,21 @@ export interface components {
             ship_description?: string | null;
             /** Sku */
             sku?: string | null;
+            /** Spec Price */
+            spec_price?: number | string | null;
             /** Upsell */
             upsell?: boolean | null;
             /** Upsell For */
             upsell_for?: number[] | null;
+            /**
+             * Variants
+             * @description Повний список варіантів; відсутні буде видалено (або вимкнено, якщо вже продавались)
+             */
+            variants?: components["schemas"]["VariantIn"][] | null;
             /** Weight */
             weight?: number | string | null;
+            /** Wholesale Price */
+            wholesale_price?: number | string | null;
             /** Width */
             width?: number | null;
         };
@@ -2402,8 +3258,20 @@ export interface components {
             active: boolean;
             /** Available */
             available: number;
+            /** Category Id */
+            category_id?: number | null;
             /** Cost */
             cost: number;
+            /**
+             * Countries
+             * @description Країни продажу; порожньо — усі
+             */
+            countries?: string[];
+            /**
+             * Discount Percent
+             * @default 0
+             */
+            discount_percent: number;
             /**
              * Height
              * @default 0
@@ -2416,14 +3284,32 @@ export interface components {
              * @default 0
              */
             length: number;
+            /** Manufacturer Id */
+            manufacturer_id?: number | null;
             /** Min Stock */
             min_stock: number;
+            /**
+             * Model
+             * @default
+             */
+            model: string;
             /** Name */
             name: string;
+            /**
+             * Photo
+             * @description Головне фото: шлях від кореня CRM (/media/…)
+             */
+            photo?: string | null;
             /** Price */
             price: number;
             /** Reserved */
             reserved: number;
+            /**
+             * Sale Price
+             * @description Ціна в замовленні: акційна або звичайна
+             * @default 0
+             */
+            sale_price: number;
             /**
              * Ship Description
              * @default
@@ -2431,6 +3317,12 @@ export interface components {
             ship_description: string;
             /** Sku */
             sku: string;
+            /**
+             * Spec Price
+             * @description Акційна ціна; 0 — без акції
+             * @default 0
+             */
+            spec_price: number;
             /** Stock */
             stock: number;
             /** Upsell */
@@ -2440,8 +3332,15 @@ export interface components {
              * @description Допродаж: до яких товарів пропонувати (порожньо — до будь-якого)
              */
             upsell_for?: number[];
+            /** Variants */
+            variants?: components["schemas"]["VariantOut"][];
             /** Weight */
             weight: number;
+            /**
+             * Wholesale Price
+             * @default 0
+             */
+            wholesale_price: number;
             /**
              * Width
              * @default 0
@@ -2532,6 +3431,11 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+            /**
+             * Office Id
+             * @description Лише для джерел: відділ, до якого належить джерело
+             */
+            office_id?: number | null;
             /** Sort */
             sort: number;
             /**
@@ -2656,6 +3560,8 @@ export interface components {
             checkbox_payments?: {
                 [key: string]: string;
             };
+            /** Legal Entities */
+            legal_entities?: components["schemas"]["LegalEntityOut"][];
             /** Marks */
             marks?: components["schemas"]["SourceOut"][];
             /** Message */
@@ -2964,6 +3870,11 @@ export interface components {
             /** Name */
             name: string;
             /**
+             * Office Id
+             * @description Лише для джерел: відділ
+             */
+            office_id?: number | null;
+            /**
              * Sort
              * @default 100
              */
@@ -2985,6 +3896,11 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+            /**
+             * Office Id
+             * @description Лише для джерел: відділ, до якого належить джерело
+             */
+            office_id?: number | null;
             /** Sort */
             sort: number;
         };
@@ -3399,6 +4315,8 @@ export interface components {
             name?: string | null;
             /** Sort */
             sort?: number | null;
+            /** Stage */
+            stage?: ("lead" | "order") | null;
             /** Stock Action */
             stock_action?: string | null;
             /** System */
@@ -3422,6 +4340,13 @@ export interface components {
             name: string;
             /** Sort */
             sort: number;
+            /**
+             * Stage
+             * @description Розділ: «Ліди» чи «Замовлення»
+             * @default order
+             * @enum {string}
+             */
+            stage: "lead" | "order";
             /** Stock Action */
             stock_action: string;
             /** System */
@@ -3541,6 +4466,7 @@ export interface components {
             country: string;
             /** Created At */
             created_at: string | null;
+            customer?: components["schemas"]["OrderCustomer"] | null;
             /** Customer Name */
             customer_name: string;
             /** Delivered At */
@@ -3609,6 +4535,8 @@ export interface components {
              * @default
              */
             last_name: string;
+            /** Legal Entity Id */
+            legal_entity_id?: number | null;
             manager: components["schemas"]["UserOut"] | null;
             /** Manager Id */
             manager_id: number | null;
@@ -3826,6 +4754,57 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /** VariantIn */
+        VariantIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Attribute Ids */
+            attribute_ids?: number[];
+            /** Id */
+            id?: number | null;
+            /**
+             * Initial Stock
+             * @description Лише для нового варіанта
+             * @default 0
+             */
+            initial_stock: number;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** Price */
+            price?: number | string | null;
+            /**
+             * Sku
+             * @default
+             */
+            sku: string;
+        };
+        /** VariantOut */
+        VariantOut: {
+            /** Active */
+            active: boolean;
+            /** Attribute Ids */
+            attribute_ids: number[];
+            /** Available */
+            available: number;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Price */
+            price: number | null;
+            /** Reserved */
+            reserved: number;
+            /** Sku */
+            sku: string;
+            /** Stock */
+            stock: number;
+        };
         /** WarehouseOut */
         WarehouseOut: {
             /** Kinds */
@@ -3940,6 +4919,627 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Ok"];
+                };
+            };
+        };
+    };
+    blocked_ips_api_blocked_ips_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlockedIpOut"][];
+                };
+            };
+        };
+    };
+    blocked_ip_add_api_blocked_ips_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlockedIpIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlockedIpOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    blocked_ip_delete_api_blocked_ips__bid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlockedIpOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attribute_group_save_api_catalog_attribute_groups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttributeGroupIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttributeGroupOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attribute_group_delete_api_catalog_attribute_groups__gid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttributeGroupOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attributes_api_catalog_attributes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttributeGroupOut"][];
+                };
+            };
+        };
+    };
+    attribute_save_api_catalog_attributes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttributeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttributeGroupOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attribute_delete_api_catalog_attributes__aid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                aid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttributeGroupOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    categories_api_catalog_categories_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryOut"][];
+                };
+            };
+        };
+    };
+    category_save_api_catalog_categories_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    category_delete_api_catalog_categories__cid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    manufacturers_api_catalog_manufacturers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManufacturerOut"][];
+                };
+            };
+        };
+    };
+    manufacturer_save_api_catalog_manufacturers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManufacturerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManufacturerOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    manufacturer_delete_api_catalog_manufacturers__mid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManufacturerOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    groups_api_customer_groups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerGroupOut"][];
+                };
+            };
+        };
+    };
+    group_save_api_customer_groups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerGroupIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerGroupOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    group_delete_api_customer_groups__gid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerGroupOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    customers_api_customers_get: {
+        parameters: {
+            query?: {
+                q?: string;
+                group?: string;
+                blacklist?: string;
+                sort?: string;
+                desc?: boolean;
+                min_orders?: number;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    customer_create_api_customers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    customer_api_customers__cid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    customer_update_api_customers__cid__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cid: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -4299,6 +5899,37 @@ export interface operations {
                 "application/json": components["schemas"]["TextIn"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fiscalize_api_orders__order_id__fiscalize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -4689,6 +6320,9 @@ export interface operations {
             query?: {
                 q?: string;
                 show?: string;
+                category?: number;
+                manufacturer?: number;
+                stock_state?: string;
             };
             header?: never;
             path?: never;
@@ -4780,6 +6414,37 @@ export interface operations {
             };
         };
     };
+    product_delete_api_products__pid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDeleteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     product_update_api_products__pid__patch: {
         parameters: {
             query?: never;
@@ -4802,6 +6467,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProductOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    photo_order_api_products__pid__photos_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pid: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": number[];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    photo_upload_api_products__pid__photos_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pid: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_photo_upload_api_products__pid__photos_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    photo_delete_api_products__pid__photos__photo_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pid: number;
+                photo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoOut"][];
                 };
             };
             /** @description Validation Error */
@@ -5075,6 +6842,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SourceIn"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    legal_entities_save_api_settings_legal_entities_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalEntityIn"][];
             };
         };
         responses: {
@@ -5583,6 +7383,7 @@ export interface operations {
                 shop?: string;
                 np_account?: string;
                 mark?: string;
+                legal_entity?: string;
                 country?: string;
                 site?: string;
                 utm_source?: string;
@@ -5643,6 +7444,7 @@ export interface operations {
                 shop?: string;
                 np_account?: string;
                 mark?: string;
+                legal_entity?: string;
                 country?: string;
                 site?: string;
                 utm_source?: string;
@@ -5724,6 +7526,7 @@ export interface operations {
                 shop?: string;
                 np_account?: string;
                 mark?: string;
+                legal_entity?: string;
                 country?: string;
                 site?: string;
                 utm_source?: string;
@@ -5786,6 +7589,7 @@ export interface operations {
                 shop?: string;
                 np_account?: string;
                 mark?: string;
+                legal_entity?: string;
                 country?: string;
                 site?: string;
                 utm_source?: string;
@@ -5846,6 +7650,7 @@ export interface operations {
                 shop?: string;
                 np_account?: string;
                 mark?: string;
+                legal_entity?: string;
                 country?: string;
                 site?: string;
                 utm_source?: string;
