@@ -38,3 +38,19 @@ def test_extra_fields_can_be_switched_off(api):
     assert r.status_code == 200, r.text
     meta = api.get("/api/meta").json()
     assert meta["extra_on"] == [True, True, False, False] and meta["extra_fields"][0] == "Магазин"
+
+
+def test_payment_method_own_image(api, db, tmp_path, monkeypatch):
+    from app.config import config
+    monkeypatch.setattr(config, "MEDIA_DIR", str(tmp_path))
+    png = bytes.fromhex("89504e470d0a1a0a0000000d4948445200000001000000010806000000"
+                        "1f15c4890000000d49444154789c6360f8cf000001010100a1b3d9050000000049454e44ae426082")
+    r = api.post("/api/settings/payment-methods/16/image", files={"file": ("np.png", png, "image/png")})
+    assert r.status_code == 200, r.text
+    img = next(m for m in r.json()["payment_methods"] if m["id"] == 16)["image"]
+    assert img.startswith("/media/pay/16-") and img.endswith(".png")
+    assert api.get(img).content == png
+    assert api.post("/api/settings/payment-methods/16/image", files={"file": ("x.svg", b"<svg/>", "image/svg+xml")}).status_code == 400
+    r = api.delete("/api/settings/payment-methods/16/image")
+    assert next(m for m in r.json()["payment_methods"] if m["id"] == 16)["image"] == ""
+    assert not list((tmp_path / "pay").iterdir())

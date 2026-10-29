@@ -348,6 +348,7 @@ class PaymentMethod(Base):
     # що має стояти в ТТН Нової Пошти (колонка «Перевірка оплати»): "" — не перевіряти,
     # control — контроль оплати (NovaPay), backward — грошовий переказ, none — без післяплати
     np_cod: Mapped[str] = mapped_column(String(10), default="")
+    image: Mapped[str] = mapped_column(String(160), default="")  # свій значок (файл у MEDIA_DIR/pay), напр. офіційний логотип
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort: Mapped[int] = mapped_column(Integer, default=100)
 

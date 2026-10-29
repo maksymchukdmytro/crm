@@ -99,7 +99,8 @@ def j_product(p: Product) -> dict:
 
 def j_payment_method(m) -> dict:
     return {"id": m.id, "name": m.name, "icon": m.icon, "kind": m.kind, "checkbox_type": m.checkbox_type or "",
-            "np_cod": m.np_cod or "", "active": m.is_active, "sort": m.sort}
+            "np_cod": m.np_cod or "", "image": f"/media/pay/{m.image}" if m.image else "",
+            "active": m.is_active, "sort": m.sort}
 
 
 def j_source(x) -> dict:

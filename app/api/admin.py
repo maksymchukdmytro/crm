@@ -1,6 +1,9 @@
 """API: оплати й звірка, звіти, журнал дій, налаштування, користувачі."""
 from __future__ import annotations
 
+import uuid
+from pathlib import Path
+
 import secrets
 from datetime import timedelta
 from decimal import Decimal
@@ -350,6 +353,50 @@ def payment_methods_save(request: Request, body: list[PaymentMethodIn], db: Sess
         m.np_cod = b.np_cod
     audit.log(db, user, "settings", None, "update", {"поля": ["види оплат"]})
     db.commit()
+    return _settings_payload(request, db)
+
+
+PAY_IMAGE_TYPES = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}  # без SVG — може містити скрипти
+
+
+def _pay_dir() -> Path:
+    d = Path(config.MEDIA_DIR) / "pay"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+@router.post("/settings/payment-methods/{mid}/image", response_model=SettingsOut)
+async def payment_method_image(mid: int, request: Request, file: UploadFile = File(...), db: Session = Depends(get_db),
+                               user: User = Depends(admin)):
+    """Свій значок виду оплати (наприклад, офіційний логотип платіжної системи): PNG, JPG, WEBP або GIF до 1 МБ."""
+    m = db.get(PaymentMethod, mid)
+    if m is None:
+        raise HTTPException(404, "Вид оплати не знайдено")
+    ext = PAY_IMAGE_TYPES.get((file.content_type or "").lower())
+    if not ext:
+        bad("Підтримуються PNG, JPG, WEBP і GIF")
+    data = await file.read()
+    if len(data) > 1024 * 1024:
+        bad("Картинка більша за 1 МБ")
+    old = m.image
+    m.image = f"{mid}-{uuid.uuid4().hex[:10]}{ext}"
+    (_pay_dir() / m.image).write_bytes(data)
+    if old:
+        (_pay_dir() / old).unlink(missing_ok=True)
+    audit.log(db, user, "settings", None, "update", {"поля": [f"значок виду оплати «{m.name}»"]})
+    db.commit()
+    return _settings_payload(request, db)
+
+
+@router.delete("/settings/payment-methods/{mid}/image", response_model=SettingsOut)
+def payment_method_image_delete(mid: int, request: Request, db: Session = Depends(get_db), user: User = Depends(admin)):
+    m = db.get(PaymentMethod, mid)
+    if m is None:
+        raise HTTPException(404, "Вид оплати не знайдено")
+    if m.image:
+        (_pay_dir() / m.image).unlink(missing_ok=True)
+        m.image = ""
+        db.commit()
     return _settings_payload(request, db)
 
 

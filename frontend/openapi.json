@@ -355,6 +355,20 @@
     "title": "BlockedIpOut",
     "type": "object"
    },
+   "Body_payment_method_image_api_settings_payment_methods__mid__image_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
+    ],
+    "title": "Body_payment_method_image_api_settings_payment_methods__mid__image_post",
+    "type": "object"
+   },
    "Body_payments_import_api_payments_import_post": {
     "properties": {
      "file": {
@@ -4975,6 +4989,12 @@
      "id": {
       "title": "Id",
       "type": "integer"
+     },
+     "image": {
+      "default": "",
+      "description": "свій значок (адреса картинки) замість стандартного",
+      "title": "Image",
+      "type": "string"
      },
      "kind": {
       "description": "cod — післяплата, partial — передоплата + післяплата, prepaid — без післяплати",
@@ -13414,6 +13434,99 @@
      }
     },
     "summary": "Payment Methods Save",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/payment-methods/{mid}/image": {
+   "delete": {
+    "operationId": "payment_method_image_delete_api_settings_payment_methods__mid__image_delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "mid",
+      "required": true,
+      "schema": {
+       "title": "Mid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Payment Method Image Delete",
+    "tags": [
+     "admin"
+    ]
+   },
+   "post": {
+    "description": "Свій значок виду оплати (наприклад, офіційний логотип платіжної системи): PNG, JPG, WEBP або GIF до 1 МБ.",
+    "operationId": "payment_method_image_api_settings_payment_methods__mid__image_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "mid",
+      "required": true,
+      "schema": {
+       "title": "Mid",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_payment_method_image_api_settings_payment_methods__mid__image_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Payment Method Image",
     "tags": [
      "admin"
     ]

@@ -1028,6 +1028,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings/payment-methods/{mid}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Payment Method Image
+         * @description Свій значок виду оплати (наприклад, офіційний логотип платіжної системи): PNG, JPG, WEBP або GIF до 1 МБ.
+         */
+        post: operations["payment_method_image_api_settings_payment_methods__mid__image_post"];
+        /** Payment Method Image Delete */
+        delete: operations["payment_method_image_delete_api_settings_payment_methods__mid__image_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/settings/shops": {
         parameters: {
             query?: never;
@@ -1564,6 +1585,11 @@ export interface components {
             id: number;
             /** Ip */
             ip: string;
+        };
+        /** Body_payment_method_image_api_settings_payment_methods__mid__image_post */
+        Body_payment_method_image_api_settings_payment_methods__mid__image_post: {
+            /** File */
+            file: string;
         };
         /** Body_payments_import_api_payments_import_post */
         Body_payments_import_api_payments_import_post: {
@@ -3235,6 +3261,12 @@ export interface components {
             icon: string;
             /** Id */
             id: number;
+            /**
+             * Image
+             * @description свій значок (адреса картинки) замість стандартного
+             * @default
+             */
+            image: string;
             /**
              * Kind
              * @description cod — післяплата, partial — передоплата + післяплата, prepaid — без післяплати
@@ -7345,6 +7377,72 @@ export interface operations {
                 "application/json": components["schemas"]["PaymentMethodIn"][];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    payment_method_image_api_settings_payment_methods__mid__image_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mid: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_payment_method_image_api_settings_payment_methods__mid__image_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    payment_method_image_delete_api_settings_payment_methods__mid__image_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

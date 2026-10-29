@@ -356,7 +356,7 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
             <h3 className="ocs-h"><CreditCard size={15} /> Оплата</h3>
             <IconPick items={meta.payment_methods} value={form.payment_method_id || null} ariaLabel="Вид оплати"
               onChange={(id) => { const m = meta.payment_methods.find((x) => x.id === id); set({ payment_method_id: id ?? "", payment_type: m?.kind ?? "cod" }); }}
-              render={(m) => <PayLabel icon={m.icon} name={m.name} size={20} />} placeholder={<span>Оберіть вид оплати</span>} />
+              render={(m) => <PayLabel icon={m.icon} image={m.image} name={m.name} size={20} />} placeholder={<span>Оберіть вид оплати</span>} />
             {method && <p className="hint pay-note">{method.kind === "prepaid" ? "Оплачено повністю — ТТН без післяплати" : method.kind === "partial" ? "Передоплата, решта — післяплатою" : "Уся сума — при отриманні"}</p>}
             {form.payment_type === "partial" && <div className="fl"><span>Передоплата</span><div className="fl-in"><input value={form.prepayment} onChange={(e) => set({ prepayment: e.target.value })} placeholder="0" inputMode="decimal" /><span className="unit">грн</span></div></div>}
           </section>
