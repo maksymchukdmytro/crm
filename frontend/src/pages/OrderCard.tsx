@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Bell, Building2, CornerDownRight, FileText, CreditCard, ExternalLink, Globe, Hand, MessageCircle, Package, Phone, Plus, Printer, Receipt, RefreshCw, Send, Sparkles, Stamp, Tag, Trash2, Truck, User, UserRound } from "lucide-react";
+import { Ban, Bell, Building2, ChevronDown, CornerDownRight, FileText, ShieldCheck, CreditCard, ExternalLink, Globe, Hand, MessageCircle, Package, Phone, Plus, Printer, Receipt, RefreshCw, Send, Sparkles, Stamp, Tag, Trash2, Truck, User, UserRound } from "lucide-react";
 import { api, ApiError, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num, phone as fmtPhone } from "../lib/format";
@@ -10,6 +10,7 @@ import { Badge, deliveryKind, Modal, NpAutocomplete, PayCheck, Pill, Spinner } f
 import { flag, PayLabel } from "../components/payicons";
 import { IconPick, MarkIcon } from "../components/marks";
 import TtnDialog from "./TtnDialog";
+import { DOC_KINDS, printDocument, type DocKind } from "../lib/docs";
 
 type Form = {
   customer_name: string; phone: string; email: string; comment: string; status_id: number; manager_id: number | "";
@@ -255,8 +256,8 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
               <button type="button" className="btn sm" onClick={() => printLabel(order.id, toast)}
                 title={order.label === "rozetka" ? "Маркування ROZETKA Delivery (з кабінету Rozetka)" : "Наклейка на посилку"}>
                 <Printer size={15} /> {order.label === "rozetka" ? "Маркування Rozetka" : "Наклейка"}</button>
-              <a className="btn sm icon" href={`${ROOT}/classic/orders/${oid}/print`} target="_blank" rel="noreferrer" title="Бланк замовлення"><FileText size={15} /></a>
-            </> : <a className="btn sm icon" href={`${ROOT}/classic/orders/${oid}/print`} target="_blank" rel="noreferrer" title="Бланк замовлення"><Printer size={15} /></a>}
+            </> : null}
+            <PrintMenu orderId={order.id} onError={(m) => toast(m, "error")} />
           </div>}
         </div>
       </div>
@@ -450,6 +451,41 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
         <span className={`oc-dirty ${dirty ? "on" : ""}`}>{dirty ? "Є незбережені зміни · Ctrl+S" : isNew ? "" : "Усі зміни збережено"}</span>
         <button type="submit" form="oc-form" className="btn primary" disabled={save.isPending}>{save.isPending ? "Збереження…" : isNew ? "Створити замовлення" : "Зберегти"}</button>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- друк документів: видаткова, рахунок-фактура, гарантійний талон
+function PrintMenu({ orderId, onError }: { orderId: number; onError: (m: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); setOpen(false); } };
+    document.addEventListener("mousedown", h);
+    document.addEventListener("keydown", k, true);
+    return () => { document.removeEventListener("mousedown", h); document.removeEventListener("keydown", k, true); };
+  }, [open]);
+  const items: [DocKind, typeof FileText, string][] = [
+    ["nakladna", FileText, "Для відвантаження товару"], ["rahunok", Receipt, "Для оплати на рахунок (з реквізитами)"],
+    ["garantiya", ShieldCheck, "З умовами гарантії"],
+  ];
+  return (
+    <div className="print-menu" ref={ref}>
+      <button type="button" className="btn sm" aria-haspopup="menu" aria-expanded={open} disabled={busy} onClick={() => setOpen(!open)}>
+        <Printer size={15} /> {busy ? "Готую…" : "Друк"}<ChevronDown size={14} />
+      </button>
+      {open && (
+        <div className="print-pop" role="menu">
+          {items.map(([kind, Icon, hint]) => (
+            <button type="button" role="menuitem" key={kind} onClick={async () => { setOpen(false); setBusy(true); await printDocument(kind, orderId, onError); setBusy(false); }}>
+              <Icon size={17} /><span><b>{DOC_KINDS[kind].title}</b><small>{hint}</small></span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

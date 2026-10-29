@@ -88,7 +88,7 @@ def j_product(p: Product) -> dict:
     return {"id": p.id, "sku": p.sku or "", "name": p.name, "price": money(p.price), "cost": money(p.cost),
             "weight": float(p.weight or 0), "stock": p.stock, "reserved": p.reserved, "available": p.available,
             "min_stock": p.min_stock, "length": float(p.length or 0), "width": float(p.width or 0),
-            "height": float(p.height or 0), "ship_description": p.ship_description or "", "upsell": p.is_upsell,
+            "height": float(p.height or 0), "ship_description": p.ship_description or "", "warranty_months": p.warranty_months or 0, "upsell": p.is_upsell,
             "upsell_for": [int(x) for x in (p.upsell_for or [])] if p.is_upsell else [], "active": p.is_active,
             "category_id": p.category_id, "manufacturer_id": p.manufacturer_id, "model": p.model or "",
             "countries": list(p.countries or []), "spec_price": money(p.spec_price), "sale_price": money(p.sale_price),

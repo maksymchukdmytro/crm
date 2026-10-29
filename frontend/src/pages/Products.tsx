@@ -156,6 +156,7 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
       const body: Record<string, unknown> = {
         name: v("name", ""), sku: v("sku", ""), price: n("price"), cost: n("cost"), weight: n("weight", "0.5"), min_stock: n("min_stock"),
         length: num(v("length", 0)), width: num(v("width", 0)), height: num(v("height", 0)), ship_description: String(v("ship_description", "")),
+        warranty_months: Math.max(0, Math.round(num(v("warranty_months", 0)))),
         upsell: !!v("upsell", false), upsell_for: curFor, active: !!v("active", true), category_id: v<number | null>("category_id", null) || null,
         manufacturer_id: v<number | null>("manufacturer_id", null) || null, model: String(v("model", "")), description: String(v("description", "")),
         countries: v<string[]>("countries", []), spec_price: n("spec_price"), wholesale_price: n("wholesale_price"),
@@ -233,6 +234,7 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
           {tab === "variants" && <VariantsTab rows={curVariants} onChange={setVariants} isNew={isNew} basePrice={sale} />}
           {tab === "shipping" && <>
             <Field label="Опис відправлення для Нової Пошти" hint="Наприклад «Аксесуари до фототехніки». Підставляється в ТТН разом із розмірами"><input value={String(v("ship_description", ""))} onChange={set("ship_description")} /></Field>
+            <Field label="Гарантія, міс." hint="Для гарантійного талону; 0 — як у налаштуваннях документів"><input value={String(v("warranty_months", 0))} onChange={set("warranty_months")} inputMode="numeric" /></Field>
             <div className="cols c3">
               <Field label="Вага, кг"><input value={String(v("weight", "0.5"))} onChange={set("weight")} inputMode="decimal" /></Field>
               <Field label="Довжина, см"><input value={String(v("length", "") || "")} onChange={set("length")} inputMode="decimal" placeholder="—" /></Field>

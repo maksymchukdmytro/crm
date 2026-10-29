@@ -1864,6 +1864,214 @@
     "title": "DayRow",
     "type": "object"
    },
+   "DocItem": {
+    "properties": {
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "price": {
+      "title": "Price",
+      "type": "number"
+     },
+     "qty": {
+      "title": "Qty",
+      "type": "integer"
+     },
+     "sku": {
+      "default": "",
+      "title": "Sku",
+      "type": "string"
+     },
+     "upsell": {
+      "default": false,
+      "title": "Upsell",
+      "type": "boolean"
+     },
+     "warranty_months": {
+      "default": 0,
+      "title": "Warranty Months",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "name",
+     "qty",
+     "price"
+    ],
+    "title": "DocItem",
+    "type": "object"
+   },
+   "DocOrder": {
+    "properties": {
+     "address": {
+      "default": "",
+      "title": "Address",
+      "type": "string"
+     },
+     "buyer": {
+      "title": "Buyer",
+      "type": "string"
+     },
+     "cod_amount": {
+      "default": 0,
+      "title": "Cod Amount",
+      "type": "number"
+     },
+     "created": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created"
+     },
+     "date": {
+      "description": "дата документа (сьогодні, за часовим поясом CRM)",
+      "title": "Date",
+      "type": "string"
+     },
+     "delivery": {
+      "default": "",
+      "title": "Delivery",
+      "type": "string"
+     },
+     "discount": {
+      "default": 0,
+      "title": "Discount",
+      "type": "number"
+     },
+     "email": {
+      "default": "",
+      "title": "Email",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/DocItem"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "payment": {
+      "default": "",
+      "title": "Payment",
+      "type": "string"
+     },
+     "phone": {
+      "title": "Phone",
+      "type": "string"
+     },
+     "prepayment": {
+      "default": 0,
+      "title": "Prepayment",
+      "type": "number"
+     },
+     "total": {
+      "title": "Total",
+      "type": "number"
+     },
+     "ttn": {
+      "default": "",
+      "title": "Ttn",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "date",
+     "buyer",
+     "phone",
+     "items",
+     "total"
+    ],
+    "title": "DocOrder",
+    "type": "object"
+   },
+   "DocSeller": {
+    "properties": {
+     "address": {
+      "default": "",
+      "title": "Address",
+      "type": "string"
+     },
+     "bank": {
+      "default": "",
+      "title": "Bank",
+      "type": "string"
+     },
+     "code": {
+      "default": "",
+      "title": "Code",
+      "type": "string"
+     },
+     "code_label": {
+      "default": "РНОКПП",
+      "title": "Code Label",
+      "type": "string"
+     },
+     "iban": {
+      "default": "",
+      "title": "Iban",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "phone": {
+      "default": "",
+      "title": "Phone",
+      "type": "string"
+     },
+     "signer": {
+      "default": "",
+      "title": "Signer",
+      "type": "string"
+     },
+     "vat_note": {
+      "default": "Без ПДВ",
+      "title": "Vat Note",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "DocSeller",
+    "type": "object"
+   },
+   "DocumentsOut": {
+    "properties": {
+     "docs": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Docs",
+      "type": "object"
+     },
+     "order": {
+      "$ref": "#/components/schemas/DocOrder"
+     },
+     "seller": {
+      "$ref": "#/components/schemas/DocSeller"
+     }
+    },
+    "required": [
+     "order",
+     "seller",
+     "docs"
+    ],
+    "title": "DocumentsOut",
+    "type": "object"
+   },
    "DoneOut": {
     "properties": {
      "done": {
@@ -2057,10 +2265,27 @@
    "LegalEntityIn": {
     "additionalProperties": false,
     "properties": {
+     "address": {
+      "default": "",
+      "maxLength": 255,
+      "title": "Address",
+      "type": "string"
+     },
+     "bank": {
+      "default": "",
+      "maxLength": 160,
+      "title": "Bank",
+      "type": "string"
+     },
      "code": {
       "default": "",
       "maxLength": 20,
       "title": "Code",
+      "type": "string"
+     },
+     "code_label": {
+      "default": "РНОКПП",
+      "title": "Code Label",
       "type": "string"
      },
      "delete": {
@@ -2099,6 +2324,24 @@
       "maxLength": 255,
       "title": "Name",
       "type": "string"
+     },
+     "phone": {
+      "default": "",
+      "maxLength": 40,
+      "title": "Phone",
+      "type": "string"
+     },
+     "signer": {
+      "default": "",
+      "maxLength": 120,
+      "title": "Signer",
+      "type": "string"
+     },
+     "vat_note": {
+      "default": "Без ПДВ",
+      "maxLength": 80,
+      "title": "Vat Note",
+      "type": "string"
      }
     },
     "required": [
@@ -2109,6 +2352,16 @@
    },
    "LegalEntityOut": {
     "properties": {
+     "address": {
+      "default": "",
+      "title": "Address",
+      "type": "string"
+     },
+     "bank": {
+      "default": "",
+      "title": "Bank",
+      "type": "string"
+     },
      "cashier": {
       "default": "",
       "description": "Назва каси Checkbox цієї юрособи",
@@ -2117,6 +2370,11 @@
      },
      "code": {
       "title": "Code",
+      "type": "string"
+     },
+     "code_label": {
+      "default": "РНОКПП",
+      "title": "Code Label",
       "type": "string"
      },
      "iban": {
@@ -2144,9 +2402,24 @@
       "title": "Orders",
       "type": "integer"
      },
+     "phone": {
+      "default": "",
+      "title": "Phone",
+      "type": "string"
+     },
+     "signer": {
+      "default": "",
+      "title": "Signer",
+      "type": "string"
+     },
      "sort": {
       "title": "Sort",
       "type": "integer"
+     },
+     "vat_note": {
+      "default": "Без ПДВ",
+      "title": "Vat Note",
+      "type": "string"
      }
     },
     "required": [
@@ -5415,6 +5688,12 @@
       "title": "Variants",
       "type": "array"
      },
+     "warranty_months": {
+      "default": 0,
+      "description": "Гарантія, міс.; 0 — як у налаштуваннях документів",
+      "title": "Warranty Months",
+      "type": "integer"
+     },
      "weight": {
       "title": "Weight",
       "type": "number"
@@ -5702,6 +5981,19 @@
       "description": "Повний список варіантів; відсутні буде видалено (або вимкнено, якщо вже продавались)",
       "title": "Variants"
      },
+     "warranty_months": {
+      "anyOf": [
+       {
+        "maximum": 240.0,
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Warranty Months"
+     },
      "weight": {
       "anyOf": [
        {
@@ -5892,6 +6184,12 @@
       },
       "title": "Variants",
       "type": "array"
+     },
+     "warranty_months": {
+      "default": 0,
+      "description": "Гарантія, міс.; 0 — як у налаштуваннях документів",
+      "title": "Warranty Months",
+      "type": "integer"
      },
      "weight": {
       "title": "Weight",
@@ -11793,6 +12091,49 @@
      }
     },
     "summary": "Comment",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/documents": {
+   "get": {
+    "description": "Дані для друку: видаткова накладна, рахунок-фактура, гарантійний талон (PDF збирає браузер).",
+    "operationId": "order_documents_api_orders__order_id__documents_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DocumentsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Order Documents",
     "tags": [
      "orders"
     ]

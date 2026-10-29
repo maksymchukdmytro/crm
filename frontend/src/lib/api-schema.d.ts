@@ -513,6 +513,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{order_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Order Documents
+         * @description Дані для друку: видаткова накладна, рахунок-фактура, гарантійний талон (PDF збирає браузер).
+         */
+        get: operations["order_documents_api_orders__order_id__documents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{order_id}/fiscalize": {
         parameters: {
             query?: never;
@@ -2120,6 +2140,144 @@ export interface components {
             /** Leads */
             leads: number;
         };
+        /** DocItem */
+        DocItem: {
+            /** Name */
+            name: string;
+            /** Price */
+            price: number;
+            /** Qty */
+            qty: number;
+            /**
+             * Sku
+             * @default
+             */
+            sku: string;
+            /**
+             * Upsell
+             * @default false
+             */
+            upsell: boolean;
+            /**
+             * Warranty Months
+             * @default 0
+             */
+            warranty_months: number;
+        };
+        /** DocOrder */
+        DocOrder: {
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /** Buyer */
+            buyer: string;
+            /**
+             * Cod Amount
+             * @default 0
+             */
+            cod_amount: number;
+            /** Created */
+            created?: string | null;
+            /**
+             * Date
+             * @description дата документа (сьогодні, за часовим поясом CRM)
+             */
+            date: string;
+            /**
+             * Delivery
+             * @default
+             */
+            delivery: string;
+            /**
+             * Discount
+             * @default 0
+             */
+            discount: number;
+            /**
+             * Email
+             * @default
+             */
+            email: string;
+            /** Id */
+            id: number;
+            /** Items */
+            items: components["schemas"]["DocItem"][];
+            /**
+             * Payment
+             * @default
+             */
+            payment: string;
+            /** Phone */
+            phone: string;
+            /**
+             * Prepayment
+             * @default 0
+             */
+            prepayment: number;
+            /** Total */
+            total: number;
+            /**
+             * Ttn
+             * @default
+             */
+            ttn: string;
+        };
+        /** DocSeller */
+        DocSeller: {
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /**
+             * Bank
+             * @default
+             */
+            bank: string;
+            /**
+             * Code
+             * @default
+             */
+            code: string;
+            /**
+             * Code Label
+             * @default РНОКПП
+             */
+            code_label: string;
+            /**
+             * Iban
+             * @default
+             */
+            iban: string;
+            /** Name */
+            name: string;
+            /**
+             * Phone
+             * @default
+             */
+            phone: string;
+            /**
+             * Signer
+             * @default
+             */
+            signer: string;
+            /**
+             * Vat Note
+             * @default Без ПДВ
+             */
+            vat_note: string;
+        };
+        /** DocumentsOut */
+        DocumentsOut: {
+            /** Docs */
+            docs: {
+                [key: string]: string;
+            };
+            order: components["schemas"]["DocOrder"];
+            seller: components["schemas"]["DocSeller"];
+        };
         /** DoneOut */
         DoneOut: {
             /** Done */
@@ -2195,10 +2353,25 @@ export interface components {
         /** LegalEntityIn */
         LegalEntityIn: {
             /**
+             * Address
+             * @default
+             */
+            address: string;
+            /**
+             * Bank
+             * @default
+             */
+            bank: string;
+            /**
              * Code
              * @default
              */
             code: string;
+            /**
+             * Code Label
+             * @default РНОКПП
+             */
+            code_label: string;
             /**
              * Delete
              * @default false
@@ -2223,9 +2396,34 @@ export interface components {
             is_default: boolean;
             /** Name */
             name: string;
+            /**
+             * Phone
+             * @default
+             */
+            phone: string;
+            /**
+             * Signer
+             * @default
+             */
+            signer: string;
+            /**
+             * Vat Note
+             * @default Без ПДВ
+             */
+            vat_note: string;
         };
         /** LegalEntityOut */
         LegalEntityOut: {
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /**
+             * Bank
+             * @default
+             */
+            bank: string;
             /**
              * Cashier
              * @description Назва каси Checkbox цієї юрособи
@@ -2234,6 +2432,11 @@ export interface components {
             cashier: string;
             /** Code */
             code: string;
+            /**
+             * Code Label
+             * @default РНОКПП
+             */
+            code_label: string;
             /** Iban */
             iban: string;
             /** Id */
@@ -2249,8 +2452,23 @@ export interface components {
              * @default 0
              */
             orders: number;
+            /**
+             * Phone
+             * @default
+             */
+            phone: string;
+            /**
+             * Signer
+             * @default
+             */
+            signer: string;
             /** Sort */
             sort: number;
+            /**
+             * Vat Note
+             * @default Без ПДВ
+             */
+            vat_note: string;
         };
         /** LoginIn */
         LoginIn: {
@@ -3471,6 +3689,12 @@ export interface components {
             upsell_for?: number[];
             /** Variants */
             variants?: components["schemas"]["VariantOut"][];
+            /**
+             * Warranty Months
+             * @description Гарантія, міс.; 0 — як у налаштуваннях документів
+             * @default 0
+             */
+            warranty_months: number;
             /** Weight */
             weight: number;
             /**
@@ -3530,6 +3754,8 @@ export interface components {
              * @description Повний список варіантів; відсутні буде видалено (або вимкнено, якщо вже продавались)
              */
             variants?: components["schemas"]["VariantIn"][] | null;
+            /** Warranty Months */
+            warranty_months?: number | null;
             /** Weight */
             weight?: number | string | null;
             /** Wholesale Price */
@@ -3619,6 +3845,12 @@ export interface components {
             upsell_for?: number[];
             /** Variants */
             variants?: components["schemas"]["VariantOut"][];
+            /**
+             * Warranty Months
+             * @description Гарантія, міс.; 0 — як у налаштуваннях документів
+             * @default 0
+             */
+            warranty_months: number;
             /** Weight */
             weight: number;
             /**
@@ -6291,6 +6523,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    order_documents_api_orders__order_id__documents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentsOut"];
                 };
             };
             /** @description Validation Error */

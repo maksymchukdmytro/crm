@@ -40,6 +40,8 @@ SECTION_KEYS = {
     "meest": ["meest_username", "meest_password", "meest_sender_branch_id", "meest_sender_name", "meest_sender_phone"],
     "sms": ["sms_enabled", "sms_token", "sms_sender", "viber_sender"],
     "alerts": ["alert_tg_token", "alert_tg_chat", "alert_no_leads_hours"],
+    "docs": ["doc_prefix", "invoice_prefix", "warranty_prefix", "doc_unit", "doc_accent", "doc_site", "doc_note", "doc_logo",
+             "invoice_days", "warranty_months", "warranty_terms"],
 }
 CHECKBOXES = {"managers_see_own_only", "auto_status_from_tracking", "up_sandbox", "sms_enabled"}
 

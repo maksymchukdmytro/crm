@@ -209,6 +209,7 @@ class Product(Base):
     width: Mapped[Decimal] = mapped_column(Numeric(7, 1), default=0)
     height: Mapped[Decimal] = mapped_column(Numeric(7, 1), default=0)
     ship_description: Mapped[str] = mapped_column(String(255), default="")  # опис відправлення для НП
+    warranty_months: Mapped[int] = mapped_column(Integer, default=0)  # гарантія, міс.; 0 — як у налаштуваннях документів
     is_upsell: Mapped[bool] = mapped_column(Boolean, default=False)  # товар для допродажу
     # до яких основних товарів пропонувати допродаж (id товарів); порожньо — до будь-якого замовлення
     upsell_for: Mapped[list] = mapped_column(JSON, default=list)
@@ -362,6 +363,13 @@ class LegalEntity(Base):
     name: Mapped[str] = mapped_column(String(255))
     code: Mapped[str] = mapped_column(String(20), default="")  # ЄДРПОУ / РНОКПП
     iban: Mapped[str] = mapped_column(String(34), default="")
+    # реквізити для документів (видаткова, рахунок-фактура, гарантійний талон)
+    code_label: Mapped[str] = mapped_column(String(10), default="РНОКПП")  # РНОКПП / ІПН / ЄДРПОУ
+    address: Mapped[str] = mapped_column(String(255), default="")
+    bank: Mapped[str] = mapped_column(String(160), default="")
+    phone: Mapped[str] = mapped_column(String(40), default="")
+    vat_note: Mapped[str] = mapped_column(String(80), default="Без ПДВ")
+    signer: Mapped[str] = mapped_column(String(120), default="")  # хто підписує документи: «Прізвище І.П.»
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort: Mapped[int] = mapped_column(Integer, default=100)

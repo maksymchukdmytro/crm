@@ -1,6 +1,7 @@
 """API: оплати й звірка, звіти, журнал дій, налаштування, користувачі."""
 from __future__ import annotations
 
+import re
 import uuid
 from pathlib import Path
 
@@ -254,6 +255,8 @@ def _legal_entities(db: Session) -> list[dict]:
                 .filter(CheckboxCashier.is_active.is_(True), CheckboxCashier.legal_entity_id.isnot(None))
                 .order_by(CheckboxCashier.sort.desc())}
     return [{"id": x.id, "name": x.name, "code": x.code, "iban": x.iban, "is_default": x.is_default,
+             "code_label": x.code_label or "РНОКПП", "address": x.address or "", "bank": x.bank or "", "phone": x.phone or "",
+             "vat_note": x.vat_note or "", "signer": x.signer or "",
              "is_active": x.is_active, "sort": x.sort, "orders": counts.get(x.id, 0), "cashier": cashiers.get(x.id, "")}
             for x in db.query(LegalEntity).order_by(LegalEntity.sort, LegalEntity.id)]
 
@@ -715,6 +718,9 @@ def legal_entities_save(request: Request, body: list[LegalEntityIn], db: Session
             x = LegalEntity()
             db.add(x)
         x.name, x.code, x.iban = b.name.strip()[:255], b.code.strip()[:20], b.iban.strip().replace(" ", "")[:34]
+        x.code_label = b.code_label if b.code_label in ("РНОКПП", "ІПН", "ЄДРПОУ") else "РНОКПП"
+        x.address, x.bank, x.phone = b.address.strip()[:255], b.bank.strip()[:160], b.phone.strip()[:40]
+        x.vat_note, x.signer = (b.vat_note.strip() or "Без ПДВ")[:80], b.signer.strip()[:120]
         x.is_default, x.is_active, x.sort = b.is_default and b.is_active, b.is_active, (i + 1) * 10
     db.flush()
     rows = db.query(LegalEntity).order_by(LegalEntity.sort, LegalEntity.id).all()
@@ -744,6 +750,12 @@ def settings_save(section: str, request: Request, data: dict[str, str | bool | i
         val = ("1" if v in (True, "1", 1, "on") else "0") if k in CHECKBOXES else str(v if v is not None else "").strip()
         if k in st.SECRET_KEYS and val == "********":
             continue
+        if k == "doc_logo" and val and (not val.startswith("data:image/png;base64,") or len(val) > 1_500_000):
+            bad("Логотип: PNG до 1 МБ")
+        if k == "doc_accent" and val and not re.fullmatch(r"#[0-9a-fA-F]{6}", val):
+            bad("Колір документів: формат #RRGGBB")
+        if k in ("invoice_days", "warranty_months") and val and not val.isdigit():
+            bad("Вкажіть ціле число")
         if st.get(db, k) != val:
             st.set_value(db, k, val)
             changed.append(k)

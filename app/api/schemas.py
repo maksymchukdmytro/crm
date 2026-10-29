@@ -67,6 +67,7 @@ class ProductOut(Out):
     width: float = 0
     height: float = 0
     ship_description: str = ""
+    warranty_months: int = Field(0, description="Гарантія, міс.; 0 — як у налаштуваннях документів")
     upsell: bool
     upsell_for: list[int] = Field(default_factory=list, description="Допродаж: до яких товарів пропонувати (порожньо — до будь-якого)")
     active: bool
@@ -557,6 +558,7 @@ class ProductIn(In):
     width: float | None = Field(None, ge=0, le=1000)
     height: float | None = Field(None, ge=0, le=1000)
     ship_description: str | None = Field(None, max_length=255)
+    warranty_months: int | None = Field(None, ge=0, le=240)
     upsell: bool | None = None
     upsell_for: list[int] | None = None
     active: bool | None = None
@@ -1444,6 +1446,12 @@ class LegalEntityOut(Out):
     name: str
     code: str
     iban: str
+    code_label: str = "РНОКПП"
+    address: str = ""
+    bank: str = ""
+    phone: str = ""
+    vat_note: str = "Без ПДВ"
+    signer: str = ""
     is_default: bool
     is_active: bool
     sort: int
@@ -1456,6 +1464,12 @@ class LegalEntityIn(In):
     name: str = Field(..., max_length=255)
     code: str = Field("", max_length=20)
     iban: str = Field("", max_length=34)
+    code_label: str = "РНОКПП"
+    address: str = Field("", max_length=255)
+    bank: str = Field("", max_length=160)
+    phone: str = Field("", max_length=40)
+    vat_note: str = Field("Без ПДВ", max_length=80)
+    signer: str = Field("", max_length=120)
     is_default: bool = False
     is_active: bool = True
     delete: bool = False
@@ -1547,4 +1561,50 @@ class DashboardOut(Out):
     days: list[DashDay]
     team: list[DashTeam] = Field(default_factory=list)
     top: list[DashTop]
+
+
+# ---------------------------------------------------------------- друк документів
+class DocItem(Out):
+    name: str
+    sku: str = ""
+    qty: int
+    price: float
+    warranty_months: int = 0
+    upsell: bool = False
+
+
+class DocOrder(Out):
+    id: int
+    date: str = Field(description="дата документа (сьогодні, за часовим поясом CRM)")
+    created: str | None = None
+    buyer: str
+    phone: str
+    email: str = ""
+    delivery: str = ""
+    address: str = ""
+    ttn: str = ""
+    items: list[DocItem]
+    discount: float = 0
+    total: float
+    prepayment: float = 0
+    cod_amount: float = 0
+    payment: str = ""
+
+
+class DocSeller(Out):
+    name: str
+    code: str = ""
+    code_label: str = "РНОКПП"
+    iban: str = ""
+    address: str = ""
+    bank: str = ""
+    phone: str = ""
+    vat_note: str = "Без ПДВ"
+    signer: str = ""
+
+
+class DocumentsOut(Out):
+    order: DocOrder
+    seller: DocSeller
+    docs: dict[str, str]
 

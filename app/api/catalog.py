@@ -59,6 +59,8 @@ def _apply_product(p: Product, d: dict):
             setattr(p, f, Decimal(str(d[f])).quantize(Decimal("0.1")))
     if "ship_description" in d and d["ship_description"] is not None:
         p.ship_description = str(d["ship_description"]).strip()[:255]
+    if "warranty_months" in d and d["warranty_months"] is not None:
+        p.warranty_months = max(0, min(int(d["warranty_months"] or 0), 240))
     if "upsell" in d:
         p.is_upsell = bool(d["upsell"])
     if "upsell_for" in d:
