@@ -63,7 +63,8 @@ function ProductModal({ id, editable, onClose }: { id: number | "new"; editable:
   const save = useMutation({
     mutationFn: () => {
       const body = { name: v("name"), sku: v("sku"), price: v("price", "0"), cost: v("cost", "0"), weight: v("weight", "0.5"),
-        min_stock: v("min_stock", "0"), upsell: !!v("upsell", false), upsell_for: curFor, active: !!v("active", true), initial_stock: f.initial_stock };
+        min_stock: v("min_stock", "0"), length: Number(String(v("length", "0")).replace(",", ".")) || 0, width: Number(String(v("width", "0")).replace(",", ".")) || 0,
+        height: Number(String(v("height", "0")).replace(",", ".")) || 0, ship_description: String(v("ship_description", "")), upsell: !!v("upsell", false), upsell_for: curFor, active: !!v("active", true), initial_stock: f.initial_stock };
       return isNew ? api.post<Product>("/products", body) : api.patch<Product>(`/products/${id}`, body);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["products"] }); qc.invalidateQueries({ queryKey: ["meta"] }); toast("Збережено"); onClose(); },
@@ -82,6 +83,12 @@ function ProductModal({ id, editable, onClose }: { id: number | "new"; editable:
               <Field label="Артикул (SKU)" hint="Для прийому заявок з лендингу"><input className="mono" value={String(v("sku"))} onChange={set("sku")} /></Field>
               <Field label="Вага, кг"><input value={String(v("weight", "0.5"))} onChange={set("weight")} inputMode="decimal" /></Field>
             </div>
+            <div className="cols c3">
+              <Field label="Довжина, см"><input value={String(v("length", "") || "")} onChange={set("length")} inputMode="decimal" placeholder="—" /></Field>
+              <Field label="Ширина, см"><input value={String(v("width", "") || "")} onChange={set("width")} inputMode="decimal" placeholder="—" /></Field>
+              <Field label="Висота, см"><input value={String(v("height", "") || "")} onChange={set("height")} inputMode="decimal" placeholder="—" /></Field>
+            </div>
+            <Field label="Опис відправлення для НП" hint="Напр. «Аксесуари до фототехніки». Розміри й опис підставляються в ТТН"><input value={String(v("ship_description", ""))} onChange={set("ship_description")} /></Field>
             <div className="cols">
               <Field label="Ціна продажу, грн"><input value={String(v("price", ""))} onChange={set("price")} inputMode="decimal" required /></Field>
               <Field label="Собівартість, грн" hint="Середня, оновлюється при оприбуткуванні"><input value={String(v("cost", ""))} onChange={set("cost")} inputMode="decimal" /></Field>

@@ -362,7 +362,8 @@ def order_track(order_id: int, request: Request, db: Session = Depends(get_db), 
 @router.get("/orders/{order_id}/label")
 def order_label(order_id: int, request: Request, db: Session = Depends(get_db), user: User = Depends(staff)):
     order = _get_order(db, order_id, user)
-    carrier = get_carrier(order.delivery_method, st.get_all(db))
+    from ..services.delivery import carrier_for
+    carrier = carrier_for(db, order)
     if carrier is None or not order.ttn:
         raise HTTPException(404)
     try:

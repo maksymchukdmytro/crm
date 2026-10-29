@@ -14,11 +14,12 @@ from ..carriers import CarrierError
 from ..carriers.novaposhta import NovaPoshta
 from ..config import config
 from ..db import get_db
-from ..models import CHECKBOX_PAYMENTS, ROLES, STOCK_ACTIONS, AuditLog, Office, Order, OrderMark, OrderSource, Payment, PaymentMethod, StatusReason, SmsMessage, SmsTemplate, Status, User
+from ..models import CHECKBOX_PAYMENTS, ROLES, STOCK_ACTIONS, AuditLog, NpAccount, NpStatusRule, Office, Order, OrderMark, OrderSource, Payment, PaymentMethod, StatusReason, SmsMessage, SmsTemplate, Status, User
 from ..routers.payments import parse_registry
 from ..routers.settings import CHECKBOXES, SECTION_KEYS
 from ..security import hash_password
 from ..services import audit
+from ..services import np as np_svc
 from ..services import payments as pay_svc
 from ..services import reports as rep
 from ..services import settings as st
@@ -27,7 +28,7 @@ from ..services.audit import ACTION_NAMES
 from ..services.orders import normalize_phone, to_int
 from ..services.reports import period_bounds
 from ..web import f_details, parse_date, today_local
-from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn
+from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn, NpAccountIn, NpRuleIn
 from .common import admin, bad, iso, j_payment, j_payment_method, j_source, j_status, j_user, sales
 
 router = APIRouter(prefix="/api", tags=["admin"])
@@ -156,6 +157,18 @@ def alert_test(db: Session = Depends(get_db), user: User = Depends(admin)):
 
 
 # ---------------------------------------------------------------- налаштування
+NP_FIELDS = ("name", "sender_ref", "sender_name", "contact_ref", "contact_name", "sender_phone", "city_name", "city_ref",
+             "warehouse_name", "warehouse_ref", "payer", "cargo_type", "service_type", "cod_mode", "cod_payer",
+             "info_comment", "info_items", "info_item_ids", "seat_size", "description", "office_id", "is_default", "is_active")
+
+
+def j_np_account(a: NpAccount) -> dict:
+    d = {f: getattr(a, f) for f in NP_FIELDS}
+    d.update(id=a.id, api_key="********" if a.api_key else "", default_weight=float(a.default_weight or 0.5),
+             directory=a.directory or {})
+    return d
+
+
 def _settings_payload(request: Request, db: Session) -> dict:
     s = st.get_all(db)
     values = {k: ("********" if (k in st.SECRET_KEYS and v) else v) for k, v in s.items() if k not in st.INTERNAL_KEYS}
@@ -179,6 +192,10 @@ def _settings_payload(request: Request, db: Session) -> dict:
         "reasons": [j_source(x) for x in db.query(StatusReason).order_by(StatusReason.sort, StatusReason.id)],
         "marks": [j_source(x) for x in db.query(OrderMark).order_by(OrderMark.sort, OrderMark.id)],
         "checkbox_payments": CHECKBOX_PAYMENTS,
+        "np_accounts": [j_np_account(a) for a in np_svc.accounts(db, active_only=False)],
+        "np_status_rules": [{"id": r.id, "np_code": r.np_code, "status_id": r.status_id,
+                             "except_ids": [int(x) for x in r.except_ids or []]} for r in np_svc.rules(db)],
+        "np_statuses": np_svc.NP_STATUSES,
     }
 
 
@@ -310,6 +327,78 @@ def directory_save(kind: str, request: Request, body: list[SourceIn], db: Sessio
         if kind == "reasons" and b.status_ids is not None:
             x.status_ids = sorted({int(i) for i in b.status_ids})
     audit.log(db, user, "settings", None, "update", {"поля": [title]})
+    db.commit()
+    return _settings_payload(request, db)
+
+
+@router.put("/settings/np-accounts", response_model=SettingsOut)
+def np_accounts_save(request: Request, body: list[NpAccountIn], db: Session = Depends(get_db), user: User = Depends(admin)):
+    """Ключі Нової Пошти цілим списком. api_key «********» — не змінювати; delete — прибрати ключ."""
+    by_id = {a.id: a for a in db.query(NpAccount).all()}
+    for b in body:
+        a = by_id.get(b.id) if b.id else None
+        if b.delete:
+            if a is not None:
+                db.delete(a)
+            continue
+        if a is None:
+            a = NpAccount()
+            db.add(a)
+        for f in NP_FIELDS:
+            setattr(a, f, getattr(b, f))
+        a.default_weight = Decimal(str(b.default_weight))
+        if b.api_key is not None and b.api_key != "********":
+            a.api_key = b.api_key.strip()
+        if b.directory is not None:
+            a.directory = b.directory
+    db.flush()
+    accs = db.query(NpAccount).order_by(NpAccount.id).all()
+    defaults = [a for a in accs if a.is_default and a.is_active]
+    for a in accs:  # основний ключ — рівно один
+        a.is_default = bool(defaults) and a is defaults[0]
+    if accs and not defaults:
+        next((a for a in accs if a.is_active), accs[0]).is_default = True
+    audit.log(db, user, "settings", None, "update", {"поля": ["ключі Нової Пошти"]})
+    db.commit()
+    return _settings_payload(request, db)
+
+
+@router.post("/settings/np-accounts/{aid}/sync", response_model=SettingsOut)
+def np_account_sync(aid: int, request: Request, db: Session = Depends(get_db), user: User = Depends(admin)):
+    """Підтягнути з кабінету НП контрагентів і контактних осіб; якщо відправник не вибраний — перший."""
+    a = db.get(NpAccount, aid)
+    if a is None:
+        raise HTTPException(404, "Ключ не знайдено")
+    try:
+        data = NovaPoshta(np_svc.account_settings(st.get_all(db), a)).load_directory()
+    except CarrierError as e:
+        bad(str(e), 422)
+    a.directory = data
+    senders = data.get("senders") or []
+    if senders and not any(x["ref"] == a.sender_ref for x in senders):
+        a.sender_ref, a.sender_name = senders[0]["ref"], senders[0]["name"]
+    cur = next((x for x in senders if x["ref"] == a.sender_ref), None)
+    if cur and cur["contacts"] and not any(c["ref"] == a.contact_ref for c in cur["contacts"]):
+        c = cur["contacts"][0]
+        a.contact_ref, a.contact_name, a.sender_phone = c["ref"], c["name"], c["phone"]
+    if not a.name and a.sender_name:
+        a.name = a.sender_name
+    db.commit()
+    out = _settings_payload(request, db)
+    out["message"] = f"Синхронізовано: відправників {len(senders)}"
+    return out
+
+
+@router.put("/settings/np-rules", response_model=SettingsOut)
+def np_rules_save(request: Request, body: list[NpRuleIn], db: Session = Depends(get_db), user: User = Depends(admin)):
+    db.query(NpStatusRule).delete()
+    statuses = {s.id for s in db.query(Status).all()}
+    for i, b in enumerate(body):
+        if b.np_code not in np_svc.NP_STATUSES or b.status_id not in statuses:
+            bad("Невідомий статус у правилі")
+        db.add(NpStatusRule(np_code=b.np_code, status_id=b.status_id, sort=i * 10,
+                            except_ids=sorted({int(x) for x in b.except_ids if int(x) in statuses})))
+    audit.log(db, user, "settings", None, "update", {"поля": ["правила статусів НП"]})
     db.commit()
     return _settings_payload(request, db)
 

@@ -264,3 +264,32 @@ details.ocs > summary .muted { overflow: hidden; text-overflow: ellipsis; white-
 .remind-dot { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; color: var(--warn); background: var(--warn-soft); flex: none; }
 .remind-dot.due { color: #fff; background: var(--bad); }
 .t.dense td select { min-width: 140px; }
+
+/* Вікно створення ТТН */
+.ttn-seats { display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--side); border: 1px solid var(--line); border-radius: 10px; }
+.ttn-seats-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ttn-seats-h .lbl { font-size: 12px; font-weight: 500; }
+.ttn-seat { display: grid; grid-template-columns: 16px repeat(4, minmax(0, 1fr)) 24px; gap: 8px; align-items: end; }
+.ttn-seat > .muted { padding-bottom: 9px; font-size: 12px; }
+.ttn-seat input { height: 34px; background: #fff; }
+.ttn-seat .x { margin-bottom: 6px; }
+.ttn-seats .btn { align-self: flex-start; }
+@media (max-width: 560px) { .ttn-seat { grid-template-columns: 16px repeat(2, minmax(0, 1fr)) 24px; } }
+
+/* Ключі Нової Пошти */
+.np-accs { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.np-acc { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.np-acc.open { border-color: #c9ddf3; }
+.np-acc-h { display: flex; align-items: center; gap: 8px; width: 100%; padding: 11px 14px; font: inherit; text-align: left; background: #fff; border: 0; cursor: pointer; }
+.np-acc-h:hover { background: var(--hover); }
+.np-acc-h .muted { margin-left: auto; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 55%; }
+.np-acc-b { padding: 4px 14px 14px; border-top: 1px solid var(--line-2); }
+.np-sync { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.np-info { flex-direction: row; flex-wrap: wrap; gap: 8px 20px; margin-top: 6px; }
+.np-rules { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.np-rule { display: grid; grid-template-columns: minmax(0, 1.6fr) 14px minmax(0, 1fr) minmax(0, 1fr) 24px; gap: 8px; align-items: center; }
+.np-rule select { height: 34px; }
+.np-rule.head span { font-size: 12px; color: var(--muted); }
+.np-rule .dir-st-btn { grid-column: auto; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.np-rule-ex { grid-column: 1 / -1; padding-bottom: 6px; }
+@media (max-width: 760px) { .np-rule { grid-template-columns: 1fr 24px; } .np-rule > .muted, .np-rule.head { display: none; } }

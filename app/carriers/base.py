@@ -45,7 +45,7 @@ class Carrier:
     def configured(self) -> bool:  # pragma: no cover - перевизначається
         return False
 
-    def create_shipment(self, order: Order) -> ShipmentResult:  # pragma: no cover
+    def create_shipment(self, order: Order, opts: dict | None = None) -> ShipmentResult:  # pragma: no cover
         raise CarrierError("Створення ТТН для цієї служби не підтримується")
 
     def delete_shipment(self, order: Order):  # pragma: no cover

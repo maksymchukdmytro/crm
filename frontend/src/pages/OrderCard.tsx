@@ -8,10 +8,11 @@ import { date, dt, money, num, phone as fmtPhone } from "../lib/format";
 import type { Order, OrderItem, Product } from "../lib/types";
 import { Badge, deliveryKind, Modal, NpAutocomplete, Pill, Spinner } from "../components/ui";
 import { flag, PayIcon } from "../components/payicons";
+import TtnDialog from "./TtnDialog";
 
 type Form = {
   last_name: string; first_name: string; middle_name: string; phone: string; email: string; comment: string; status_id: number; manager_id: number | "";
-  payment_type: string; payment_method_id: number | ""; source_id: number | ""; office_id: number | ""; reason_id: number | "";
+  payment_type: string; payment_method_id: number | ""; source_id: number | ""; office_id: number | ""; np_account_id: number | ""; reason_id: number | "";
   mark_id: number | ""; remind_at: string; country: string; extra1: string; extra2: string; extra3: string; extra4: string;
   prepayment: string; discount: string; delivery_method: string; delivery_cost: string;
   city_name: string; city_ref: string; warehouse_name: string; warehouse_ref: string; address: string; postcode: string;
@@ -31,7 +32,7 @@ function toForm(o: Partial<Order> | undefined, defaultStatus: number): Form {
     last_name: s(o?.last_name), first_name: s(o?.first_name), middle_name: s(o?.middle_name), phone: fmtPhone(o?.phone ?? ""), email: s(o?.email), comment: s(o?.comment),
     status_id: o?.status_id ?? defaultStatus, manager_id: o?.manager_id ?? "",
     payment_type: o?.payment_type || "cod", payment_method_id: o?.payment_method_id ?? "", source_id: o?.source_id ?? "",
-    office_id: o?.office_id ?? "", reason_id: o?.reason_id ?? "", mark_id: o?.mark_id ?? "", remind_at: toLocalInput(o?.remind_at),
+    office_id: o?.office_id ?? "", np_account_id: o?.np_account_id ?? "", reason_id: o?.reason_id ?? "", mark_id: o?.mark_id ?? "", remind_at: toLocalInput(o?.remind_at),
     country: o?.country || "UA", extra1: s(o?.extra1), extra2: s(o?.extra2), extra3: s(o?.extra3), extra4: s(o?.extra4),
     prepayment: m(o?.prepayment), discount: m(o?.discount),
     delivery_method: o?.delivery_method || "novaposhta", delivery_cost: m(o?.delivery_cost),
@@ -52,10 +53,11 @@ function toLocalInput(iso?: string | null) {
 }
 
 function payload(f: Form, version?: string) {
-  const { items, manager_id, payment_method_id, source_id, office_id, reason_id, mark_id, remind_at, ...rest } = f;
+  const { items, manager_id, payment_method_id, source_id, office_id, np_account_id, reason_id, mark_id, remind_at, ...rest } = f;
   return {
     ...rest, version, manager_id: manager_id || null,
     payment_method_id: payment_method_id || null, source_id: source_id || null, office_id: office_id || null,
+    np_account_id: np_account_id || null,
     reason_id: reason_id || null, mark_id: mark_id || null, remind_at: remind_at ? new Date(remind_at).toISOString() : "",
     items: items.filter((i) => i.name.trim()).map((i) => ({ product_id: i.product_id, name: i.name, qty: i.qty, price: i.price, upsell: i.upsell, upsell_for: i.upsell ? i.upsell_for ?? null : null })),
   };
@@ -95,6 +97,7 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
   const [form, setForm] = useState<Form>(() => toForm(undefined, newStatus));
   const [baseline, setBaseline] = useState("");
   const [loadedVersion, setLoadedVersion] = useState<string>("");
+  const [ttnOpen, setTtnOpen] = useState(false);
 
   // заповнити форму даними замовлення (і оновлювати, якщо його змінили інші, а ми нічого не редагували)
   useEffect(() => {
@@ -258,6 +261,11 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
               <div className="fl"><span>Відділення</span>
                 <NpAutocomplete kind="warehouses" cityRef={form.city_ref} value={form.warehouse_name} refValue={form.warehouse_ref} placeholder="Номер або адреса"
                   onType={(t) => set({ warehouse_name: t, warehouse_ref: "" })} onPick={(o) => set({ warehouse_name: o.name, warehouse_ref: o.ref })} /></div>
+              {meta.np_accounts.length > 1 && <div className="fl"><span>Відправник</span>
+                <select value={form.np_account_id} onChange={(e) => set({ np_account_id: e.target.value ? Number(e.target.value) : "" })} disabled={!!order?.ttn}>
+                  <option value="">за відділом / основний</option>
+                  {meta.np_accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select></div>}
               {!meta.carriers.novaposhta?.configured && <p className="hint fl-note">Підказки міст з'являться після введення API-ключа НП у налаштуваннях.</p>}
             </>}
             {dm === "ukrposhta" && <>
@@ -291,7 +299,9 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
               {!isNew && !order?.ttn && carrier && (
                 <div className="ship-card">
                   {carrier.configured ? <>
-                    <button type="button" className="btn dark block" disabled={action.isPending} onClick={() => action.mutate({ path: "/ttn" })}><Send size={14} /> Створити ТТН {carrier.name}</button>
+                    <button type="button" className="btn dark block" disabled={action.isPending}
+                      onClick={async () => { if (dm === "novaposhta") { if (dirty) await save.mutateAsync(); setTtnOpen(true); } else action.mutate({ path: "/ttn" }); }}>
+                      <Send size={14} /> Створити ТТН {carrier.name}</button>
                     <span className="hint">Накладений платіж: {money(cod)} грн{carrier.beta ? " · бета: перше відправлення зробіть тестовим" : ""}</span>
                   </> : <span className="hint">Щоб створювати ТТН, заповніть доступи в налаштуваннях доставки.</span>}
                 </div>
@@ -367,6 +377,8 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
         </div>
       </form>
 
+      {ttnOpen && order && <TtnDialog orderId={order.id} accountId={form.np_account_id} busy={action.isPending} onClose={() => setTtnOpen(false)}
+        onCreate={(body) => action.mutate({ path: "/ttn", body }, { onSuccess: () => setTtnOpen(false) })} />}
       {order && <OrderTabs order={order} onAction={(path, body) => action.mutate({ path, body })} busy={action.isPending} onOpen={onOpen} />}
 
       <div className="oc-bar">

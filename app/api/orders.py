@@ -18,7 +18,7 @@ from ..services import settings as st
 from ..services import sms as sms_svc
 from ..services.audit import ACTION_NAMES
 from ..web import f_details
-from .schemas import BulkIn, BulkOut, OrderIn, OrderListOut, OrderOut, PaymentIn, SmsIn, TextIn, TrackOut
+from .schemas import BulkIn, BulkOut, OrderIn, OrderListOut, OrderOut, PaymentIn, SmsIn, TextIn, TrackOut, TtnIn, TtnPreviewOut
 from .common import bad, iso, j_order, j_order_row, staff
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
@@ -212,11 +212,36 @@ def comment(order_id: int, body: TextIn, db: Session = Depends(get_db), user: Us
     return _full(db, order)
 
 
-@router.post("/{order_id}/ttn", response_model=OrderOut)
-def ttn_create(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
+@router.get("/{order_id}/ttn/preview", response_model=TtnPreviewOut)
+def ttn_preview(order_id: int, np_account_id: int = 0, db: Session = Depends(get_db), user: User = Depends(staff)):
+    """Параметри ТТН за замовчуванням для вікна «Створення накладної» (лише Нова Пошта)."""
+    from ..services import np as np_svc
     order = _get(db, order_id, user)
+    if order.delivery_method != "novaposhta":
+        return {"supported": False}
+    if np_account_id:
+        order.np_account_id = np_account_id  # лише для розрахунку, не зберігаємо
+    acc = np_svc.pick_account(db, order)
+    carrier = delivery.carrier_for(db, order)
+    db.rollback()
+    params = carrier.shipment_defaults(order)
+    prepaid = bool(order.payment_method and order.payment_method.kind == "prepaid")
+    if prepaid:
+        params.update(cod_mode="none", cod_amount=0)
+    return {"supported": True, "np_account_id": acc.id if acc else None, "params": params, "prepaid": prepaid,
+            "sender": " · ".join(x for x in (acc.sender_name, acc.contact_name, acc.city_name, acc.warehouse_name) if x) if acc else "",
+            "accounts": [{"id": a.id, "name": a.name or f"Ключ {a.id}", "office_id": a.office_id, "is_default": a.is_default}
+                         for a in np_svc.accounts(db)]}
+
+
+@router.post("/{order_id}/ttn", response_model=OrderOut)
+def ttn_create(order_id: int, body: TtnIn | None = None, db: Session = Depends(get_db), user: User = Depends(staff)):
+    order = _get(db, order_id, user)
+    opts = body.model_dump(exclude_none=True) if body else None
+    if opts and "seats" in opts:
+        opts["seats"] = [dict(x) for x in opts["seats"]]
     try:
-        delivery.create_ttn(db, order, user)
+        delivery.create_ttn(db, order, user, opts)
         db.commit()
     except CarrierError as e:
         db.rollback()

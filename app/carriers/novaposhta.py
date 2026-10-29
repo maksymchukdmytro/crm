@@ -28,6 +28,12 @@ def np_state(code: str) -> str:
     return "in_transit" if c else "unknown"
 
 
+def _num(d: Decimal) -> str:
+    """30.0 → «30», 12.5 → «12.5» (без наукового запису)."""
+    t = f"{d:f}"
+    return t.rstrip("0").rstrip(".") if "." in t else t
+
+
 def seat_size(raw: str | None) -> tuple[int, int, int]:
     """«20x15x10», «20*15*10», «20 15 10» → (20, 15, 10); некоректне — 20×15×10."""
     nums = [int(n) for n in re.findall(r"\d+", raw or "")][:3]
@@ -82,6 +88,19 @@ class NovaPoshta(Carrier):
         data = self.call("Address", "getWarehouses", props)
         return [{"ref": w.get("Ref"), "name": w.get("Description"), "label": w.get("Description")} for w in data]
 
+    def load_directory(self) -> dict:
+        """Контрагенти-відправники і їхні контактні особи з кабінету НП — для вибору в налаштуваннях ключа."""
+        cps = self.call("Counterparty", "getCounterparties", {"CounterpartyProperty": "Sender", "Page": "1"})
+        if not cps:
+            raise CarrierError("У кабінеті Нової Пошти не знайдено відправника")
+        senders = []
+        for c in cps:
+            contacts = self.call("Counterparty", "getCounterpartyContactPersons", {"Ref": c["Ref"], "Page": "1"})
+            senders.append({"ref": c["Ref"], "name": c.get("Description", ""),
+                            "contacts": [{"ref": x["Ref"], "name": x.get("Description", ""), "phone": x.get("Phones", "")}
+                                         for x in contacts]})
+        return {"senders": senders}
+
     def load_sender(self) -> dict:
         """Отримує контрагента-відправника і контактну особу з кабінету НП."""
         cps = self.call("Counterparty", "getCounterparties", {"CounterpartyProperty": "Sender", "Page": "1"})
@@ -114,7 +133,48 @@ class NovaPoshta(Carrier):
         contact = ((rec.get("ContactPerson") or {}).get("data") or [{}])[0].get("Ref", "")
         return rec["Ref"], contact
 
-    def create_shipment(self, order: Order) -> ShipmentResult:
+    # Параметри ТТН за замовчуванням: показуються у вікні «Створення накладної», менеджер може змінити
+    def shipment_defaults(self, order: Order) -> dict:
+        s = self.s
+        default_w = Decimal(s.get("np_default_weight") or "0.5")
+        weight = order_weight(order, default_w)
+        # розміри: з товарів (найбільша довжина й ширина, висоти складаються), інакше — з налаштувань ключа
+        dims = []
+        for it in order.items:
+            p = it.product
+            if p is None or not (p.length and p.width and p.height):
+                dims = []
+                break
+            dims.append((Decimal(p.length), Decimal(p.width), Decimal(p.height) * it.qty))
+        if dims:
+            length, width, height = max(d[0] for d in dims), max(d[1] for d in dims), sum(d[2] for d in dims)
+        else:
+            length, width, height = (Decimal(x) for x in seat_size(s.get("np_seat_size")))
+        descr = ", ".join(dict.fromkeys(it.product.ship_description for it in order.items
+                                         if it.product is not None and it.product.ship_description))
+        cod = Decimal(order.cod_amount or 0)
+        info = []
+        if s.get("np_info_items", "1") == "1":
+            info.append("; ".join(f"{it.name} ×{it.qty}" for it in order.items))
+        if s.get("np_info_item_ids") == "1":
+            info.append("ID: " + ", ".join(str(it.product_id) for it in order.items if it.product_id))
+        if s.get("np_info_comment") == "1" and order.comment:
+            info.append(order.comment.strip())
+        return {
+            "payer": s.get("np_payer") or "Recipient",
+            "cargo_type": s.get("np_cargo_type") or "Parcel",
+            "service_type": s.get("np_service_type") or "WarehouseWarehouse",
+            "weight": float(weight),
+            "seats": [{"length": float(length), "width": float(width), "height": float(height), "weight": float(weight)}],
+            "description": (descr or s.get("np_description") or "Товар")[:100],
+            "declared_cost": max(int(Decimal(order.total or 0)), 1),
+            "cod_mode": (s.get("np_cod_mode") or "backward") if cod > 0 else "none",
+            "cod_amount": float(cod),
+            "cod_payer": s.get("np_cod_payer") or "Recipient",
+            "additional_info": " | ".join(x for x in info if x)[:100],
+        }
+
+    def create_shipment(self, order: Order, opts: dict | None = None) -> ShipmentResult:
         s = self.s
         missing = [n for k, n in [
             ("np_sender_ref", "відправник"), ("np_contact_ref", "контактна особа"),
@@ -127,27 +187,34 @@ class NovaPoshta(Carrier):
             raise CarrierError("Оберіть місто і відділення Нової Пошти зі списку")
         if not order.phone:
             raise CarrierError("Не вказано телефон отримувача")
+        p = self.shipment_defaults(order)
+        p.update({k: v for k, v in (opts or {}).items() if v is not None and k in p})
+        seats = p["seats"] or [{"length": 20, "width": 15, "height": 10, "weight": p["weight"]}]
+        options, volume, total_w = [], Decimal(0), Decimal(0)
+        for x in seats:
+            ln, wd, ht = (Decimal(str(x.get(k) or 0)) for k in ("length", "width", "height"))
+            w = Decimal(str(x.get("weight") or 0))
+            if min(ln, wd, ht) <= 0 or w <= 0:
+                raise CarrierError("Вкажіть розміри й вагу кожного місця відправлення")
+            options.append({  # НП вимагає опис кожного місця: розміри (см), об'ємна вага = Д×Ш×В / 4000, вага
+                "volumetricLength": _num(ln), "volumetricWidth": _num(wd), "volumetricHeight": _num(ht),
+                "volumetricVolume": str((ln * wd * ht / 4000).quantize(Decimal("0.001"))), "weight": str(w),
+            })
+            volume += ln * wd * ht / 1_000_000
+            total_w += w
         recipient, contact = self._recipient(order)
-        weight = order_weight(order, Decimal(s.get("np_default_weight") or "0.5"))
-        declared = max(int(Decimal(order.total or 0)), 1)
-        length, width, height = seat_size(s.get("np_seat_size"))
-        seat = {  # НП вимагає опис кожного місця: розміри (см), об'ємна вага = Д×Ш×В / 4000, фактична вага
-            "volumetricLength": str(length), "volumetricWidth": str(width), "volumetricHeight": str(height),
-            "volumetricVolume": str((Decimal(length * width * height) / 4000).quantize(Decimal("0.001"))),
-            "weight": str(weight),
-        }
         props = {
-            "PayerType": s.get("np_payer") or "Recipient",
+            "PayerType": p["payer"],
             "PaymentMethod": "Cash",
             "DateTime": datetime.now().strftime("%d.%m.%Y"),
-            "CargoType": "Parcel",
-            "Weight": str(weight),
-            "ServiceType": "WarehouseWarehouse",
-            "SeatsAmount": "1",
-            "OptionsSeat": [seat],
-            "VolumeGeneral": str((Decimal(length * width * height) / 1_000_000).quantize(Decimal("0.0001"))),
-            "Description": s.get("np_description") or "Товар",
-            "Cost": str(declared),
+            "CargoType": p["cargo_type"],
+            "Weight": str(total_w),
+            "ServiceType": p["service_type"],
+            "SeatsAmount": str(len(options)),
+            "OptionsSeat": options,
+            "VolumeGeneral": str(volume.quantize(Decimal("0.0001"))),
+            "Description": str(p["description"] or "Товар")[:100],
+            "Cost": str(max(int(Decimal(str(p["declared_cost"] or 1))), 1)),
             "CitySender": s["np_city_ref"],
             "Sender": s["np_sender_ref"],
             "SenderAddress": s["np_warehouse_ref"],
@@ -160,13 +227,15 @@ class NovaPoshta(Carrier):
             "RecipientsPhone": order.phone,
             "InfoRegClientBarcodes": str(order.id),
         }
-        cod = Decimal(order.cod_amount or 0)
-        if cod > 0:
-            if s.get("np_cod_mode") == "afterpayment":
+        if p.get("additional_info"):
+            props["AdditionalInformation"] = str(p["additional_info"])[:100]
+        cod = Decimal(str(p.get("cod_amount") or 0)).quantize(Decimal("0.01"))
+        if cod > 0 and p["cod_mode"] != "none":
+            if p["cod_mode"] == "afterpayment":
                 props["AfterpaymentOnGoodsCost"] = str(cod)
             else:
                 props["BackwardDeliveryData"] = [
-                    {"PayerType": "Recipient", "CargoType": "Money", "RedeliveryString": str(cod)}
+                    {"PayerType": p.get("cod_payer") or "Recipient", "CargoType": "Money", "RedeliveryString": str(cod)}
                 ]
         d = self.call("InternetDocument", "save", props)[0]
         return ShipmentResult(ttn=str(d.get("IntDocNumber", "")), ref=d.get("Ref", ""),

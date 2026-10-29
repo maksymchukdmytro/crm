@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from ..carriers import CARRIERS, CarrierError, TrackResult, get_carrier
 from ..models import Order, Status, User, utcnow
-from . import audit, events, orders as order_svc, payments
+from . import audit, events, np as np_svc, orders as order_svc, payments
 from . import settings as st
 
 FINAL_DELIVERY_STATES = {"delivered", "returned", "deleted"}
@@ -23,15 +23,26 @@ STATE_TO_STATUS = {
 PRE_SHIP_CODES = {"new", "confirmed", "packing", "no_answer", "callback"}
 
 
-def create_ttn(db: Session, order: Order, user: User | None) -> str:
+def carrier_for(db: Session, order: Order):
+    """Перевізник для замовлення; для Нової Пошти — з ключем (ФОП), вибраним у замовленні чи за відділом."""
+    return get_carrier(order.delivery_method, np_svc.carrier_settings(db, order))
+
+
+def create_ttn(db: Session, order: Order, user: User | None, opts: dict | None = None) -> str:
     if order.ttn:
         raise CarrierError(f"У замовлення вже є ТТН {order.ttn}")
     if not order.items:
         raise CarrierError("Додайте товари в замовлення")
-    carrier = get_carrier(order.delivery_method, st.get_all(db))
+    if opts and opts.get("np_account_id") and order.delivery_method == "novaposhta":
+        order.np_account_id = int(opts["np_account_id"])
+    carrier = carrier_for(db, order)
     if carrier is None:
         raise CarrierError("Для цього способу доставки ТТН не створюється")
-    res = carrier.create_shipment(order)
+    if order.payment_method and order.payment_method.kind == "prepaid":
+        opts = {**(opts or {}), "cod_mode": "none", "cod_amount": 0}  # вид оплати виключає післяплату
+    res = carrier.create_shipment(order, opts)
+    if order.delivery_method == "novaposhta" and carrier.s.get("np_account_id"):
+        order.np_account_id = int(carrier.s["np_account_id"])
     order.ttn, order.carrier_ref = res.ttn, res.ref
     if res.cost:
         order.delivery_cost = res.cost
@@ -45,7 +56,7 @@ def create_ttn(db: Session, order: Order, user: User | None) -> str:
 def delete_ttn(db: Session, order: Order, user: User | None):
     if not order.ttn:
         return
-    carrier = get_carrier(order.delivery_method, st.get_all(db))
+    carrier = carrier_for(db, order)
     if carrier is not None and order.carrier_ref:
         carrier.delete_shipment(order)
     old = order.ttn
@@ -71,6 +82,14 @@ def apply_track(db: Session, order: Order, res: TrackResult, auto_status: bool) 
     if res.state == "delivered":
         order.delivered_at = order.delivered_at or utcnow()
 
+    rules = np_svc.rules(db) if order.delivery_method == "novaposhta" else []
+    if rules:  # налаштовані правила «статус ТТН → статус замовлення» мають перевагу над стандартною логікою
+        rule = next((r for r in rules if r.np_code == str(res.code)), None)
+        if rule and order.status_id != rule.status_id and order.status_id not in [int(x) for x in rule.except_ids or []]:
+            target = db.get(Status, rule.status_id)
+            if target is not None and target.is_active:
+                order_svc.change_status(db, order, target, None, auto=True, reason=res.status_text)
+        return True
     if auto_status:
         target_code = STATE_TO_STATUS.get(res.state)
         current = order.status.code if order.status else ""
@@ -107,11 +126,16 @@ def sync_tracking(db: Session, order_ids: list[int] | None = None, force: bool =
             q = q.filter((Order.delivery_checked_at.is_(None)) | (Order.delivery_checked_at < border))
     orders = q.all()
     stats = {"checked": 0, "changed": 0, "errors": []}
-    by_carrier: dict[str, list[Order]] = {}
+    by_carrier: dict[tuple, list[Order]] = {}
+    accs = {a.id: a for a in np_svc.accounts(db, active_only=False)}
     for o in orders:
-        by_carrier.setdefault(o.delivery_method, []).append(o)
-    for code, group in by_carrier.items():
-        carrier = get_carrier(code, settings)
+        acc = (o.np_account_id if o.np_account_id in accs else None) if o.delivery_method == "novaposhta" else None
+        by_carrier.setdefault((o.delivery_method, acc), []).append(o)
+    for (code, acc_id), group in by_carrier.items():
+        cs = settings
+        if code == "novaposhta":
+            cs = np_svc.account_settings(settings, accs.get(acc_id) if acc_id else np_svc.pick_account(db))
+        carrier = get_carrier(code, cs)
         if carrier is None or not carrier.configured():
             continue
         try:

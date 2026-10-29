@@ -134,7 +134,8 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
 
 # ---------- внутрішні довідники (лише для авторизованих) -------------------
 def _np(db: Session) -> NovaPoshta:
-    return NovaPoshta(st.get_all(db))
+    from ..services.np import carrier_settings
+    return NovaPoshta(carrier_settings(db))
 
 
 @router.get("/api/np/cities")

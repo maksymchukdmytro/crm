@@ -60,7 +60,7 @@ class Ukrposhta(Carrier):
             return r.content
         return r.json() if r.content else {}
 
-    def create_shipment(self, order: Order) -> ShipmentResult:
+    def create_shipment(self, order: Order, opts: dict | None = None) -> ShipmentResult:
         if not self.s.get("up_sender_uuid"):
             raise CarrierError("Вкажіть UUID клієнта-відправника Укрпошти в налаштуваннях")
         postcode = (order.postcode or "").strip()

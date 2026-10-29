@@ -62,6 +62,10 @@ class ProductOut(Out):
     reserved: int
     available: int
     min_stock: int
+    length: float = 0
+    width: float = 0
+    height: float = 0
+    ship_description: str = ""
     upsell: bool
     upsell_for: list[int] = Field(default_factory=list, description="Допродаж: до яких товарів пропонувати (порожньо — до будь-якого)")
     active: bool
@@ -71,6 +75,13 @@ class CarrierOut(Out):
     name: str
     beta: bool
     configured: bool
+
+
+class NpAccountShort(Out):
+    id: int
+    name: str
+    office_id: int | None = None
+    is_default: bool = False
 
 
 class PaymentMethodOut(Out):
@@ -111,6 +122,7 @@ class MetaOut(Out):
     reasons: list[ReasonOut] = Field(default_factory=list)
     marks: list[SourceOut] = Field(default_factory=list)
     countries: dict[str, str] = Field(default_factory=dict)
+    np_accounts: list[NpAccountShort] = Field(default_factory=list)
     extra_fields: list[str] = Field(default_factory=list, description="Назви додаткових полів 1–4")
     checkbox_payments: dict[str, str] = Field(default_factory=dict)
     payment_kinds: dict[str, str]
@@ -151,6 +163,7 @@ class OrderRowOut(Out):
     status_id: int
     manager_id: int | None
     office_id: int | None = None
+    np_account_id: int | None = None
     reason_id: int | None = None
     mark_id: int | None = None
     remind_at: str | None = None
@@ -245,6 +258,7 @@ class OrderOut(Out):
     status_id: int
     manager_id: int | None
     office_id: int | None = None
+    np_account_id: int | None = None
     reason_id: int | None = None
     mark_id: int | None = None
     remind_at: str | None = None
@@ -336,6 +350,7 @@ class OrderIn(In):
     payment_method_id: int | None = None
     source_id: int | None = None
     office_id: int | None = None
+    np_account_id: int | None = Field(None, description="Ключ Нової Пошти (ФОП) для ТТН")
     reason_id: int | None = None
     mark_id: int | None = None
     remind_at: str | None = Field(None, description="ISO-дата нагадування, порожньо — прибрати")
@@ -418,6 +433,10 @@ class ProductIn(In):
     cost: Money | None = None
     weight: Money | None = None
     min_stock: int | str | None = None
+    length: float | None = Field(None, ge=0, le=1000)
+    width: float | None = Field(None, ge=0, le=1000)
+    height: float | None = Field(None, ge=0, le=1000)
+    ship_description: str | None = Field(None, max_length=255)
     upsell: bool | None = None
     upsell_for: list[int] | None = None
     active: bool | None = None
@@ -620,6 +639,9 @@ class SettingsOut(Out):
     reasons: list[ReasonOut] = Field(default_factory=list)
     marks: list[SourceOut] = Field(default_factory=list)
     checkbox_payments: dict[str, str] = Field(default_factory=dict)
+    np_accounts: list["NpAccountOut"] = Field(default_factory=list)
+    np_status_rules: list["NpRuleOut"] = Field(default_factory=list)
+    np_statuses: dict[str, str] = Field(default_factory=dict)
     message: str | None = None
 
 
@@ -697,3 +719,130 @@ class SystemOut(Out):
     alerts: list[str]
     sentry: bool
     metrics_url: str | None
+
+
+# ---------------------------------------------------------------- ТТН Нової Пошти
+NpPayer = Literal["Recipient", "Sender", "ThirdPerson"]
+NpCargo = Literal["Parcel", "Cargo", "Documents", "TiresWheels", "Pallet"]
+NpService = Literal["WarehouseWarehouse", "WarehouseDoors", "DoorsWarehouse", "DoorsDoors"]
+NpCod = Literal["backward", "afterpayment", "none"]
+
+
+class SeatIn(In):
+    length: float = Field(..., gt=0, le=1000, description="см")
+    width: float = Field(..., gt=0, le=1000)
+    height: float = Field(..., gt=0, le=1000)
+    weight: float = Field(..., gt=0, le=1000, description="кг")
+
+
+class TtnParams(Out):
+    payer: NpPayer
+    cargo_type: NpCargo
+    service_type: NpService
+    weight: float
+    seats: list[SeatIn]
+    description: str
+    declared_cost: int
+    cod_mode: NpCod
+    cod_amount: float
+    cod_payer: NpPayer
+    additional_info: str
+
+
+class TtnIn(In):
+    """Створення ТТН. Без тіла — з параметрами за замовчуванням; передані поля їх замінюють."""
+    np_account_id: int | None = None
+    payer: NpPayer | None = None
+    cargo_type: NpCargo | None = None
+    service_type: NpService | None = None
+    seats: list[SeatIn] | None = Field(None, min_length=1, max_length=20)
+    description: str | None = Field(None, max_length=100)
+    declared_cost: int | None = Field(None, ge=1)
+    cod_mode: NpCod | None = None
+    cod_amount: float | None = Field(None, ge=0)
+    cod_payer: NpPayer | None = None
+    additional_info: str | None = Field(None, max_length=100)
+
+
+class TtnPreviewOut(Out):
+    supported: bool
+    np_account_id: int | None = None
+    accounts: list[NpAccountShort] = Field(default_factory=list)
+    sender: str = ""
+    params: TtnParams | None = None
+    prepaid: bool = Field(False, description="Вид оплати виключає післяплату")
+
+
+class NpAccountOut(Out):
+    id: int
+    name: str
+    api_key: str = Field(description="Маскований: ******** якщо заданий")
+    sender_ref: str
+    sender_name: str
+    contact_ref: str
+    contact_name: str
+    sender_phone: str
+    city_name: str
+    city_ref: str
+    warehouse_name: str
+    warehouse_ref: str
+    payer: str
+    cargo_type: str
+    service_type: str
+    cod_mode: str
+    cod_payer: str
+    info_comment: bool
+    info_items: bool
+    info_item_ids: bool
+    default_weight: float
+    seat_size: str
+    description: str
+    office_id: int | None = None
+    is_default: bool
+    is_active: bool
+    directory: dict = Field(default_factory=dict)
+
+
+class NpAccountIn(In):
+    id: int | None = None
+    name: str = Field("", max_length=160)
+    api_key: str | None = Field(None, max_length=64, description="******** — не змінювати")
+    sender_ref: str = ""
+    sender_name: str = ""
+    contact_ref: str = ""
+    contact_name: str = ""
+    sender_phone: str = ""
+    city_name: str = ""
+    city_ref: str = ""
+    warehouse_name: str = ""
+    warehouse_ref: str = ""
+    payer: NpPayer = "Recipient"
+    cargo_type: NpCargo = "Parcel"
+    service_type: NpService = "WarehouseWarehouse"
+    cod_mode: Literal["backward", "afterpayment"] = "backward"
+    cod_payer: NpPayer = "Recipient"
+    info_comment: bool = False
+    info_items: bool = True
+    info_item_ids: bool = False
+    default_weight: float = Field(0.5, gt=0, le=1000)
+    seat_size: str = Field("20x15x10", max_length=32)
+    description: str = Field("Товар", max_length=255)
+    office_id: int | None = None
+    is_default: bool = False
+    is_active: bool = True
+    delete: bool = False
+    directory: dict | None = None
+
+
+class NpRuleOut(Out):
+    id: int
+    np_code: str
+    status_id: int
+    except_ids: list[int]
+
+
+class NpRuleIn(In):
+    id: int | None = None
+    np_code: str = Field(..., max_length=8)
+    status_id: int
+    except_ids: list[int] = Field(default_factory=list)

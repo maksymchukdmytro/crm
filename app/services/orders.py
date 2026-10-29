@@ -13,13 +13,13 @@ from .names import join_name, split_full_name
 NAME_PARTS = ("last_name", "first_name", "middle_name")
 ORDER_FIELDS = [
     "customer_name", *NAME_PARTS, "phone", "email", "comment", "country",
-    "office_id", "reason_id", "mark_id", "remind_at",
+    "office_id", "np_account_id", "reason_id", "mark_id", "remind_at",
     "delivery_method", "city_name", "city_ref", "warehouse_name", "warehouse_ref", "address", "postcode",
     "ttn", "delivery_cost", "payment_type", "payment_method_id", "prepayment", "discount",
     "source_id", "extra1", "extra2", "extra3", "extra4", "site", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
 ]
 MONEY_FIELDS = {"delivery_cost", "prepayment", "discount"}
-ID_FIELDS = {"payment_method_id", "source_id", "office_id", "reason_id", "mark_id"}
+ID_FIELDS = {"payment_method_id", "source_id", "office_id", "np_account_id", "reason_id", "mark_id"}
 
 
 def normalize_phone(raw: str | None) -> str:
@@ -185,7 +185,9 @@ def _apply_directories(db: Session, fields: dict):
             fields["payment_method_id"] = None
         else:
             fields["payment_type"] = m.kind
-    for key, model in (("source_id", OrderSource), ("office_id", Office), ("reason_id", StatusReason), ("mark_id", OrderMark)):
+    from ..models import NpAccount
+    for key, model in (("source_id", OrderSource), ("office_id", Office), ("reason_id", StatusReason),
+                       ("mark_id", OrderMark), ("np_account_id", NpAccount)):
         if fields.get(key) and db.get(model, fields[key]) is None:
             fields[key] = None
 

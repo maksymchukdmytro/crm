@@ -672,6 +672,13 @@
       "title": "Nav",
       "type": "array"
      },
+     "np_accounts": {
+      "items": {
+       "$ref": "#/components/schemas/NpAccountShort"
+      },
+      "title": "Np Accounts",
+      "type": "array"
+     },
      "offices": {
       "items": {
        "$ref": "#/components/schemas/SourceOut"
@@ -876,6 +883,465 @@
      "created_at"
     ],
     "title": "MoveOut",
+    "type": "object"
+   },
+   "NpAccountIn": {
+    "additionalProperties": false,
+    "properties": {
+     "api_key": {
+      "anyOf": [
+       {
+        "maxLength": 64,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "******** — не змінювати",
+      "title": "Api Key"
+     },
+     "cargo_type": {
+      "default": "Parcel",
+      "enum": [
+       "Parcel",
+       "Cargo",
+       "Documents",
+       "TiresWheels",
+       "Pallet"
+      ],
+      "title": "Cargo Type",
+      "type": "string"
+     },
+     "city_name": {
+      "default": "",
+      "title": "City Name",
+      "type": "string"
+     },
+     "city_ref": {
+      "default": "",
+      "title": "City Ref",
+      "type": "string"
+     },
+     "cod_mode": {
+      "default": "backward",
+      "enum": [
+       "backward",
+       "afterpayment"
+      ],
+      "title": "Cod Mode",
+      "type": "string"
+     },
+     "cod_payer": {
+      "default": "Recipient",
+      "enum": [
+       "Recipient",
+       "Sender",
+       "ThirdPerson"
+      ],
+      "title": "Cod Payer",
+      "type": "string"
+     },
+     "contact_name": {
+      "default": "",
+      "title": "Contact Name",
+      "type": "string"
+     },
+     "contact_ref": {
+      "default": "",
+      "title": "Contact Ref",
+      "type": "string"
+     },
+     "default_weight": {
+      "default": 0.5,
+      "exclusiveMinimum": 0.0,
+      "maximum": 1000.0,
+      "title": "Default Weight",
+      "type": "number"
+     },
+     "delete": {
+      "default": false,
+      "title": "Delete",
+      "type": "boolean"
+     },
+     "description": {
+      "default": "Товар",
+      "maxLength": 255,
+      "title": "Description",
+      "type": "string"
+     },
+     "directory": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Directory"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "info_comment": {
+      "default": false,
+      "title": "Info Comment",
+      "type": "boolean"
+     },
+     "info_item_ids": {
+      "default": false,
+      "title": "Info Item Ids",
+      "type": "boolean"
+     },
+     "info_items": {
+      "default": true,
+      "title": "Info Items",
+      "type": "boolean"
+     },
+     "is_active": {
+      "default": true,
+      "title": "Is Active",
+      "type": "boolean"
+     },
+     "is_default": {
+      "default": false,
+      "title": "Is Default",
+      "type": "boolean"
+     },
+     "name": {
+      "default": "",
+      "maxLength": 160,
+      "title": "Name",
+      "type": "string"
+     },
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Office Id"
+     },
+     "payer": {
+      "default": "Recipient",
+      "enum": [
+       "Recipient",
+       "Sender",
+       "ThirdPerson"
+      ],
+      "title": "Payer",
+      "type": "string"
+     },
+     "seat_size": {
+      "default": "20x15x10",
+      "maxLength": 32,
+      "title": "Seat Size",
+      "type": "string"
+     },
+     "sender_name": {
+      "default": "",
+      "title": "Sender Name",
+      "type": "string"
+     },
+     "sender_phone": {
+      "default": "",
+      "title": "Sender Phone",
+      "type": "string"
+     },
+     "sender_ref": {
+      "default": "",
+      "title": "Sender Ref",
+      "type": "string"
+     },
+     "service_type": {
+      "default": "WarehouseWarehouse",
+      "enum": [
+       "WarehouseWarehouse",
+       "WarehouseDoors",
+       "DoorsWarehouse",
+       "DoorsDoors"
+      ],
+      "title": "Service Type",
+      "type": "string"
+     },
+     "warehouse_name": {
+      "default": "",
+      "title": "Warehouse Name",
+      "type": "string"
+     },
+     "warehouse_ref": {
+      "default": "",
+      "title": "Warehouse Ref",
+      "type": "string"
+     }
+    },
+    "title": "NpAccountIn",
+    "type": "object"
+   },
+   "NpAccountOut": {
+    "properties": {
+     "api_key": {
+      "description": "Маскований: ******** якщо заданий",
+      "title": "Api Key",
+      "type": "string"
+     },
+     "cargo_type": {
+      "title": "Cargo Type",
+      "type": "string"
+     },
+     "city_name": {
+      "title": "City Name",
+      "type": "string"
+     },
+     "city_ref": {
+      "title": "City Ref",
+      "type": "string"
+     },
+     "cod_mode": {
+      "title": "Cod Mode",
+      "type": "string"
+     },
+     "cod_payer": {
+      "title": "Cod Payer",
+      "type": "string"
+     },
+     "contact_name": {
+      "title": "Contact Name",
+      "type": "string"
+     },
+     "contact_ref": {
+      "title": "Contact Ref",
+      "type": "string"
+     },
+     "default_weight": {
+      "title": "Default Weight",
+      "type": "number"
+     },
+     "description": {
+      "title": "Description",
+      "type": "string"
+     },
+     "directory": {
+      "additionalProperties": true,
+      "title": "Directory",
+      "type": "object"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "info_comment": {
+      "title": "Info Comment",
+      "type": "boolean"
+     },
+     "info_item_ids": {
+      "title": "Info Item Ids",
+      "type": "boolean"
+     },
+     "info_items": {
+      "title": "Info Items",
+      "type": "boolean"
+     },
+     "is_active": {
+      "title": "Is Active",
+      "type": "boolean"
+     },
+     "is_default": {
+      "title": "Is Default",
+      "type": "boolean"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Office Id"
+     },
+     "payer": {
+      "title": "Payer",
+      "type": "string"
+     },
+     "seat_size": {
+      "title": "Seat Size",
+      "type": "string"
+     },
+     "sender_name": {
+      "title": "Sender Name",
+      "type": "string"
+     },
+     "sender_phone": {
+      "title": "Sender Phone",
+      "type": "string"
+     },
+     "sender_ref": {
+      "title": "Sender Ref",
+      "type": "string"
+     },
+     "service_type": {
+      "title": "Service Type",
+      "type": "string"
+     },
+     "warehouse_name": {
+      "title": "Warehouse Name",
+      "type": "string"
+     },
+     "warehouse_ref": {
+      "title": "Warehouse Ref",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "api_key",
+     "sender_ref",
+     "sender_name",
+     "contact_ref",
+     "contact_name",
+     "sender_phone",
+     "city_name",
+     "city_ref",
+     "warehouse_name",
+     "warehouse_ref",
+     "payer",
+     "cargo_type",
+     "service_type",
+     "cod_mode",
+     "cod_payer",
+     "info_comment",
+     "info_items",
+     "info_item_ids",
+     "default_weight",
+     "seat_size",
+     "description",
+     "is_default",
+     "is_active"
+    ],
+    "title": "NpAccountOut",
+    "type": "object"
+   },
+   "NpAccountShort": {
+    "properties": {
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "is_default": {
+      "default": false,
+      "title": "Is Default",
+      "type": "boolean"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Office Id"
+     }
+    },
+    "required": [
+     "id",
+     "name"
+    ],
+    "title": "NpAccountShort",
+    "type": "object"
+   },
+   "NpRuleIn": {
+    "additionalProperties": false,
+    "properties": {
+     "except_ids": {
+      "items": {
+       "type": "integer"
+      },
+      "title": "Except Ids",
+      "type": "array"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "np_code": {
+      "maxLength": 8,
+      "title": "Np Code",
+      "type": "string"
+     },
+     "status_id": {
+      "title": "Status Id",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "np_code",
+     "status_id"
+    ],
+    "title": "NpRuleIn",
+    "type": "object"
+   },
+   "NpRuleOut": {
+    "properties": {
+     "except_ids": {
+      "items": {
+       "type": "integer"
+      },
+      "title": "Except Ids",
+      "type": "array"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "np_code": {
+      "title": "Np Code",
+      "type": "string"
+     },
+     "status_id": {
+      "title": "Status Id",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "np_code",
+     "status_id",
+     "except_ids"
+    ],
+    "title": "NpRuleOut",
     "type": "object"
    },
    "Ok": {
@@ -1154,6 +1620,18 @@
       ],
       "description": "Коментар менеджера, що додається разом зі створенням",
       "title": "Note"
+     },
+     "np_account_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Ключ Нової Пошти (ФОП) для ТТН",
+      "title": "Np Account Id"
      },
      "office_id": {
       "anyOf": [
@@ -1815,6 +2293,17 @@
       "title": "Middle Name",
       "type": "string"
      },
+     "np_account_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Np Account Id"
+     },
      "office_id": {
       "anyOf": [
        {
@@ -2146,6 +2635,17 @@
        }
       ],
       "title": "Mark Id"
+     },
+     "np_account_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Np Account Id"
      },
      "office_id": {
       "anyOf": [
@@ -2596,9 +3096,19 @@
       "title": "Cost",
       "type": "number"
      },
+     "height": {
+      "default": 0,
+      "title": "Height",
+      "type": "number"
+     },
      "id": {
       "title": "Id",
       "type": "integer"
+     },
+     "length": {
+      "default": 0,
+      "title": "Length",
+      "type": "number"
      },
      "min_stock": {
       "title": "Min Stock",
@@ -2622,6 +3132,11 @@
      "reserved": {
       "title": "Reserved",
       "type": "integer"
+     },
+     "ship_description": {
+      "default": "",
+      "title": "Ship Description",
+      "type": "string"
      },
      "sku": {
       "title": "Sku",
@@ -2649,6 +3164,11 @@
      },
      "weight": {
       "title": "Weight",
+      "type": "number"
+     },
+     "width": {
+      "default": 0,
+      "title": "Width",
       "type": "number"
      }
     },
@@ -2702,6 +3222,19 @@
       ],
       "title": "Cost"
      },
+     "height": {
+      "anyOf": [
+       {
+        "maximum": 1000.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Height"
+     },
      "initial_stock": {
       "anyOf": [
        {
@@ -2716,6 +3249,19 @@
       ],
       "description": "Лише при створенні",
       "title": "Initial Stock"
+     },
+     "length": {
+      "anyOf": [
+       {
+        "maximum": 1000.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Length"
      },
      "min_stock": {
       "anyOf": [
@@ -2758,6 +3304,18 @@
        }
       ],
       "title": "Price"
+     },
+     "ship_description": {
+      "anyOf": [
+       {
+        "maxLength": 255,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ship Description"
      },
      "sku": {
       "anyOf": [
@@ -2811,6 +3369,19 @@
        }
       ],
       "title": "Weight"
+     },
+     "width": {
+      "anyOf": [
+       {
+        "maximum": 1000.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Width"
      }
     },
     "title": "ProductIn",
@@ -2830,9 +3401,19 @@
       "title": "Cost",
       "type": "number"
      },
+     "height": {
+      "default": 0,
+      "title": "Height",
+      "type": "number"
+     },
      "id": {
       "title": "Id",
       "type": "integer"
+     },
+     "length": {
+      "default": 0,
+      "title": "Length",
+      "type": "number"
      },
      "min_stock": {
       "title": "Min Stock",
@@ -2849,6 +3430,11 @@
      "reserved": {
       "title": "Reserved",
       "type": "integer"
+     },
+     "ship_description": {
+      "default": "",
+      "title": "Ship Description",
+      "type": "string"
      },
      "sku": {
       "title": "Sku",
@@ -2872,6 +3458,11 @@
      },
      "weight": {
       "title": "Weight",
+      "type": "number"
+     },
+     "width": {
+      "default": 0,
+      "title": "Width",
       "type": "number"
      }
     },
@@ -3363,6 +3954,45 @@
     "title": "ReportOut",
     "type": "object"
    },
+   "SeatIn": {
+    "additionalProperties": false,
+    "properties": {
+     "height": {
+      "exclusiveMinimum": 0.0,
+      "maximum": 1000.0,
+      "title": "Height",
+      "type": "number"
+     },
+     "length": {
+      "description": "см",
+      "exclusiveMinimum": 0.0,
+      "maximum": 1000.0,
+      "title": "Length",
+      "type": "number"
+     },
+     "weight": {
+      "description": "кг",
+      "exclusiveMinimum": 0.0,
+      "maximum": 1000.0,
+      "title": "Weight",
+      "type": "number"
+     },
+     "width": {
+      "exclusiveMinimum": 0.0,
+      "maximum": 1000.0,
+      "title": "Width",
+      "type": "number"
+     }
+    },
+    "required": [
+     "length",
+     "width",
+     "height",
+     "weight"
+    ],
+    "title": "SeatIn",
+    "type": "object"
+   },
    "SettingsOut": {
     "properties": {
      "checkbox_payments": {
@@ -3389,6 +4019,27 @@
        }
       ],
       "title": "Message"
+     },
+     "np_accounts": {
+      "items": {
+       "$ref": "#/components/schemas/NpAccountOut"
+      },
+      "title": "Np Accounts",
+      "type": "array"
+     },
+     "np_status_rules": {
+      "items": {
+       "$ref": "#/components/schemas/NpRuleOut"
+      },
+      "title": "Np Status Rules",
+      "type": "array"
+     },
+     "np_statuses": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Np Statuses",
+      "type": "object"
      },
      "offices": {
       "items": {
@@ -4363,6 +5014,17 @@
       "title": "Middle Name",
       "type": "string"
      },
+     "np_account_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Np Account Id"
+     },
      "office_id": {
       "anyOf": [
        {
@@ -4584,6 +5246,318 @@
      "others"
     ],
     "title": "TrackOut",
+    "type": "object"
+   },
+   "TtnIn": {
+    "additionalProperties": false,
+    "description": "Створення ТТН. Без тіла — з параметрами за замовчуванням; передані поля їх замінюють.",
+    "properties": {
+     "additional_info": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Additional Info"
+     },
+     "cargo_type": {
+      "anyOf": [
+       {
+        "enum": [
+         "Parcel",
+         "Cargo",
+         "Documents",
+         "TiresWheels",
+         "Pallet"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cargo Type"
+     },
+     "cod_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cod Amount"
+     },
+     "cod_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "backward",
+         "afterpayment",
+         "none"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cod Mode"
+     },
+     "cod_payer": {
+      "anyOf": [
+       {
+        "enum": [
+         "Recipient",
+         "Sender",
+         "ThirdPerson"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cod Payer"
+     },
+     "declared_cost": {
+      "anyOf": [
+       {
+        "minimum": 1.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Declared Cost"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "np_account_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Np Account Id"
+     },
+     "payer": {
+      "anyOf": [
+       {
+        "enum": [
+         "Recipient",
+         "Sender",
+         "ThirdPerson"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payer"
+     },
+     "seats": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/SeatIn"
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Seats"
+     },
+     "service_type": {
+      "anyOf": [
+       {
+        "enum": [
+         "WarehouseWarehouse",
+         "WarehouseDoors",
+         "DoorsWarehouse",
+         "DoorsDoors"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Service Type"
+     }
+    },
+    "title": "TtnIn",
+    "type": "object"
+   },
+   "TtnParams": {
+    "properties": {
+     "additional_info": {
+      "title": "Additional Info",
+      "type": "string"
+     },
+     "cargo_type": {
+      "enum": [
+       "Parcel",
+       "Cargo",
+       "Documents",
+       "TiresWheels",
+       "Pallet"
+      ],
+      "title": "Cargo Type",
+      "type": "string"
+     },
+     "cod_amount": {
+      "title": "Cod Amount",
+      "type": "number"
+     },
+     "cod_mode": {
+      "enum": [
+       "backward",
+       "afterpayment",
+       "none"
+      ],
+      "title": "Cod Mode",
+      "type": "string"
+     },
+     "cod_payer": {
+      "enum": [
+       "Recipient",
+       "Sender",
+       "ThirdPerson"
+      ],
+      "title": "Cod Payer",
+      "type": "string"
+     },
+     "declared_cost": {
+      "title": "Declared Cost",
+      "type": "integer"
+     },
+     "description": {
+      "title": "Description",
+      "type": "string"
+     },
+     "payer": {
+      "enum": [
+       "Recipient",
+       "Sender",
+       "ThirdPerson"
+      ],
+      "title": "Payer",
+      "type": "string"
+     },
+     "seats": {
+      "items": {
+       "$ref": "#/components/schemas/SeatIn"
+      },
+      "title": "Seats",
+      "type": "array"
+     },
+     "service_type": {
+      "enum": [
+       "WarehouseWarehouse",
+       "WarehouseDoors",
+       "DoorsWarehouse",
+       "DoorsDoors"
+      ],
+      "title": "Service Type",
+      "type": "string"
+     },
+     "weight": {
+      "title": "Weight",
+      "type": "number"
+     }
+    },
+    "required": [
+     "payer",
+     "cargo_type",
+     "service_type",
+     "weight",
+     "seats",
+     "description",
+     "declared_cost",
+     "cod_mode",
+     "cod_amount",
+     "cod_payer",
+     "additional_info"
+    ],
+    "title": "TtnParams",
+    "type": "object"
+   },
+   "TtnPreviewOut": {
+    "properties": {
+     "accounts": {
+      "items": {
+       "$ref": "#/components/schemas/NpAccountShort"
+      },
+      "title": "Accounts",
+      "type": "array"
+     },
+     "np_account_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Np Account Id"
+     },
+     "params": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/TtnParams"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "prepaid": {
+      "default": false,
+      "description": "Вид оплати виключає післяплату",
+      "title": "Prepaid",
+      "type": "boolean"
+     },
+     "sender": {
+      "default": "",
+      "title": "Sender",
+      "type": "string"
+     },
+     "supported": {
+      "title": "Supported",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "supported"
+    ],
+    "title": "TtnPreviewOut",
     "type": "object"
    },
    "UserIn": {
@@ -5742,6 +6716,23 @@
       }
      }
     ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "anyOf": [
+         {
+          "$ref": "#/components/schemas/TtnIn"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Body"
+       }
+      }
+     }
+    },
     "responses": {
      "200": {
       "content": {
@@ -5765,6 +6756,59 @@
      }
     },
     "summary": "Ttn Create",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/ttn/preview": {
+   "get": {
+    "description": "Параметри ТТН за замовчуванням для вікна «Створення накладної» (лише Нова Пошта).",
+    "operationId": "ttn_preview_api_orders__order_id__ttn_preview_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "np_account_id",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Np Account Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TtnPreviewOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Ttn Preview",
     "tags": [
      "orders"
     ]
@@ -6417,6 +7461,140 @@
      }
     },
     "summary": "Directory Save",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/np-accounts": {
+   "put": {
+    "description": "Ключі Нової Пошти цілим списком. api_key «********» — не змінювати; delete — прибрати ключ.",
+    "operationId": "np_accounts_save_api_settings_np_accounts_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "items": {
+         "$ref": "#/components/schemas/NpAccountIn"
+        },
+        "title": "Body",
+        "type": "array"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Np Accounts Save",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/np-accounts/{aid}/sync": {
+   "post": {
+    "description": "Підтягнути з кабінету НП контрагентів і контактних осіб; якщо відправник не вибраний — перший.",
+    "operationId": "np_account_sync_api_settings_np_accounts__aid__sync_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "aid",
+      "required": true,
+      "schema": {
+       "title": "Aid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Np Account Sync",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/np-rules": {
+   "put": {
+    "operationId": "np_rules_save_api_settings_np_rules_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "items": {
+         "$ref": "#/components/schemas/NpRuleIn"
+        },
+        "title": "Body",
+        "type": "array"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Np Rules Save",
     "tags": [
      "admin"
     ]

@@ -159,6 +159,10 @@ class Product(Base):
     stock: Mapped[int] = mapped_column(Integer, default=0)  # фізично на складі
     reserved: Mapped[int] = mapped_column(Integer, default=0)  # у резерві під замовлення
     min_stock: Mapped[int] = mapped_column(Integer, default=0)  # поріг для попередження
+    length: Mapped[Decimal] = mapped_column(Numeric(7, 1), default=0)  # розміри в упаковці, см — для ТТН
+    width: Mapped[Decimal] = mapped_column(Numeric(7, 1), default=0)
+    height: Mapped[Decimal] = mapped_column(Numeric(7, 1), default=0)
+    ship_description: Mapped[str] = mapped_column(String(255), default="")  # опис відправлення для НП
     is_upsell: Mapped[bool] = mapped_column(Boolean, default=False)  # товар для допродажу
     # до яких основних товарів пропонувати допродаж (id товарів); порожньо — до будь-якого замовлення
     upsell_for: Mapped[list] = mapped_column(JSON, default=list)
@@ -241,6 +245,49 @@ class PaymentMethod(Base):
     sort: Mapped[int] = mapped_column(Integer, default=100)
 
 
+class NpAccount(Base):
+    """Ключ API Нової Пошти (ФОП) з типовими параметрами ТТН. Ключів може бути кілька."""
+    __tablename__ = "np_accounts"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(160), default="")
+    api_key: Mapped[str] = mapped_column(String(64), default="")
+    sender_ref: Mapped[str] = mapped_column(String(64), default="")
+    sender_name: Mapped[str] = mapped_column(String(255), default="")
+    contact_ref: Mapped[str] = mapped_column(String(64), default="")
+    contact_name: Mapped[str] = mapped_column(String(255), default="")
+    sender_phone: Mapped[str] = mapped_column(String(32), default="")
+    city_name: Mapped[str] = mapped_column(String(255), default="")
+    city_ref: Mapped[str] = mapped_column(String(64), default="")
+    warehouse_name: Mapped[str] = mapped_column(String(255), default="")
+    warehouse_ref: Mapped[str] = mapped_column(String(64), default="")
+    payer: Mapped[str] = mapped_column(String(16), default="Recipient")  # Recipient / Sender / ThirdPerson
+    cargo_type: Mapped[str] = mapped_column(String(16), default="Parcel")  # Parcel / Cargo / Documents / TiresWheels / Pallet
+    service_type: Mapped[str] = mapped_column(String(24), default="WarehouseWarehouse")
+    cod_mode: Mapped[str] = mapped_column(String(16), default="backward")  # backward — грошовий переказ, afterpayment — контроль оплати
+    cod_payer: Mapped[str] = mapped_column(String(16), default="Recipient")  # хто платить за переказ
+    info_comment: Mapped[bool] = mapped_column(Boolean, default=False)  # «Додаткова інформація»: коментар замовлення
+    info_items: Mapped[bool] = mapped_column(Boolean, default=True)  # … список товарів
+    info_item_ids: Mapped[bool] = mapped_column(Boolean, default=False)  # … номери товарів
+    default_weight: Mapped[Decimal] = mapped_column(Numeric(8, 3), default=Decimal("0.5"))
+    seat_size: Mapped[str] = mapped_column(String(32), default="20x15x10")
+    description: Mapped[str] = mapped_column(String(255), default="Товар")
+    office_id: Mapped[int | None] = mapped_column(ForeignKey("offices.id", ondelete="SET NULL"), nullable=True)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # кеш із кабінету НП: контрагенти й контактні особи для вибору в налаштуваннях
+    directory: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class NpStatusRule(Base):
+    """Автозміна статусу: статус ТТН Нової Пошти → статус замовлення, крім статусів-винятків."""
+    __tablename__ = "np_status_rules"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    np_code: Mapped[str] = mapped_column(String(8))
+    status_id: Mapped[int] = mapped_column(ForeignKey("statuses.id", ondelete="CASCADE"))
+    except_ids: Mapped[list] = mapped_column(JSON, default=list)
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+
+
 class Office(Base):
     """Відділ (ФОП, PROM, сайт, OLX…): доступ менеджерів, вибір каси Checkbox, замовлення маркетплейсів."""
     __tablename__ = "offices"
@@ -284,6 +331,7 @@ class Order(Base):
     status_id: Mapped[int] = mapped_column(ForeignKey("statuses.id"), index=True)
     manager_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     office_id: Mapped[int | None] = mapped_column(ForeignKey("offices.id"), nullable=True, index=True)
+    np_account_id: Mapped[int | None] = mapped_column(ForeignKey("np_accounts.id", ondelete="SET NULL"), nullable=True)
     reason_id: Mapped[int | None] = mapped_column(ForeignKey("status_reasons.id"), nullable=True)
     mark_id: Mapped[int | None] = mapped_column(ForeignKey("order_marks.id"), nullable=True)
     remind_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)  # нагадати менеджеру

@@ -33,6 +33,7 @@ from ..models import (
 )
 from ..security import hash_password, throttle, verify_password
 from ..services import audit
+from ..services import np as np_svc
 from ..services import settings as st
 from ..services.events import CHANNEL
 from .schemas import LoginIn, LoginOut, MeIn, MetaOut, Ok, UserOut
@@ -138,8 +139,11 @@ def meta(db: Session = Depends(get_db), user: User = Depends(api_user)):
         "payment_statuses": PAYMENT_STATUSES,
         "stock_actions": STOCK_ACTIONS,
         "roles": ROLES,
-        "carriers": {code: {"name": cls.name, "beta": cls.beta, "configured": cls(s).configured()}
+        "carriers": {code: {"name": cls.name, "beta": cls.beta,
+                            "configured": cls(np_svc.carrier_settings(db) if code == "novaposhta" else s).configured()}
                      for code, cls in CARRIERS.items()},
+        "np_accounts": [{"id": a.id, "name": a.name or f"Ключ {a.id}", "office_id": a.office_id, "is_default": a.is_default}
+                        for a in np_svc.accounts(db)],
         "sms_ready": bool(s.get("sms_token")),
         "managers_see_own_only": s.get("managers_see_own_only") == "1",
         "realtime": bool(config.REDIS_URL),

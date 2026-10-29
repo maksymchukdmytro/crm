@@ -39,6 +39,11 @@ def _apply_product(p: Product, d: dict):
         p.weight = to_money(d["weight"]) or Decimal("0.5")
     if "min_stock" in d:
         p.min_stock = to_int(d["min_stock"], 0)
+    for f in ("length", "width", "height"):
+        if f in d and d[f] is not None:
+            setattr(p, f, Decimal(str(d[f])).quantize(Decimal("0.1")))
+    if "ship_description" in d and d["ship_description"] is not None:
+        p.ship_description = str(d["ship_description"]).strip()[:255]
     if "upsell" in d:
         p.is_upsell = bool(d["upsell"])
     if "upsell_for" in d:

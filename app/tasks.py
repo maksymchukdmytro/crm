@@ -62,9 +62,11 @@ def _alerts_job() -> dict:
 
 
 def _configured_carriers() -> list[str]:
+    from .services.np import carrier_settings
     with dbmod.SessionLocal() as db:
         s = st.get_all(db)
-    return [code for code in CARRIERS if get_carrier(code, s).configured()]
+        np_s = carrier_settings(db)
+    return [code for code in CARRIERS if get_carrier(code, np_s if code == "novaposhta" else s).configured()]
 
 
 async def send_sms(ctx) -> int:

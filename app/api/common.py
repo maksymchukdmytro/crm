@@ -76,7 +76,8 @@ def j_status(s: Status) -> dict:
 def j_product(p: Product) -> dict:
     return {"id": p.id, "sku": p.sku or "", "name": p.name, "price": money(p.price), "cost": money(p.cost),
             "weight": float(p.weight or 0), "stock": p.stock, "reserved": p.reserved, "available": p.available,
-            "min_stock": p.min_stock, "upsell": p.is_upsell,
+            "min_stock": p.min_stock, "length": float(p.length or 0), "width": float(p.width or 0),
+            "height": float(p.height or 0), "ship_description": p.ship_description or "", "upsell": p.is_upsell,
             "upsell_for": [int(x) for x in (p.upsell_for or [])] if p.is_upsell else [], "active": p.is_active}
 
 
@@ -122,7 +123,7 @@ def j_order_row(o: Order) -> dict:
         "items": [{"name": i.name, "qty": i.qty, "upsell": i.is_upsell} for i in o.items],
         "total": money(o.total), "cod_amount": money(o.cod_amount), "payment_type": o.payment_type,
         "payment_method_id": o.payment_method_id, "source_id": o.source_id,
-        "office_id": o.office_id, "reason_id": o.reason_id, "mark_id": o.mark_id, "remind_at": iso(o.remind_at),
+        "office_id": o.office_id, "np_account_id": o.np_account_id, "reason_id": o.reason_id, "mark_id": o.mark_id, "remind_at": iso(o.remind_at),
         "country": o.country or "UA",
         "delivery_method": o.delivery_method, "city_name": o.city_name, "ttn": o.ttn,
         "delivery_state": o.delivery_state or "", "delivery_status": o.delivery_status or "",
@@ -137,7 +138,7 @@ def j_order(o: Order) -> dict:
     d.update({
         "id": o.id, "status_id": o.status_id, "manager_id": o.manager_id,
         "manager": j_user(o.manager), "payment_method_id": o.payment_method_id, "source_id": o.source_id,
-        "office_id": o.office_id, "reason_id": o.reason_id, "mark_id": o.mark_id, "remind_at": iso(o.remind_at),
+        "office_id": o.office_id, "np_account_id": o.np_account_id, "reason_id": o.reason_id, "mark_id": o.mark_id, "remind_at": iso(o.remind_at),
         "country": o.country or "UA",
         "delivery_cost": money(o.delivery_cost), "prepayment": money(o.prepayment), "discount": money(o.discount),
         "total": money(o.total), "cod_amount": money(o.cod_amount),

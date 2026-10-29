@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Copy, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { api } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, phone } from "../lib/format";
-import type { DirItem, PaymentMethod, Reason, Settings, Status, User } from "../lib/types";
+import type { DirItem, NpAccount, PaymentMethod, Reason, Settings, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { Badge, Empty, Field, NpAutocomplete, Spinner } from "../components/ui";
 
@@ -116,33 +116,12 @@ var p = new URLSearchParams(location.search), f = document.forms[0];
 
 function Delivery({ s }: { s: S }) {
   const save = useSave();
-  const np = useForm(s, ["np_api_key", "np_city_name", "np_city_ref", "np_warehouse_name", "np_warehouse_ref", "np_sender_phone", "np_cod_mode", "np_payer", "np_default_weight", "np_seat_size", "np_description"]);
   const up = useForm(s, ["up_bearer", "up_token", "up_tracking_bearer", "up_sender_uuid", "up_sandbox", "up_type"]);
   const me = useForm(s, ["meest_username", "meest_password", "meest_sender_branch_id", "meest_sender_name", "meest_sender_phone"]);
   return (
-    <div className="grid half">
-      <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/np", body: np.v }); }}>
-        <h2>Нова Пошта</h2>
-        <Secret label="API-ключ" k="np_api_key" bind={np.bind} hint="Кабінет НП → Налаштування → Безпека → API-ключ" />
-        <Field label="Місто відправки"><NpAutocomplete kind="cities" value={np.v.np_city_name} refValue={np.v.np_city_ref} placeholder="Почніть вводити"
-          onType={(t) => np.setV({ ...np.v, np_city_name: t, np_city_ref: "" })} onPick={(o) => np.setV({ ...np.v, np_city_name: o.name, np_city_ref: o.ref, np_warehouse_name: "", np_warehouse_ref: "" })} /></Field>
-        <Field label="Відділення відправки"><NpAutocomplete kind="warehouses" cityRef={np.v.np_city_ref} value={np.v.np_warehouse_name} refValue={np.v.np_warehouse_ref} placeholder="Номер або адреса"
-          onType={(t) => np.setV({ ...np.v, np_warehouse_name: t, np_warehouse_ref: "" })} onPick={(o) => np.setV({ ...np.v, np_warehouse_name: o.name, np_warehouse_ref: o.ref })} /></Field>
-        <div className="cols">
-          <Field label="Хто платить за доставку"><select {...np.bind("np_payer")}><option value="Recipient">Отримувач</option><option value="Sender">Відправник</option></select></Field>
-          <Field label="Накладений платіж"><select {...np.bind("np_cod_mode")}><option value="backward">Грошовий переказ</option><option value="afterpayment">Контроль оплати</option></select></Field>
-        </div>
-        <div className="cols">
-          <Field label="Вага за замовчуванням, кг" hint="Якщо в товарах вага не вказана"><input {...np.bind("np_default_weight")} inputMode="decimal" /></Field>
-          <Field label="Розміри посилки, см" hint="Довжина × ширина × висота, напр. 20x15x10"><input {...np.bind("np_seat_size")} /></Field>
-        </div>
-        <Field label="Опис відправлення"><input {...np.bind("np_description")} /></Field>
-        <Field label="Телефон відправника"><input {...np.bind("np_sender_phone")} /></Field>
-        <p className="hint">Відправник: {s.values.np_sender_ref ? <Badge kind="ok">завантажено</Badge> : <Badge>не завантажено</Badge>} — після збереження ключа натисніть «Завантажити відправника».</p>
-        <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button>
-          <button type="button" className="btn" disabled={!s.values.np_api_key} onClick={() => save.mutate({ path: "/settings/np/load-sender", method: "post" })}>Завантажити відправника</button></div>
-      </form>
-      <div className="stack">
+    <div className="stack">
+      <NpAccounts s={s} />
+      <div className="grid half">
         <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/up", body: up.v }); }}>
           <h2>Укрпошта <Badge kind="warn">бета</Badge></h2>
           <Secret label="Bearer eCom" k="up_bearer" bind={up.bind} /><Secret label="Counterparty token" k="up_token" bind={up.bind} />
@@ -425,6 +404,143 @@ function PaymentMethods({ s }: { s: S }) {
         <span className="spacer" />
         <button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти види оплат</button>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- Нова Пошта: ключі й правила статусів
+const NP_PAYERS = { Recipient: "Одержувач", Sender: "Відправник", ThirdPerson: "Третя особа" };
+const NP_CARGO = { Parcel: "Посилка", Cargo: "Вантаж", Documents: "Документи", TiresWheels: "Шини-диски", Pallet: "Палети" };
+const NP_SERVICE = { WarehouseWarehouse: "Відділення → відділення", WarehouseDoors: "Відділення → адреса", DoorsWarehouse: "Адреса → відділення", DoorsDoors: "Адреса → адреса" };
+type Acc = NpAccount & { key: string; delete?: boolean };
+type Sender = { ref: string; name: string; contacts: { ref: string; name: string; phone: string }[] };
+
+function NpAccounts({ s }: { s: S }) {
+  const save = useSave();
+  const [rows, setRows] = useState<Acc[]>(() => s.np_accounts.map((a) => ({ ...a, key: rk() })));
+  const [open, setOpen] = useState<string>(() => (s.np_accounts.length === 1 ? "" : ""));
+  const reset = (x: S) => setRows(x.np_accounts.map((a) => ({ ...a, key: rk() })));
+  const upd = (key: string, patch: Partial<Acc>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  const body = () => rows.map((r) => ({ ...r, key: undefined, id: r.id || undefined }));
+  const submit = () => save.mutate({ path: "/settings/np-accounts", method: "put", body: body() }, { onSuccess: (x) => reset(x as S) });
+  const sync = (id: number) => save.mutate({ path: `/settings/np-accounts/${id}/sync`, method: "post" }, { onSuccess: (x) => reset(x as S) });
+  const visible = rows.filter((r) => !r.delete);
+  const blank = (): Acc => ({ id: 0, name: "", api_key: "", sender_ref: "", sender_name: "", contact_ref: "", contact_name: "", sender_phone: "",
+    city_name: "", city_ref: "", warehouse_name: "", warehouse_ref: "", payer: "Recipient", cargo_type: "Parcel", service_type: "WarehouseWarehouse",
+    cod_mode: "backward", cod_payer: "Recipient", info_comment: false, info_items: true, info_item_ids: false, default_weight: 0.5, seat_size: "20x15x10",
+    description: "Товар", office_id: null, is_default: rows.length === 0, is_active: true, directory: {}, key: rk() });
+  return (
+    <div className="stack">
+      <div className="card">
+        <div className="card-head"><h2>Нова Пошта — ключі API <span className="muted">{visible.length}</span></h2>
+          <button type="button" className="btn sm" onClick={() => { const b = blank(); setRows([...rows, b]); setOpen(b.key); }}><Plus size={14} /> Додати ключ</button></div>
+        <p className="hint">Ключ кожного ФОП зі своїми параметрами ТТН. Для замовлення береться ключ, вибраний у картці, інакше — закріплений за відділом, інакше — основний.</p>
+        {visible.length === 0 && <Empty>Ключів ще немає — додайте ключ з кабінету НП (Налаштування → Безпека → API-ключ)</Empty>}
+        <div className="np-accs">
+          {visible.map((a) => {
+            const senders = ((a.directory as { senders?: Sender[] })?.senders ?? []);
+            const sender = senders.find((x) => x.ref === a.sender_ref);
+            const isOpen = open === a.key;
+            return (
+              <div className={`np-acc ${isOpen ? "open" : ""}`} key={a.key}>
+                <button type="button" className="np-acc-h" onClick={() => setOpen(isOpen ? "" : a.key)}>
+                  <b>{a.name || "Новий ключ"}</b>{a.is_default && <Badge kind="info">основний</Badge>}{!a.is_active && <Badge>вимкнено</Badge>}
+                  <span className="muted">{[a.contact_name, a.city_name, a.warehouse_name].filter(Boolean).join(" · ") || (a.api_key ? "ключ збережено — синхронізуйте відправника" : "без ключа")}</span>
+                </button>
+                {isOpen && (
+                  <div className="form np-acc-b">
+                    <div className="cols">
+                      <Field label="Назва" hint="Як показувати менеджерам, напр. «ФОП Максимчук О.В.»"><input value={a.name} onChange={(e) => upd(a.key, { name: e.target.value })} /></Field>
+                      <Field label="API-ключ" hint="Кабінет НП → Налаштування → Безпека"><input className="mono" autoComplete="off" placeholder="не вказано" value={a.api_key} onChange={(e) => upd(a.key, { api_key: e.target.value })} /></Field>
+                    </div>
+                    <div className="np-sync">
+                      <button type="button" className="btn sm" disabled={!a.id || save.isPending} onClick={() => sync(a.id)} title={a.id ? "" : "Спершу збережіть ключ"}><RefreshCw size={14} /> Синхронізувати з кабінетом</button>
+                      <span className="hint">{a.id ? "Підтягне контрагентів і контактних осіб відправника" : "Збережіть ключ, потім синхронізуйте"}</span>
+                    </div>
+                    {senders.length > 0 && <div className="cols">
+                      <Field label="Контрагент"><select value={a.sender_ref} onChange={(e) => { const x = senders.find((y) => y.ref === e.target.value); upd(a.key, { sender_ref: e.target.value, sender_name: x?.name ?? "", contact_ref: "", contact_name: "", sender_phone: "" }); }}>
+                        {senders.map((x) => <option key={x.ref} value={x.ref}>{x.name}</option>)}</select></Field>
+                      <Field label="Відправник (контактна особа)"><select value={a.contact_ref} onChange={(e) => { const c = sender?.contacts.find((y) => y.ref === e.target.value); upd(a.key, { contact_ref: e.target.value, contact_name: c?.name ?? "", sender_phone: c?.phone ?? "" }); }}>
+                        <option value="">оберіть</option>{(sender?.contacts ?? []).map((c) => <option key={c.ref} value={c.ref}>{c.name} ({c.phone})</option>)}</select></Field>
+                    </div>}
+                    <div className="cols">
+                      <Field label="Місто відправки"><NpAutocomplete kind="cities" value={a.city_name} refValue={a.city_ref} placeholder="Почніть вводити"
+                        onType={(t) => upd(a.key, { city_name: t, city_ref: "" })} onPick={(o) => upd(a.key, { city_name: o.name, city_ref: o.ref, warehouse_name: "", warehouse_ref: "" })} /></Field>
+                      <Field label="Відділення відправки"><NpAutocomplete kind="warehouses" cityRef={a.city_ref} value={a.warehouse_name} refValue={a.warehouse_ref} placeholder="Номер або адреса"
+                        onType={(t) => upd(a.key, { warehouse_name: t, warehouse_ref: "" })} onPick={(o) => upd(a.key, { warehouse_name: o.name, warehouse_ref: o.ref })} /></Field>
+                    </div>
+                    <div className="cols c3">
+                      <Field label="Платник доставки"><select value={a.payer} onChange={(e) => upd(a.key, { payer: e.target.value })}>{Object.entries(NP_PAYERS).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
+                      <Field label="Тип відправлення"><select value={a.cargo_type} onChange={(e) => upd(a.key, { cargo_type: e.target.value })}>{Object.entries(NP_CARGO).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
+                      <Field label="Технологія"><select value={a.service_type} onChange={(e) => upd(a.key, { service_type: e.target.value })}>{Object.entries(NP_SERVICE).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
+                    </div>
+                    <div className="cols c3">
+                      <Field label="Післяплата" hint="Контроль оплати — гроші на рахунок, потрібен договір з НП"><select value={a.cod_mode} onChange={(e) => upd(a.key, { cod_mode: e.target.value })}>
+                        <option value="backward">Грошовий переказ</option><option value="afterpayment">Контроль оплати</option></select></Field>
+                      <Field label="Платник переказу"><select value={a.cod_payer} onChange={(e) => upd(a.key, { cod_payer: e.target.value })}><option value="Recipient">Одержувач</option><option value="Sender">Відправник</option></select></Field>
+                      <Field label="Відділ" hint="Замовлення цього відділу йдуть з цього ключа"><select value={a.office_id ?? ""} onChange={(e) => upd(a.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
+                        <option value="">будь-який</option>{s.offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></Field>
+                    </div>
+                    <div className="cols c3">
+                      <Field label="Вага за замовчуванням, кг" hint="Якщо в товарах не вказана"><input value={String(a.default_weight)} inputMode="decimal" onChange={(e) => upd(a.key, { default_weight: Number(e.target.value.replace(",", ".")) || 0 })} /></Field>
+                      <Field label="Розміри за замовчуванням, см" hint="Д × Ш × В, якщо в товарах не вказані"><input value={a.seat_size} onChange={(e) => upd(a.key, { seat_size: e.target.value })} /></Field>
+                      <Field label="Опис відправлення" hint="Якщо в товарах не вказаний"><input value={a.description} onChange={(e) => upd(a.key, { description: e.target.value })} /></Field>
+                    </div>
+                    <div><span className="lbl">Додаткова інформація на ТТН</span>
+                      <div className="checks np-info">
+                        <label className="check"><input type="checkbox" checked={a.info_items} onChange={(e) => upd(a.key, { info_items: e.target.checked })} /> Список товарів</label>
+                        <label className="check"><input type="checkbox" checked={a.info_item_ids} onChange={(e) => upd(a.key, { info_item_ids: e.target.checked })} /> Номери товарів</label>
+                        <label className="check"><input type="checkbox" checked={a.info_comment} onChange={(e) => upd(a.key, { info_comment: e.target.checked })} /> Коментар замовлення</label>
+                      </div></div>
+                    <div className="form-actions">
+                      <label className="check"><input type="radio" name="np-default" checked={a.is_default} onChange={() => setRows(rows.map((r) => ({ ...r, is_default: r.key === a.key })))} /> Основний ключ</label>
+                      <label className="check"><input type="checkbox" checked={a.is_active} onChange={(e) => upd(a.key, { is_active: e.target.checked })} /> Активний</label>
+                      <span className="spacer" />
+                      <button type="button" className="btn sm danger" onClick={() => { if (window.confirm("Прибрати ключ із CRM? ТТН у кабінеті НП не зміняться.")) { if (a.id) upd(a.key, { delete: true }); else setRows(rows.filter((r) => r.key !== a.key)); } }}><Trash2 size={13} /> Прибрати</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {rows.length > 0 && <div className="form-actions mt"><button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти ключі</button></div>}
+      </div>
+      <NpRules s={s} />
+    </div>
+  );
+}
+
+function NpRules({ s }: { s: S }) {
+  const save = useSave();
+  type R = { key: string; np_code: string; status_id: number; except_ids: number[] };
+  const [rows, setRows] = useState<R[]>(() => s.np_status_rules.map((r) => ({ ...r, key: rk() })));
+  const [open, setOpen] = useState("");
+  const statuses = s.statuses.filter((x) => x.active);
+  const upd = (key: string, patch: Partial<R>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  return (
+    <div className="card">
+      <div className="card-head"><h2>Автоматична зміна статусів за ТТН</h2>
+        <button type="button" className="btn sm" onClick={() => setRows([...rows, { key: rk(), np_code: "7", status_id: statuses[0]?.id ?? 0, except_ids: [] }])}><Plus size={14} /> Додати правило</button></div>
+      <p className="hint">Коли статус ТТН Нової Пошти змінюється, замовлення переходить у вказаний статус — крім замовлень у статусах-винятках. {rows.length ? "" : "Поки правил немає, діє стандартна логіка: «в дорозі» → Відправлено, «отримано» → Отримано, «відмова» → Відмова."}</p>
+      {rows.length > 0 && <div className="np-rules">
+        <div className="np-rule head"><span>Статус ТТН</span><span /><span>Статус замовлення</span><span>Винятки</span><span /></div>
+        {rows.map((r) => (
+          <div className="np-rule" key={r.key}>
+            <select value={r.np_code} onChange={(e) => upd(r.key, { np_code: e.target.value })}>{Object.entries(s.np_statuses).map(([c, n]) => <option key={c} value={c}>{n}</option>)}</select>
+            <span className="muted">→</span>
+            <select value={r.status_id} onChange={(e) => upd(r.key, { status_id: Number(e.target.value) })}>{statuses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
+            <button type="button" className="dir-st-btn" onClick={() => setOpen(open === r.key ? "" : r.key)}>{r.except_ids.length ? r.except_ids.map((i) => s.statuses.find((x) => x.id === i)?.name).filter(Boolean).join(", ") : "без винятків"}</button>
+            <button type="button" className="x" title="Прибрати" onClick={() => setRows(rows.filter((x) => x.key !== r.key))}>×</button>
+            {open === r.key && <div className="chips np-rule-ex">{statuses.map((x) => {
+              const on = r.except_ids.includes(x.id);
+              return <button type="button" key={x.id} className={`chip ${on ? "on" : ""}`} onClick={() => upd(r.key, { except_ids: on ? r.except_ids.filter((i) => i !== x.id) : [...r.except_ids, x.id] })}>{x.name}</button>;
+            })}</div>}
+          </div>
+        ))}
+      </div>}
+      <div className="form-actions mt"><button type="button" className="btn primary" disabled={save.isPending}
+        onClick={() => save.mutate({ path: "/settings/np-rules", method: "put", body: rows.map(({ key: _k, ...r }) => r) }, { onSuccess: (x) => setRows((x as S).np_status_rules.map((r) => ({ ...r, key: rk() }))) })}>Зберегти правила</button></div>
     </div>
   );
 }

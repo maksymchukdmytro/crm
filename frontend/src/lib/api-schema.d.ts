@@ -317,6 +317,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{order_id}/ttn/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ttn Preview
+         * @description Параметри ТТН за замовчуванням для вікна «Створення накладної» (лише Нова Пошта).
+         */
+        get: operations["ttn_preview_api_orders__order_id__ttn_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/payments": {
         parameters: {
             query?: never;
@@ -488,6 +508,63 @@ export interface paths {
          *     (якщо є замовлення з цим значенням — лише вимикаємо, щоб не зламати історію).
          */
         put: operations["directory_save_api_settings_dir__kind__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/np-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Np Accounts Save
+         * @description Ключі Нової Пошти цілим списком. api_key «********» — не змінювати; delete — прибрати ключ.
+         */
+        put: operations["np_accounts_save_api_settings_np_accounts_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/np-accounts/{aid}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Np Account Sync
+         * @description Підтягнути з кабінету НП контрагентів і контактних осіб; якщо відправник не вибраний — перший.
+         */
+        post: operations["np_account_sync_api_settings_np_accounts__aid__sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/np-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Np Rules Save */
+        put: operations["np_rules_save_api_settings_np_rules_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1026,6 +1103,8 @@ export interface components {
             marks?: components["schemas"]["SourceOut"][];
             /** Nav */
             nav: string[];
+            /** Np Accounts */
+            np_accounts?: components["schemas"]["NpAccountShort"][];
             /** Offices */
             offices?: components["schemas"]["SourceOut"][];
             /** Order Sources */
@@ -1096,6 +1175,245 @@ export interface components {
             /** User */
             user: string;
         };
+        /** NpAccountIn */
+        NpAccountIn: {
+            /**
+             * Api Key
+             * @description ******** — не змінювати
+             */
+            api_key?: string | null;
+            /**
+             * Cargo Type
+             * @default Parcel
+             * @enum {string}
+             */
+            cargo_type: "Parcel" | "Cargo" | "Documents" | "TiresWheels" | "Pallet";
+            /**
+             * City Name
+             * @default
+             */
+            city_name: string;
+            /**
+             * City Ref
+             * @default
+             */
+            city_ref: string;
+            /**
+             * Cod Mode
+             * @default backward
+             * @enum {string}
+             */
+            cod_mode: "backward" | "afterpayment";
+            /**
+             * Cod Payer
+             * @default Recipient
+             * @enum {string}
+             */
+            cod_payer: "Recipient" | "Sender" | "ThirdPerson";
+            /**
+             * Contact Name
+             * @default
+             */
+            contact_name: string;
+            /**
+             * Contact Ref
+             * @default
+             */
+            contact_ref: string;
+            /**
+             * Default Weight
+             * @default 0.5
+             */
+            default_weight: number;
+            /**
+             * Delete
+             * @default false
+             */
+            delete: boolean;
+            /**
+             * Description
+             * @default Товар
+             */
+            description: string;
+            /** Directory */
+            directory?: {
+                [key: string]: unknown;
+            } | null;
+            /** Id */
+            id?: number | null;
+            /**
+             * Info Comment
+             * @default false
+             */
+            info_comment: boolean;
+            /**
+             * Info Item Ids
+             * @default false
+             */
+            info_item_ids: boolean;
+            /**
+             * Info Items
+             * @default true
+             */
+            info_items: boolean;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /**
+             * Is Default
+             * @default false
+             */
+            is_default: boolean;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** Office Id */
+            office_id?: number | null;
+            /**
+             * Payer
+             * @default Recipient
+             * @enum {string}
+             */
+            payer: "Recipient" | "Sender" | "ThirdPerson";
+            /**
+             * Seat Size
+             * @default 20x15x10
+             */
+            seat_size: string;
+            /**
+             * Sender Name
+             * @default
+             */
+            sender_name: string;
+            /**
+             * Sender Phone
+             * @default
+             */
+            sender_phone: string;
+            /**
+             * Sender Ref
+             * @default
+             */
+            sender_ref: string;
+            /**
+             * Service Type
+             * @default WarehouseWarehouse
+             * @enum {string}
+             */
+            service_type: "WarehouseWarehouse" | "WarehouseDoors" | "DoorsWarehouse" | "DoorsDoors";
+            /**
+             * Warehouse Name
+             * @default
+             */
+            warehouse_name: string;
+            /**
+             * Warehouse Ref
+             * @default
+             */
+            warehouse_ref: string;
+        };
+        /** NpAccountOut */
+        NpAccountOut: {
+            /**
+             * Api Key
+             * @description Маскований: ******** якщо заданий
+             */
+            api_key: string;
+            /** Cargo Type */
+            cargo_type: string;
+            /** City Name */
+            city_name: string;
+            /** City Ref */
+            city_ref: string;
+            /** Cod Mode */
+            cod_mode: string;
+            /** Cod Payer */
+            cod_payer: string;
+            /** Contact Name */
+            contact_name: string;
+            /** Contact Ref */
+            contact_ref: string;
+            /** Default Weight */
+            default_weight: number;
+            /** Description */
+            description: string;
+            /** Directory */
+            directory?: {
+                [key: string]: unknown;
+            };
+            /** Id */
+            id: number;
+            /** Info Comment */
+            info_comment: boolean;
+            /** Info Item Ids */
+            info_item_ids: boolean;
+            /** Info Items */
+            info_items: boolean;
+            /** Is Active */
+            is_active: boolean;
+            /** Is Default */
+            is_default: boolean;
+            /** Name */
+            name: string;
+            /** Office Id */
+            office_id?: number | null;
+            /** Payer */
+            payer: string;
+            /** Seat Size */
+            seat_size: string;
+            /** Sender Name */
+            sender_name: string;
+            /** Sender Phone */
+            sender_phone: string;
+            /** Sender Ref */
+            sender_ref: string;
+            /** Service Type */
+            service_type: string;
+            /** Warehouse Name */
+            warehouse_name: string;
+            /** Warehouse Ref */
+            warehouse_ref: string;
+        };
+        /** NpAccountShort */
+        NpAccountShort: {
+            /** Id */
+            id: number;
+            /**
+             * Is Default
+             * @default false
+             */
+            is_default: boolean;
+            /** Name */
+            name: string;
+            /** Office Id */
+            office_id?: number | null;
+        };
+        /** NpRuleIn */
+        NpRuleIn: {
+            /** Except Ids */
+            except_ids?: number[];
+            /** Id */
+            id?: number | null;
+            /** Np Code */
+            np_code: string;
+            /** Status Id */
+            status_id: number;
+        };
+        /** NpRuleOut */
+        NpRuleOut: {
+            /** Except Ids */
+            except_ids: number[];
+            /** Id */
+            id: number;
+            /** Np Code */
+            np_code: string;
+            /** Status Id */
+            status_id: number;
+        };
         /** Ok */
         Ok: {
             /**
@@ -1155,6 +1473,11 @@ export interface components {
              * @description Коментар менеджера, що додається разом зі створенням
              */
             note?: string | null;
+            /**
+             * Np Account Id
+             * @description Ключ Нової Пошти (ФОП) для ТТН
+             */
+            np_account_id?: number | null;
             /** Office Id */
             office_id?: number | null;
             /** Payment Method Id */
@@ -1372,6 +1695,8 @@ export interface components {
              * @default
              */
             middle_name: string;
+            /** Np Account Id */
+            np_account_id?: number | null;
             /** Office Id */
             office_id?: number | null;
             /** Others */
@@ -1469,6 +1794,8 @@ export interface components {
             manager_id: number | null;
             /** Mark Id */
             mark_id?: number | null;
+            /** Np Account Id */
+            np_account_id?: number | null;
             /** Office Id */
             office_id?: number | null;
             /** Payment Method Id */
@@ -1625,8 +1952,18 @@ export interface components {
             available: number;
             /** Cost */
             cost: number;
+            /**
+             * Height
+             * @default 0
+             */
+            height: number;
             /** Id */
             id: number;
+            /**
+             * Length
+             * @default 0
+             */
+            length: number;
             /** Min Stock */
             min_stock: number;
             /** Moves */
@@ -1637,6 +1974,11 @@ export interface components {
             price: number;
             /** Reserved */
             reserved: number;
+            /**
+             * Ship Description
+             * @default
+             */
+            ship_description: string;
             /** Sku */
             sku: string;
             /** Sold */
@@ -1652,6 +1994,11 @@ export interface components {
             upsell_for?: number[];
             /** Weight */
             weight: number;
+            /**
+             * Width
+             * @default 0
+             */
+            width: number;
         };
         /** ProductIn */
         ProductIn: {
@@ -1659,17 +2006,23 @@ export interface components {
             active?: boolean | null;
             /** Cost */
             cost?: number | string | null;
+            /** Height */
+            height?: number | null;
             /**
              * Initial Stock
              * @description Лише при створенні
              */
             initial_stock?: number | string | null;
+            /** Length */
+            length?: number | null;
             /** Min Stock */
             min_stock?: number | string | null;
             /** Name */
             name?: string | null;
             /** Price */
             price?: number | string | null;
+            /** Ship Description */
+            ship_description?: string | null;
             /** Sku */
             sku?: string | null;
             /** Upsell */
@@ -1678,6 +2031,8 @@ export interface components {
             upsell_for?: number[] | null;
             /** Weight */
             weight?: number | string | null;
+            /** Width */
+            width?: number | null;
         };
         /** ProductOut */
         ProductOut: {
@@ -1687,8 +2042,18 @@ export interface components {
             available: number;
             /** Cost */
             cost: number;
+            /**
+             * Height
+             * @default 0
+             */
+            height: number;
             /** Id */
             id: number;
+            /**
+             * Length
+             * @default 0
+             */
+            length: number;
             /** Min Stock */
             min_stock: number;
             /** Name */
@@ -1697,6 +2062,11 @@ export interface components {
             price: number;
             /** Reserved */
             reserved: number;
+            /**
+             * Ship Description
+             * @default
+             */
+            ship_description: string;
             /** Sku */
             sku: string;
             /** Stock */
@@ -1710,6 +2080,11 @@ export interface components {
             upsell_for?: number[];
             /** Weight */
             weight: number;
+            /**
+             * Width
+             * @default 0
+             */
+            width: number;
         };
         /** ProductReportRow */
         ProductReportRow: {
@@ -1855,6 +2230,23 @@ export interface components {
             products: components["schemas"]["ProductReportRow"][];
             total: components["schemas"]["Bucket"];
         };
+        /** SeatIn */
+        SeatIn: {
+            /** Height */
+            height: number;
+            /**
+             * Length
+             * @description см
+             */
+            length: number;
+            /**
+             * Weight
+             * @description кг
+             */
+            weight: number;
+            /** Width */
+            width: number;
+        };
         /** SettingsOut */
         SettingsOut: {
             /** Checkbox Payments */
@@ -1865,6 +2257,14 @@ export interface components {
             marks?: components["schemas"]["SourceOut"][];
             /** Message */
             message?: string | null;
+            /** Np Accounts */
+            np_accounts?: components["schemas"]["NpAccountOut"][];
+            /** Np Status Rules */
+            np_status_rules?: components["schemas"]["NpRuleOut"][];
+            /** Np Statuses */
+            np_statuses?: {
+                [key: string]: string;
+            };
             /** Offices */
             offices?: components["schemas"]["SourceOut"][];
             /** Order Sources */
@@ -2256,6 +2656,8 @@ export interface components {
              * @default
              */
             middle_name: string;
+            /** Np Account Id */
+            np_account_id?: number | null;
             /** Office Id */
             office_id?: number | null;
             /** Others */
@@ -2312,6 +2714,95 @@ export interface components {
             warehouse_name: string;
             /** Warehouse Ref */
             warehouse_ref: string;
+        };
+        /**
+         * TtnIn
+         * @description Створення ТТН. Без тіла — з параметрами за замовчуванням; передані поля їх замінюють.
+         */
+        TtnIn: {
+            /** Additional Info */
+            additional_info?: string | null;
+            /** Cargo Type */
+            cargo_type?: ("Parcel" | "Cargo" | "Documents" | "TiresWheels" | "Pallet") | null;
+            /** Cod Amount */
+            cod_amount?: number | null;
+            /** Cod Mode */
+            cod_mode?: ("backward" | "afterpayment" | "none") | null;
+            /** Cod Payer */
+            cod_payer?: ("Recipient" | "Sender" | "ThirdPerson") | null;
+            /** Declared Cost */
+            declared_cost?: number | null;
+            /** Description */
+            description?: string | null;
+            /** Np Account Id */
+            np_account_id?: number | null;
+            /** Payer */
+            payer?: ("Recipient" | "Sender" | "ThirdPerson") | null;
+            /** Seats */
+            seats?: components["schemas"]["SeatIn"][] | null;
+            /** Service Type */
+            service_type?: ("WarehouseWarehouse" | "WarehouseDoors" | "DoorsWarehouse" | "DoorsDoors") | null;
+        };
+        /** TtnParams */
+        TtnParams: {
+            /** Additional Info */
+            additional_info: string;
+            /**
+             * Cargo Type
+             * @enum {string}
+             */
+            cargo_type: "Parcel" | "Cargo" | "Documents" | "TiresWheels" | "Pallet";
+            /** Cod Amount */
+            cod_amount: number;
+            /**
+             * Cod Mode
+             * @enum {string}
+             */
+            cod_mode: "backward" | "afterpayment" | "none";
+            /**
+             * Cod Payer
+             * @enum {string}
+             */
+            cod_payer: "Recipient" | "Sender" | "ThirdPerson";
+            /** Declared Cost */
+            declared_cost: number;
+            /** Description */
+            description: string;
+            /**
+             * Payer
+             * @enum {string}
+             */
+            payer: "Recipient" | "Sender" | "ThirdPerson";
+            /** Seats */
+            seats: components["schemas"]["SeatIn"][];
+            /**
+             * Service Type
+             * @enum {string}
+             */
+            service_type: "WarehouseWarehouse" | "WarehouseDoors" | "DoorsWarehouse" | "DoorsDoors";
+            /** Weight */
+            weight: number;
+        };
+        /** TtnPreviewOut */
+        TtnPreviewOut: {
+            /** Accounts */
+            accounts?: components["schemas"]["NpAccountShort"][];
+            /** Np Account Id */
+            np_account_id?: number | null;
+            params?: components["schemas"]["TtnParams"] | null;
+            /**
+             * Prepaid
+             * @description Вид оплати виключає післяплату
+             * @default false
+             */
+            prepaid: boolean;
+            /**
+             * Sender
+             * @default
+             */
+            sender: string;
+            /** Supported */
+            supported: boolean;
         };
         /** UserIn */
         UserIn: {
@@ -3003,7 +3494,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TtnIn"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -3043,6 +3538,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ttn_preview_api_orders__order_id__ttn_preview_get: {
+        parameters: {
+            query?: {
+                np_account_id?: number;
+            };
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TtnPreviewOut"];
                 };
             };
             /** @description Validation Error */
@@ -3481,6 +4009,103 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SourceIn"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    np_accounts_save_api_settings_np_accounts_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NpAccountIn"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    np_account_sync_api_settings_np_accounts__aid__sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                aid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    np_rules_save_api_settings_np_rules_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NpRuleIn"][];
             };
         };
         responses: {

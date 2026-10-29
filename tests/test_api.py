@@ -389,3 +389,54 @@ def test_directories_payment_methods_and_offices(api, api_manager, db, products)
     # видалення відділу, у якого є замовлення, лише вимикає його
     s = api.put("/api/settings/dir/offices", json=[{"id": site, "name": "Сайт", "delete": True}]).json()
     assert [x for x in s["offices"] if x["id"] == site][0]["active"] is False
+
+
+# ------------------------------------------------------------------ Нова Пошта: кілька ключів, вікно ТТН, правила (етап 2)
+def test_np_accounts_ttn_dialog_and_rules(api, db, products, mock_api):
+    from .test_delivery_payments import np_mock
+    np_mock(mock_api, status_code="7")
+    mock_api.on(lambda c: c["json"].get("calledMethod") == "getCounterparties",
+                {"success": True, "data": [{"Ref": "S1", "Description": "ФОП Перший"}]})
+    mock_api.on(lambda c: c["json"].get("calledMethod") == "getCounterpartyContactPersons",
+                {"success": True, "data": [{"Ref": "C1", "Description": "Іван", "Phones": "380501112233"}]})
+    cream, soap = products
+    api.patch(f"/api/products/{cream.id}", json={"length": 20, "width": 10, "height": 5, "ship_description": "Косметика"})
+    s = api.put("/api/settings/np-accounts", json=[
+        {"name": "ФОП Перший", "api_key": "KEY1", "city_ref": "CS", "warehouse_ref": "WS", "cod_mode": "afterpayment"},
+        {"name": "ФОП Другий", "api_key": "KEY2", "city_ref": "CS2", "warehouse_ref": "WS2", "is_default": True},
+    ]).json()
+    by = {a["name"]: a for a in s["np_accounts"]}
+    a1, a2 = by["ФОП Перший"], by["ФОП Другий"]
+    assert a1["api_key"] == "********" and (a1["is_default"], a2["is_default"]) == (False, True)
+    s = api.post(f"/api/settings/np-accounts/{a1['id']}/sync").json()
+    a1 = next(a for a in s["np_accounts"] if a["id"] == a1["id"])
+    assert a1["sender_ref"] == "S1" and a1["contact_ref"] == "C1" and a1["sender_phone"] == "380501112233"
+    api.post(f"/api/settings/np-accounts/{a2['id']}/sync")
+
+    o = new_order(api, products, items=[{"product_id": cream.id, "name": cream.name, "qty": 2, "price": 399}])
+    p = api.get(f"/api/orders/{o['id']}/ttn/preview").json()
+    assert p["supported"] and p["np_account_id"] == a2["id"]  # основний ключ
+    assert p["params"]["seats"][0] == {"length": 20, "width": 10, "height": 10, "weight": 0.6}  # висоти складаються
+    assert p["params"]["description"] == "Косметика" and "Крем для рук ×2" in p["params"]["additional_info"]
+    # вибраний у вікні ключ і змінені параметри йдуть у ТТН
+    r = api.post(f"/api/orders/{o['id']}/ttn", json={"np_account_id": a1["id"], "description": "Подарунок",
+                                                     "seats": [{"length": 30, "width": 20, "height": 10, "weight": 1.2}]})
+    assert r.status_code == 200, r.text
+    assert r.json()["ttn"] == "20450000000001"
+    doc = [c["json"] for c in mock_api.calls if c["json"].get("modelName") == "InternetDocument"][-1]
+    props = doc["methodProperties"]
+    assert doc["apiKey"] == "KEY1" and props["Description"] == "Подарунок" and props["Weight"] == "1.2"
+    assert props["OptionsSeat"][0]["volumetricLength"] == "30" and "AfterpaymentOnGoodsCost" in props
+    assert props["AdditionalInformation"].startswith("Крем для рук ×2")
+
+    # правило: «Прибув на відділення» (7) → «Отримано», крім статусу «Скасовано»
+    rule = {"np_code": "7", "status_id": sid(db, "delivered"), "except_ids": [sid(db, "cancelled")]}
+    assert api.put("/api/settings/np-rules", json=[rule]).json()["np_status_rules"][0]["np_code"] == "7"
+    from app.services import delivery
+    delivery.sync_tracking(db, order_ids=[o["id"]], force=True)
+    db.expire_all()
+    assert db.get(Order, o["id"]).status.code == "delivered"
+
+    # вид оплати «Оплачено» прибирає післяплату з ТТН
+    o2 = new_order(api, products, payment_method_id=1)
+    assert api.get(f"/api/orders/{o2['id']}/ttn/preview").json()["params"]["cod_mode"] == "none"

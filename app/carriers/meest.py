@@ -77,7 +77,7 @@ class Meest(Carrier):
             raise CarrierError(f"Meest: {msg or data}"[:300])
         return data.get("result", data)
 
-    def create_shipment(self, order: Order) -> ShipmentResult:
+    def create_shipment(self, order: Order, opts: dict | None = None) -> ShipmentResult:
         if not self.s.get("meest_sender_branch_id"):
             raise CarrierError("Вкажіть ID відділення відправника Meest у налаштуваннях")
         if not order.warehouse_ref:
