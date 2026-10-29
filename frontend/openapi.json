@@ -3903,6 +3903,16 @@
       "title": "Others",
       "type": "array"
      },
+     "pay_check": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/PayCheckOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
      "payment_method_id": {
       "anyOf": [
        {
@@ -4029,6 +4039,16 @@
      "ttn": {
       "title": "Ttn",
       "type": "string"
+     },
+     "ttn_cod_kind": {
+      "default": "",
+      "title": "Ttn Cod Kind",
+      "type": "string"
+     },
+     "ttn_cod_sum": {
+      "default": 0,
+      "title": "Ttn Cod Sum",
+      "type": "number"
      },
      "updated_at": {
       "anyOf": [
@@ -4294,6 +4314,16 @@
       ],
       "title": "Office Id"
      },
+     "pay_check": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/PayCheckOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
      "payment_method_id": {
       "anyOf": [
        {
@@ -4418,6 +4448,30 @@
     "title": "OrderRowOut",
     "type": "object"
    },
+   "PayCheckOut": {
+    "properties": {
+     "state": {
+      "description": "ok — ТТН відповідає виду оплати, bad — ні, wait — ТТН ще немає або НП не повернула дані",
+      "enum": [
+       "ok",
+       "bad",
+       "wait"
+      ],
+      "title": "State",
+      "type": "string"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "state",
+     "text"
+    ],
+    "title": "PayCheckOut",
+    "type": "object"
+   },
    "PaymentIn": {
     "additionalProperties": false,
     "properties": {
@@ -4503,6 +4557,17 @@
       "title": "Name",
       "type": "string"
      },
+     "np_cod": {
+      "default": "",
+      "enum": [
+       "",
+       "control",
+       "backward",
+       "none"
+      ],
+      "title": "Np Cod",
+      "type": "string"
+     },
      "sort": {
       "default": 100,
       "title": "Sort",
@@ -4545,6 +4610,18 @@
      },
      "name": {
       "title": "Name",
+      "type": "string"
+     },
+     "np_cod": {
+      "default": "",
+      "description": "що має стояти в ТТН Нової Пошти: контроль оплати / грошовий переказ / без післяплати; порожньо — не перевіряти",
+      "enum": [
+       "",
+       "control",
+       "backward",
+       "none"
+      ],
+      "title": "Np Cod",
       "type": "string"
      },
      "sort": {
@@ -8659,6 +8736,16 @@
       "title": "Others",
       "type": "array"
      },
+     "pay_check": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/PayCheckOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
      "payment_method_id": {
       "anyOf": [
        {
@@ -8785,6 +8872,16 @@
      "ttn": {
       "title": "Ttn",
       "type": "string"
+     },
+     "ttn_cod_kind": {
+      "default": "",
+      "title": "Ttn Cod Kind",
+      "type": "string"
+     },
+     "ttn_cod_sum": {
+      "default": 0,
+      "title": "Ttn Cod Sum",
+      "type": "number"
      },
      "updated_at": {
       "anyOf": [

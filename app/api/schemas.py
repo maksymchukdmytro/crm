@@ -113,8 +113,14 @@ class PaymentMethodOut(Out):
     icon: str
     kind: Literal["cod", "partial", "prepaid"] = Field(description="cod — післяплата, partial — передоплата + післяплата, prepaid — без післяплати")
     checkbox_type: str
+    np_cod: Literal["", "control", "backward", "none"] = Field("", description="що має стояти в ТТН Нової Пошти: контроль оплати / грошовий переказ / без післяплати; порожньо — не перевіряти")
     active: bool
     sort: int
+
+
+class PayCheckOut(Out):
+    state: Literal["ok", "bad", "wait"] = Field(description="ok — ТТН відповідає виду оплати, bad — ні, wait — ТТН ще немає або НП не повернула дані")
+    text: str
 
 
 class SourceOut(Out):
@@ -247,6 +253,7 @@ class OrderRowOut(Out):
     status_changed_at: str | None
     customer_id: int | None = None
     blacklisted: bool = False
+    pay_check: PayCheckOut | None = None
 
 
 class OrderListOut(Out):
@@ -332,6 +339,9 @@ class OrderCustomer(Out):
 
 
 class OrderOut(Out):
+    pay_check: PayCheckOut | None = None
+    ttn_cod_kind: str = ""
+    ttn_cod_sum: float = 0
     id: int
     status_id: int
     manager_id: int | None
@@ -768,6 +778,7 @@ class PaymentMethodIn(In):
     icon: str = "cash"
     kind: Literal["cod", "partial", "prepaid"] = "cod"
     checkbox_type: str = ""
+    np_cod: Literal["", "control", "backward", "none"] = ""
     active: bool = True
     sort: int = 100
 

@@ -6,7 +6,7 @@ import { api, ApiError, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num, phone as fmtPhone } from "../lib/format";
 import type { Order, OrderItem, Product, Variant } from "../lib/types";
-import { Badge, deliveryKind, Modal, NpAutocomplete, Pill, Spinner } from "../components/ui";
+import { Badge, deliveryKind, Modal, NpAutocomplete, PayCheck, Pill, Spinner } from "../components/ui";
 import { flag, PayIcon } from "../components/payicons";
 import TtnDialog from "./TtnDialog";
 
@@ -327,6 +327,7 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
                     {order.carrier_ref && <button type="button" title="Видалити ТТН" onClick={() => { if (window.confirm(`Видалити ТТН ${order.ttn} у перевізника?`)) action.mutate({ path: "/ttn", method: "del" }); }}><Trash2 size={14} /></button>}
                   </span>}
                 </div></div>
+              {order?.pay_check && <div className={`pc-line pc-${order.pay_check.state}`}><PayCheck check={order.pay_check} text /></div>}
               <div className="fl"><span>Вартість</span><div className="fl-in"><input value={form.delivery_cost} onChange={(e) => set({ delivery_cost: e.target.value })} placeholder="0" inputMode="decimal" /><span className="unit">грн</span></div></div>
               {order?.ttn && order.delivery_status && (
                 <div className="ship-card"><Badge kind={deliveryKind(order.delivery_state)}>{meta.delivery_states[order.delivery_state] ?? order.delivery_state}</Badge>

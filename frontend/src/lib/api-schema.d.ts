@@ -2842,6 +2842,7 @@ export interface components {
             office_id?: number | null;
             /** Others */
             others: components["schemas"]["OrderRowOut"][];
+            pay_check?: components["schemas"]["PayCheckOut"] | null;
             /** Payment Method Id */
             payment_method_id?: number | null;
             /** Payment Type */
@@ -2880,6 +2881,16 @@ export interface components {
             total: number;
             /** Ttn */
             ttn: string;
+            /**
+             * Ttn Cod Kind
+             * @default
+             */
+            ttn_cod_kind: string;
+            /**
+             * Ttn Cod Sum
+             * @default 0
+             */
+            ttn_cod_sum: number;
             /** Updated At */
             updated_at: string | null;
             /** Utm Campaign */
@@ -2962,6 +2973,7 @@ export interface components {
             np_account_id?: number | null;
             /** Office Id */
             office_id?: number | null;
+            pay_check?: components["schemas"]["PayCheckOut"] | null;
             /** Payment Method Id */
             payment_method_id?: number | null;
             /** Payment Type */
@@ -2990,6 +3002,17 @@ export interface components {
             utm_campaign: string;
             /** Utm Source */
             utm_source: string;
+        };
+        /** PayCheckOut */
+        PayCheckOut: {
+            /**
+             * State
+             * @description ok — ТТН відповідає виду оплати, bad — ні, wait — ТТН ще немає або НП не повернула дані
+             * @enum {string}
+             */
+            state: "ok" | "bad" | "wait";
+            /** Text */
+            text: string;
         };
         /** PaymentIn */
         PaymentIn: {
@@ -3035,6 +3058,12 @@ export interface components {
             /** Name */
             name: string;
             /**
+             * Np Cod
+             * @default
+             * @enum {string}
+             */
+            np_cod: "" | "control" | "backward" | "none";
+            /**
              * Sort
              * @default 100
              */
@@ -3058,6 +3087,13 @@ export interface components {
             kind: "cod" | "partial" | "prepaid";
             /** Name */
             name: string;
+            /**
+             * Np Cod
+             * @description що має стояти в ТТН Нової Пошти: контроль оплати / грошовий переказ / без післяплати; порожньо — не перевіряти
+             * @default
+             * @enum {string}
+             */
+            np_cod: "" | "control" | "backward" | "none";
             /** Sort */
             sort: number;
         };
@@ -4587,6 +4623,7 @@ export interface components {
             office_id?: number | null;
             /** Others */
             others: components["schemas"]["OrderRowOut"][];
+            pay_check?: components["schemas"]["PayCheckOut"] | null;
             /** Payment Method Id */
             payment_method_id?: number | null;
             /** Payment Type */
@@ -4625,6 +4662,16 @@ export interface components {
             total: number;
             /** Ttn */
             ttn: string;
+            /**
+             * Ttn Cod Kind
+             * @default
+             */
+            ttn_cod_kind: string;
+            /**
+             * Ttn Cod Sum
+             * @default 0
+             */
+            ttn_cod_sum: number;
             /** Updated At */
             updated_at: string | null;
             /** Utm Campaign */

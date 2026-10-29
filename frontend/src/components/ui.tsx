@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { CircleCheck, CircleX, Clock3, X } from "lucide-react";
 import { api, qs } from "../lib/api";
 import type { Status } from "../lib/types";
 
@@ -116,3 +116,15 @@ export function NpAutocomplete({ kind, cityRef, value, refValue, onPick, onType,
 export function confirmAction(text: string): boolean {
   return window.confirm(text);
 }
+
+/** «Перевірка оплати»: ✓ — ТТН відповідає виду оплати, ✗ — ні, годинник — ТТН ще немає або НП не повернула дані. */
+export function PayCheck({ check, text = false }: { check?: { state: string; text: string } | null; text?: boolean }) {
+  if (!check) return text ? null : <span className="muted">—</span>;
+  const Icon = check.state === "ok" ? CircleCheck : check.state === "bad" ? CircleX : Clock3;
+  return (
+    <span className={`pc pc-${check.state}`} title={check.text} aria-label={check.text}>
+      <Icon size={text ? 15 : 18} strokeWidth={2.2} />{text && <span>{check.text}</span>}
+    </span>
+  );
+}
+

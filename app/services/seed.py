@@ -96,7 +96,8 @@ def seed_directories(db: Session):
     """Довідники видів оплат і джерел — один раз, далі їх редагує адміністратор."""
     if db.query(PaymentMethod).count() == 0:
         for sort, (pid, name, icon, kind, cb, active) in enumerate(DEFAULT_PAYMENT_METHODS):
-            db.add(PaymentMethod(id=pid, name=name, icon=icon, kind=kind, checkbox_type=cb, is_active=active, sort=sort * 10))
+            db.add(PaymentMethod(id=pid, name=name, icon=icon, kind=kind, checkbox_type=cb, is_active=active, sort=sort * 10,
+                                  np_cod="control" if cb == "novapay" else ("none" if kind == "prepaid" else "")))
         db.flush()
         if db.get_bind().dialect.name == "postgresql":  # id задані явно — підтягнути лічильник
             db.execute(text("SELECT setval(pg_get_serial_sequence('payment_methods','id'), (SELECT MAX(id) FROM payment_methods))"))

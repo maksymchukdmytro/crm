@@ -259,6 +259,8 @@ def update_order(db: Session, order: Order, data: dict, user: User | None) -> di
     fields = _clean_fields(data, order)
     _apply_directories(db, fields)
     changes = audit.diff(order, fields, list(fields))
+    if "ttn" in changes:  # іншу ТТН вставили вручну — що в ній, дізнаємось із трекінгу
+        order.ttn_cod_kind, order.ttn_cod_sum = "", Decimal(0)
     if "phone" in changes:
         dup = find_duplicate(db, order.phone, exclude_id=order.id)
         order.duplicate_of_id = dup.id if dup and dup.id < order.id else None

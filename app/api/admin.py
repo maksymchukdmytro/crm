@@ -347,6 +347,7 @@ def payment_methods_save(request: Request, body: list[PaymentMethodIn], db: Sess
             db.add(m)
         m.name, m.icon, m.kind = b.name.strip()[:80], (b.icon or "cash")[:32], b.kind
         m.checkbox_type, m.is_active, m.sort = b.checkbox_type, b.active, b.sort
+        m.np_cod = b.np_cod
     audit.log(db, user, "settings", None, "update", {"поля": ["види оплат"]})
     db.commit()
     return _settings_payload(request, db)

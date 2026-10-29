@@ -230,7 +230,9 @@ class NovaPoshta(Carrier):
         if p.get("additional_info"):
             props["AdditionalInformation"] = str(p["additional_info"])[:100]
         cod = Decimal(str(p.get("cod_amount") or 0)).quantize(Decimal("0.01"))
+        cod_kind = "none"
         if cod > 0 and p["cod_mode"] != "none":
+            cod_kind = "control" if p["cod_mode"] == "afterpayment" else "backward"
             if p["cod_mode"] == "afterpayment":
                 props["AfterpaymentOnGoodsCost"] = str(cod)
             else:
@@ -239,7 +241,8 @@ class NovaPoshta(Carrier):
                 ]
         d = self.call("InternetDocument", "save", props)[0]
         return ShipmentResult(ttn=str(d.get("IntDocNumber", "")), ref=d.get("Ref", ""),
-                              cost=Decimal(str(d.get("CostOnSite") or 0)))
+                              cost=Decimal(str(d.get("CostOnSite") or 0)),
+                              cod_kind=cod_kind, cod_sum=cod if cod_kind != "none" else Decimal(0))
 
     def delete_shipment(self, order: Order):
         if not order.carrier_ref:

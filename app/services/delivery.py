@@ -1,11 +1,12 @@
 """Створення/видалення ТТН і синхронізація статусів доставки."""
 from datetime import timedelta
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
 from ..carriers import CARRIERS, CarrierError, TrackResult, get_carrier
 from ..models import Order, Status, User, utcnow
-from . import audit, events, np as np_svc, orders as order_svc, payments
+from . import audit, events, np as np_svc, orders as order_svc, pay_check, payments
 from . import settings as st
 
 FINAL_DELIVERY_STATES = {"delivered", "returned", "deleted"}
@@ -44,6 +45,7 @@ def create_ttn(db: Session, order: Order, user: User | None, opts: dict | None =
     if order.delivery_method == "novaposhta" and carrier.s.get("np_account_id"):
         order.np_account_id = int(carrier.s["np_account_id"])
     order.ttn, order.carrier_ref = res.ttn, res.ref
+    order.ttn_cod_kind, order.ttn_cod_sum = res.cod_kind, res.cod_sum
     if res.cost:
         order.delivery_cost = res.cost
     order.delivery_state, order.delivery_status = "created", "Створено ТТН"
@@ -61,6 +63,7 @@ def delete_ttn(db: Session, order: Order, user: User | None):
         carrier.delete_shipment(order)
     old = order.ttn
     order.ttn = order.carrier_ref = ""
+    order.ttn_cod_kind, order.ttn_cod_sum = "", Decimal(0)
     order.delivery_state = order.delivery_status = order.delivery_status_code = ""
     audit.log(db, user, "order", order.id, "ttn_delete", {"ttn": old})
     events.order_changed(db, order.id)
@@ -68,6 +71,11 @@ def delete_ttn(db: Session, order: Order, user: User | None):
 
 def apply_track(db: Session, order: Order, res: TrackResult, auto_status: bool) -> bool:
     order.delivery_checked_at = utcnow()
+    if order.delivery_method == "novaposhta":
+        cod = pay_check.cod_from_np(res.raw)
+        if cod is not None and cod != (order.ttn_cod_kind, Decimal(order.ttn_cod_sum or 0)):
+            order.ttn_cod_kind, order.ttn_cod_sum = cod
+            events.order_changed(db, order.id)
     if (order.delivery_state, order.delivery_status_code, order.delivery_status) == (
         res.state, res.code, res.status_text
     ):

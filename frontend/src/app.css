@@ -19,7 +19,7 @@ a[onClick], a:not([href]) { cursor: pointer; }
 /* Таблиця з віртуалізацією (div-сітка) */
 .page-orders { display: flex; flex-direction: column; height: calc(100vh - 52px); }
 .grid-table { display: flex; flex-direction: column; min-height: 0; flex: 1; }
-.gt-row { display: grid; grid-template-columns: 34px 74px 150px minmax(130px, 1fr) 140px minmax(160px, 1.4fr) 100px minmax(130px, 1fr) 170px 110px 120px 94px; align-items: center; gap: 0 10px; padding: 0 12px; font-size: 13.5px; }
+.gt-row { display: grid; grid-template-columns: 34px 74px 150px minmax(130px, 1fr) 140px minmax(160px, 1.4fr) 100px 76px minmax(130px, 1fr) 170px 110px 120px 94px; align-items: center; gap: 0 10px; padding: 0 12px; font-size: 13.5px; }
 .gt-row > span { min-width: 0; }
 .gt-head { height: 36px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12px; font-weight: 500; background: #fff; }
 .gt-body { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; min-height: 200px; }
@@ -30,8 +30,8 @@ a[onClick], a:not([href]) { cursor: pointer; }
 .gt-row .badge { margin-left: 5px; }
 .gt-row small { color: var(--muted); }
 .c-sel { display: flex; align-items: center; }
-@media (max-width: 1760px) { .gt-row { grid-template-columns: 34px 64px 150px minmax(120px, 1fr) 136px minmax(150px, 1.4fr) 92px minmax(120px, 1fr) 160px 110px 88px; } .gt-row .c-s { display: none; } }
-@media (max-width: 1640px) { .gt-row { grid-template-columns: 34px 58px 140px minmax(110px, 1fr) 128px minmax(120px, 1.3fr) 88px minmax(100px, 1fr) 148px 84px; } .gt-row .c-m { display: none; } }
+@media (max-width: 1760px) { .gt-row { grid-template-columns: 34px 64px 150px minmax(120px, 1fr) 136px minmax(150px, 1.4fr) 92px 72px minmax(120px, 1fr) 160px 110px 88px; } .gt-row .c-s { display: none; } }
+@media (max-width: 1640px) { .gt-row { grid-template-columns: 34px 58px 140px minmax(110px, 1fr) 128px minmax(120px, 1.3fr) 88px 68px minmax(100px, 1fr) 148px 84px; } .gt-row .c-m { display: none; } }
 @media (max-width: 1100px) { .gt-row { grid-template-columns: 30px 56px 130px minmax(110px, 1fr) 120px 84px 76px; } .gt-row > span:nth-child(6), .gt-row > span:nth-child(8), .gt-row > span:nth-child(9) { display: none; } }
 
 /* Модальні вікна */

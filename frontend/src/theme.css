@@ -208,3 +208,17 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .dir-row > input[type=color] { flex: none; width: 34px; height: 34px; padding: 2px; }
 .dir-row > .x { flex: none; }
 .dir-row > .dir-st-btn, .dir-row > .dir-statuses { flex: 1 0 100%; }
+
+/* «Перевірка оплати» (ТТН НП ↔ вид оплати) */
+.gt-row .c-pc { text-align: center; }
+.gt-head .c-pc { font-size: 11px; line-height: 1.15; white-space: normal; cursor: help; }
+.pc { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; }
+.pc-ok { color: var(--ok); }
+.pc-bad { color: var(--bad); }
+.pc-wait { color: var(--faint); }
+.pc-line { display: flex; align-items: flex-start; gap: 6px; font-size: 12.5px; padding: 6px 10px; border-radius: var(--radius-sm); margin: 4px 0 2px; }
+.pc-line .pc { align-items: flex-start; }
+.pc-line .pc svg { flex: none; margin-top: 1px; }
+.pc-line.pc-ok { background: var(--ok-soft); }
+.pc-line.pc-bad { background: var(--bad-soft); font-weight: 550; }
+.pc-line.pc-wait { background: var(--line-2); color: var(--muted); }
