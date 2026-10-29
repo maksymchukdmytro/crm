@@ -4,7 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import {
-  ArrowDown, ArrowUp, Building2, CalendarDays, ChevronDown, CircleDot, Download, Filter, Flag, Globe, Hash, Layers,
+  ArrowDown, ArrowUp, Building2, CalendarDays, ChartColumnStacked, ChevronDown, CircleDot, Download, Filter, Flag, FolderTree, Globe, Hash, Landmark, Layers,
   Megaphone, Package, PencilLine, RotateCcw, Search, ShoppingBag, Truck, User as UserIcon, Wallet,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
@@ -44,13 +44,13 @@ function presetRange(p: string): [string, string] {
 }
 
 // фільтри-списки: ключ параметра API
-const LIST_KEYS = ["product", "category", "country", "status", "reason", "office", "manager", "delivery", "payment", "source", "shop",
+const LIST_KEYS = ["product", "category", "legal_entity", "country", "status", "reason", "office", "manager", "delivery", "payment", "source", "shop",
   "site", "utm_source", "utm_medium", "utm_term", "utm_content", "utm_campaign", "extra1", "extra2", "extra3", "extra4"] as const;
 type ListKey = typeof LIST_KEYS[number];
-const FILTERABLE_DIMS = new Set<string>(["source", "manager", "office", "payment", "delivery", "country", "reason", "shop", "site",
+const FILTERABLE_DIMS = new Set<string>(["legal_entity", "source", "manager", "office", "payment", "delivery", "country", "reason", "shop", "site",
   "utm_source", "utm_medium", "utm_term", "utm_content", "utm_campaign", "extra1", "extra2", "extra3", "extra4"]);
 const DIM_TO_FILTER: Record<string, ListKey> = { source: "source", manager: "manager", office: "office", payment: "payment", delivery: "delivery",
-  country: "country", reason: "reason", shop: "shop", site: "site", utm_source: "utm_source", utm_medium: "utm_medium", utm_term: "utm_term",
+  country: "country", reason: "reason", shop: "shop", site: "site", legal_entity: "legal_entity", utm_source: "utm_source", utm_medium: "utm_medium", utm_term: "utm_term",
   utm_content: "utm_content", utm_campaign: "utm_campaign", extra1: "extra1", extra2: "extra2", extra3: "extra3", extra4: "extra4" };
 
 const list = (v: string | null) => (v ? v.split(",").filter(Boolean) : []);
@@ -102,7 +102,11 @@ export default function StatsPage() {
   const strOpts = (name: string): MsOption[] => (opts.data?.values[name] ?? []).map((x) => ({ value: x.value, label: x.value, hint: x.count }));
   const extraName = (i: number) => meta.extra_fields[i - 1] || `Додаткове поле ${i}`;
   const filters: { key: ListKey; label: string; icon: ReactNode; options: MsOption[]; empty?: boolean; hide?: boolean }[] = [
+    { key: "category", label: "Категорія", icon: <FolderTree size={15} />, hide: !meta.categories.length,
+      options: meta.categories.filter((c) => !c.parent_id).flatMap((r) => [{ value: String(r.id), label: r.name },
+        ...meta.categories.filter((c) => c.parent_id === r.id).map((c) => ({ value: String(c.id), label: c.name, depth: 1 }))]) },
     { key: "product", label: "Товар", icon: <Package size={15} />, options: meta.products.map((p) => ({ value: String(p.id), label: p.name })) },
+    { key: "legal_entity", label: "Юрособа", icon: <Landmark size={15} />, options: meta.legal_entities.map((x) => ({ value: String(x.id), label: x.name })), empty: true, hide: !meta.legal_entities.length },
     { key: "country", label: "Країна", icon: <Globe size={15} />, options: Object.entries(meta.countries).map(([k, v]) => ({ value: k, label: v })), hide: Object.keys(meta.countries).length < 2 },
     { key: "status", label: "Статус", icon: <CircleDot size={15} />, options: meta.statuses.map((s) => ({ value: String(s.id), label: s.name, color: s.color })) },
     { key: "reason", label: "Причина", icon: <Flag size={15} />, options: meta.reasons.map((r) => ({ value: String(r.id), label: r.name })), empty: true, hide: !meta.reasons.length },
@@ -127,7 +131,7 @@ export default function StatsPage() {
   return (
     <div className="stats">
       <div className="head">
-        <h1>Статистика {main.isFetching && <span className="spinner sm" />}</h1>
+        <h1><span className="h-ico"><ChartColumnStacked size={18} /></span>Статистика {main.isFetching && <span className="spinner sm" />}</h1>
         <div className="actions">
           <button className="btn sm ghost st-filters-toggle" onClick={() => setShowFilters((x) => !x)}><Filter size={15} />Фільтри{activeCount ? ` · ${activeCount}` : ""}</button>
           {activeCount > 0 && <button className="btn sm ghost" onClick={() => set(Object.fromEntries([...LIST_KEYS, "upsell", "search"].map((k) => [k, null])))}><RotateCcw size={14} />Скинути фільтри</button>}

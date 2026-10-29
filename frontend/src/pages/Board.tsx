@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { DndContext, DragOverlay, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, KanbanSquare } from "lucide-react";
 import { api, qs } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { ago, itemsLabel, money, phone } from "../lib/format";
@@ -61,7 +61,7 @@ export default function BoardPage() {
   return (
     <div className="page-board">
       <div className="head">
-        <h1>Дошка</h1>
+        <h1><span className="h-ico"><KanbanSquare size={18} /></span>Дошка</h1>
         <div className="actions">
           <button className="btn ghost" onClick={() => { const v = !showFinal; setShowFinal(v); localStorage.setItem("crm-board-final", v ? "1" : "0"); }}>
             {showFinal ? <EyeOff size={15} /> : <Eye size={15} />} {showFinal ? "Сховати завершені" : "Показати завершені"}

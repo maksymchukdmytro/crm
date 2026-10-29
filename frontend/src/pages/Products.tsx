@@ -4,13 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Archive, Boxes, FolderTree, GripVertical, ImagePlus, Layers, Package, Plus, Tags, Trash2, Truck, X, Factory, Wand2,
+  Archive, Boxes, Factory, FolderTree, Globe, GripVertical, ImagePlus, Layers, Package, Plus, Tags, Trash2, Truck, Wand2, X,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { AttributeGroup, Category, Manufacturer, Product, ProductDetail } from "../lib/types";
 import { Badge, confirmAction, Empty, Field, Kpi, Modal, Spinner } from "../components/ui";
+import MultiSelect from "../components/MultiSelect";
 import { MovesTable } from "./Catalog";
 import "./products.css";
 
@@ -209,9 +210,9 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
             <div className="cols">
               {isNew && !curVariants.length && <Field label="Початковий залишок, шт"><input type="number" min={0} value={String(f.initial_stock ?? "0")} onChange={set("initial_stock")} /></Field>}
               <Field label="Мінімальний залишок" hint="Нижче — підсвічується в списку"><input type="number" value={String(v("min_stock", "0"))} onChange={set("min_stock")} /></Field>
-              <Field label="Країни продажу" hint="Порожньо — усі країни">
-                <select multiple className="pm-countries" value={v<string[]>("countries", [])} onChange={(e) => setF({ ...f, countries: [...e.target.selectedOptions].map((o) => o.value) })}>
-                  {Object.entries(meta.countries).slice(0, 30).map(([c, n]) => <option key={c} value={c}>{n}</option>)}</select></Field>
+              <Field label="Країни продажу" hint="Порожньо — товар продається в усіх країнах">
+                <MultiSelect placeholder="Усі країни" icon={<Globe size={15} />} value={v<string[]>("countries", [])} onChange={(c) => setF({ ...f, countries: c })}
+                  options={Object.entries(meta.countries).map(([c, n]) => ({ value: c, label: n }))} /></Field>
             </div>
             <div className="checks">
               <label className="check"><input type="checkbox" checked={!!v("upsell", false)} onChange={set("upsell")} /> Допродаж — пропонувати менеджеру до інших товарів</label>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Truck } from "lucide-react";
+import { Boxes, Plus, ShoppingCart, Truck } from "lucide-react";
 import { api, qs } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num } from "../lib/format";
@@ -46,7 +46,7 @@ export function WarehousePage() {
   const list = lowOnly ? data.products.filter((p) => p.available <= p.min_stock) : data.products;
   return (
     <div>
-      <div className="head"><h1>Склад</h1></div>
+      <div className="head"><h1><span className="h-ico"><Boxes size={18} /></span>Склад</h1></div>
       <div className="kpis">
         <Kpi label="Одиниць на складі" value={data.units} /><Kpi label="У резерві" value={data.reserved} />
         <Kpi label="Вартість залишків" value={`${money(data.value)} ₴`} sub="за собівартістю" />
@@ -99,7 +99,7 @@ export function PurchasesPage() {
   const { data } = useQuery({ queryKey: ["purchases", status], queryFn: () => api.get<Purchase[]>(`/purchases${qs({ status })}`) });
   return (
     <div>
-      <div className="head"><h1>Закупівлі</h1>
+      <div className="head"><h1><span className="h-ico"><ShoppingCart size={18} /></span>Закупівлі</h1>
         <div className="actions"><button className="btn ghost" onClick={() => setSuppliers(true)}><Truck size={15} /> Постачальники</button>
           <button className="btn primary" onClick={() => setOpen("new")}><Plus size={15} /> Закупівля</button></div></div>
       <div className="tabs">

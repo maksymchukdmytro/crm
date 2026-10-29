@@ -7,7 +7,7 @@
 .cu-groups button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
 .cu-groups button.bl.on { background: var(--bad); border-color: var(--bad); }
 .cu-sort { display: inline-flex; gap: 4px; }
-.cu-table td { vertical-align: middle; }
+.t.cu-table td { vertical-align: middle; }
 .cu-name { display: flex; align-items: center; gap: 6px; font-weight: 550; }
 .bl-ico { color: var(--bad); flex: none; }
 .cu-table tr.is-bl td:first-child { box-shadow: inset 3px 0 0 var(--bad); }

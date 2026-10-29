@@ -117,7 +117,7 @@ function CustomerCard({ id, onClose }: { id: number; onClose: () => void }) {
         <form className="form" onSubmit={(e) => { e.preventDefault(); save.mutate(f); }}>
           <div className="cols">
             <Field label="Ім'я"><input value={v("name", "")} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
-            <Field label="Телефон"><input value={v("phone", "")} onChange={(e) => setF({ ...f, phone: e.target.value })} inputMode="tel" /></Field>
+            <Field label="Телефон"><input value={"phone" in f ? String(f.phone) : phone(data.phone)} onChange={(e) => setF({ ...f, phone: e.target.value })} inputMode="tel" /></Field>
             <Field label="Email"><input type="email" value={v("email", "")} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
             <Field label="Група"><select value={v<number | null>("group_id", null) ?? ""} onChange={(e) => setF({ ...f, group_id: e.target.value ? Number(e.target.value) : null })}>
               <option value="">без групи</option>{meta.customer_groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</select></Field>

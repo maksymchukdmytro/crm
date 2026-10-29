@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Upload } from "lucide-react";
+import { BarChart3, History, Upload, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, qs } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
@@ -38,7 +38,7 @@ export function PaymentsPage() {
   const selectable = (p: Payment) => p.status === "expected" || p.status === "collected";
   return (
     <div>
-      <div className="head"><h1>Накладені платежі</h1>
+      <div className="head"><h1><span className="h-ico"><Wallet size={18} /></span>Накладені платежі</h1>
         <div className="actions">
           <input ref={fileRef} type="file" accept=".csv,.txt" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) upload.mutate(f); e.target.value = ""; }} />
           <button className="btn" onClick={() => fileRef.current?.click()} disabled={upload.isPending}><Upload size={15} /> Імпорт реєстру CSV</button>
@@ -105,7 +105,7 @@ export function ReportsPage() {
   const pct = (v: number) => `${v.toFixed(1)}%`;
   return (
     <div>
-      <div className="head"><h1>Звіти</h1>{isFetching && <span className="spinner sm" />}</div>
+      <div className="head"><h1><span className="h-ico"><BarChart3 size={18} /></span>Звіти</h1>{isFetching && <span className="spinner sm" />}</div>
       <div className="filters">
         <input type="date" value={data.date_from} onChange={(e) => setP({ ...p, date_from: e.target.value, date_to: data.date_to })} />
         <input type="date" value={data.date_to} onChange={(e) => setP({ ...p, date_to: e.target.value, date_from: data.date_from })} />
@@ -171,7 +171,7 @@ export function AuditPage() {
   const actions = q.data?.pages[0]?.actions ?? {};
   return (
     <div>
-      <div className="head"><h1>Журнал дій</h1></div>
+      <div className="head"><h1><span className="h-ico"><History size={18} /></span>Журнал дій</h1></div>
       <div className="filters">
         <select value={f.entity} onChange={(e) => setF({ ...f, entity: e.target.value })}><option value="">Усі об'єкти</option>{Object.entries(ENTITIES).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>
         <select value={f.action} onChange={(e) => setF({ ...f, action: e.target.value })}><option value="">Усі дії</option>{Object.entries(actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>
