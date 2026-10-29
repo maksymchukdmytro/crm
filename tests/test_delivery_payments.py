@@ -151,7 +151,7 @@ def test_np_city_autocomplete(admin, db, mock_api):
     mock_api.on(lambda c: c["json"].get("calledMethod") == "getCities",
                 {"success": True, "data": [{"Ref": "R1", "Description": "Київ", "AreaDescription": "Київська",
                                             "SettlementTypeDescription": "місто"}]})
-    data = admin.get("/api/np/cities?q=Ки").json()
+    data = admin.get("http://testserver/api/np/cities?q=Ки").json()
     assert data["ok"] and data["items"][0]["ref"] == "R1" and "Київська" in data["items"][0]["label"]
 
 
@@ -265,7 +265,7 @@ def test_product_create(warehouse, db):
 # ------------------------------------------------------------------ звіти
 def test_reports_numbers(admin, db, products, webhook_key):
     for i, src in enumerate(["facebook", "facebook", "google", "facebook"]):
-        admin.post(f"/api/v1/orders?key={webhook_key}", data={"phone": f"06700000{i:02d}", "sku": "CREAM-1",
+        admin.post(f"http://testserver/api/v1/orders?key={webhook_key}", data={"phone": f"06700000{i:02d}", "sku": "CREAM-1",
                                                               "utm_source": src})
     orders = db.query(Order).order_by(Order.id).all()
     admin.post("/orders/bulk", data={"ids": [str(orders[0].id), str(orders[2].id)],

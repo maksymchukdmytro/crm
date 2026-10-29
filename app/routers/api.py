@@ -10,7 +10,7 @@ from ..carriers import CarrierError
 from ..carriers.novaposhta import NovaPoshta
 from ..db import get_db
 from ..deps import staff
-from ..models import Product, User
+from ..models import User
 from ..services import orders as svc
 from ..services import settings as st
 
@@ -133,10 +133,3 @@ def np_warehouses(city_ref: str, q: str = "", db: Session = Depends(get_db), use
         return {"ok": True, "items": _np(db).search_warehouses(city_ref, q)}
     except CarrierError as e:
         return {"ok": False, "error": str(e)}
-
-
-@router.get("/api/products")
-def products_json(db: Session = Depends(get_db), user: User = Depends(staff)):
-    rows = db.query(Product).filter(Product.is_active.is_(True)).order_by(Product.name).all()
-    return {"ok": True, "items": [{"id": p.id, "sku": p.sku, "name": p.name, "price": str(p.price),
-                                   "available": p.available} for p in rows]}

@@ -10,7 +10,7 @@ ADMIN_PAGES = [
 
 def test_login_required(anon):
     r = anon.get("/orders", follow_redirects=False)
-    assert r.status_code == 303 and r.headers["location"].startswith("/login")
+    assert r.status_code == 303 and r.headers["location"].startswith("/classic/login")
 
 
 def test_wrong_password(anon):
@@ -26,7 +26,7 @@ def test_admin_pages_render(admin, products, url):
 
 
 def test_order_card_renders(admin, products, webhook_key):
-    r = admin.post(f"/api/v1/orders?key={webhook_key}", json={"name": "Іван Петренко", "phone": "0671234567",
+    r = admin.post(f"http://testserver/api/v1/orders?key={webhook_key}", json={"name": "Іван Петренко", "phone": "0671234567",
                                                                "sku": "CREAM-1"})
     oid = r.json()["order_id"]
     for url in (f"/orders/{oid}", f"/orders/{oid}/print"):
@@ -50,15 +50,15 @@ def test_logout(admin):
 
 def test_root_path_prefix(monkeypatch, admin, products):
     """CRM за адресою /crm: посилання й редиректи з префіксом (nginx прибирає його перед застосунком)."""
-    from app.config import config
-    from app.web import templates
-    monkeypatch.setattr(config, "ROOT_PATH", "/crm")
-    monkeypatch.setitem(templates.env.globals, "R", "/crm")
+    from app import web
+    monkeypatch.setattr(web, "CLASSIC_ROOT", "/crm/classic")
+    monkeypatch.setitem(web.templates.env.globals, "R", "/crm/classic")
+    monkeypatch.setitem(web.templates.env.globals, "RA", "/crm")
     page = admin.get("/orders").text
-    assert 'href="/crm/static/app.css' in page and 'href="/crm/orders/new"' in page
-    assert 'href="/orders' not in page
+    assert 'href="/crm/static/app.css' in page and 'href="/crm/classic/orders/new"' in page
+    assert 'href="/orders' not in page and 'href="/crm/orders' not in page
     r = admin.post("/orders/new", data={"phone": "0671234567", "customer_name": "Тест"}, follow_redirects=False)
-    assert r.headers["location"].startswith("/crm/orders/")
-    admin.post("/logout")
+    assert r.headers["location"].startswith("/crm/classic/orders/")
+    admin.post("/logout", follow_redirects=False)
     r = admin.get("/orders", follow_redirects=False)
-    assert r.headers["location"] == "/crm/login?next=/orders"
+    assert r.headers["location"] == "/crm/classic/login?next=/orders"

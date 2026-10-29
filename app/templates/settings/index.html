@@ -84,13 +84,13 @@ header('Location: thanks.html');</pre>
     <h2>Нова Пошта</h2>
     {{ secret('np_api_key', 'API-ключ', 'Особистий кабінет НП → Налаштування → Безпека → API-ключ') }}
     <div class="row mt">
-      <label class="ac" data-ac="{{ R }}/api/np/cities">Місто відправки
+      <label class="ac" data-ac="{{ RA }}/api/np/cities">Місто відправки
         <input name="np_city_name" value="{{ s.np_city_name }}" data-ac-input class="{{ 'ok' if s.np_city_ref }}">
         <input type="hidden" name="np_city_ref" value="{{ s.np_city_ref }}" data-ac-ref id="cityRef">
         <div class="ac-list"></div></label>
     </div>
     <div class="row">
-      <label class="ac" data-ac="{{ R }}/api/np/warehouses" data-ac-depends="cityRef" data-ac-min="0">Відділення відправки
+      <label class="ac" data-ac="{{ RA }}/api/np/warehouses" data-ac-depends="cityRef" data-ac-min="0">Відділення відправки
         <input name="np_warehouse_name" value="{{ s.np_warehouse_name }}" data-ac-input class="{{ 'ok' if s.np_warehouse_ref }}">
         <input type="hidden" name="np_warehouse_ref" value="{{ s.np_warehouse_ref }}" data-ac-ref>
         <div class="ac-list"></div></label>

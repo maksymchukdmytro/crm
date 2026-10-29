@@ -4,6 +4,31 @@
 ТТН Нової Пошти / Укрпошти / Meest, трекінг, накладені платежі зі звіркою, SMS/Viber та аналітика
 апруву й викупу за джерелами трафіку.
 
+**Інтерфейс** — окремий застосунок на React поверх JSON API: список на тисячі рядків без гальм,
+картка замовлення поверх списку, канбан-дошка з перетягуванням, пошук Ctrl+K і оновлення в реальному
+часі (зміни колег видно одразу). Класичний серверний інтерфейс лишається запасним за адресою `/classic`.
+
+## Архітектура
+
+```
+Браузер ── React-застосунок (frontend/, Vite + TypeScript)
+   │  JSON API /api/*  ·  події /api/events (SSE)
+   ▼
+FastAPI (app/) ── PostgreSQL (дані)
+   │      └────── Redis ── черга задач arq ── worker.py (SMS, ТТН, трекінг)
+   │                    └─ канал подій crm:events → SSE у браузер
+   └ класичний HTML-інтерфейс /classic (Jinja2) — запасний
+```
+
+- **Черга задач (arq + Redis).** SMS ставляться в чергу після коміту й відправляються воркером з
+  повторними спробами; масове створення ТТН виконується у фоні; трекінг запускається кожні 5 хв
+  окремою задачею для кожного перевізника, тож один повільний API не гальмує інших.
+- **Події в реальному часі.** Будь-яка зміна замовлення чи товару (з інтерфейсу, API, webhook або
+  воркера) після коміту публікується в Redis, а браузери отримують її через Server-Sent Events.
+- **Без Redis теж працює:** задачі виконуються одразу в запиті, воркер переходить на простий цикл,
+  а інтерфейс оновлюється раз на 30 с (зелена крапка біля назви компанії показує режим реального часу).
+- **API захищене від CSRF:** зміни приймаються лише із заголовком `X-CRM: 1` і cookie сесії.
+
 ## Можливості
 
 **Замовлення**
@@ -76,7 +101,8 @@ git clone https://github.com/maksymchukdmytro/crm.git /opt/crm-src
 sudo bash /opt/crm-src/deploy/install.sh mdmy.me /crm /etc/nginx/sites-available/mdmy
 ```
 
-Скрипт поставить PostgreSQL, Python-середовище, служби `crm-web` (127.0.0.1:8020) і `crm-worker`,
+Скрипт поставить PostgreSQL, Redis, Python-середовище, збере інтерфейс (потрібен Node.js 18+;
+без нього відкриється класичний інтерфейс), запустить служби `crm-web` (127.0.0.1:8020) і `crm-worker`,
 додасть у файл сайту рядок `include snippets/crm.conf;` і покаже пароль першого входу
 (він також зберігається в `/etc/crm/initial-admin.txt`). Налаштування — `/etc/crm/crm.env`,
 копії бази — `/var/backups/crm`. Повторний запуск оновлює код, базу не чіпає.
@@ -99,7 +125,7 @@ sudo bash /opt/crm-src/deploy/install.sh mdmy.me /crm /etc/nginx/sites-available
 
 ```bash
 cp .env.example .env    # DOMAIN=localhost, HTTPS_ONLY=0, решта — будь-які значення
-docker compose up -d --build db web worker
+docker compose up -d --build db redis web worker
 docker compose exec web python demo_data.py   # 140 демонстраційних замовлень (лише для тесту!)
 ```
 Відкрийте http://127.0.0.1:8000.
@@ -132,19 +158,32 @@ docker compose exec web python demo_data.py   # 140 демонстраційни
 ```
 app/
   models.py          таблиці БД
-  services/          бізнес-логіка: orders, stock, payments, delivery, sms, reports
+  services/          бізнес-логіка: orders, stock, payments, delivery, sms, reports,
+                     events (події після коміту), queue (постановка задач)
+  api/               JSON API для інтерфейсу: core (вхід, meta, SSE), orders, catalog, admin
+  tasks.py           задачі воркера arq
   carriers/          інтеграції з перевізниками (спільний інтерфейс у base.py)
-  routers/           сторінки та API
-  templates/, static/  інтерфейс (Jinja2 + чистий JS, без зовнішніх CDN)
-worker.py            фонові задачі: SMS і трекінг
+  routers/           класичний інтерфейс (/classic) і webhook прийому заявок
+  templates/, static/  класичний інтерфейс (Jinja2)
+frontend/            новий інтерфейс: React 19, Vite, TypeScript, TanStack Query/Virtual, dnd-kit
+worker.py            запуск воркера (arq з Redis або простий цикл без нього)
 migrations/          міграції Alembic
-tests/               автотести (60 сценаріїв)
+tests/               автотести (75 сценаріїв: бізнес-логіка, API, черга, події)
 deploy/install.sh    встановлення без Docker (підкаталог наявного сайту)
 ```
 
-Стек: Python 3.12, FastAPI, SQLAlchemy 2, PostgreSQL 16, Alembic, Docker Compose, Caddy.
+Стек: Python 3.12, FastAPI, SQLAlchemy 2, PostgreSQL 16, Redis 7 + arq, Alembic,
+React 19 + TypeScript + Vite, Docker Compose, Caddy.
 
-Запуск тестів (потрібен PostgreSQL з базою `crm_test`):
+Розробка інтерфейсу:
+```bash
+uvicorn app.main:app --port 8077            # API (REDIS_URL=redis://localhost:6379/0 — для реального часу)
+python worker.py                            # воркер
+cd frontend && npm install && npm run dev   # http://localhost:5173, запити /api проксуються на 8077
+npm run build                               # збірка в frontend/dist (її віддає FastAPI)
+```
+
+Запуск тестів (потрібен PostgreSQL з базою `crm_test`; тести черги й подій — ще й Redis на localhost):
 ```bash
 pip install -r requirements.txt pytest
 TEST_DATABASE_URL=postgresql+psycopg://user:pass@localhost/crm_test pytest

@@ -72,14 +72,14 @@
 
       <div data-method="novaposhta">
         <div class="prop">{{ icon('pin') }}
-          <div class="ac" data-ac="{{ R }}/api/np/cities">
+          <div class="ac" data-ac="{{ RA }}/api/np/cities">
             <input name="city_name" value="{{ order.city_name or '' }}" data-ac-input placeholder="Місто" class="{{ 'ok' if order.city_ref }}">
             <input type="hidden" name="city_ref" value="{{ (order.city_ref or '') if order.delivery_method == 'novaposhta' else '' }}" data-ac-ref id="cityRef">
             <div class="ac-list"></div>
           </div>
         </div>
         <div class="prop">{{ icon('warehouse') }}
-          <div class="ac" data-ac="{{ R }}/api/np/warehouses" data-ac-depends="cityRef" data-ac-min="0">
+          <div class="ac" data-ac="{{ RA }}/api/np/warehouses" data-ac-depends="cityRef" data-ac-min="0">
             <input name="warehouse_name" value="{{ (order.warehouse_name or '') if order.delivery_method == 'novaposhta' else '' }}" data-ac-input placeholder="Відділення або поштомат" class="{{ 'ok' if order.warehouse_ref and order.delivery_method == 'novaposhta' }}">
             <input type="hidden" name="warehouse_ref" value="{{ (order.warehouse_ref or '') if order.delivery_method == 'novaposhta' else '' }}" data-ac-ref>
             <div class="ac-list"></div>

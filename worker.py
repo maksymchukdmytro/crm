@@ -1,6 +1,9 @@
-"""Фоновий воркер: відправка SMS з черги і оновлення статусів посилок.
+"""Фоновий воркер CRM.
 
-Запуск: python worker.py (у Docker — окремий контейнер `worker`).
+З Redis (REDIS_URL задано) — черга задач arq (app/tasks.py): SMS, ТТН, трекінг паралельно по перевізниках.
+Без Redis — запасний простий цикл: раз на WORKER_TICK секунд SMS і трекінг.
+
+Запуск: python worker.py (у Docker/systemd — окрема служба).
 """
 import logging
 import signal
@@ -41,17 +44,28 @@ def tick():
             log.exception("Помилка оновлення трекінгу")
 
 
-def main():
+def legacy_loop():
     dbmod.init_engine()
     signal.signal(signal.SIGTERM, _stop)
     signal.signal(signal.SIGINT, _stop)
-    log.info("Воркер запущено, інтервал %s с", config.WORKER_TICK)
+    log.info("Воркер без Redis (простий цикл), інтервал %s с", config.WORKER_TICK)
     while _running:
         tick()
         for _ in range(config.WORKER_TICK):
             if not _running:
                 break
             time.sleep(1)
+
+
+def main():
+    if config.REDIS_URL:
+        from arq.worker import run_worker
+
+        from app.tasks import WorkerSettings
+
+        run_worker(WorkerSettings)
+    else:
+        legacy_loop()
 
 
 if __name__ == "__main__":

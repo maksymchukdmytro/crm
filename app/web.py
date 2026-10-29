@@ -16,6 +16,9 @@ from .models import DELIVERY_METHODS, DELIVERY_STATES, PAYMENT_TYPES, ROLES
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+# Класичний (серверний) інтерфейс живе за адресою <ROOT_PATH>/classic; новий застосунок — у корені.
+CLASSIC_PREFIX = "/classic"
+CLASSIC_ROOT = config.ROOT_PATH + CLASSIC_PREFIX
 TZ = ZoneInfo(config.DISPLAY_TZ)
 UTC = ZoneInfo("UTC")
 
@@ -137,7 +140,7 @@ def render(request: Request, name: str, ctx: dict | None = None, status_code: in
 
 def redirect(url: str, status_code: int = 303) -> RedirectResponse:
     if url.startswith("/") and not url.startswith("//"):
-        url = config.ROOT_PATH + url
+        url = CLASSIC_ROOT + url
     return RedirectResponse(url, status_code=status_code)
 
 
@@ -192,4 +195,4 @@ def sprite() -> Markup:
     return Markup(_SPRITE)
 
 
-templates.env.globals.update(qs=qs, date_presets=date_presets, R=config.ROOT_PATH, icon=icon, sprite=sprite)
+templates.env.globals.update(qs=qs, date_presets=date_presets, R=CLASSIC_ROOT, RA=config.ROOT_PATH, icon=icon, sprite=sprite)

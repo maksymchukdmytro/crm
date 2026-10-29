@@ -6,9 +6,9 @@
 #   sudo bash deploy/install.sh mdmy.me /crm /etc/nginx/sites-available/mdmy
 #
 # Що робить:
-#   1) ставить PostgreSQL (якщо його ще немає), створює базу crm;
-#   2) копіює код у /opt/crm, Python-середовище в /opt/crm/.venv, застосовує міграції;
-#   3) служби systemd: crm-web (127.0.0.1:8020) і crm-worker (SMS, трекінг);
+#   1) ставить PostgreSQL і Redis (якщо їх ще немає), створює базу crm;
+#   2) копіює код у /opt/crm, Python-середовище в /opt/crm/.venv, збирає інтерфейс (Node.js), застосовує міграції;
+#   3) служби systemd: crm-web (127.0.0.1:8020) і crm-worker (черга задач arq: SMS, ТТН, трекінг);
 #   4) додає в наявний сайт nginx адресу <префікс>/ (окремий файл /etc/nginx/snippets/crm.conf);
 #   5) щоденна копія бази о 03:45 у /var/backups/crm (14 останніх).
 # Налаштування й секрети — /etc/crm/crm.env (створюється один раз).
@@ -35,9 +35,10 @@ die()  { printf '\033[1;31m✖ CRM: %s\033[0m\n' "$*"; exit 1; }
 [ -f "$SRC/app/main.py" ] || die "Не знайдено app/main.py — запускайте з репозиторію CRM"
 export DEBIAN_FRONTEND=noninteractive
 
-say "1/5 Пакети і PostgreSQL"
+say "1/5 Пакети, PostgreSQL і Redis"
 NEED=()
 command -v pg_ctlcluster >/dev/null || NEED+=(postgresql)
+command -v redis-server >/dev/null || NEED+=(redis-server)
 python3 -c 'import ensurepip, venv' 2>/dev/null || NEED+=(python3-venv)
 command -v rsync >/dev/null || NEED+=(rsync)
 if [ ${#NEED[@]} -gt 0 ]; then
@@ -45,6 +46,7 @@ if [ ${#NEED[@]} -gt 0 ]; then
   apt-get install -y -qq "${NEED[@]}" >/dev/null
 fi
 systemctl enable --now postgresql >/dev/null 2>&1 || true
+systemctl enable --now redis-server >/dev/null 2>&1 || true
 PYV="$(python3 -c 'import sys; print("%d%02d" % sys.version_info[:2])')"
 [ "$PYV" -ge 310 ] || die "Потрібен Python 3.10+, на сервері $(python3 -V)"
 
@@ -75,6 +77,14 @@ chown root:"$APP_USER" "$ENVF"; chmod 640 "$ENVF"
 HTTPS_ONLY=0; [ -d "/etc/letsencrypt/live/$DOMAIN" ] && HTTPS_ONLY=1
 sed -i '/^HTTPS_ONLY=/d;/^ROOT_PATH=/d' "$ENVF"
 printf 'HTTPS_ONLY=%s\nROOT_PATH=%s\n' "$HTTPS_ONLY" "$ROOT" >> "$ENVF"
+# Черга задач і події в реальному часі: окрема база Redis №3 (щоб не перетинатися з іншими сайтами)
+if ! grep -q '^REDIS_URL=' "$ENVF"; then
+  if redis-cli -n 3 ping 2>/dev/null | grep -q PONG; then
+    echo "REDIS_URL=redis://127.0.0.1:6379/3" >> "$ENVF"
+  else
+    warn "Redis недоступний — CRM працюватиме без черги (задачі виконуються одразу, інтерфейс оновлюється раз на 30 с)"
+  fi
+fi
 
 DB_PASS="$(sed -n 's#^DATABASE_URL=postgresql+psycopg://crm:\([^@]*\)@.*#\1#p' "$ENVF")"
 [ -n "$DB_PASS" ] || die "Не вдалося прочитати пароль бази з $ENVF"
@@ -88,7 +98,7 @@ fi
 say "2/5 Код і Python-середовище"
 mkdir -p "$APP" "$BACKUP_DIR"
 rsync -a --delete --exclude '.git' --exclude '.venv' --exclude tests --exclude backups --exclude '__pycache__' \
-  --exclude '.env' "$SRC/" "$APP/"
+  --exclude '.env' --exclude 'frontend/node_modules' --exclude 'frontend/dist' --exclude '.npm' "$SRC/" "$APP/"
 git -C "$SRC" log -1 --format='%h · %cd' --date=format:'%Y-%m-%d %H:%M' > "$APP/VERSION" 2>/dev/null || true
 chown -R "$APP_USER:$APP_USER" "$APP" "$BACKUP_DIR"
 chmod 750 "$BACKUP_DIR"
@@ -98,6 +108,30 @@ if [ "$(cat "$APP/.venv/.req" 2>/dev/null)" != "$REQ_HASH" ]; then
   sudo -u "$APP_USER" env HOME="$APP" "$APP/.venv/bin/pip" install -q --upgrade pip
   sudo -u "$APP_USER" env HOME="$APP" "$APP/.venv/bin/pip" install -q -r "$APP/requirements.txt"
   echo "$REQ_HASH" > "$APP/.venv/.req"; chown "$APP_USER:$APP_USER" "$APP/.venv/.req"
+fi
+
+# Інтерфейс (React): збирається лише коли змінився його код. Без Node.js лишається класичний інтерфейс.
+FE="$APP/frontend"
+NODE_MAJOR=0; command -v node >/dev/null && NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
+if [ -f "$FE/package.json" ] && [ "$NODE_MAJOR" -ge 18 ]; then
+  FE_HASH="$(cd "$FE" && { cat package-lock.json index.html vite.config.ts tsconfig.json; find src -type f -print0 | sort -z | xargs -0 cat; } | sha256sum | cut -c1-16)"
+  if [ "$(cat "$FE/dist/.build" 2>/dev/null)" != "$FE_HASH" ]; then
+    say "Збірка інтерфейсу"
+    LOCK_HASH="$(sha256sum "$FE/package-lock.json" | cut -c1-16)"
+    npm_as() { sudo -u "$APP_USER" env HOME="$APP" npm --prefix "$FE" --cache "$APP/.npm" --no-audit --no-fund "$@"; }
+    chown -R "$APP_USER:$APP_USER" "$FE"
+    if [ "$(cat "$FE/node_modules/.lock" 2>/dev/null)" != "$LOCK_HASH" ]; then
+      npm_as ci --loglevel=error && echo "$LOCK_HASH" > "$FE/node_modules/.lock"
+    fi
+    if npm_as run build --silent; then
+      echo "$FE_HASH" > "$FE/dist/.build"
+    else
+      warn "Інтерфейс не зібрався — працює попередня версія (або класичний інтерфейс)"
+    fi
+    chown -R "$APP_USER:$APP_USER" "$FE"
+  fi
+else
+  warn "Node.js 18+ не знайдено — новий інтерфейс не зібрано, відкриватиметься класичний (/classic)"
 fi
 
 say "3/5 Міграції бази і служби"
@@ -113,8 +147,9 @@ unit() { # назва, опис, команда
   cat > "/etc/systemd/system/$1.service" <<EOF
 [Unit]
 Description=$2
-After=network.target postgresql.service
+After=network.target postgresql.service redis-server.service
 Requires=postgresql.service
+Wants=redis-server.service
 
 [Service]
 Type=simple
@@ -159,6 +194,25 @@ mkdir -p /etc/nginx/snippets
 cat > /etc/nginx/snippets/crm.conf <<EOF
 # CRM за адресою $ROOT/ (створено deploy/install.sh репозиторію crm)
 location = $ROOT { return 301 $ROOT/; }
+# події в реальному часі (SSE): без буферизації і з довгим таймаутом
+location = $ROOT/api/events {
+    proxy_pass http://127.0.0.1:$PORT/api/events;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header X-Forwarded-For \$remote_addr;
+    proxy_set_header Connection "";
+    proxy_buffering off;
+    proxy_cache off;
+    proxy_read_timeout 1h;
+}
+# файли збірки інтерфейсу мають хеш у назві — кешуємо надовго
+location $ROOT/assets/ {
+    proxy_pass http://127.0.0.1:$PORT/assets/;
+    proxy_set_header Host \$host;
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+}
 location $ROOT/ {
     proxy_pass http://127.0.0.1:$PORT/;
     proxy_http_version 1.1;

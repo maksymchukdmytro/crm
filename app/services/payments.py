@@ -4,7 +4,7 @@ from decimal import Decimal, InvalidOperation
 from sqlalchemy.orm import Session
 
 from ..models import Order, Payment, Status, User, utcnow
-from . import audit
+from . import audit, events
 
 
 def _cod_payments(order: Order) -> list[Payment]:
@@ -63,6 +63,7 @@ def mark_received(db: Session, payment: Payment, user: User | None, amount: Deci
     payment.received_amount = amount if amount is not None else payment.amount
     if reference:
         payment.reference = reference
+    events.order_changed(db, payment.order_id)
     audit.log(db, user, "order", payment.order_id, "payment",
               {"payment_id": payment.id, "status": "received", "amount": payment.received_amount})
 

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from ..carriers import CARRIERS, CarrierError, TrackResult, get_carrier
 from ..models import Order, Status, User, utcnow
-from . import audit, orders as order_svc, payments
+from . import audit, events, orders as order_svc, payments
 from . import settings as st
 
 FINAL_DELIVERY_STATES = {"delivered", "returned", "deleted"}
@@ -38,6 +38,7 @@ def create_ttn(db: Session, order: Order, user: User | None) -> str:
     order.delivery_state, order.delivery_status = "created", "Створено ТТН"
     order.delivery_checked_at = utcnow()
     audit.log(db, user, "order", order.id, "ttn_create", {"ttn": res.ttn, "служба": carrier.name})
+    events.order_changed(db, order.id)
     return res.ttn
 
 
@@ -51,6 +52,7 @@ def delete_ttn(db: Session, order: Order, user: User | None):
     order.ttn = order.carrier_ref = ""
     order.delivery_state = order.delivery_status = order.delivery_status_code = ""
     audit.log(db, user, "order", order.id, "ttn_delete", {"ttn": old})
+    events.order_changed(db, order.id)
 
 
 def apply_track(db: Session, order: Order, res: TrackResult, auto_status: bool) -> bool:
@@ -64,6 +66,7 @@ def apply_track(db: Session, order: Order, res: TrackResult, auto_status: bool) 
     order.delivery_status = (res.status_text or "")[:255]
     order.delivery_status_code = (res.code or "")[:16]
     audit.log(db, None, "order", order.id, "tracking", {"з": old, "на": order.delivery_status})
+    events.order_changed(db, order.id)
     payments.on_delivery_state(db, order, res.state)
     if res.state == "delivered":
         order.delivered_at = order.delivered_at or utcnow()
@@ -85,11 +88,14 @@ def apply_track(db: Session, order: Order, res: TrackResult, auto_status: bool) 
     return True
 
 
-def sync_tracking(db: Session, order_ids: list[int] | None = None, force: bool = False) -> dict:
+def sync_tracking(db: Session, order_ids: list[int] | None = None, force: bool = False,
+                  carrier: str | None = None) -> dict:
     """Оновлює статуси посилок. Без order_ids — всі активні ТТН, що давно не перевірялись."""
     settings = st.get_all(db)
     auto_status = settings.get("auto_status_from_tracking") == "1"
     q = db.query(Order).filter(Order.ttn != "", Order.delivery_method.in_(list(CARRIERS)))
+    if carrier:
+        q = q.filter(Order.delivery_method == carrier)
     if order_ids:
         q = q.filter(Order.id.in_(order_ids))
     else:

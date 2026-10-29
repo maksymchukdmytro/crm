@@ -45,6 +45,9 @@ def app(db):
     return create_app(TEST_DB, run_seed=False)
 
 
+CLASSIC = "http://testserver/classic"
+
+
 def login(client: TestClient, username: str, password: str):
     r = client.post("/login", data={"username": username, "password": password}, follow_redirects=False)
     assert r.status_code == 303, r.text
@@ -53,25 +56,25 @@ def login(client: TestClient, username: str, password: str):
 
 @pytest.fixture()
 def admin(app):
-    with TestClient(app) as c:
+    with TestClient(app, base_url=CLASSIC) as c:
         yield login(c, "admin", "admin12345")
 
 
 @pytest.fixture()
 def manager(app):
-    with TestClient(app) as c:
+    with TestClient(app, base_url=CLASSIC) as c:
         yield login(c, "manager1", "password123")
 
 
 @pytest.fixture()
 def warehouse(app):
-    with TestClient(app) as c:
+    with TestClient(app, base_url=CLASSIC) as c:
         yield login(c, "store", "password123")
 
 
 @pytest.fixture()
 def anon(app):
-    with TestClient(app) as c:
+    with TestClient(app, base_url=CLASSIC) as c:
         yield c
 
 

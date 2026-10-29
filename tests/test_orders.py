@@ -22,7 +22,7 @@ def test_normalize_phone():
 
 
 def test_webhook_creates_order(anon, db, products, webhook_key):
-    r = anon.post(f"/api/v1/orders?key={webhook_key}", data={
+    r = anon.post(f"http://testserver/api/v1/orders?key={webhook_key}", data={
         "name": "Петренко Іван", "phone": "(067) 123-45-67", "sku": "CREAM-1", "qty": "2",
         "utm_source": "facebook", "utm_campaign": "spring", "site": "cream-landing",
     })
@@ -41,8 +41,8 @@ def test_webhook_creates_order(anon, db, products, webhook_key):
 def test_webhook_multiple_products_and_duplicate(anon, db, products, webhook_key):
     payload = {"name": "Іван", "phone": "0671234567",
                "products": [{"sku": "CREAM-1", "qty": 1}, {"sku": "SOAP-1", "qty": 3, "price": 79}]}
-    r1 = anon.post(f"/api/v1/orders?key={webhook_key}", json=payload).json()
-    r2 = anon.post(f"/api/v1/orders?key={webhook_key}", json=payload).json()
+    r1 = anon.post(f"http://testserver/api/v1/orders?key={webhook_key}", json=payload).json()
+    r2 = anon.post(f"http://testserver/api/v1/orders?key={webhook_key}", json=payload).json()
     assert not r1["duplicate"] and r2["duplicate"]
     o = db.get(Order, r1["order_id"])
     assert o.total == Decimal("399") + Decimal("79") * 3
@@ -50,12 +50,12 @@ def test_webhook_multiple_products_and_duplicate(anon, db, products, webhook_key
 
 
 def test_webhook_rejects_bad_key_and_phone(anon, webhook_key):
-    assert anon.post("/api/v1/orders?key=wrong", data={"phone": "0671234567"}).status_code == 403
-    assert anon.post(f"/api/v1/orders?key={webhook_key}", data={"phone": "12"}).status_code == 422
+    assert anon.post("http://testserver/api/v1/orders?key=wrong", data={"phone": "0671234567"}).status_code == 403
+    assert anon.post(f"http://testserver/api/v1/orders?key={webhook_key}", data={"phone": "12"}).status_code == 422
 
 
 def test_webhook_redirect_for_html_forms(anon, webhook_key):
-    r = anon.post(f"/api/v1/orders?key={webhook_key}",
+    r = anon.post(f"http://testserver/api/v1/orders?key={webhook_key}",
                   data={"phone": "0671234567", "redirect": "https://shop.example/thanks"}, follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"] == "https://shop.example/thanks"
 
@@ -63,7 +63,7 @@ def test_webhook_redirect_for_html_forms(anon, webhook_key):
 def test_round_robin_assignment(anon, db, webhook_key):
     st.set_value(db, "auto_assign", "round_robin")
     db.commit()
-    ids = [anon.post(f"/api/v1/orders?key={webhook_key}", data={"phone": f"067123450{i}"}).json()["order_id"]
+    ids = [anon.post(f"http://testserver/api/v1/orders?key={webhook_key}", data={"phone": f"067123450{i}"}).json()["order_id"]
            for i in range(4)]
     db.expire_all()
     managers = [db.get(Order, i).manager.username for i in ids]
@@ -190,7 +190,7 @@ def test_manager_own_only_visibility(manager, db, products):
 
 
 def test_bulk_status_and_search(admin, db, products, webhook_key):
-    ids = [admin.post(f"/api/v1/orders?key={webhook_key}", data={"phone": f"06712345{i:02d}", "sku": "CREAM-1"})
+    ids = [admin.post(f"http://testserver/api/v1/orders?key={webhook_key}", data={"phone": f"06712345{i:02d}", "sku": "CREAM-1"})
            .json()["order_id"] for i in range(3)]
     admin.post("/orders/bulk", data={"ids": [str(i) for i in ids[:2]], "action": f"status:{status_id(db, 'confirmed')}"})
     db.expire_all()
@@ -201,6 +201,6 @@ def test_bulk_status_and_search(admin, db, products, webhook_key):
 
 
 def test_csv_export(admin, products, webhook_key):
-    admin.post(f"/api/v1/orders?key={webhook_key}", data={"name": "Експорт Тест", "phone": "0671112233", "sku": "CREAM-1"})
+    admin.post(f"http://testserver/api/v1/orders?key={webhook_key}", data={"name": "Експорт Тест", "phone": "0671112233", "sku": "CREAM-1"})
     r = admin.get("/orders/export.csv")
     assert r.status_code == 200 and "Експорт Тест" in r.text

@@ -9,6 +9,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from ..models import Order, Product, Purchase, StockMovement, User, utcnow
+from . import events
 
 
 def _lock(db: Session, product_id: int) -> Product | None:
@@ -38,6 +39,7 @@ def move(
     p = _lock(db, product_id)
     if p is None:
         return
+    events.product_changed(db, product_id)
     p.stock = (p.stock or 0) + stock_delta
     p.reserved = max((p.reserved or 0) + reserved_delta, 0)
     db.add(

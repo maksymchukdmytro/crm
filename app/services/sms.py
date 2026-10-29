@@ -52,8 +52,11 @@ def render(text: str, order: Order, company: str = "") -> str:
 
 
 def queue(db: Session, order: Order | None, phone: str, text: str, channel: str = "sms") -> SmsMessage:
+    from . import queue
+
     msg = SmsMessage(order_id=order.id if order else None, phone=phone, text=text, channel=channel)
     db.add(msg)
+    queue.kick_sms(db)
     return msg
 
 

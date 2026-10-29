@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from sqlalchemy.orm import Session
 
 from ..models import Order, OrderComment, OrderItem, Product, Status, User, utcnow
-from . import audit, payments, sms, stock
+from . import audit, events, payments, sms, stock
 from . import settings as st
 
 ORDER_FIELDS = [
@@ -164,6 +164,7 @@ def create_order(db: Session, data: dict, items_data: list[dict], user: User | N
     recalc(order)
     db.add(order)
     db.flush()
+    events.order_changed(db, order.id)
     audit.log(db, user, "order", order.id, "create", {
         "source": source,
         "items": [f"{i.name} × {i.qty}" for i in order.items],
@@ -183,6 +184,7 @@ def update_order(db: Session, order: Order, data: dict, user: User | None) -> di
         payments.ensure_cod_payment(db, order)
     if changes:
         audit.log(db, user, "order", order.id, "update", changes)
+        events.order_changed(db, order.id)
     return changes
 
 
@@ -199,6 +201,7 @@ def set_items(db: Session, order: Order, items_data: list[dict], user: User | No
     new_desc = [f"{i.name} × {i.qty} = {i.price}" for i in order.items]
     if old_desc != new_desc:
         audit.log(db, user, "order", order.id, "items", {"було": old_desc, "стало": new_desc})
+        events.order_changed(db, order.id)
 
 
 def change_status(db: Session, order: Order, new_status: Status, user: User | None,
@@ -217,6 +220,7 @@ def change_status(db: Session, order: Order, new_status: Status, user: User | No
     if auto:
         details["авто"] = reason or "трекінг"
     audit.log(db, user, "order", order.id, "status", details)
+    events.order_changed(db, order.id)
     db.flush()
     sms.queue_for_status(db, order, new_status)
     return True
@@ -229,6 +233,7 @@ def assign(db: Session, order: Order, manager: User | None, user: User | None):
     order.manager = manager
     order.manager_id = manager.id if manager else None
     audit.log(db, user, "order", order.id, "assign", {"з": old, "на": manager.display if manager else "—"})
+    events.order_changed(db, order.id)
 
 
 def add_comment(db: Session, order: Order, text: str, user: User | None) -> OrderComment | None:
@@ -237,6 +242,7 @@ def add_comment(db: Session, order: Order, text: str, user: User | None) -> Orde
         return None
     c = OrderComment(order=order, user=user, text=text)
     db.add(c)
+    events.order_changed(db, order.id)
     return c
 
 
