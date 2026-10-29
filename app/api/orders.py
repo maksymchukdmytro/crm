@@ -34,6 +34,33 @@ def _get(db: Session, order_id: int, user: User) -> Order:
     return order
 
 
+def _label_kind(db: Session, order: Order) -> str:
+    """Що друкувати кнопкою «Друк» біля ТТН: rozetka — маркування Rozetka, carrier — наклейка перевізника, "" — нічого."""
+    from ..services import marketplaces as mp
+    if not order.ttn:
+        return ""
+    if mp.is_rozetka_delivery(order):
+        return "rozetka"
+    return "carrier" if delivery.carrier_for(db, order) is not None else ""
+
+
+@router.get("/{order_id}/label", responses={200: {"content": {"application/pdf": {}}, "description": "PDF наклейки"}})
+def order_label(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
+    """Наклейка для друку: маркування ROZETKA Delivery (ТТН RMP-…) з API Rozetka або наклейка перевізника (НП 100×100)."""
+    from fastapi.responses import Response
+    from ..services import marketplaces as mp
+    order = _get(db, order_id, user)
+    kind = _label_kind(db, order)
+    if not kind:
+        bad("Для цього замовлення немає наклейки: спершу потрібна ТТН", 404)
+    try:
+        pdf = mp.rozetka_label(db, order) if kind == "rozetka" else delivery.carrier_for(db, order).label_pdf(order)
+    except (mp.MarketplaceError, CarrierError) as e:
+        bad(str(e), 422)
+    name = f"{'rozetka' if kind == 'rozetka' else 'label'}-{order.ttn}.pdf"
+    return Response(pdf, media_type="application/pdf", headers={"Content-Disposition": f'inline; filename="{name}"'})
+
+
 def _full(db: Session, order: Order) -> dict:
     db.refresh(order)
     d = j_order(order)
@@ -47,6 +74,7 @@ def _full(db: Session, order: Order) -> dict:
                  "created_at": iso(m.created_at)}
                 for m in db.query(SmsMessage).filter(SmsMessage.order_id == order.id).order_by(SmsMessage.id.desc())]
     d["others"] = [j_order_row(o) for o in svc.customer_orders(db, order.phone, exclude_id=order.id)]
+    d["label"] = _label_kind(db, order)
     d["customer"] = None
     if order.customer is not None:
         from ..services import customers as cust

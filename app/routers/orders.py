@@ -364,13 +364,15 @@ def order_track(order_id: int, request: Request, db: Session = Depends(get_db), 
 @router.get("/orders/{order_id}/label")
 def order_label(order_id: int, request: Request, db: Session = Depends(get_db), user: User = Depends(staff)):
     order = _get_order(db, order_id, user)
+    from ..services import marketplaces as mp
     from ..services.delivery import carrier_for
     carrier = carrier_for(db, order)
-    if carrier is None or not order.ttn:
+    rozetka = bool(order.ttn) and mp.is_rozetka_delivery(order)
+    if (carrier is None and not rozetka) or not order.ttn:
         raise HTTPException(404)
     try:
-        pdf = carrier.label_pdf(order)
-    except CarrierError as e:
+        pdf = mp.rozetka_label(db, order) if rozetka else carrier.label_pdf(order)
+    except (CarrierError, mp.MarketplaceError) as e:
         flash(request, str(e), "error")
         return redirect(_card(request, order))
     return Response(pdf, media_type="application/pdf",

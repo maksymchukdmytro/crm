@@ -343,6 +343,7 @@ class OrderCustomer(Out):
 
 
 class OrderOut(Out):
+    label: Literal["", "rozetka", "carrier"] = Field("", description="що друкувати біля ТТН: маркування Rozetka чи наклейку перевізника")
     pay_check: PayCheckOut | None = None
     ttn_cod_kind: str = ""
     ttn_cod_sum: float = 0

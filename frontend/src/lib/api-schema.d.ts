@@ -533,6 +533,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{order_id}/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Order Label
+         * @description Наклейка для друку: маркування ROZETKA Delivery (ТТН RMP-…) з API Rozetka або наклейка перевізника (НП 100×100).
+         */
+        get: operations["order_label_api_orders__order_id__label_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{order_id}/payments": {
         parameters: {
             query?: never;
@@ -3002,6 +3022,13 @@ export interface components {
             /** Items */
             items: components["schemas"]["OrderItemOut"][];
             /**
+             * Label
+             * @description що друкувати біля ТТН: маркування Rozetka чи наклейку перевізника
+             * @default
+             * @enum {string}
+             */
+            label: "" | "rozetka" | "carrier";
+            /**
              * Last Name
              * @default
              */
@@ -4819,6 +4846,13 @@ export interface components {
             /** Items */
             items: components["schemas"]["OrderItemOut"][];
             /**
+             * Label
+             * @description що друкувати біля ТТН: маркування Rozetka чи наклейку перевізника
+             * @default
+             * @enum {string}
+             */
+            label: "" | "rozetka" | "carrier";
+            /**
              * Last Name
              * @default
              */
@@ -6288,6 +6322,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    order_label_api_orders__order_id__label_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF наклейки */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/pdf": unknown;
                 };
             };
             /** @description Validation Error */

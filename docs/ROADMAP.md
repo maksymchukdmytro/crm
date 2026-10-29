@@ -127,6 +127,16 @@ Rozetka (логін + пароль) і Prom (API-токен): перевірка
 
 ---
 
+## ✅ Маркування ROZETKA Delivery (29.10)
+- Служба доставки «Rozetka Delivery» (`delivery_method = "rozetka"`): за назвою служби з Rozetka або ТТН `RMP-…`
+  (міграція 0014 переводить наявні замовлення з `RMP-`).
+- Друк: `GET /api/orders/{id}/label` — для Rozetka Delivery PDF з API Rozetka
+  (`POST /delivery-rozetka/ttn-print-batch`, модуль Octopus, токен магазину), для решти — наклейка перевізника.
+  У картці: кнопка «Маркування Rozetka» / «Наклейка» в шапці й значок друку біля ТТН; бланк замовлення — окрема кнопка.
+- Документація Rozetka Seller API: https://api-seller.rozetka.com.ua/apidoc/ (розділ «Модуль ROZETKA Delivery»).
+
+---
+
 ## ⬜ Етап 7. Зручність і розсилки (M) — відкладено власником, поки не робити
 
 **Що треба:**
