@@ -17,8 +17,15 @@ from ..models import (
     PAYMENT_KINDS,
     PAYMENT_STATUSES,
     PAYMENT_TYPES,
+    CHECKBOX_PAYMENTS,
+    COUNTRIES,
     ROLES,
     STOCK_ACTIONS,
+    Office,
+    OrderMark,
+    OrderSource,
+    PaymentMethod,
+    StatusReason,
     Product,
     Status,
     User,
@@ -29,7 +36,7 @@ from ..services import audit
 from ..services import settings as st
 from ..services.events import CHANNEL
 from .schemas import LoginIn, LoginOut, MeIn, MetaOut, Ok, UserOut
-from .common import api_user, bad, j_product, j_status, j_user
+from .common import api_user, bad, j_payment_method, j_product, j_source, j_status, j_user
 
 router = APIRouter(prefix="/api", tags=["core"])
 
@@ -96,6 +103,10 @@ def me_update(body: MeIn, db: Session = Depends(get_db), user: User = Depends(ap
     return j_user(user)
 
 
+def _active(db: Session, model):
+    return db.query(model).filter(model.is_active.is_(True)).order_by(model.sort, model.id).all()
+
+
 @router.get("/meta", response_model=MetaOut)
 def meta(db: Session = Depends(get_db), user: User = Depends(api_user)):
     s = st.get_all(db)
@@ -113,6 +124,16 @@ def meta(db: Session = Depends(get_db), user: User = Depends(api_user)):
         "delivery_methods": DELIVERY_METHODS,
         "delivery_states": DELIVERY_STATES,
         "payment_types": PAYMENT_TYPES,
+        "payment_methods": [j_payment_method(m) for m in db.query(PaymentMethod).filter(PaymentMethod.is_active.is_(True))
+                            .order_by(PaymentMethod.sort, PaymentMethod.id)],
+        "order_sources": [j_source(x) for x in db.query(OrderSource).filter(OrderSource.is_active.is_(True))
+                          .order_by(OrderSource.sort, OrderSource.id)],
+        "offices": [j_source(x) for x in _active(db, Office)],
+        "reasons": [j_source(x) for x in _active(db, StatusReason)],
+        "marks": [j_source(x) for x in _active(db, OrderMark)],
+        "countries": COUNTRIES,
+        "extra_fields": [s.get(f"extra{i}_name") or f"Поле {i}" for i in range(1, 5)],
+        "checkbox_payments": CHECKBOX_PAYMENTS,
         "payment_kinds": PAYMENT_KINDS,
         "payment_statuses": PAYMENT_STATUSES,
         "stock_actions": STOCK_ACTIONS,

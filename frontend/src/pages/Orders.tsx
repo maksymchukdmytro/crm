@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Download, Plus, X } from "lucide-react";
+import { Download, Plus, X, Bell } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { dt, itemsLabel, money, phone } from "../lib/format";
+import { PayIcon } from "../components/payicons";
 import type { OrderList, OrderRow } from "../lib/types";
 import { Pill } from "../components/ui";
 import OrderModal from "./OrderCard";
@@ -21,6 +22,8 @@ export default function OrdersPage() {
   const toast = useToast();
   const qc = useQueryClient();
   const statuses = useMemo(() => Object.fromEntries(meta.statuses.map((s) => [s.id, s])), [meta.statuses]);
+  const pm = useMemo(() => Object.fromEntries(meta.payment_methods.map((m) => [m.id, m])), [meta.payment_methods]);
+  const marks = useMemo(() => Object.fromEntries(meta.marks.map((m) => [m.id, m.name])), [meta.marks]);
   const managers = useMemo(() => Object.fromEntries(meta.managers.map((m) => [m.id, m])), [meta.managers]);
 
   const f = Object.fromEntries(FILTERS.map((k) => [k, sp.get(k) ?? ""])) as Record<(typeof FILTERS)[number], string>;
@@ -156,11 +159,11 @@ export default function OrdersPage() {
                   onClick={(e) => { if (!(e.target as HTMLElement).closest("input")) nav(`/orders/${o.id}${window.location.search}`); }}>
                   <span className="c-sel"><input type="checkbox" checked={sel.has(o.id)} onChange={() => toggle(o.id)} /></span>
                   <span className="nowrap"><b>{o.id}</b>{o.duplicate_of_id && <span className="badge warn" title={`Повтор з номера: №${o.duplicate_of_id}`}>дубль</span>}</span>
-                  <span><Pill status={s} /></span>
+                  <span className="st-cell"><Pill status={s} />{o.remind_at && <span className={`remind-dot ${new Date(o.remind_at) <= new Date() ? "due" : ""}`} title={`Нагадування ${dt(o.remind_at, true)}`}><Bell size={12} /></span>}{o.mark_id && marks[o.mark_id] && <span className="badge" title="Позначка">{marks[o.mark_id]}</span>}</span>
                   <span className="ell">{o.customer_name || <span className="muted">—</span>}</span>
                   <span className="nowrap">{phone(o.phone)}</span>
                   <span className="ell" title={itemsLabel(o.items)}>{itemsLabel(o.items)}{o.items.some((i) => i.upsell) && <span className="badge info">допродаж</span>}</span>
-                  <span className="num"><b>{money(o.total)}</b>{o.payment_type === "prepaid" && <span className="badge ok">оплач.</span>}{o.payment_type === "partial" && <span className="badge info">част.</span>}</span>
+                  <span className="num pay-cell">{pm[o.payment_method_id ?? 0] && <PayIcon icon={pm[o.payment_method_id!].icon} size={18} title={pm[o.payment_method_id!].name} />}<b>{money(o.total)}</b></span>
                   <span className="ell">{meta.delivery_methods[o.delivery_method]}{o.city_name && <small> · {o.city_name}</small>}</span>
                   <span className="nowrap">{o.ttn ? <><span className="mono">{o.ttn}</span>{o.delivery_state && <span className={`dstate ${o.delivery_state}`} title={`${meta.delivery_states[o.delivery_state] ?? ""}: ${o.delivery_status}`} />}</> : <span className="muted">—</span>}</span>
                   <span className="ell c-m">{o.manager_id ? managers[o.manager_id]?.name ?? "—" : <span className="muted">—</span>}</span>

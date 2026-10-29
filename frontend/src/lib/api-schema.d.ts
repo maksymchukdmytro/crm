@@ -474,6 +474,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings/dir/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Directory Save
+         * @description Зберегти простий довідник цілим списком: рядок без id — новий, delete — прибрати
+         *     (якщо є замовлення з цим значенням — лише вимикаємо, щоб не зламати історію).
+         */
+        put: operations["directory_save_api_settings_dir__kind__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/settings/np/load-sender": {
         parameters: {
             query?: never;
@@ -485,6 +506,26 @@ export interface paths {
         put?: never;
         /** Np Load Sender */
         post: operations["np_load_sender_api_settings_np_load_sender_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/payment-methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Payment Methods Save
+         * @description Зберегти довідник видів оплат цілим списком (рядок без id — новий вид).
+         */
+        put: operations["payment_methods_save_api_settings_payment_methods_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -954,8 +995,16 @@ export interface components {
             carriers: {
                 [key: string]: components["schemas"]["CarrierOut"];
             };
+            /** Checkbox Payments */
+            checkbox_payments?: {
+                [key: string]: string;
+            };
             /** Company */
             company: string;
+            /** Countries */
+            countries?: {
+                [key: string]: string;
+            };
             /** Delivery Methods */
             delivery_methods: {
                 [key: string]: string;
@@ -964,16 +1013,32 @@ export interface components {
             delivery_states: {
                 [key: string]: string;
             };
+            /**
+             * Extra Fields
+             * @description Назви додаткових полів 1–4
+             */
+            extra_fields?: string[];
             /** Managers */
             managers: components["schemas"]["UserOut"][];
             /** Managers See Own Only */
             managers_see_own_only: boolean;
+            /** Marks */
+            marks?: components["schemas"]["SourceOut"][];
             /** Nav */
             nav: string[];
+            /** Offices */
+            offices?: components["schemas"]["SourceOut"][];
+            /** Order Sources */
+            order_sources?: components["schemas"]["SourceOut"][];
             /** Payment Kinds */
             payment_kinds: {
                 [key: string]: string;
             };
+            /**
+             * Payment Methods
+             * @description Активні види оплат
+             */
+            payment_methods?: components["schemas"]["PaymentMethodOut"][];
             /** Payment Statuses */
             payment_statuses: {
                 [key: string]: string;
@@ -986,6 +1051,8 @@ export interface components {
             products: components["schemas"]["ProductOut"][];
             /** Realtime */
             realtime: boolean;
+            /** Reasons */
+            reasons?: components["schemas"]["ReasonOut"][];
             /** Roles */
             roles: {
                 [key: string]: string;
@@ -1051,6 +1118,8 @@ export interface components {
             city_ref?: string | null;
             /** Comment */
             comment?: string | null;
+            /** Country */
+            country?: string | null;
             /** Customer Name */
             customer_name?: string | null;
             /** Delivery Cost */
@@ -1061,6 +1130,14 @@ export interface components {
             discount?: number | string | null;
             /** Email */
             email?: string | null;
+            /** Extra1 */
+            extra1?: string | null;
+            /** Extra2 */
+            extra2?: string | null;
+            /** Extra3 */
+            extra3?: string | null;
+            /** Extra4 */
+            extra4?: string | null;
             /** First Name */
             first_name?: string | null;
             /** Items */
@@ -1069,6 +1146,8 @@ export interface components {
             last_name?: string | null;
             /** Manager Id */
             manager_id?: number | null;
+            /** Mark Id */
+            mark_id?: number | null;
             /** Middle Name */
             middle_name?: string | null;
             /**
@@ -1076,7 +1155,14 @@ export interface components {
              * @description Коментар менеджера, що додається разом зі створенням
              */
             note?: string | null;
-            /** Payment Type */
+            /** Office Id */
+            office_id?: number | null;
+            /** Payment Method Id */
+            payment_method_id?: number | null;
+            /**
+             * Payment Type
+             * @description Застаріле: краще payment_method_id
+             */
             payment_type?: ("cod" | "partial" | "prepaid") | null;
             /** Phone */
             phone?: string | null;
@@ -1084,8 +1170,17 @@ export interface components {
             postcode?: string | null;
             /** Prepayment */
             prepayment?: number | string | null;
+            /** Reason Id */
+            reason_id?: number | null;
+            /**
+             * Remind At
+             * @description ISO-дата нагадування, порожньо — прибрати
+             */
+            remind_at?: string | null;
             /** Site */
             site?: string | null;
+            /** Source Id */
+            source_id?: number | null;
             /** Status Id */
             status_id?: number | null;
             /** Ttn */
@@ -1202,6 +1297,11 @@ export interface components {
             comment: string;
             /** Comments */
             comments: components["schemas"]["CommentOut"][];
+            /**
+             * Country
+             * @default UA
+             */
+            country: string;
             /** Created At */
             created_at: string | null;
             /** Customer Name */
@@ -1225,6 +1325,26 @@ export interface components {
             /** Email */
             email: string;
             /**
+             * Extra1
+             * @default
+             */
+            extra1: string;
+            /**
+             * Extra2
+             * @default
+             */
+            extra2: string;
+            /**
+             * Extra3
+             * @default
+             */
+            extra3: string;
+            /**
+             * Extra4
+             * @default
+             */
+            extra4: string;
+            /**
              * First Name
              * @default
              */
@@ -1245,13 +1365,19 @@ export interface components {
             manager: components["schemas"]["UserOut"] | null;
             /** Manager Id */
             manager_id: number | null;
+            /** Mark Id */
+            mark_id?: number | null;
             /**
              * Middle Name
              * @default
              */
             middle_name: string;
+            /** Office Id */
+            office_id?: number | null;
             /** Others */
             others: components["schemas"]["OrderRowOut"][];
+            /** Payment Method Id */
+            payment_method_id?: number | null;
             /** Payment Type */
             payment_type: string;
             /** Payments */
@@ -1262,12 +1388,18 @@ export interface components {
             postcode: string;
             /** Prepayment */
             prepayment: number;
+            /** Reason Id */
+            reason_id?: number | null;
+            /** Remind At */
+            remind_at?: string | null;
             /** Shipped At */
             shipped_at: string | null;
             /** Site */
             site: string;
             /** Sms */
             sms: components["schemas"]["SmsOut"][];
+            /** Source Id */
+            source_id?: number | null;
             /** Status Id */
             status_id: number;
             /** Stock Reserved */
@@ -1312,6 +1444,11 @@ export interface components {
             city_name: string;
             /** Cod Amount */
             cod_amount: number;
+            /**
+             * Country
+             * @default UA
+             */
+            country: string;
             /** Created At */
             created_at: string | null;
             /** Customer Name */
@@ -1330,12 +1467,24 @@ export interface components {
             items: components["schemas"]["OrderRowItem"][];
             /** Manager Id */
             manager_id: number | null;
+            /** Mark Id */
+            mark_id?: number | null;
+            /** Office Id */
+            office_id?: number | null;
+            /** Payment Method Id */
+            payment_method_id?: number | null;
             /** Payment Type */
             payment_type: string;
             /** Phone */
             phone: string;
+            /** Reason Id */
+            reason_id?: number | null;
+            /** Remind At */
+            remind_at?: string | null;
             /** Site */
             site: string;
+            /** Source Id */
+            source_id?: number | null;
             /** Status Changed At */
             status_changed_at: string | null;
             /** Status Id */
@@ -1364,6 +1513,60 @@ export interface components {
              * @default
              */
             reference: string;
+        };
+        /** PaymentMethodIn */
+        PaymentMethodIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /**
+             * Checkbox Type
+             * @default
+             */
+            checkbox_type: string;
+            /**
+             * Icon
+             * @default cash
+             */
+            icon: string;
+            /** Id */
+            id?: number | null;
+            /**
+             * Kind
+             * @default cod
+             * @enum {string}
+             */
+            kind: "cod" | "partial" | "prepaid";
+            /** Name */
+            name: string;
+            /**
+             * Sort
+             * @default 100
+             */
+            sort: number;
+        };
+        /** PaymentMethodOut */
+        PaymentMethodOut: {
+            /** Active */
+            active: boolean;
+            /** Checkbox Type */
+            checkbox_type: string;
+            /** Icon */
+            icon: string;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @description cod — післяплата, partial — передоплата + післяплата, prepaid — без післяплати
+             * @enum {string}
+             */
+            kind: "cod" | "partial" | "prepaid";
+            /** Name */
+            name: string;
+            /** Sort */
+            sort: number;
         };
         /** PaymentOut */
         PaymentOut: {
@@ -1584,6 +1787,22 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** ReasonOut */
+        ReasonOut: {
+            /** Active */
+            active: boolean;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Sort */
+            sort: number;
+            /**
+             * Status Ids
+             * @description До яких статусів застосовна причина
+             */
+            status_ids?: number[];
+        };
         /** ReceiveIn */
         ReceiveIn: {
             /** Ids */
@@ -1638,12 +1857,29 @@ export interface components {
         };
         /** SettingsOut */
         SettingsOut: {
+            /** Checkbox Payments */
+            checkbox_payments?: {
+                [key: string]: string;
+            };
+            /** Marks */
+            marks?: components["schemas"]["SourceOut"][];
             /** Message */
             message?: string | null;
+            /** Offices */
+            offices?: components["schemas"]["SourceOut"][];
+            /** Order Sources */
+            order_sources?: components["schemas"]["SourceOut"][];
+            /**
+             * Payment Methods
+             * @description Усі види оплат, з вимкненими
+             */
+            payment_methods?: components["schemas"]["PaymentMethodOut"][];
             /** Placeholders */
             placeholders: {
                 [key: string]: string;
             };
+            /** Reasons */
+            reasons?: components["schemas"]["ReasonOut"][];
             /** Roles */
             roles: {
                 [key: string]: string;
@@ -1763,6 +1999,47 @@ export interface components {
             channel: "sms" | "viber";
             /** Phone */
             phone: string;
+        };
+        /** SourceIn */
+        SourceIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /**
+             * Delete
+             * @default false
+             */
+            delete: boolean;
+            /** Id */
+            id?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Sort
+             * @default 100
+             */
+            sort: number;
+            /**
+             * Status Ids
+             * @description Лише для причин
+             */
+            status_ids?: number[] | null;
+        };
+        /**
+         * SourceOut
+         * @description Довідник «назва + активний + порядок»: джерела, відділи, позначки.
+         */
+        SourceOut: {
+            /** Active */
+            active: boolean;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Sort */
+            sort: number;
         };
         /** StatusIn */
         StatusIn: {
@@ -1904,6 +2181,11 @@ export interface components {
             comment: string;
             /** Comments */
             comments: components["schemas"]["CommentOut"][];
+            /**
+             * Country
+             * @default UA
+             */
+            country: string;
             /** Created At */
             created_at: string | null;
             /** Customer Name */
@@ -1927,6 +2209,26 @@ export interface components {
             /** Email */
             email: string;
             /**
+             * Extra1
+             * @default
+             */
+            extra1: string;
+            /**
+             * Extra2
+             * @default
+             */
+            extra2: string;
+            /**
+             * Extra3
+             * @default
+             */
+            extra3: string;
+            /**
+             * Extra4
+             * @default
+             */
+            extra4: string;
+            /**
              * First Name
              * @default
              */
@@ -1947,13 +2249,19 @@ export interface components {
             manager: components["schemas"]["UserOut"] | null;
             /** Manager Id */
             manager_id: number | null;
+            /** Mark Id */
+            mark_id?: number | null;
             /**
              * Middle Name
              * @default
              */
             middle_name: string;
+            /** Office Id */
+            office_id?: number | null;
             /** Others */
             others: components["schemas"]["OrderRowOut"][];
+            /** Payment Method Id */
+            payment_method_id?: number | null;
             /** Payment Type */
             payment_type: string;
             /** Payments */
@@ -1964,12 +2272,18 @@ export interface components {
             postcode: string;
             /** Prepayment */
             prepayment: number;
+            /** Reason Id */
+            reason_id?: number | null;
+            /** Remind At */
+            remind_at?: string | null;
             /** Shipped At */
             shipped_at: string | null;
             /** Site */
             site: string;
             /** Sms */
             sms: components["schemas"]["SmsOut"][];
+            /** Source Id */
+            source_id?: number | null;
             /** Status Id */
             status_id: number;
             /** Stock Reserved */
@@ -2005,6 +2319,8 @@ export interface components {
             full_name?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+            /** Offices */
+            offices?: number[] | null;
             /** Password */
             password?: string | null;
             /** Role */
@@ -2024,6 +2340,11 @@ export interface components {
             last_login_at?: string | null;
             /** Name */
             name: string;
+            /**
+             * Offices
+             * @description Доступні відділи; порожньо — усі
+             */
+            offices?: number[];
             /**
              * Role
              * @enum {string}
@@ -3148,6 +3469,41 @@ export interface operations {
             };
         };
     };
+    directory_save_api_settings_dir__kind__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceIn"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     np_load_sender_api_settings_np_load_sender_post: {
         parameters: {
             query?: never;
@@ -3164,6 +3520,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+        };
+    };
+    payment_methods_save_api_settings_payment_methods_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentMethodIn"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

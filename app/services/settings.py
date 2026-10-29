@@ -8,6 +8,10 @@ from ..models import Setting
 DEFAULTS: dict[str, str] = {
     # Загальні
     "company_name": "Моя CRM",
+    "extra1_name": "Поле 1",  # назви додаткових полів замовлення
+    "extra2_name": "Поле 2",
+    "extra3_name": "Поле 3",
+    "extra4_name": "Поле 4",
     "duplicate_days": "14",  # вікно пошуку дублів за телефоном, днів (0 — вимкнено)
     "auto_assign": "off",  # off / round_robin
     "managers_see_own_only": "0",

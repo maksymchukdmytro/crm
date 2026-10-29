@@ -39,6 +39,46 @@ DELIVERY_METHODS = {
     "courier": "Кур'єр",
 }
 
+# Типи оплати в чеку Checkbox (вид оплати CRM → один із цих), як у модулі Checkbox LP-CRM
+CHECKBOX_PAYMENTS = {
+    "cash": "Готівка",
+    "card": "Картка",
+    "novapay": "Платіж через інтегратора NovaPay",
+    "rozetkapay": "Платіж через інтегратора RozetkaPay",
+    "monopay": "Платіж через інтегратора mono",
+    "liqpay": "Платіж через інтегратора LiqPay",
+    "wayforpay": "Платіж через інтегратора WayForPay",
+    "easypay": "Платіж через інтегратора EasyPay",
+    "acquiring": "Інтернет еквайринг",
+    "iban": "За реквізитами (IBAN)",
+    "internet_banking": "Інтернет банкінг",
+    "gift": "Подарунковий сертифікат",
+    "coupon": "Талон",
+    "token": "Жетон",
+    "nnpp": "Переказ через ННПП",
+    "ptks_nnpp": "Переказ через ПТКС ННПП",
+    "ptks_bank": "Переказ через ПТКС банку",
+    "current_account": "З поточного рахунку",
+    "chip": "Фішка",
+    "e_money": "Електронний грошовий замінник",
+    "game_money": "Ігровий замінник гривні",
+}
+
+# Країни замовлень (код ISO → назва), як у LP-CRM
+COUNTRIES = {
+    "UA": "Україна", "MD": "Молдова", "PL": "Польща", "DE": "Німеччина", "CZ": "Чехія", "SK": "Словаччина",
+    "RO": "Румунія", "HU": "Угорщина", "LT": "Литва", "LV": "Латвія", "EE": "Естонія", "GB": "Велика Британія",
+    "US": "США", "CA": "Канада", "IT": "Італія", "ES": "Іспанія", "FR": "Франція", "NL": "Нідерланди",
+    "BE": "Бельгія", "AT": "Австрія", "CH": "Швейцарія", "IE": "Ірландія", "PT": "Португалія", "GR": "Греція",
+    "BG": "Болгарія", "HR": "Хорватія", "SI": "Словенія", "RS": "Сербія", "ME": "Чорногорія", "MK": "Північна Македонія",
+    "AL": "Албанія", "BA": "Боснія і Герцеговина", "DK": "Данія", "SE": "Швеція", "NO": "Норвегія", "FI": "Фінляндія",
+    "IS": "Ісландія", "LU": "Люксембург", "LI": "Ліхтенштейн", "MC": "Монако", "GE": "Грузія", "AM": "Вірменія",
+    "AZ": "Азербайджан", "KZ": "Казахстан", "UZ": "Узбекистан", "KG": "Киргизстан", "TJ": "Таджикистан",
+    "TM": "Туркменістан", "TR": "Туреччина", "IL": "Ізраїль", "AE": "ОАЕ", "SA": "Саудівська Аравія", "EG": "Єгипет",
+    "IQ": "Ірак", "IN": "Індія", "PK": "Пакистан", "BD": "Бангладеш", "CN": "Китай", "JP": "Японія",
+    "KR": "Південна Корея", "TW": "Тайвань", "VN": "Вʼєтнам", "ID": "Індонезія", "MN": "Монголія",
+}
+
 PAYMENT_TYPES = {
     "cod": "Накладений платіж",
     "partial": "Передоплата + накладений",
@@ -76,6 +116,8 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # відділи, замовлення яких бачить користувач (id відділів); порожньо — усі
+    offices: Mapped[list] = mapped_column(JSON, default=list)
 
     @property
     def display(self) -> str:
@@ -185,11 +227,67 @@ class StockMovement(Base):
     user: Mapped[User | None] = relationship()
 
 
+class PaymentMethod(Base):
+    """Вид оплати (довідник як у LP-CRM). id збігаються з LP-CRM — для перенесення даних."""
+    __tablename__ = "payment_methods"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80))
+    icon: Mapped[str] = mapped_column(String(32), default="cash")
+    # як рахувати гроші: cod — увесь залишок післяплатою, partial — передоплата + післяплата решти,
+    # prepaid — оплачено повністю, при створенні ТТН післяплати немає
+    kind: Mapped[str] = mapped_column(String(10), default="cod")
+    checkbox_type: Mapped[str] = mapped_column(String(20), default="")  # тип оплати в чеку Checkbox
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+
+
+class Office(Base):
+    """Відділ (ФОП, PROM, сайт, OLX…): доступ менеджерів, вибір каси Checkbox, замовлення маркетплейсів."""
+    __tablename__ = "offices"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+
+
+class StatusReason(Base):
+    """Причина (атрибут статусу): «Дорого», «Дубль», «Не відповідає»… — до яких статусів застосовна."""
+    __tablename__ = "status_reasons"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80))
+    status_ids: Mapped[list] = mapped_column(JSON, default=list)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+
+
+class OrderMark(Base):
+    """Позначка замовлення: «Терміново», «Покласти чек», «Написати в Rozetka»…"""
+    __tablename__ = "order_marks"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+
+
+class OrderSource(Base):
+    """Джерело замовлення: Маркетплейси / Сайти / Соцмережі / Інше (редагується)."""
+    __tablename__ = "order_sources"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+
+
 class Order(Base):
     __tablename__ = "orders"
     id: Mapped[int] = mapped_column(primary_key=True)
     status_id: Mapped[int] = mapped_column(ForeignKey("statuses.id"), index=True)
     manager_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    office_id: Mapped[int | None] = mapped_column(ForeignKey("offices.id"), nullable=True, index=True)
+    reason_id: Mapped[int | None] = mapped_column(ForeignKey("status_reasons.id"), nullable=True)
+    mark_id: Mapped[int | None] = mapped_column(ForeignKey("order_marks.id"), nullable=True)
+    remind_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)  # нагадати менеджеру
+    country: Mapped[str] = mapped_column(String(2), default="UA")
 
     customer_name: Mapped[str] = mapped_column(String(255), default="")  # «Прізвище Ім'я По батькові» — для пошуку й показу
     last_name: Mapped[str] = mapped_column(String(100), default="")
@@ -216,13 +314,19 @@ class Order(Base):
     delivery_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Гроші
-    payment_type: Mapped[str] = mapped_column(String(10), default="cod")
+    payment_type: Mapped[str] = mapped_column(String(10), default="cod")  # cod / partial / prepaid — із виду оплати
+    payment_method_id: Mapped[int | None] = mapped_column(ForeignKey("payment_methods.id"), nullable=True)
     prepayment: Mapped[Decimal] = mapped_column(Money, default=0)
     discount: Mapped[Decimal] = mapped_column(Money, default=0)
     total: Mapped[Decimal] = mapped_column(Money, default=0)
     cod_amount: Mapped[Decimal] = mapped_column(Money, default=0)
 
     # Джерело трафіку
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("order_sources.id"), nullable=True, index=True)
+    extra1: Mapped[str] = mapped_column(String(255), default="")  # додаткові поля 1–4, назви — у налаштуваннях
+    extra2: Mapped[str] = mapped_column(String(255), default="")
+    extra3: Mapped[str] = mapped_column(String(255), default="")
+    extra4: Mapped[str] = mapped_column(String(255), default="")
     site: Mapped[str] = mapped_column(String(255), default="")
     utm_source: Mapped[str] = mapped_column(String(255), default="")
     utm_medium: Mapped[str] = mapped_column(String(255), default="")
@@ -243,6 +347,8 @@ class Order(Base):
 
     status: Mapped[Status] = relationship()
     manager: Mapped[User | None] = relationship()
+    payment_method: Mapped[PaymentMethod | None] = relationship()
+    source: Mapped[OrderSource | None] = relationship()
     items: Mapped[list[OrderItem]] = relationship(
         back_populates="order", cascade="all, delete-orphan", order_by="OrderItem.id"
     )

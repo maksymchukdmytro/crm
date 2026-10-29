@@ -1,7 +1,8 @@
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..config import config
-from ..models import SmsTemplate, Status, User
+from ..models import OrderMark, OrderSource, PaymentMethod, SmsTemplate, Status, StatusReason, User
 from ..security import hash_password
 from . import settings as st
 
@@ -20,6 +21,49 @@ DEFAULT_STATUSES = [
     ("duplicate", "Дубль", "#9ca3af", 110, "release", False, True),
 ]
 
+# Види оплат як у LP-CRM (ті самі id): id, назва, значок, розрахунок (cod / partial / prepaid), тип Checkbox, активний.
+# prepaid = «при створенні ТТН виключає можливість післяплати»
+DEFAULT_PAYMENT_METHODS = [
+    (4, "Післяплата", "cod", "cod", "", False),
+    (2, "Передоплата", "prepay", "partial", "", True),
+    (7, "Передоплата на картку", "prepay_card", "partial", "", False),
+    (13, "Передоплата отримана", "prepay_ok", "partial", "", True),
+    (1, "Оплачено", "paid", "prepaid", "", True),
+    (11, "Онлайн-оплата", "online", "cod", "", False),
+    (10, "Пром-оплата", "prom", "prepaid", "rozetkapay", True),
+    (6, "Оплата на картку", "card", "cod", "", True),
+    (12, "OLX доставка", "olx", "prepaid", "", False),
+    (9, "Оплата готівкою", "cash", "cod", "", True),
+    (5, "Обмін", "exchange", "cod", "", True),
+    (8, "Повернення коштів", "refund", "cod", "", True),
+    (3, "POS-термінал", "pos", "cod", "", False),
+    (14, "RozetkaPay", "rozetkapay", "prepaid", "rozetkapay", True),
+    (15, "Післяплата Rozetka", "rozetka", "cod", "rozetkapay", True),
+    (16, "Післяплата NovaPay", "novapay", "cod", "novapay", True),
+    (17, "Післяплата Укрпошта", "ukrposhta", "cod", "", True),
+    (18, "Післяплата Meest", "meest", "cod", "", True),
+] + [(pid, name, "bank", "cod", "", False) for pid, name in [
+    (19, "Apple Pay"), (20, "Google Pay"), (21, "Mastercard"), (22, "VISA"), (23, "PayPal"), (24, "ПРОСТІР"),
+    (25, "Кредит"), (26, "Оплата частинами"), (27, "Розстрочка"), (28, "Portmone"), (29, "whitepay"), (30, "LiqPay"),
+    (31, "Приват24"), (32, "ПриватБанк"), (33, "Western Union"), (34, "monobank"), (35, "Ощадбанк"),
+    (36, "UKRSIBBANK"), (37, "Укрексімбанк"), (38, "Укргазбанк"), (39, "Креді Агріколь Банк"), (40, "Південний"),
+    (41, "Universal Bank"), (42, "ПУМБ"), (43, "Forward Bank"), (44, "абанк"), (45, "Raiffeisen Bank"),
+    (46, "OTP Bank"), (47, "sense bank")]]
+DEFAULT_SOURCES = ["Маркетплейси", "Сайти", "Соціальні мережі", "Інше"]
+DEFAULT_REASONS = ["Дубль", "Передумав", "Не замовляв", "Невірний номер", "Знайшов дешевше", "Вже купив",
+                   "Не актуально", "Не підходить", "Не відповідає", "Дорого", "Передплата", "Сумніви в якості",
+                   "Погані відгуки", "Дивись коментар"]
+DEFAULT_MARKS = [
+    "Терміново", "Очікує", "Переробити", "Перевірити", "Виконано", "Не виконано", "Подарунок до замовлення",
+    "Покласти гарантію", "Покласти чек", "Перевірити перед відправленням", "Відправити сьогодні", "Відправити по дропу",
+    "Роздрукувати (гарантію, інструкцію, чек, ТТН)", "Відправити (гарантію, інструкцію, чек, ТТН)", "Перевірити ТТН",
+    "Перевірити чек", "Очікує дзвінка", "Недодзвон", "Поганий сигнал", "Відмова під час дзвінка",
+    "Відмова навіть з подарунком", "Відмова навіть зі знижкою", "Не забирати з пошти", "Повернути відправлення",
+    "Написати покупцеві", "Написати в Telegram", "Написати в TikTok", "Написати у Viber", "Написати в Instagram",
+    "Написати у Messenger", "Написати у Facebook", "Написати в Rozetka", "Написати в Prom", "Написати в OLX",
+    "Написати в WhatsApp", "Попросити відгук",
+]
+
 DEFAULT_TEMPLATES = {
     "shipped": "Замовлення №{order_id} відправлено. {carrier}, ТТН {ttn}. До сплати при отриманні: {cod} грн. {company}",
     "confirmed": "{first_name}, дякуємо! Замовлення №{order_id} на {total} грн підтверджено. {company}",
@@ -35,8 +79,30 @@ def seed(db: Session):
         for code, text in DEFAULT_TEMPLATES.items():
             s = db.query(Status).filter(Status.code == code).one()
             db.add(SmsTemplate(status_id=s.id, channel="sms", text=text, is_active=True))
+    seed_directories(db)
     if db.query(User).count() == 0:
         db.add(User(username=config.ADMIN_USERNAME, password_hash=hash_password(config.ADMIN_PASSWORD),
                     full_name="Адміністратор", role="admin"))
     st.ensure_webhook_key(db)
     db.commit()
+
+
+def seed_directories(db: Session):
+    """Довідники видів оплат і джерел — один раз, далі їх редагує адміністратор."""
+    if db.query(PaymentMethod).count() == 0:
+        for sort, (pid, name, icon, kind, cb, active) in enumerate(DEFAULT_PAYMENT_METHODS):
+            db.add(PaymentMethod(id=pid, name=name, icon=icon, kind=kind, checkbox_type=cb, is_active=active, sort=sort * 10))
+        db.flush()
+        if db.get_bind().dialect.name == "postgresql":  # id задані явно — підтягнути лічильник
+            db.execute(text("SELECT setval(pg_get_serial_sequence('payment_methods','id'), (SELECT MAX(id) FROM payment_methods))"))
+    if db.query(OrderSource).count() == 0:
+        for sort, name in enumerate(DEFAULT_SOURCES):
+            db.add(OrderSource(name=name, sort=sort * 10))
+    if db.query(StatusReason).count() == 0:
+        refuse = [s.id for s in db.query(Status).filter(Status.code.in_(["cancelled"])).all()]
+        for sort, name in enumerate(DEFAULT_REASONS):
+            db.add(StatusReason(name=name, status_ids=refuse, sort=sort * 10))
+    if db.query(OrderMark).count() == 0:
+        for sort, name in enumerate(DEFAULT_MARKS):
+            db.add(OrderMark(name=name, sort=sort * 10))
+    db.flush()

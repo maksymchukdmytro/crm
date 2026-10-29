@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, Plus, Trash2 } from "lucide-react";
 import { api } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, phone } from "../lib/format";
-import type { Settings, Status, User } from "../lib/types";
+import type { DirItem, PaymentMethod, Reason, Settings, Status, User } from "../lib/types";
+import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { Badge, Empty, Field, NpAutocomplete, Spinner } from "../components/ui";
 
 type S = Settings;
-const TABS = { general: "Загальні", webhook: "Прийом заявок", delivery: "Доставка", sms: "SMS / Viber", statuses: "Статуси", users: "Користувачі" };
+const TABS = { general: "Загальні", dirs: "Довідники", webhook: "Прийом заявок", delivery: "Доставка", sms: "SMS / Viber", statuses: "Статуси", users: "Користувачі" };
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<keyof typeof TABS>(() => (localStorage.getItem("crm-settings-tab") as keyof typeof TABS) || "general");
@@ -20,6 +21,7 @@ export default function SettingsPage() {
       <nav className="subnav">{Object.entries(TABS).map(([k, n]) => <a key={k} className={tab === k ? "on" : ""} onClick={() => choose(k as keyof typeof TABS)}>{n}</a>)}</nav>
       {!data ? <Empty><Spinner /></Empty> : <>
         {tab === "general" && <General s={data} />}
+        {tab === "dirs" && <Directories s={data} />}
         {tab === "webhook" && <Webhook s={data} />}
         {tab === "delivery" && <Delivery s={data} />}
         {tab === "sms" && <Sms s={data} />}
@@ -265,17 +267,17 @@ function Users({ s }: { s: S }) {
   const meta = useMeta();
   const qc = useQueryClient();
   const toast = useToast();
-  const [nw, setNw] = useState({ username: "", full_name: "", role: "manager", password: "" });
+  const [nw, setNw] = useState({ username: "", full_name: "", role: "manager", password: "", offices: [] as number[] });
   const mut = useMutation({
     mutationFn: ({ id, body }: { id?: number; body: Record<string, unknown> }) => (id ? api.patch(`/users/${id}`, body) : api.post("/users", body)),
-    onSuccess: (_r, vars) => { qc.invalidateQueries({ queryKey: ["settings"] }); qc.invalidateQueries({ queryKey: ["meta"] }); toast("Збережено"); if (!vars.id) setNw({ username: "", full_name: "", role: "manager", password: "" }); },
+    onSuccess: (_r, vars) => { qc.invalidateQueries({ queryKey: ["settings"] }); qc.invalidateQueries({ queryKey: ["meta"] }); toast("Збережено"); if (!vars.id) setNw({ username: "", full_name: "", role: "manager", password: "", offices: [] }); },
     onError: (e) => toast(errText(e), "error"),
   });
   return (
     <div className="grid two">
       <div className="card flush tablewrap"><table className="t dense">
-        <thead><tr><th>Користувач</th><th>Роль</th><th>Новий пароль</th><th>Активний</th><th /></tr></thead>
-        <tbody>{s.users.map((u) => <UserRow key={u.id} u={u} roles={s.roles} self={u.id === meta.user.id} onSave={(body) => mut.mutate({ id: u.id, body })} />)}</tbody>
+        <thead><tr><th>Користувач</th><th>Роль</th>{s.offices.length > 0 && <th title="Замовлення яких відділів бачить користувач">Відділи</th>}<th>Новий пароль</th><th>Активний</th><th /></tr></thead>
+        <tbody>{s.users.map((u) => <UserRow key={u.id} u={u} roles={s.roles} offices={s.offices.filter((o) => o.active)} self={u.id === meta.user.id} onSave={(body) => mut.mutate({ id: u.id, body })} />)}</tbody>
       </table></div>
       <form className="card form" onSubmit={(e) => { e.preventDefault(); mut.mutate({ body: nw }); }}>
         <h2>Новий користувач</h2>
@@ -284,6 +286,7 @@ function Users({ s }: { s: S }) {
           <Field label="Ім'я"><input value={nw.full_name} onChange={(e) => setNw({ ...nw, full_name: e.target.value })} /></Field>
         </div>
         <Field label="Роль"><select value={nw.role} onChange={(e) => setNw({ ...nw, role: e.target.value })}>{Object.entries(s.roles).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
+        {s.offices.some((o) => o.active) && <Field label="Відділи" hint="Порожньо — бачить замовлення всіх відділів"><OfficeChips offices={s.offices.filter((o) => o.active)} value={nw.offices} onChange={(v) => setNw({ ...nw, offices: v })} /></Field>}
         <Field label="Пароль"><input type="password" minLength={8} value={nw.password} onChange={(e) => setNw({ ...nw, password: e.target.value })} required autoComplete="new-password" /></Field>
         <div className="form-actions"><button className="btn primary"><Plus size={14} /> Додати</button></div>
         <hr /><p className="hint"><b>Менеджер</b> — замовлення, дошка, товари (перегляд), свої звіти. <b>Склад</b> — замовлення, ТТН, склад, закупівлі. <b>Адміністратор</b> — усе.</p>
@@ -292,15 +295,136 @@ function Users({ s }: { s: S }) {
   );
 }
 
-function UserRow({ u, roles, self, onSave }: { u: User; roles: Record<string, string>; self: boolean; onSave: (b: Record<string, unknown>) => void }) {
-  const [v, setV] = useState({ full_name: u.full_name, role: u.role as string, password: "", is_active: u.is_active });
+function OfficeChips({ offices, value, onChange }: { offices: DirItem[]; value: number[]; onChange: (v: number[]) => void }) {
+  return <div className="chips">{offices.map((o) => {
+    const on = value.includes(o.id);
+    return <button type="button" key={o.id} className={`chip ${on ? "on" : ""}`} onClick={() => onChange(on ? value.filter((x) => x !== o.id) : [...value, o.id])}>{o.name}</button>;
+  })}</div>;
+}
+
+function UserRow({ u, roles, offices, self, onSave }: { u: User; roles: Record<string, string>; offices: DirItem[]; self: boolean; onSave: (b: Record<string, unknown>) => void }) {
+  const [v, setV] = useState({ full_name: u.full_name, role: u.role as string, password: "", is_active: u.is_active, offices: u.offices ?? [] });
   return (
     <tr>
       <td><input value={v.full_name} onChange={(e) => setV({ ...v, full_name: e.target.value })} placeholder="Ім'я" /><span className="sub mono">{u.username}{u.last_login_at && ` · вхід ${dt(u.last_login_at, true)}`}</span></td>
       <td><select value={v.role} onChange={(e) => setV({ ...v, role: e.target.value })} disabled={self}>{Object.entries(roles).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></td>
+      {offices.length > 0 && <td>{v.role === "admin" ? <span className="muted">усі</span> : <OfficeChips offices={offices} value={v.offices} onChange={(o) => setV({ ...v, offices: o })} />}</td>}
       <td><input type="password" value={v.password} onChange={(e) => setV({ ...v, password: e.target.value })} placeholder="не змінювати" autoComplete="new-password" /></td>
       <td><input type="checkbox" checked={v.is_active} disabled={self} onChange={(e) => setV({ ...v, is_active: e.target.checked })} /></td>
       <td><button className="btn sm" onClick={() => { onSave({ ...v, password: v.password || undefined }); setV({ ...v, password: "" }); }}>Зберегти</button></td>
     </tr>
+  );
+}
+
+// ---------------------------------------------------------------- довідники
+function Directories({ s }: { s: S }) {
+  return (
+    <div className="stack">
+      <PaymentMethods s={s} />
+      <div className="grid half">
+        <DirEditor kind="offices" title="Відділи" hint="ФОП, маркетплейси, сайти. Менеджеру можна відкрити лише свої відділи (Користувачі); за відділом обирається каса Checkbox." items={s.offices} />
+        <DirEditor kind="sources" title="Джерела замовлень" hint="Звідки прийшов покупець — для статистики. Заявки з лендингів отримують «Сайти»." items={s.order_sources} />
+      </div>
+      <div className="grid half">
+        <DirEditor kind="reasons" title="Причини (атрибути статусів)" hint="Менеджер обирає причину, коли ставить статус. Позначте, для яких статусів кожна причина." items={s.reasons} statuses={s.statuses} />
+        <div className="stack">
+          <DirEditor kind="marks" title="Позначки" hint="Швидкі позначки замовлення з нагадуванням: «Терміново», «Покласти чек»…" items={s.marks} />
+          <ExtraFields s={s} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExtraFields({ s }: { s: S }) {
+  const save = useSave();
+  const { v, bind } = useForm(s, ["extra1_name", "extra2_name", "extra3_name", "extra4_name"]);
+  return (
+    <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/fields", body: v }); }}>
+      <h2>Додаткові поля замовлення</h2>
+      <p className="hint">Чотири довільні поля в картці (магазин маркетплейсу, номер замовлення Rozetka, посилання…). Їх можна передавати з лендингу як extra1–extra4.</p>
+      <div className="cols">{[1, 2, 3, 4].map((i) => <Field key={i} label={`Поле ${i}`}><input {...bind(`extra${i}_name`)} /></Field>)}</div>
+      <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button></div>
+    </form>
+  );
+}
+
+type Row<T> = T & { key: string; delete?: boolean };
+let rowSeq = 0;
+const rk = () => `r${++rowSeq}`;
+
+function DirEditor({ kind, title, hint, items, statuses }: { kind: string; title: string; hint: string; items: (DirItem | Reason)[]; statuses?: Status[] }) {
+  const save = useSave();
+  const [rows, setRows] = useState<Row<DirItem & { status_ids?: number[] }>[]>(() => items.map((x) => ({ ...x, key: rk() })));
+  const upd = (key: string, patch: Partial<DirItem & { status_ids?: number[]; delete?: boolean }>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  const visible = rows.filter((r) => !r.delete);
+  const [open, setOpen] = useState("");
+  const submit = () => save.mutate({ path: `/settings/dir/${kind}`, method: "put", body: rows.filter((r) => r.name.trim()).map((r, i) => ({ id: r.id || undefined, name: r.name, active: r.active, sort: i * 10, delete: !!r.delete, status_ids: r.status_ids })) },
+    { onSuccess: (x) => { const list = (x as S)[kind === "sources" ? "order_sources" : (kind as "offices" | "reasons" | "marks")] as (DirItem | Reason)[]; setRows(list.map((y) => ({ ...y, key: rk() }))); } });
+  return (
+    <div className="card">
+      <h2>{title} <span className="muted">{visible.length}</span></h2>
+      <p className="hint">{hint}</p>
+      <div className="dir-list">
+        {visible.map((r) => (
+          <div className={`dir-row ${r.active ? "" : "off"}`} key={r.key}>
+            <input value={r.name} onChange={(e) => upd(r.key, { name: e.target.value })} placeholder="Назва" />
+            <label className="mini-check" title="Показувати в замовленнях"><input type="checkbox" checked={r.active} onChange={(e) => upd(r.key, { active: e.target.checked })} /> активна</label>
+            <button type="button" className="x" title="Прибрати" onClick={() => (r.id ? upd(r.key, { delete: true }) : setRows(rows.filter((x) => x.key !== r.key)))}>×</button>
+            {statuses && open !== r.key && <button type="button" className="dir-st-btn" onClick={() => setOpen(r.key)}>
+              Для статусів: {(r.status_ids ?? []).map((i) => statuses.find((st) => st.id === i)?.name).filter(Boolean).join(", ") || "не вибрано"} · змінити</button>}
+            {statuses && open === r.key && <div className="chips dir-statuses">{statuses.filter((st) => st.active).map((st) => {
+              const on = (r.status_ids ?? []).includes(st.id);
+              return <button type="button" key={st.id} className={`chip ${on ? "on" : ""}`} onClick={() => upd(r.key, { status_ids: on ? (r.status_ids ?? []).filter((i) => i !== st.id) : [...(r.status_ids ?? []), st.id] })}>{st.name}</button>;
+            })}</div>}
+          </div>
+        ))}
+      </div>
+      <div className="form-actions">
+        <button type="button" className="btn sm" onClick={() => setRows([...rows, { id: 0, name: "", active: true, sort: 0, status_ids: [], key: rk() }])}><Plus size={14} /> Додати</button>
+        <span className="spacer" />
+        <button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти</button>
+      </div>
+    </div>
+  );
+}
+
+function PaymentMethods({ s }: { s: S }) {
+  const save = useSave();
+  const [rows, setRows] = useState<Row<PaymentMethod>[]>(() => s.payment_methods.map((m) => ({ ...m, key: rk() })));
+  const [showOff, setShowOff] = useState(false);
+  const upd = (key: string, patch: Partial<PaymentMethod>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  const move = (i: number, d: number) => { const a = [...rows]; const j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; setRows(a); };
+  const submit = () => save.mutate({ path: "/settings/payment-methods", method: "put", body: rows.filter((r) => r.name.trim()).map((r, i) => ({ id: r.id || undefined, name: r.name, icon: r.icon, kind: r.kind, checkbox_type: r.checkbox_type, active: r.active, sort: i * 10 })) },
+    { onSuccess: (x) => setRows((x as S).payment_methods.map((m) => ({ ...m, key: rk() }))) });
+  const shown = rows.map((r, i) => [r, i] as const).filter(([r]) => showOff || r.active);
+  return (
+    <div className="card flush">
+      <div className="card-head pad"><div><h2>Види оплат <span className="muted">{rows.filter((r) => r.active).length} з {rows.length}</span></h2>
+        <p className="hint">Вид оплати визначає розрахунок і тип оплати в чеку Checkbox. Номери (ID) такі ж, як у LP-CRM.</p></div>
+        <label className="mini-check"><input type="checkbox" checked={showOff} onChange={(e) => setShowOff(e.target.checked)} /> показати вимкнені</label></div>
+      <div className="tablewrap"><table className="t dense pm-table">
+        <thead><tr><th>ID</th><th>Значок</th><th>Назва</th><th>Розрахунок</th><th title="Тип оплати в чеку Checkbox">Checkbox</th><th>Активний</th><th /></tr></thead>
+        <tbody>{shown.map(([r, i]) => (
+          <tr key={r.key} className={r.active ? "" : "off"}>
+            <td className="muted mono">{r.id || "нов."}</td>
+            <td><div className="pm-icon"><PayIcon icon={r.icon} size={24} />
+              <select value={r.icon} onChange={(e) => upd(r.key, { icon: e.target.value })} aria-label="Значок">{Object.entries(PAY_ICONS).map(([k, d]) => <option key={k} value={k}>{d.label}</option>)}</select></div></td>
+            <td><input value={r.name} onChange={(e) => upd(r.key, { name: e.target.value })} /></td>
+            <td><select value={r.kind} onChange={(e) => upd(r.key, { kind: e.target.value as PaymentMethod["kind"] })}>
+              <option value="cod">Післяплата</option><option value="partial">Передоплата + післяплата</option><option value="prepaid">Оплачено (ТТН без післяплати)</option></select></td>
+            <td><select value={r.checkbox_type} onChange={(e) => upd(r.key, { checkbox_type: e.target.value })}>
+              <option value="">— не фіскалізувати</option>{Object.entries(s.checkbox_payments).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></td>
+            <td><input type="checkbox" checked={r.active} onChange={(e) => upd(r.key, { active: e.target.checked })} /></td>
+            <td className="nowrap"><button type="button" className="x" title="Вище" onClick={() => move(i, -1)}><ArrowUp size={13} /></button><button type="button" className="x" title="Нижче" onClick={() => move(i, 1)}><ArrowDown size={13} /></button></td>
+          </tr>
+        ))}</tbody>
+      </table></div>
+      <div className="form-actions pad">
+        <button type="button" className="btn sm" onClick={() => { setShowOff(true); setRows([...rows, { id: 0, name: "", icon: "cash", kind: "cod", checkbox_type: "", active: true, sort: 0, key: rk() }]); }}><Plus size={14} /> Додати вид оплати</button>
+        <span className="spacer" />
+        <button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти види оплат</button>
+      </div>
+    </div>
   );
 }

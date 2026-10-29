@@ -63,7 +63,8 @@ def j_user(u: User | None) -> dict | None:
     if u is None:
         return None
     return {"id": u.id, "username": u.username, "name": u.display, "full_name": u.full_name, "role": u.role,
-            "role_name": u.role_name, "is_active": u.is_active, "last_login_at": iso(u.last_login_at)}
+            "role_name": u.role_name, "is_active": u.is_active, "last_login_at": iso(u.last_login_at),
+            "offices": [int(x) for x in (u.offices or [])]}
 
 
 def j_status(s: Status) -> dict:
@@ -77,6 +78,18 @@ def j_product(p: Product) -> dict:
             "weight": float(p.weight or 0), "stock": p.stock, "reserved": p.reserved, "available": p.available,
             "min_stock": p.min_stock, "upsell": p.is_upsell,
             "upsell_for": [int(x) for x in (p.upsell_for or [])] if p.is_upsell else [], "active": p.is_active}
+
+
+def j_payment_method(m) -> dict:
+    return {"id": m.id, "name": m.name, "icon": m.icon, "kind": m.kind, "checkbox_type": m.checkbox_type or "",
+            "active": m.is_active, "sort": m.sort}
+
+
+def j_source(x) -> dict:
+    d = {"id": x.id, "name": x.name, "active": x.is_active, "sort": x.sort}
+    if hasattr(x, "status_ids"):
+        d["status_ids"] = [int(i) for i in (x.status_ids or [])]
+    return d
 
 
 def j_item(i: OrderItem) -> dict:
@@ -97,7 +110,7 @@ def j_payment(p: Payment) -> dict:
 ORDER_SCALARS = [
     "customer_name", "last_name", "first_name", "middle_name", "phone", "email", "comment", "delivery_method", "city_name", "city_ref", "warehouse_name",
     "warehouse_ref", "address", "postcode", "ttn", "carrier_ref", "delivery_state", "delivery_status",
-    "payment_type", "site", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "ip",
+    "payment_type", "extra1", "extra2", "extra3", "extra4", "site", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "ip",
 ]
 
 
@@ -108,6 +121,9 @@ def j_order_row(o: Order) -> dict:
         "customer_name": o.customer_name, "phone": o.phone,
         "items": [{"name": i.name, "qty": i.qty, "upsell": i.is_upsell} for i in o.items],
         "total": money(o.total), "cod_amount": money(o.cod_amount), "payment_type": o.payment_type,
+        "payment_method_id": o.payment_method_id, "source_id": o.source_id,
+        "office_id": o.office_id, "reason_id": o.reason_id, "mark_id": o.mark_id, "remind_at": iso(o.remind_at),
+        "country": o.country or "UA",
         "delivery_method": o.delivery_method, "city_name": o.city_name, "ttn": o.ttn,
         "delivery_state": o.delivery_state or "", "delivery_status": o.delivery_status or "",
         "utm_source": o.utm_source, "utm_campaign": o.utm_campaign, "site": o.site,
@@ -120,7 +136,9 @@ def j_order(o: Order) -> dict:
     d = {k: getattr(o, k) or "" for k in ORDER_SCALARS}
     d.update({
         "id": o.id, "status_id": o.status_id, "manager_id": o.manager_id,
-        "manager": j_user(o.manager),
+        "manager": j_user(o.manager), "payment_method_id": o.payment_method_id, "source_id": o.source_id,
+        "office_id": o.office_id, "reason_id": o.reason_id, "mark_id": o.mark_id, "remind_at": iso(o.remind_at),
+        "country": o.country or "UA",
         "delivery_cost": money(o.delivery_cost), "prepayment": money(o.prepayment), "discount": money(o.discount),
         "total": money(o.total), "cod_amount": money(o.cod_amount),
         "duplicate_of_id": o.duplicate_of_id, "stock_reserved": o.stock_reserved, "stock_shipped": o.stock_shipped,

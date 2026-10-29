@@ -35,6 +35,7 @@ class UserOut(Out):
     role_name: str
     is_active: bool
     last_login_at: str | None = None
+    offices: list[int] = Field(default_factory=list, description="Доступні відділи; порожньо — усі")
 
 
 class StatusOut(Out):
@@ -72,6 +73,28 @@ class CarrierOut(Out):
     configured: bool
 
 
+class PaymentMethodOut(Out):
+    id: int
+    name: str
+    icon: str
+    kind: Literal["cod", "partial", "prepaid"] = Field(description="cod — післяплата, partial — передоплата + післяплата, prepaid — без післяплати")
+    checkbox_type: str
+    active: bool
+    sort: int
+
+
+class SourceOut(Out):
+    """Довідник «назва + активний + порядок»: джерела, відділи, позначки."""
+    id: int
+    name: str
+    active: bool
+    sort: int
+
+
+class ReasonOut(SourceOut):
+    status_ids: list[int] = Field(default_factory=list, description="До яких статусів застосовна причина")
+
+
 class MetaOut(Out):
     user: UserOut
     company: str
@@ -82,6 +105,14 @@ class MetaOut(Out):
     delivery_methods: dict[str, str]
     delivery_states: dict[str, str]
     payment_types: dict[str, str]
+    payment_methods: list[PaymentMethodOut] = Field(default_factory=list, description="Активні види оплат")
+    order_sources: list[SourceOut] = Field(default_factory=list)
+    offices: list[SourceOut] = Field(default_factory=list)
+    reasons: list[ReasonOut] = Field(default_factory=list)
+    marks: list[SourceOut] = Field(default_factory=list)
+    countries: dict[str, str] = Field(default_factory=dict)
+    extra_fields: list[str] = Field(default_factory=list, description="Назви додаткових полів 1–4")
+    checkbox_payments: dict[str, str] = Field(default_factory=dict)
     payment_kinds: dict[str, str]
     payment_statuses: dict[str, str]
     stock_actions: dict[str, str]
@@ -119,12 +150,19 @@ class OrderRowOut(Out):
     id: int
     status_id: int
     manager_id: int | None
+    office_id: int | None = None
+    reason_id: int | None = None
+    mark_id: int | None = None
+    remind_at: str | None = None
+    country: str = "UA"
     customer_name: str
     phone: str
     items: list[OrderRowItem]
     total: float
     cod_amount: float
     payment_type: str
+    payment_method_id: int | None = None
+    source_id: int | None = None
     delivery_method: str
     city_name: str
     ttn: str
@@ -206,6 +244,11 @@ class OrderOut(Out):
     id: int
     status_id: int
     manager_id: int | None
+    office_id: int | None = None
+    reason_id: int | None = None
+    mark_id: int | None = None
+    remind_at: str | None = None
+    country: str = "UA"
     manager: UserOut | None
     customer_name: str
     last_name: str = ""
@@ -226,6 +269,12 @@ class OrderOut(Out):
     delivery_state: str
     delivery_status: str
     payment_type: str
+    payment_method_id: int | None = None
+    source_id: int | None = None
+    extra1: str = ""
+    extra2: str = ""
+    extra3: str = ""
+    extra4: str = ""
     site: str
     utm_source: str
     utm_medium: str
@@ -283,7 +332,18 @@ class OrderIn(In):
     postcode: str | None = None
     ttn: str | None = None
     delivery_cost: Money | None = None
-    payment_type: Literal["cod", "partial", "prepaid"] | None = None
+    payment_type: Literal["cod", "partial", "prepaid"] | None = Field(None, description="Застаріле: краще payment_method_id")
+    payment_method_id: int | None = None
+    source_id: int | None = None
+    office_id: int | None = None
+    reason_id: int | None = None
+    mark_id: int | None = None
+    remind_at: str | None = Field(None, description="ISO-дата нагадування, порожньо — прибрати")
+    country: str | None = Field(None, max_length=2)
+    extra1: str | None = Field(None, max_length=255)
+    extra2: str | None = Field(None, max_length=255)
+    extra3: str | None = Field(None, max_length=255)
+    extra4: str | None = Field(None, max_length=255)
     prepayment: Money | None = None
     discount: Money | None = None
     site: str | None = None
@@ -554,7 +614,32 @@ class SettingsOut(Out):
     sms_log: list[SmsLogOut]
     stock_actions: dict[str, str]
     roles: dict[str, str]
+    payment_methods: list[PaymentMethodOut] = Field(default_factory=list, description="Усі види оплат, з вимкненими")
+    order_sources: list[SourceOut] = Field(default_factory=list)
+    offices: list[SourceOut] = Field(default_factory=list)
+    reasons: list[ReasonOut] = Field(default_factory=list)
+    marks: list[SourceOut] = Field(default_factory=list)
+    checkbox_payments: dict[str, str] = Field(default_factory=dict)
     message: str | None = None
+
+
+class PaymentMethodIn(In):
+    id: int | None = None
+    name: str = Field(..., min_length=1, max_length=80)
+    icon: str = "cash"
+    kind: Literal["cod", "partial", "prepaid"] = "cod"
+    checkbox_type: str = ""
+    active: bool = True
+    sort: int = 100
+
+
+class SourceIn(In):
+    id: int | None = None
+    name: str = Field(..., min_length=1, max_length=120)
+    active: bool = True
+    sort: int = 100
+    delete: bool = False
+    status_ids: list[int] | None = Field(None, description="Лише для причин")
 
 
 class StatusIn(In):
@@ -591,6 +676,7 @@ class UserIn(In):
     role: Literal["admin", "manager", "warehouse"] | None = None
     password: str | None = None
     is_active: bool | None = None
+    offices: list[int] | None = None
 
 
 # ---------------------------------------------------------------- стан системи

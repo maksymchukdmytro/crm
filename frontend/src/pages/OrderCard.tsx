@@ -1,22 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreditCard, ExternalLink, Globe, Hand, MessageCircle, Package, Phone, Plus, Printer, RefreshCw, Send, Sparkles, Trash2, Truck, User } from "lucide-react";
+import { Bell, CreditCard, ExternalLink, Globe, Tag, Hand, MessageCircle, Package, Phone, Plus, Printer, RefreshCw, Send, Sparkles, Trash2, Truck, User } from "lucide-react";
 import { api, ApiError, ROOT } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num, phone as fmtPhone } from "../lib/format";
 import type { Order, OrderItem, Product } from "../lib/types";
 import { Badge, deliveryKind, Modal, NpAutocomplete, Pill, Spinner } from "../components/ui";
+import { flag, PayIcon } from "../components/payicons";
 
 type Form = {
   last_name: string; first_name: string; middle_name: string; phone: string; email: string; comment: string; status_id: number; manager_id: number | "";
-  payment_type: string; prepayment: string; discount: string; delivery_method: string; delivery_cost: string;
+  payment_type: string; payment_method_id: number | ""; source_id: number | ""; office_id: number | ""; reason_id: number | "";
+  mark_id: number | ""; remind_at: string; country: string; extra1: string; extra2: string; extra3: string; extra4: string;
+  prepayment: string; discount: string; delivery_method: string; delivery_cost: string;
   city_name: string; city_ref: string; warehouse_name: string; warehouse_ref: string; address: string; postcode: string;
   ttn: string; site: string; utm_source: string; utm_medium: string; utm_campaign: string; utm_content: string; utm_term: string;
   items: OrderItem[];
 };
 
 const UTM = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
+const EXTRA = ["extra1", "extra2", "extra3", "extra4"] as const;
 let keySeq = 0;
 const k = () => `i${++keySeq}`;
 
@@ -26,7 +30,10 @@ function toForm(o: Partial<Order> | undefined, defaultStatus: number): Form {
   return {
     last_name: s(o?.last_name), first_name: s(o?.first_name), middle_name: s(o?.middle_name), phone: fmtPhone(o?.phone ?? ""), email: s(o?.email), comment: s(o?.comment),
     status_id: o?.status_id ?? defaultStatus, manager_id: o?.manager_id ?? "",
-    payment_type: o?.payment_type || "cod", prepayment: m(o?.prepayment), discount: m(o?.discount),
+    payment_type: o?.payment_type || "cod", payment_method_id: o?.payment_method_id ?? "", source_id: o?.source_id ?? "",
+    office_id: o?.office_id ?? "", reason_id: o?.reason_id ?? "", mark_id: o?.mark_id ?? "", remind_at: toLocalInput(o?.remind_at),
+    country: o?.country || "UA", extra1: s(o?.extra1), extra2: s(o?.extra2), extra3: s(o?.extra3), extra4: s(o?.extra4),
+    prepayment: m(o?.prepayment), discount: m(o?.discount),
     delivery_method: o?.delivery_method || "novaposhta", delivery_cost: m(o?.delivery_cost),
     city_name: s(o?.city_name), city_ref: s(o?.city_ref), warehouse_name: s(o?.warehouse_name), warehouse_ref: s(o?.warehouse_ref),
     address: s(o?.address), postcode: s(o?.postcode), ttn: s(o?.ttn), site: s(o?.site),
@@ -36,10 +43,20 @@ function toForm(o: Partial<Order> | undefined, defaultStatus: number): Form {
   };
 }
 
+// datetime-local працює в місцевому часі без поясу; сервер зберігає UTC
+function toLocalInput(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 function payload(f: Form, version?: string) {
-  const { items, manager_id, ...rest } = f;
+  const { items, manager_id, payment_method_id, source_id, office_id, reason_id, mark_id, remind_at, ...rest } = f;
   return {
     ...rest, version, manager_id: manager_id || null,
+    payment_method_id: payment_method_id || null, source_id: source_id || null, office_id: office_id || null,
+    reason_id: reason_id || null, mark_id: mark_id || null, remind_at: remind_at ? new Date(remind_at).toISOString() : "",
     items: items.filter((i) => i.name.trim()).map((i) => ({ product_id: i.product_id, name: i.name, qty: i.qty, price: i.price, upsell: i.upsell, upsell_for: i.upsell ? i.upsell_for ?? null : null })),
   };
 }
@@ -83,7 +100,7 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
   useEffect(() => {
     if (isNew) {
       if (source) {
-        const f = toForm({ last_name: source.last_name, first_name: source.first_name, middle_name: source.middle_name, phone: source.phone, email: source.email,
+        const f = toForm({ country: source.country, office_id: source.office_id, last_name: source.last_name, first_name: source.first_name, middle_name: source.middle_name, phone: source.phone, email: source.email,
           delivery_method: source.delivery_method, city_name: source.city_name, city_ref: source.city_ref,
           warehouse_name: source.warehouse_name, warehouse_ref: source.warehouse_ref, address: source.address,
           postcode: source.postcode }, newStatus);
@@ -161,6 +178,8 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
   const dm = form.delivery_method;
   const canTake = !isNew && order && meta.user.role !== "warehouse" && order.manager_id !== meta.user.id && (!order.manager_id || meta.user.role === "admin");
 
+  const reasons = meta.reasons.filter((r) => r.status_ids.includes(form.status_id));
+  const method = meta.payment_methods.find((m) => m.id === form.payment_method_id);
   const managerName = order?.manager?.name ?? (isNew && meta.user.role === "manager" ? "ви" : "");
   const units = form.items.reduce((n, i) => n + (i.qty || 0), 0);
 
@@ -176,10 +195,21 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
         </div>
         <div className="oc-controls">
           <label className="ctl"><span>Статус</span>
-            <select className="status-sel" style={{ ["--c" as string]: status?.color ?? "#8f8e8a" }} value={form.status_id} onChange={(e) => set({ status_id: Number(e.target.value) })}>
+            <select className="status-sel" style={{ ["--c" as string]: status?.color ?? "#8f8e8a" }} value={form.status_id}
+              onChange={(e) => { const sid = Number(e.target.value); set({ status_id: sid, reason_id: meta.reasons.some((r) => r.id === form.reason_id && r.status_ids.includes(sid)) ? form.reason_id : "" }); }}>
               {meta.statuses.filter((x) => x.active || x.id === form.status_id).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
             </select>
           </label>
+          {reasons.length > 0 && <label className="ctl"><span>Причина</span>
+            <select value={form.reason_id} onChange={(e) => set({ reason_id: e.target.value ? Number(e.target.value) : "" })}>
+              <option value="">не вказано</option>
+              {reasons.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select></label>}
+          {meta.offices.length > 0 && <label className="ctl"><span>Відділ</span>
+            <select value={form.office_id} onChange={(e) => set({ office_id: e.target.value ? Number(e.target.value) : "" })}>
+              <option value="">не вказано</option>
+              {meta.offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </select></label>}
           <label className="ctl"><span>Менеджер</span>
             {meta.user.role === "admin" ? (
               <select value={form.manager_id} onChange={(e) => set({ manager_id: e.target.value ? Number(e.target.value) : "" })}>
@@ -201,6 +231,10 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
         <div className="oc-side">
           <section className="ocs">
             <h3 className="ocs-h"><User size={15} /> Клієнт</h3>
+            <div className="fl"><span>Країна</span>
+              <select value={form.country} onChange={(e) => set({ country: e.target.value })}>
+                {Object.entries(meta.countries).map(([c, n]) => <option key={c} value={c}>{flag(c)} {n}</option>)}
+              </select></div>
             <div className="fl"><span>Телефон</span>
               <div className="fl-in"><input value={form.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="+380…" inputMode="tel" required autoFocus={isNew && !fromId} />
                 {order?.phone && <span className="acts"><a href={`tel:+${order.phone}`} title="Подзвонити"><Phone size={14} /></a><a href={`viber://chat?number=%2B${order.phone}`} title="Viber"><MessageCircle size={14} /></a></span>}
@@ -266,16 +300,37 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
           </section>
 
           <section className="ocs">
-            <h3 className="ocs-h"><CreditCard size={15} /> Оплата</h3>
-            <div className="fl"><span>Спосіб</span>
-              <select value={form.payment_type} onChange={(e) => set({ payment_type: e.target.value })}>
-                {Object.entries(meta.payment_types).map(([k2, n]) => <option key={k2} value={k2}>{n}</option>)}
+            <h3 className="ocs-h"><CreditCard size={15} /> Оплата {method && <span className="muted">{method.name}</span>}</h3>
+            <div className="pay-grid" role="radiogroup" aria-label="Вид оплати">
+              {meta.payment_methods.map((m) => (
+                <button type="button" key={m.id} role="radio" aria-checked={form.payment_method_id === m.id} title={m.name}
+                  className={`pay-tile ${form.payment_method_id === m.id ? "on" : ""}`}
+                  onClick={() => set({ payment_method_id: m.id, payment_type: m.kind })}>
+                  <PayIcon icon={m.icon} size={26} /><span>{m.name}</span>
+                </button>
+              ))}
+            </div>
+            {method && <p className="hint pay-note">{method.kind === "prepaid" ? "Оплачено повністю — ТТН без післяплати" : method.kind === "partial" ? "Передоплата, решта — післяплатою" : "Уся сума — при отриманні"}</p>}
+            {form.payment_type === "partial" && <div className="fl"><span>Передоплата</span><div className="fl-in"><input value={form.prepayment} onChange={(e) => set({ prepayment: e.target.value })} placeholder="0" inputMode="decimal" /><span className="unit">грн</span></div></div>}
+          </section>
+
+          <section className="ocs">
+            <h3 className="ocs-h"><Tag size={15} /> Джерело й додаткові поля</h3>
+            <div className="fl"><span>Джерело</span>
+              <select value={form.source_id} onChange={(e) => set({ source_id: e.target.value ? Number(e.target.value) : "" })}>
+                <option value="">не вказано</option>
+                {meta.order_sources.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
               </select></div>
-            {form.payment_type !== "cod" && <div className="fl"><span>Передоплата</span><div className="fl-in"><input value={form.prepayment} onChange={(e) => set({ prepayment: e.target.value })} placeholder="0" inputMode="decimal" /><span className="unit">грн</span></div></div>}
+            {EXTRA.map((f, i) => (
+              <div className="fl" key={f}><span>{meta.extra_fields[i] || `Поле ${i + 1}`}</span>
+                <div className="fl-in"><input value={form[f]} onChange={(e) => set({ [f]: e.target.value } as Partial<Form>)} placeholder="—" />
+                  {/^https?:\/\//.test(form[f]) && <span className="acts"><a href={form[f]} target="_blank" rel="noreferrer" title="Перейти за посиланням"><ExternalLink size={14} /></a></span>}
+                </div></div>
+            ))}
           </section>
 
           <details className="ocs" open={!!(form.site || UTM.some((u) => form[u]))}>
-            <summary className="ocs-h"><Globe size={15} /> Джерело заявки <span className="muted">{form.site || (form.utm_source ? `utm: ${form.utm_source}` : "")}</span></summary>
+            <summary className="ocs-h"><Globe size={15} /> Сайт і UTM-мітки <span className="muted">{form.site || (form.utm_source ? `utm: ${form.utm_source}` : "")}</span></summary>
             <div className="fl"><span>Сайт</span><input value={form.site} onChange={(e) => set({ site: e.target.value })} placeholder="—" /></div>
             {UTM.map((u) => <div className="fl" key={u}><span className="mono">{u}</span><input value={form[u]} onChange={(e) => set({ [u]: e.target.value } as Partial<Form>)} placeholder="—" /></div>)}
             {order?.ip && <div className="fl"><span>IP</span><span className="val mono">{order.ip}</span></div>}
@@ -296,7 +351,17 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
             </div>
           </section>
           <section className="ocs">
-            <h3 className="ocs-h"><MessageCircle size={15} /> Коментар до замовлення</h3>
+            <h3 className="ocs-h"><MessageCircle size={15} /> Позначка й коментар</h3>
+            <div className="mark-row">
+              <select value={form.mark_id} onChange={(e) => set({ mark_id: e.target.value ? Number(e.target.value) : "" })} aria-label="Позначка">
+                <option value="">Без позначки</option>
+                {meta.marks.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+              <label className={`remind ${form.remind_at ? "on" : ""}`} title="Нагадати про замовлення"><Bell size={15} />
+                <input type="datetime-local" value={form.remind_at} onChange={(e) => set({ remind_at: e.target.value })} aria-label="Нагадати" />
+                {form.remind_at && <button type="button" className="x" title="Прибрати нагадування" onClick={() => set({ remind_at: "" })}>×</button>}
+              </label>
+            </div>
             <textarea className="oc-note" rows={3} value={form.comment} onChange={(e) => set({ comment: e.target.value })} placeholder="Від клієнта з лендингу або для складу" />
           </section>
         </div>

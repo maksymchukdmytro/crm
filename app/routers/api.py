@@ -38,6 +38,10 @@ ALIASES = {
     "utm_campaign": ("utm_campaign",),
     "utm_content": ("utm_content",),
     "utm_term": ("utm_term",),
+    "extra1": ("extra1", "field1"),
+    "extra2": ("extra2", "field2"),
+    "extra3": ("extra3", "field3"),
+    "extra4": ("extra4", "field4"),
 }
 
 
@@ -104,6 +108,17 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
     if payload.get("delivery") in ("novaposhta", "ukrposhta", "meest", "pickup", "courier"):
         data["delivery_method"] = payload["delivery"]
     data["ip"] = _client_ip(request)
+    # джерело: за назвою (source=Соціальні мережі) або «Сайти» для заявок з лендингу
+    from ..models import OrderSource, PaymentMethod
+    src_name = str(payload.get("source") or "Сайти").strip()
+    src = db.query(OrderSource).filter(OrderSource.name.ilike(src_name)).first()
+    if src:
+        data["source_id"] = src.id
+    pm = str(payload.get("payment_method_id") or payload.get("payment_method") or "").strip()
+    if pm:
+        m = db.get(PaymentMethod, int(pm)) if pm.isdigit() else db.query(PaymentMethod).filter(PaymentMethod.name.ilike(pm)).first()
+        if m:
+            data["payment_method_id"] = m.id
     phone = svc.normalize_phone(data.get("phone"))
     if len(phone) < 9:
         return JSONResponse({"ok": False, "error": "Не вказано коректний телефон"}, 422, headers=CORS)

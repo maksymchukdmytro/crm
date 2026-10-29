@@ -607,9 +607,23 @@
       "title": "Carriers",
       "type": "object"
      },
+     "checkbox_payments": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Checkbox Payments",
+      "type": "object"
+     },
      "company": {
       "title": "Company",
       "type": "string"
+     },
+     "countries": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Countries",
+      "type": "object"
      },
      "delivery_methods": {
       "additionalProperties": {
@@ -625,6 +639,14 @@
       "title": "Delivery States",
       "type": "object"
      },
+     "extra_fields": {
+      "description": "Назви додаткових полів 1–4",
+      "items": {
+       "type": "string"
+      },
+      "title": "Extra Fields",
+      "type": "array"
+     },
      "managers": {
       "items": {
        "$ref": "#/components/schemas/UserOut"
@@ -636,11 +658,32 @@
       "title": "Managers See Own Only",
       "type": "boolean"
      },
+     "marks": {
+      "items": {
+       "$ref": "#/components/schemas/SourceOut"
+      },
+      "title": "Marks",
+      "type": "array"
+     },
      "nav": {
       "items": {
        "type": "string"
       },
       "title": "Nav",
+      "type": "array"
+     },
+     "offices": {
+      "items": {
+       "$ref": "#/components/schemas/SourceOut"
+      },
+      "title": "Offices",
+      "type": "array"
+     },
+     "order_sources": {
+      "items": {
+       "$ref": "#/components/schemas/SourceOut"
+      },
+      "title": "Order Sources",
       "type": "array"
      },
      "payment_kinds": {
@@ -649,6 +692,14 @@
       },
       "title": "Payment Kinds",
       "type": "object"
+     },
+     "payment_methods": {
+      "description": "Активні види оплат",
+      "items": {
+       "$ref": "#/components/schemas/PaymentMethodOut"
+      },
+      "title": "Payment Methods",
+      "type": "array"
      },
      "payment_statuses": {
       "additionalProperties": {
@@ -674,6 +725,13 @@
      "realtime": {
       "title": "Realtime",
       "type": "boolean"
+     },
+     "reasons": {
+      "items": {
+       "$ref": "#/components/schemas/ReasonOut"
+      },
+      "title": "Reasons",
+      "type": "array"
      },
      "roles": {
       "additionalProperties": {
@@ -879,6 +937,18 @@
       ],
       "title": "Comment"
      },
+     "country": {
+      "anyOf": [
+       {
+        "maxLength": 2,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Country"
+     },
      "customer_name": {
       "anyOf": [
        {
@@ -953,6 +1023,54 @@
       ],
       "title": "Email"
      },
+     "extra1": {
+      "anyOf": [
+       {
+        "maxLength": 255,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Extra1"
+     },
+     "extra2": {
+      "anyOf": [
+       {
+        "maxLength": 255,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Extra2"
+     },
+     "extra3": {
+      "anyOf": [
+       {
+        "maxLength": 255,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Extra3"
+     },
+     "extra4": {
+      "anyOf": [
+       {
+        "maxLength": 255,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Extra4"
+     },
      "first_name": {
       "anyOf": [
        {
@@ -1002,6 +1120,17 @@
       ],
       "title": "Manager Id"
      },
+     "mark_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mark Id"
+     },
      "middle_name": {
       "anyOf": [
        {
@@ -1026,6 +1155,28 @@
       "description": "Коментар менеджера, що додається разом зі створенням",
       "title": "Note"
      },
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Office Id"
+     },
+     "payment_method_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payment Method Id"
+     },
      "payment_type": {
       "anyOf": [
        {
@@ -1040,6 +1191,7 @@
         "type": "null"
        }
       ],
+      "description": "Застаріле: краще payment_method_id",
       "title": "Payment Type"
      },
      "phone": {
@@ -1081,6 +1233,29 @@
       ],
       "title": "Prepayment"
      },
+     "reason_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason Id"
+     },
+     "remind_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "ISO-дата нагадування, порожньо — прибрати",
+      "title": "Remind At"
+     },
      "site": {
       "anyOf": [
        {
@@ -1091,6 +1266,17 @@
        }
       ],
       "title": "Site"
+     },
+     "source_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Id"
      },
      "status_id": {
       "anyOf": [
@@ -1463,6 +1649,11 @@
       "title": "Comments",
       "type": "array"
      },
+     "country": {
+      "default": "UA",
+      "title": "Country",
+      "type": "string"
+     },
      "created_at": {
       "anyOf": [
        {
@@ -1535,6 +1726,26 @@
       "title": "Email",
       "type": "string"
      },
+     "extra1": {
+      "default": "",
+      "title": "Extra1",
+      "type": "string"
+     },
+     "extra2": {
+      "default": "",
+      "title": "Extra2",
+      "type": "string"
+     },
+     "extra3": {
+      "default": "",
+      "title": "Extra3",
+      "type": "string"
+     },
+     "extra4": {
+      "default": "",
+      "title": "Extra4",
+      "type": "string"
+     },
      "first_name": {
       "default": "",
       "title": "First Name",
@@ -1588,10 +1799,32 @@
       ],
       "title": "Manager Id"
      },
+     "mark_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mark Id"
+     },
      "middle_name": {
       "default": "",
       "title": "Middle Name",
       "type": "string"
+     },
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Office Id"
      },
      "others": {
       "items": {
@@ -1599,6 +1832,17 @@
       },
       "title": "Others",
       "type": "array"
+     },
+     "payment_method_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payment Method Id"
      },
      "payment_type": {
       "title": "Payment Type",
@@ -1623,6 +1867,28 @@
       "title": "Prepayment",
       "type": "number"
      },
+     "reason_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason Id"
+     },
+     "remind_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Remind At"
+     },
      "shipped_at": {
       "anyOf": [
        {
@@ -1644,6 +1910,17 @@
       },
       "title": "Sms",
       "type": "array"
+     },
+     "source_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Id"
      },
      "status_id": {
       "title": "Status Id",
@@ -1794,6 +2071,11 @@
       "title": "Cod Amount",
       "type": "number"
      },
+     "country": {
+      "default": "UA",
+      "title": "Country",
+      "type": "string"
+     },
      "created_at": {
       "anyOf": [
        {
@@ -1854,6 +2136,39 @@
       ],
       "title": "Manager Id"
      },
+     "mark_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mark Id"
+     },
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Office Id"
+     },
+     "payment_method_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payment Method Id"
+     },
      "payment_type": {
       "title": "Payment Type",
       "type": "string"
@@ -1862,9 +2177,42 @@
       "title": "Phone",
       "type": "string"
      },
+     "reason_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason Id"
+     },
+     "remind_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Remind At"
+     },
      "site": {
       "title": "Site",
       "type": "string"
+     },
+     "source_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Id"
      },
      "status_changed_at": {
       "anyOf": [
@@ -1961,6 +2309,112 @@
      "amount"
     ],
     "title": "PaymentIn",
+    "type": "object"
+   },
+   "PaymentMethodIn": {
+    "additionalProperties": false,
+    "properties": {
+     "active": {
+      "default": true,
+      "title": "Active",
+      "type": "boolean"
+     },
+     "checkbox_type": {
+      "default": "",
+      "title": "Checkbox Type",
+      "type": "string"
+     },
+     "icon": {
+      "default": "cash",
+      "title": "Icon",
+      "type": "string"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "kind": {
+      "default": "cod",
+      "enum": [
+       "cod",
+       "partial",
+       "prepaid"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "sort": {
+      "default": 100,
+      "title": "Sort",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "PaymentMethodIn",
+    "type": "object"
+   },
+   "PaymentMethodOut": {
+    "properties": {
+     "active": {
+      "title": "Active",
+      "type": "boolean"
+     },
+     "checkbox_type": {
+      "title": "Checkbox Type",
+      "type": "string"
+     },
+     "icon": {
+      "title": "Icon",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "kind": {
+      "description": "cod — післяплата, partial — передоплата + післяплата, prepaid — без післяплати",
+      "enum": [
+       "cod",
+       "partial",
+       "prepaid"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "sort": {
+      "title": "Sort",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "icon",
+     "kind",
+     "checkbox_type",
+     "active",
+     "sort"
+    ],
+    "title": "PaymentMethodOut",
     "type": "object"
    },
    "PaymentOut": {
@@ -2706,6 +3160,42 @@
     "title": "PurchaseOut",
     "type": "object"
    },
+   "ReasonOut": {
+    "properties": {
+     "active": {
+      "title": "Active",
+      "type": "boolean"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "sort": {
+      "title": "Sort",
+      "type": "integer"
+     },
+     "status_ids": {
+      "description": "До яких статусів застосовна причина",
+      "items": {
+       "type": "integer"
+      },
+      "title": "Status Ids",
+      "type": "array"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "active",
+     "sort"
+    ],
+    "title": "ReasonOut",
+    "type": "object"
+   },
    "ReceiveIn": {
     "additionalProperties": false,
     "properties": {
@@ -2875,6 +3365,20 @@
    },
    "SettingsOut": {
     "properties": {
+     "checkbox_payments": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Checkbox Payments",
+      "type": "object"
+     },
+     "marks": {
+      "items": {
+       "$ref": "#/components/schemas/SourceOut"
+      },
+      "title": "Marks",
+      "type": "array"
+     },
      "message": {
       "anyOf": [
        {
@@ -2886,12 +3390,41 @@
       ],
       "title": "Message"
      },
+     "offices": {
+      "items": {
+       "$ref": "#/components/schemas/SourceOut"
+      },
+      "title": "Offices",
+      "type": "array"
+     },
+     "order_sources": {
+      "items": {
+       "$ref": "#/components/schemas/SourceOut"
+      },
+      "title": "Order Sources",
+      "type": "array"
+     },
+     "payment_methods": {
+      "description": "Усі види оплат, з вимкненими",
+      "items": {
+       "$ref": "#/components/schemas/PaymentMethodOut"
+      },
+      "title": "Payment Methods",
+      "type": "array"
+     },
      "placeholders": {
       "additionalProperties": {
        "type": "string"
       },
       "title": "Placeholders",
       "type": "object"
+     },
+     "reasons": {
+      "items": {
+       "$ref": "#/components/schemas/ReasonOut"
+      },
+      "title": "Reasons",
+      "type": "array"
      },
      "roles": {
       "additionalProperties": {
@@ -3196,6 +3729,92 @@
      "phone"
     ],
     "title": "SmsTestIn",
+    "type": "object"
+   },
+   "SourceIn": {
+    "additionalProperties": false,
+    "properties": {
+     "active": {
+      "default": true,
+      "title": "Active",
+      "type": "boolean"
+     },
+     "delete": {
+      "default": false,
+      "title": "Delete",
+      "type": "boolean"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "sort": {
+      "default": 100,
+      "title": "Sort",
+      "type": "integer"
+     },
+     "status_ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "integer"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Лише для причин",
+      "title": "Status Ids"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "SourceIn",
+    "type": "object"
+   },
+   "SourceOut": {
+    "description": "Довідник «назва + активний + порядок»: джерела, відділи, позначки.",
+    "properties": {
+     "active": {
+      "title": "Active",
+      "type": "boolean"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "sort": {
+      "title": "Sort",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "active",
+     "sort"
+    ],
+    "title": "SourceOut",
     "type": "object"
    },
    "StatusIn": {
@@ -3578,6 +4197,11 @@
       "title": "Comments",
       "type": "array"
      },
+     "country": {
+      "default": "UA",
+      "title": "Country",
+      "type": "string"
+     },
      "created_at": {
       "anyOf": [
        {
@@ -3650,6 +4274,26 @@
       "title": "Email",
       "type": "string"
      },
+     "extra1": {
+      "default": "",
+      "title": "Extra1",
+      "type": "string"
+     },
+     "extra2": {
+      "default": "",
+      "title": "Extra2",
+      "type": "string"
+     },
+     "extra3": {
+      "default": "",
+      "title": "Extra3",
+      "type": "string"
+     },
+     "extra4": {
+      "default": "",
+      "title": "Extra4",
+      "type": "string"
+     },
      "first_name": {
       "default": "",
       "title": "First Name",
@@ -3703,10 +4347,32 @@
       ],
       "title": "Manager Id"
      },
+     "mark_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mark Id"
+     },
      "middle_name": {
       "default": "",
       "title": "Middle Name",
       "type": "string"
+     },
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Office Id"
      },
      "others": {
       "items": {
@@ -3714,6 +4380,17 @@
       },
       "title": "Others",
       "type": "array"
+     },
+     "payment_method_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payment Method Id"
      },
      "payment_type": {
       "title": "Payment Type",
@@ -3738,6 +4415,28 @@
       "title": "Prepayment",
       "type": "number"
      },
+     "reason_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason Id"
+     },
+     "remind_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Remind At"
+     },
      "shipped_at": {
       "anyOf": [
        {
@@ -3759,6 +4458,17 @@
       },
       "title": "Sms",
       "type": "array"
+     },
+     "source_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Id"
      },
      "status_id": {
       "title": "Status Id",
@@ -3901,6 +4611,20 @@
       ],
       "title": "Is Active"
      },
+     "offices": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "integer"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Offices"
+     },
      "password": {
       "anyOf": [
        {
@@ -3971,6 +4695,14 @@
      "name": {
       "title": "Name",
       "type": "string"
+     },
+     "offices": {
+      "description": "Доступні відділи; порожньо — усі",
+      "items": {
+       "type": "integer"
+      },
+      "title": "Offices",
+      "type": "array"
      },
      "role": {
       "enum": [
@@ -5633,6 +6365,63 @@
     ]
    }
   },
+  "/api/settings/dir/{kind}": {
+   "put": {
+    "description": "Зберегти простий довідник цілим списком: рядок без id — новий, delete — прибрати\n(якщо є замовлення з цим значенням — лише вимикаємо, щоб не зламати історію).",
+    "operationId": "directory_save_api_settings_dir__kind__put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "kind",
+      "required": true,
+      "schema": {
+       "title": "Kind",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "items": {
+         "$ref": "#/components/schemas/SourceIn"
+        },
+        "title": "Body",
+        "type": "array"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Directory Save",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
   "/api/settings/np/load-sender": {
    "post": {
     "operationId": "np_load_sender_api_settings_np_load_sender_post",
@@ -5649,6 +6438,52 @@
      }
     },
     "summary": "Np Load Sender",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/settings/payment-methods": {
+   "put": {
+    "description": "Зберегти довідник видів оплат цілим списком (рядок без id — новий вид).",
+    "operationId": "payment_methods_save_api_settings_payment_methods_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "items": {
+         "$ref": "#/components/schemas/PaymentMethodIn"
+        },
+        "title": "Body",
+        "type": "array"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Payment Methods Save",
     "tags": [
      "admin"
     ]

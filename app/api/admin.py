@@ -14,7 +14,7 @@ from ..carriers import CarrierError
 from ..carriers.novaposhta import NovaPoshta
 from ..config import config
 from ..db import get_db
-from ..models import ROLES, STOCK_ACTIONS, AuditLog, Order, Payment, SmsMessage, SmsTemplate, Status, User
+from ..models import CHECKBOX_PAYMENTS, ROLES, STOCK_ACTIONS, AuditLog, Office, Order, OrderMark, OrderSource, Payment, PaymentMethod, StatusReason, SmsMessage, SmsTemplate, Status, User
 from ..routers.payments import parse_registry
 from ..routers.settings import CHECKBOXES, SECTION_KEYS
 from ..security import hash_password
@@ -27,8 +27,8 @@ from ..services.audit import ACTION_NAMES
 from ..services.orders import normalize_phone, to_int
 from ..services.reports import period_bounds
 from ..web import f_details, parse_date, today_local
-from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut
-from .common import admin, bad, iso, j_payment, j_status, j_user, sales
+from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn
+from .common import admin, bad, iso, j_payment, j_payment_method, j_source, j_status, j_user, sales
 
 router = APIRouter(prefix="/api", tags=["admin"])
 
@@ -173,34 +173,17 @@ def _settings_payload(request: Request, db: Session) -> dict:
                     for m in db.query(SmsMessage).order_by(SmsMessage.id.desc()).limit(30).all()],
         "stock_actions": STOCK_ACTIONS,
         "roles": ROLES,
+        "payment_methods": [j_payment_method(m) for m in db.query(PaymentMethod).order_by(PaymentMethod.sort, PaymentMethod.id)],
+        "order_sources": [j_source(x) for x in db.query(OrderSource).order_by(OrderSource.sort, OrderSource.id)],
+        "offices": [j_source(x) for x in db.query(Office).order_by(Office.sort, Office.id)],
+        "reasons": [j_source(x) for x in db.query(StatusReason).order_by(StatusReason.sort, StatusReason.id)],
+        "marks": [j_source(x) for x in db.query(OrderMark).order_by(OrderMark.sort, OrderMark.id)],
+        "checkbox_payments": CHECKBOX_PAYMENTS,
     }
 
 
 @router.get("/settings", response_model=SettingsOut)
 def settings_get(request: Request, db: Session = Depends(get_db), user: User = Depends(admin)):
-    return _settings_payload(request, db)
-
-
-@router.put("/settings/{section}", response_model=SettingsOut)
-def settings_save(section: str, request: Request, data: dict[str, str | bool | int | None], db: Session = Depends(get_db),
-                  user: User = Depends(admin)):
-    keys = SECTION_KEYS.get(section)
-    if not keys:
-        raise HTTPException(404, "Невідомий розділ")
-    changed = []
-    for k in keys:
-        if k not in data:
-            continue
-        v = data[k]
-        val = ("1" if v in (True, "1", 1, "on") else "0") if k in CHECKBOXES else str(v if v is not None else "").strip()
-        if k in st.SECRET_KEYS and val == "********":
-            continue
-        if st.get(db, k) != val:
-            st.set_value(db, k, val)
-            changed.append(k)
-    if changed:
-        audit.log(db, user, "settings", None, "update", {"поля": changed})
-    db.commit()
     return _settings_payload(request, db)
 
 
@@ -275,6 +258,62 @@ def status_delete(sid: int, request: Request, db: Session = Depends(get_db), use
     return _settings_payload(request, db)
 
 
+@router.put("/settings/payment-methods", response_model=SettingsOut)
+def payment_methods_save(request: Request, body: list[PaymentMethodIn], db: Session = Depends(get_db),
+                         user: User = Depends(admin)):
+    """Зберегти довідник видів оплат цілим списком (рядок без id — новий вид)."""
+    by_id = {m.id: m for m in db.query(PaymentMethod).all()}
+    for b in body:
+        if b.checkbox_type and b.checkbox_type not in CHECKBOX_PAYMENTS:
+            bad(f"Невідомий тип оплати Checkbox: {b.checkbox_type}")
+        m = by_id.get(b.id) if b.id else None
+        if m is None:
+            m = PaymentMethod()
+            db.add(m)
+        m.name, m.icon, m.kind = b.name.strip()[:80], (b.icon or "cash")[:32], b.kind
+        m.checkbox_type, m.is_active, m.sort = b.checkbox_type, b.active, b.sort
+    audit.log(db, user, "settings", None, "update", {"поля": ["види оплат"]})
+    db.commit()
+    return _settings_payload(request, db)
+
+
+DIRECTORIES = {  # шлях → (модель, поле замовлення, назва для журналу)
+    "sources": (OrderSource, "source_id", "джерела замовлень"),
+    "offices": (Office, "office_id", "відділи"),
+    "reasons": (StatusReason, "reason_id", "причини статусів"),
+    "marks": (OrderMark, "mark_id", "позначки"),
+}
+
+
+@router.put("/settings/dir/{kind}", response_model=SettingsOut)
+def directory_save(kind: str, request: Request, body: list[SourceIn], db: Session = Depends(get_db),
+                   user: User = Depends(admin)):
+    """Зберегти простий довідник цілим списком: рядок без id — новий, delete — прибрати
+    (якщо є замовлення з цим значенням — лише вимикаємо, щоб не зламати історію)."""
+    if kind not in DIRECTORIES:
+        raise HTTPException(404, "Невідомий довідник")
+    model, field, title = DIRECTORIES[kind]
+    by_id = {x.id: x for x in db.query(model).all()}
+    for b in body:
+        x = by_id.get(b.id) if b.id else None
+        if b.delete:
+            if x is not None:
+                if db.query(Order).filter(getattr(Order, field) == x.id).first():
+                    x.is_active = False
+                else:
+                    db.delete(x)
+            continue
+        if x is None:
+            x = model()
+            db.add(x)
+        x.name, x.is_active, x.sort = b.name.strip()[:120], b.active, b.sort
+        if kind == "reasons" and b.status_ids is not None:
+            x.status_ids = sorted({int(i) for i in b.status_ids})
+    audit.log(db, user, "settings", None, "update", {"поля": [title]})
+    db.commit()
+    return _settings_payload(request, db)
+
+
 @router.post("/settings/sms-templates", response_model=SettingsOut)
 def sms_template_save(request: Request, body: SmsTemplateIn, db: Session = Depends(get_db),
                       user: User = Depends(admin)):
@@ -319,7 +358,8 @@ def user_create(body: UserIn, db: Session = Depends(get_db), user: User = Depend
     if not username or len(pw) < 8:
         bad("Вкажіть логін і пароль (щонайменше 8 символів)")
     u = User(username=username[:64], full_name=str(data.get("full_name") or "").strip()[:128],
-             role=data.get("role") if data.get("role") in ROLES else "manager", password_hash=hash_password(pw))
+             role=data.get("role") if data.get("role") in ROLES else "manager", password_hash=hash_password(pw),
+             offices=sorted({int(i) for i in (data.get("offices") or [])}))
     db.add(u)
     try:
         db.flush()
@@ -351,7 +391,33 @@ def user_update(uid: int, body: UserIn, db: Session = Depends(get_db), user: Use
         if len(str(data["password"])) < 8:
             bad("Пароль має містити щонайменше 8 символів")
         u.password_hash = hash_password(str(data["password"]))
+    if data.get("offices") is not None:
+        u.offices = sorted({int(i) for i in data["offices"]})
     audit.log(db, user, "user", u.id, "update", {"логін": u.username, "роль": u.role, "активний": u.is_active,
                                                   "пароль змінено": bool(data.get("password"))})
     db.commit()
     return j_user(u)
+
+
+# Загальне збереження розділу — в кінці файлу, щоб не перехоплювати конкретні маршрути (/settings/statuses тощо)
+@router.put("/settings/{section}", response_model=SettingsOut)
+def settings_save(section: str, request: Request, data: dict[str, str | bool | int | None], db: Session = Depends(get_db),
+                  user: User = Depends(admin)):
+    keys = SECTION_KEYS.get(section)
+    if not keys:
+        raise HTTPException(404, "Невідомий розділ")
+    changed = []
+    for k in keys:
+        if k not in data:
+            continue
+        v = data[k]
+        val = ("1" if v in (True, "1", 1, "on") else "0") if k in CHECKBOXES else str(v if v is not None else "").strip()
+        if k in st.SECRET_KEYS and val == "********":
+            continue
+        if st.get(db, k) != val:
+            st.set_value(db, k, val)
+            changed.append(k)
+    if changed:
+        audit.log(db, user, "settings", None, "update", {"поля": changed})
+    db.commit()
+    return _settings_payload(request, db)

@@ -9,7 +9,9 @@ export type User = S["UserOut"];
 export type Status = S["StatusOut"];
 export type Product = S["ProductOut"];
 export type Carrier = S["CarrierOut"];
-export type Meta = S["MetaOut"];
+// Сервер завжди повертає довідники повністю — у типах вони обовʼязкові
+export type Reason = Required<S["ReasonOut"]>;
+export type Meta = Omit<Required<S["MetaOut"]>, "reasons"> & { reasons: Reason[] };
 export type OrderRow = S["OrderRowOut"];
 export type OrderList = S["OrderListOut"];
 export type Order = S["OrderOut"];
@@ -23,7 +25,9 @@ export type Payments = S["PaymentsOut"];
 export type Registry = S["RegistryOut"];
 export type Report = S["ReportOut"];
 export type Audit = S["AuditOut"];
-export type Settings = S["SettingsOut"];
+export type PaymentMethod = S["PaymentMethodOut"];
+export type DirItem = S["SourceOut"];
+export type Settings = Omit<Required<S["SettingsOut"]>, "reasons" | "message"> & { reasons: Reason[]; message?: string | null };
 export type SystemStatus = S["SystemOut"];
 export type BulkResult = S["BulkOut"];
 

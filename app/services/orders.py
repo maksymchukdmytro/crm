@@ -5,19 +5,21 @@ from decimal import Decimal, InvalidOperation
 
 from sqlalchemy.orm import Session
 
-from ..models import Order, OrderComment, OrderItem, Product, Status, User, utcnow
+from ..models import COUNTRIES, Office, Order, OrderComment, OrderItem, OrderMark, OrderSource, PaymentMethod, Product, Status, StatusReason, User, utcnow
 from . import audit, events, payments, sms, stock
 from . import settings as st
 from .names import join_name, split_full_name
 
 NAME_PARTS = ("last_name", "first_name", "middle_name")
 ORDER_FIELDS = [
-    "customer_name", *NAME_PARTS, "phone", "email", "comment",
+    "customer_name", *NAME_PARTS, "phone", "email", "comment", "country",
+    "office_id", "reason_id", "mark_id", "remind_at",
     "delivery_method", "city_name", "city_ref", "warehouse_name", "warehouse_ref", "address", "postcode",
-    "ttn", "delivery_cost", "payment_type", "prepayment", "discount",
-    "site", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
+    "ttn", "delivery_cost", "payment_type", "payment_method_id", "prepayment", "discount",
+    "source_id", "extra1", "extra2", "extra3", "extra4", "site", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
 ]
 MONEY_FIELDS = {"delivery_cost", "prepayment", "discount"}
+ID_FIELDS = {"payment_method_id", "source_id", "office_id", "reason_id", "mark_id"}
 
 
 def normalize_phone(raw: str | None) -> str:
@@ -146,6 +148,13 @@ def _clean_fields(data: dict, order: Order | None = None) -> dict:
         v = data[f]
         if f in MONEY_FIELDS:
             v = to_money(v)
+        elif f in ID_FIELDS:
+            v = to_int(v, 0) or None
+        elif f == "remind_at":
+            v = parse_dt(v)
+        elif f == "country":
+            v = str(v or "UA").strip().upper()[:2]
+            v = v if v in COUNTRIES else "UA"
         elif f == "phone":
             v = normalize_phone(v)
         elif f == "ttn":
@@ -156,10 +165,36 @@ def _clean_fields(data: dict, order: Order | None = None) -> dict:
     return clean
 
 
+def parse_dt(v):
+    """ISO-дата з інтерфейсу (з часовим поясом або без) → UTC без поясу, як усі дати в базі; порожньо → None."""
+    from datetime import datetime, timezone
+    if not v:
+        return None
+    try:
+        d = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return d.astimezone(timezone.utc).replace(tzinfo=None) if d.tzinfo else d
+
+
+def _apply_directories(db: Session, fields: dict):
+    """Вид оплати визначає розрахунок (payment_type); невідомі id довідників — відкидаємо."""
+    if fields.get("payment_method_id"):
+        m = db.get(PaymentMethod, fields["payment_method_id"])
+        if m is None:
+            fields["payment_method_id"] = None
+        else:
+            fields["payment_type"] = m.kind
+    for key, model in (("source_id", OrderSource), ("office_id", Office), ("reason_id", StatusReason), ("mark_id", OrderMark)):
+        if fields.get(key) and db.get(model, fields[key]) is None:
+            fields[key] = None
+
+
 def create_order(db: Session, data: dict, items_data: list[dict], user: User | None = None,
                  source: str = "manual") -> Order:
     new_status = status_by_code(db, "new") or db.query(Status).order_by(Status.sort).first()
     fields = _clean_fields(data)
+    _apply_directories(db, fields)
     order = Order(status=new_status, **fields)
     order.ip = (data.get("ip") or "")[:64]
     if source == "webhook" and not order.delivery_method:
@@ -193,6 +228,7 @@ def create_order(db: Session, data: dict, items_data: list[dict], user: User | N
 
 def update_order(db: Session, order: Order, data: dict, user: User | None) -> dict:
     fields = _clean_fields(data, order)
+    _apply_directories(db, fields)
     changes = audit.diff(order, fields, list(fields))
     if "phone" in changes:
         dup = find_duplicate(db, order.phone, exclude_id=order.id)
@@ -268,10 +304,14 @@ def visible_orders_query(db: Session, user: User):
     q = db.query(Order)
     if user.role == "manager" and st.get_bool(db, "managers_see_own_only"):
         q = q.filter((Order.manager_id == user.id) | (Order.manager_id.is_(None)))
+    if user.role != "admin" and user.offices:  # доступ лише до своїх відділів (замовлення без відділу — усім)
+        q = q.filter(Order.office_id.is_(None) | Order.office_id.in_([int(x) for x in user.offices]))
     return q
 
 
 def can_view(db: Session, user: User, order: Order) -> bool:
-    if user.role == "manager" and st.get_bool(db, "managers_see_own_only"):
-        return order.manager_id in (None, user.id)
+    if user.role == "manager" and st.get_bool(db, "managers_see_own_only") and order.manager_id not in (None, user.id):
+        return False
+    if user.role != "admin" and user.offices and order.office_id is not None:
+        return order.office_id in [int(x) for x in user.offices]
     return True

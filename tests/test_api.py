@@ -350,3 +350,42 @@ def test_upsell_links_and_item_price(api, db, products):
     assert main["price"] == 350 and main["base_price"] == float(cream.price)  # ціну змінено лише в замовленні
     assert extra["upsell"] and extra["upsell_for"] == cream.id and extra["upsell_for_name"] == cream.name
     assert o["total"] == 350 + float(soap.price)
+
+
+def test_statuses_save_route(api, db):
+    rows = api.get("/api/settings").json()["statuses"]
+    rows[0]["name"] = "Нова заявка"
+    r = api.put("/api/settings/statuses", json=rows)
+    assert r.status_code == 200, r.text
+    assert r.json()["statuses"][0]["name"] == "Нова заявка"
+
+
+# ------------------------------------------------------------------ довідники (етап 1)
+def test_directories_payment_methods_and_offices(api, api_manager, db, products):
+    meta = api.get("/api/meta").json()
+    ids = {m["id"]: m for m in meta["payment_methods"]}
+    assert 16 in ids and ids[16]["name"] == "Післяплата NovaPay" and ids[16]["checkbox_type"] == "novapay"
+    assert 19 not in ids  # Apple Pay вимкнений за замовчуванням
+    assert len(api.get("/api/settings").json()["payment_methods"]) == 47
+    assert len(meta["marks"]) == 36 and len(meta["reasons"]) == 14 and meta["countries"]["UA"] == "Україна"
+
+    # вид оплати «Оплачено» → без післяплати; «Передоплата» → передоплата + решта післяплатою
+    o = new_order(api, products, payment_method_id=1)
+    assert o["payment_type"] == "prepaid" and o["cod_amount"] == 0 and o["payment_method_id"] == 1
+    o = api.patch(f"/api/orders/{o['id']}", json={"payment_method_id": 2, "prepayment": 100, "version": o["version"]}).json()
+    assert o["payment_type"] == "partial" and o["cod_amount"] == o["total"] - 100
+
+    # відділи: менеджер із доступом лише до «PROM» не бачить замовлення відділу «Сайт»
+    s = api.put("/api/settings/dir/offices", json=[{"name": "PROM"}, {"name": "Сайт"}]).json()
+    prom, site = [x["id"] for x in s["offices"]]
+    mgr = next(u for u in s["users"] if u["username"] == "manager1")
+    assert api.patch(f"/api/users/{mgr['id']}", json={"offices": [prom]}).json()["offices"] == [prom]
+    o_site = new_order(api, products, office_id=site, country="PL", mark_id=1, remind_at="2026-11-01T10:00:00+02:00")
+    assert o_site["country"] == "PL" and o_site["mark_id"] == 1 and o_site["remind_at"].startswith("2026-11-01T08:00")
+    o_prom = new_order(api, products, office_id=prom)
+    assert api_manager.get(f"/api/orders/{o_site['id']}").status_code in (403, 404)
+    assert api_manager.get(f"/api/orders/{o_prom['id']}").status_code == 200
+
+    # видалення відділу, у якого є замовлення, лише вимикає його
+    s = api.put("/api/settings/dir/offices", json=[{"id": site, "name": "Сайт", "delete": True}]).json()
+    assert [x for x in s["offices"] if x["id"] == site][0]["active"] is False
