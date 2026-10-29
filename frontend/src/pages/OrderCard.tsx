@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Bell, Building2, CornerDownRight, CreditCard, ExternalLink, Globe, Hand, MessageCircle, Package, Phone, Plus, Printer, Receipt, RefreshCw, Send, Sparkles, Stamp, Tag, Trash2, Truck, User, UserRound } from "lucide-react";
+import { Ban, Bell, Building2, CornerDownRight, FileText, CreditCard, ExternalLink, Globe, Hand, MessageCircle, Package, Phone, Plus, Printer, Receipt, RefreshCw, Send, Sparkles, Stamp, Tag, Trash2, Truck, User, UserRound } from "lucide-react";
 import { api, ApiError, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num, phone as fmtPhone } from "../lib/format";
@@ -251,7 +251,12 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
               <span className="badge ok" title="Чек продажу вже створено"><Receipt size={12} /> фіскалізовано</span>}
             {canTake && <button type="button" className="btn sm" onClick={() => action.mutate({ path: "/take" })}><Hand size={14} /> Взяти собі</button>}
             <button type="button" className="btn sm" onClick={() => navigate(`/orders/new?from=${oid}`)} title="Нове замовлення цьому клієнту"><Plus size={14} /> Ще замовлення</button>
-            <a className="btn sm icon" href={`${ROOT}/classic/orders/${oid}/print`} target="_blank" rel="noreferrer" title="Друк"><Printer size={15} /></a>
+            {order.label ? <>
+              <button type="button" className="btn sm" onClick={() => printLabel(order.id, toast)}
+                title={order.label === "rozetka" ? "Маркування ROZETKA Delivery (з кабінету Rozetka)" : "Наклейка на посилку"}>
+                <Printer size={15} /> {order.label === "rozetka" ? "Маркування Rozetka" : "Наклейка"}</button>
+              <a className="btn sm icon" href={`${ROOT}/classic/orders/${oid}/print`} target="_blank" rel="noreferrer" title="Бланк замовлення"><FileText size={15} /></a>
+            </> : <a className="btn sm icon" href={`${ROOT}/classic/orders/${oid}/print`} target="_blank" rel="noreferrer" title="Бланк замовлення"><Printer size={15} /></a>}
           </div>}
         </div>
       </div>
@@ -316,6 +321,11 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
               <div className="fl"><span>Відділення</span><input value={form.warehouse_name} onChange={(e) => set({ warehouse_name: e.target.value })} placeholder="Назва або номер" /></div>
               <div className="fl"><span>ID відділення</span><input className="mono" value={form.warehouse_ref} onChange={(e) => set({ warehouse_ref: e.target.value })} placeholder="для ТТН" /></div>
             </>}
+            {dm === "rozetka" && <>
+              <div className="fl"><span>Місто</span><input value={form.city_name} onChange={(e) => set({ city_name: e.target.value })} placeholder="—" /></div>
+              <div className="fl"><span>Відділення</span><input value={form.warehouse_name} onChange={(e) => set({ warehouse_name: e.target.value })} placeholder="Відділення ROZETKA" /></div>
+              <p className="hint fl-note">ТТН RMP-… створюється в кабінеті продавця Rozetka; маркування друкується кнопкою «Маркування Rozetka».</p>
+            </>}
             {dm === "courier" && <>
               <div className="fl"><span>Місто</span><input value={form.city_name} onChange={(e) => set({ city_name: e.target.value })} placeholder="—" /></div>
               <div className="fl"><span>Адреса</span><input value={form.address} onChange={(e) => set({ address: e.target.value })} placeholder="Вулиця, будинок, квартира" /></div>
@@ -326,7 +336,7 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
                 <div className="fl-in"><input className="mono" value={form.ttn} onChange={(e) => set({ ttn: e.target.value })} readOnly={!!order?.carrier_ref} placeholder="створіть або вставте" />
                   {order?.ttn && <span className="acts">
                     {carrier && <button type="button" title="Оновити статус доставки" onClick={() => action.mutate({ path: "/track" })}><RefreshCw size={14} /></button>}
-                    {carrier && <a href={`${ROOT}/classic/orders/${oid}/label`} target="_blank" rel="noreferrer" title="Наклейка PDF"><Printer size={14} /></a>}
+                    {order.label && <button type="button" title={order.label === "rozetka" ? "Маркування Rozetka" : "Наклейка PDF"} onClick={() => printLabel(order.id, toast)}><Printer size={14} /></button>}
                     {order.carrier_ref && <button type="button" title="Видалити ТТН" onClick={() => { if (window.confirm(`Видалити ТТН ${order.ttn} у перевізника?`)) action.mutate({ path: "/ttn", method: "del" }); }}><Trash2 size={14} /></button>}
                   </span>}
                 </div></div>
@@ -442,6 +452,24 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
       </div>
     </div>
   );
+}
+
+// ---------------------------------------------------------------- друк наклейки (маркування Rozetka або НП)
+async function printLabel(orderId: number, toast: (msg: string, kind?: "error") => void) {
+  const w = window.open("", "_blank");  // відкриваємо одразу — інакше браузер заблокує вікно після очікування
+  try {
+    const r = await fetch(`${ROOT}/api/orders/${orderId}/label`, { credentials: "same-origin" });
+    if (!r.ok) {
+      let msg = `Не вдалося отримати наклейку (${r.status})`;
+      try { const j = await r.json(); msg = j.error || j.detail || msg; } catch { /* не JSON */ }
+      throw new Error(msg);
+    }
+    const url = URL.createObjectURL(await r.blob());
+    if (w) w.location.href = url; else window.location.href = url;
+  } catch (e) {
+    w?.close();
+    toast((e as Error).message, "error");
+  }
 }
 
 // ---------------------------------------------------------------- нагадування: дзвіночок із підписом і швидкими варіантами

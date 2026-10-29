@@ -33,7 +33,7 @@ PROM_STATUSES = {"pending": "Новий / в обробці", "received": "Пр�
                  "canceled": "Скасований", "paid": "Оплачений"}
 
 # Типові відповідності, якщо адміністратор не налаштував інакше
-DELIVERY_GUESS = [("нова пошта", "novaposhta"), ("nova", "novaposhta"), ("укрпошт", "ukrposhta"),
+DELIVERY_GUESS = [("rozetka", "rozetka"), ("розетк", "rozetka"), ("octopus", "rozetka"), ("нова пошта", "novaposhta"), ("nova", "novaposhta"), ("укрпошт", "ukrposhta"),
                   ("meest", "meest"), ("міст", "meest"), ("самовив", "pickup"), ("кур'єр", "courier"), ("курьер", "courier")]
 
 
@@ -109,6 +109,27 @@ class RozetkaClient:
                 self.shop.token = ""
             raise MarketplaceError("Rozetka: " + _errors(data))
         return data.get("content") or {}
+
+    def pdf(self, method: str, path: str, **kw) -> bytes:
+        """Запит, що повертає файл (PDF); помилку Rozetka віддає JSON-ом."""
+        try:
+            r = http().request(method, f"{ROZETKA_API}{path}", headers={"Authorization": f"Bearer {self._token()}",
+                                                                       "Content-Language": "uk"}, **kw)
+        except httpx.HTTPError as e:
+            raise MarketplaceError(f"Rozetka недоступна: {e}") from e
+        if r.content.startswith(b"%PDF"):
+            return r.content
+        try:
+            data = r.json()
+        except ValueError:
+            raise MarketplaceError(f"Rozetka не повернула PDF (код {r.status_code})")
+        if r.status_code == 401:
+            self.shop.token = ""
+        raise MarketplaceError("Rozetka: " + _errors(data))
+
+    def delivery_label(self, ttn: str) -> bytes:
+        """Маркування (ТТН) ROZETKA Delivery — модуль Octopus: POST /delivery-rozetka/ttn-print-batch."""
+        return self.pdf("POST", "/delivery-rozetka/ttn-print-batch", json={"track_numbers": [ttn]})
 
     def statuses(self) -> dict[str, str]:
         c = self.call("GET", "/orders/statuses")
@@ -262,7 +283,29 @@ def _errors(data: dict) -> str:
 
 
 # ---------------------------------------------------------------- імпорт
-def _guess_delivery(shop: MarketplaceShop, name: str) -> str:
+def is_rozetka_delivery(order: Order) -> bool:
+    """Відправлення ROZETKA Delivery: служба «Rozetka Delivery» або ТТН виду RMP-…"""
+    return order.delivery_method == "rozetka" or (order.ttn or "").upper().startswith("RMP-")
+
+
+def rozetka_label(db: Session, order: Order) -> bytes:
+    """PDF-маркування Rozetka для замовлення (через API магазину, з якого прийшло замовлення, або перший магазин Rozetka)."""
+    if not order.ttn:
+        raise MarketplaceError("У замовлення ще немає ТТН Rozetka")
+    shop = db.get(MarketplaceShop, order.shop_id) if order.shop_id else None
+    if shop is None or shop.kind != "rozetka":
+        shop = (db.query(MarketplaceShop).filter(MarketplaceShop.kind == "rozetka", MarketplaceShop.is_active.is_(True))
+                .order_by(MarketplaceShop.id).first())
+    if shop is None:
+        raise MarketplaceError("Додайте магазин Rozetka в «Налаштування → Маркетплейси», щоб друкувати маркування")
+    pdf = RozetkaClient(shop).delivery_label(order.ttn)
+    db.commit()  # зберегти свіжий токен
+    return pdf
+
+
+def _guess_delivery(shop: MarketplaceShop, name: str, ttn: str = "") -> str:
+    if ttn.upper().startswith("RMP-"):
+        return "rozetka"
     m = (shop.delivery_map or {}).get(name)
     if m:
         return m
@@ -304,6 +347,8 @@ def import_order(db: Session, shop: MarketplaceShop, data: dict) -> tuple[Order,
         if data["ttn"] and not order.ttn:
             order.ttn = data["ttn"]
             changed["ТТН"] = data["ttn"]
+            if data["ttn"].upper().startswith("RMP-"):
+                order.delivery_method = "rozetka"
         if data["external_status"] and order.external_status != data["external_status"]:
             changed["статус маркетплейсу"] = [order.external_status, data["external_status"]]
             order.external_status = data["external_status"]
@@ -316,7 +361,7 @@ def import_order(db: Session, shop: MarketplaceShop, data: dict) -> tuple[Order,
     fields = {
         "last_name": data["last_name"], "first_name": data["first_name"], "middle_name": data["middle_name"],
         "phone": data["phone"], "email": data["email"], "comment": data["comment"],
-        "delivery_method": _guess_delivery(shop, data["delivery_service"]),
+        "delivery_method": _guess_delivery(shop, data["delivery_service"], data["ttn"]),
         "city_name": data["city_name"], "warehouse_name": data["warehouse_name"], "ttn": data["ttn"],
         "payment_method_id": _guess_payment(db, shop, data["payment"], data["paid"]),
         "office_id": shop.office_id, "source_id": src, "site": f"{KINDS.get(shop.kind)} · {shop.name}".strip(" ·"),

@@ -37,6 +37,7 @@ DELIVERY_METHODS = {
     "novaposhta": "Нова Пошта",
     "ukrposhta": "Укрпошта",
     "meest": "Meest",
+    "rozetka": "Rozetka Delivery",  # доставка у відділення ROZETKA; ТТН RMP-… створюється в кабінеті продавця Rozetka
     "pickup": "Самовивіз",
     "courier": "Кур'єр",
 }

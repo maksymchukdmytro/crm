@@ -4213,6 +4213,17 @@
       "title": "Items",
       "type": "array"
      },
+     "label": {
+      "default": "",
+      "description": "що друкувати біля ТТН: маркування Rozetka чи наклейку перевізника",
+      "enum": [
+       "",
+       "rozetka",
+       "carrier"
+      ],
+      "title": "Label",
+      "type": "string"
+     },
      "last_name": {
       "default": "",
       "title": "Last Name",
@@ -9126,6 +9137,17 @@
       "title": "Items",
       "type": "array"
      },
+     "label": {
+      "default": "",
+      "description": "що друкувати біля ТТН: маркування Rozetka чи наклейку перевізника",
+      "enum": [
+       "",
+       "rozetka",
+       "carrier"
+      ],
+      "title": "Label",
+      "type": "string"
+     },
      "last_name": {
       "default": "",
       "title": "Last Name",
@@ -11814,6 +11836,48 @@
      }
     },
     "summary": "Fiscalize",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/label": {
+   "get": {
+    "description": "Наклейка для друку: маркування ROZETKA Delivery (ТТН RMP-…) з API Rozetka або наклейка перевізника (НП 100×100).",
+    "operationId": "order_label_api_orders__order_id__label_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       },
+       "application/pdf": {}
+      },
+      "description": "PDF наклейки"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Order Label",
     "tags": [
      "orders"
     ]
