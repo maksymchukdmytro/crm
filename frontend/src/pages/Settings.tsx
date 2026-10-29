@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Building2, Copy, Plus, RefreshCw, Settings as SettingsIcon, Star, Trash2, Upload } from "lucide-react";
+import { ArrowDown, ArrowUp, Building2, Copy, Plus, RefreshCw, Settings as SettingsIcon, Star, Trash2, Upload, FileText, ShieldCheck } from "lucide-react";
 import { api } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, phone } from "../lib/format";
@@ -10,7 +10,7 @@ import { MarkLookPick } from "../components/marks";
 import { Badge, Empty, Field, NpAutocomplete, Spinner } from "../components/ui";
 
 type S = Settings;
-const TABS = { general: "Загальні", entities: "Юрособи", dirs: "Довідники", statuses: "Статуси", checkbox: "Checkbox", delivery: "Доставка", market: "Маркетплейси",
+const TABS = { general: "Загальні", entities: "Юрособи", docs: "Документи", dirs: "Довідники", statuses: "Статуси", checkbox: "Checkbox", delivery: "Доставка", market: "Маркетплейси",
   webhook: "Прийом заявок", sms: "SMS / Viber", customers: "Покупці", users: "Користувачі" };
 
 export default function SettingsPage() {
@@ -24,6 +24,7 @@ export default function SettingsPage() {
       {!data ? <Empty><Spinner /></Empty> : <>
         {tab === "general" && <General s={data} />}
         {tab === "entities" && <LegalEntities s={data} />}
+        {tab === "docs" && <DocsSettings s={data} />}
         {tab === "customers" && <CustomerSettings />}
         {tab === "dirs" && <Directories s={data} />}
         {tab === "market" && <Shops s={data} />}
@@ -791,13 +792,16 @@ function LegalEntities({ s }: { s: S }) {
   const [rows, setRows] = useState<EntRow[]>(() => s.legal_entities.map((x) => ({ ...x, key: rk() })));
   const upd = (key: string, patch: Partial<EntRow>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const visible = rows.filter((r) => !r.delete);
+  const [openReq, setOpenReq] = useState("");
   const submit = () => save.mutate({ path: "/settings/legal-entities", body: rows.filter((r) => r.name.trim() || r.delete).map((r) => ({
-    id: r.id || undefined, name: r.name, code: r.code, iban: r.iban, is_default: r.is_default, is_active: r.is_active, delete: !!r.delete })) },
+    id: r.id || undefined, name: r.name, code: r.code, iban: r.iban, code_label: r.code_label ?? "РНОКПП", address: r.address ?? "",
+    bank: r.bank ?? "", phone: r.phone ?? "", vat_note: r.vat_note ?? "Без ПДВ", signer: r.signer ?? "",
+    is_default: r.is_default, is_active: r.is_active, delete: !!r.delete })) },
     { onSuccess: (x) => setRows((x as S).legal_entities.map((y) => ({ ...y, key: rk() }))) });
   return (
     <div className="card">
       <div className="card-head"><h2><Building2 size={16} /> Юридичні особи <span className="muted">{visible.length}</span></h2>
-        <button type="button" className="btn sm" onClick={() => setRows([...rows, { id: 0, name: "", code: "", iban: "", is_default: rows.length === 0, is_active: true, sort: 0, orders: 0, cashier: "", key: rk() }])}><Plus size={14} /> Додати</button></div>
+        <button type="button" className="btn sm" onClick={() => setRows([...rows, { id: 0, name: "", code: "", iban: "", code_label: "РНОКПП", address: "", bank: "", phone: "", vat_note: "Без ПДВ", signer: "", is_default: rows.length === 0, is_active: true, sort: 0, orders: 0, cashier: "", key: rk() }])}><Plus size={14} /> Додати</button></div>
       <p className="hint">ФОП або ТОВ, від імені якого продається замовлення. У кожному замовленні юрособу можна змінити; нові замовлення отримують юрособу за замовчуванням.
         За юрособою обирається каса Checkbox (вкладка «Checkbox») і ключ Нової Пошти (вкладка «Доставка»).</p>
       {visible.length === 0 && <Empty><Building2 size={22} className="e-ico" />Юросіб ще немає. Додайте, наприклад, «ФОП Максимчук О. В.».</Empty>}
@@ -812,11 +816,94 @@ function LegalEntities({ s }: { s: S }) {
             <span className="ent-meta">{r.cashier ? <Badge kind="ok">каса: {r.cashier}</Badge> : r.id ? <Badge kind="warn">без каси</Badge> : null}{r.orders > 0 && <span className="muted"> {r.orders} замовл.</span>}</span>
             <label className="mini-check"><input type="checkbox" checked={r.is_active} onChange={(e) => upd(r.key, { is_active: e.target.checked })} /> активна</label>
             <button type="button" className="x" title="Прибрати" onClick={() => (r.id ? upd(r.key, { delete: true }) : setRows(rows.filter((x) => x.key !== r.key)))}>×</button>
+            <button type="button" className="ent-req-btn" aria-expanded={openReq === r.key} onClick={() => setOpenReq(openReq === r.key ? "" : r.key)}>
+              <FileText size={13} /> Реквізити для документів{!(r.address || r.bank || r.signer) && <span className="muted"> · не заповнено</span>}</button>
+            {openReq === r.key && (
+              <div className="ent-req">
+                <label className="lbl">Тип коду<select value={r.code_label ?? "РНОКПП"} onChange={(e) => upd(r.key, { code_label: e.target.value })}>
+                  <option>РНОКПП</option><option>ІПН</option><option>ЄДРПОУ</option></select></label>
+                <label className="lbl">Адреса<input value={r.address ?? ""} onChange={(e) => upd(r.key, { address: e.target.value })} placeholder="м. Тульчин, вул. …" /></label>
+                <label className="lbl">Банк<input value={r.bank ?? ""} onChange={(e) => upd(r.key, { bank: e.target.value })} placeholder="АТ КБ «ПриватБанк»" /></label>
+                <label className="lbl">Телефон<input value={r.phone ?? ""} onChange={(e) => upd(r.key, { phone: e.target.value })} placeholder="+380…" /></label>
+                <label className="lbl">ПДВ<input value={r.vat_note ?? ""} onChange={(e) => upd(r.key, { vat_note: e.target.value })} placeholder="Без ПДВ" /></label>
+                <label className="lbl">Хто підписує<input value={r.signer ?? ""} onChange={(e) => upd(r.key, { signer: e.target.value })} placeholder="Прізвище І. П." /></label>
+              </div>
+            )}
           </div>
         ))}
       </div>
       <div className="form-actions mt"><span className="spacer" /><button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти юрособи</button></div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------- документи: видаткова, рахунок-фактура, гарантійний талон
+function toPng(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 800 / Math.max(img.naturalWidth || 800, img.naturalHeight || 800));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round((img.naturalWidth || 800) * k)); c.height = Math.max(1, Math.round((img.naturalHeight || 300) * k));
+      c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); resolve(c.toDataURL("image/png"));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Не вдалося прочитати картинку")); };
+    img.src = url;
+  });
+}
+
+function DocsSettings({ s }: { s: S }) {
+  const save = useSave();
+  const toast = useToast();
+  const { v, setV, bind } = useForm(s, ["doc_prefix", "invoice_prefix", "warranty_prefix", "doc_unit", "doc_accent", "doc_site", "doc_note",
+    "doc_logo", "invoice_days", "warranty_months", "warranty_terms"]);
+  const terms = (v.warranty_terms || "").split("\n").filter((t) => t.trim()).length;
+  return (
+    <form className="form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/docs", body: v }); }}>
+      <div className="card form">
+        <h2><FileText size={16} /> Документи замовлення</h2>
+        <p className="hint">Кнопка «Друк» у картці замовлення: видаткова накладна, рахунок-фактура й гарантійний талон в одному стилі.
+          Реквізити продавця (код, адреса, IBAN, банк, підписант) беруться з юрособи замовлення — вкладка «Юрособи» → «Реквізити для документів».</p>
+        <div className="cols c3">
+          <Field label="Префікс видаткової"><input {...bind("doc_prefix")} placeholder="РН-" /></Field>
+          <Field label="Префікс рахунку-фактури"><input {...bind("invoice_prefix")} placeholder="СФ-" /></Field>
+          <Field label="Префікс гарантійного талону"><input {...bind("warranty_prefix")} placeholder="ГТ-" /></Field>
+        </div>
+        <p className="hint">Номер документа = префікс + номер замовлення (наприклад, РН-1024).</p>
+        <div className="cols c3">
+          <Field label="Одиниця"><input {...bind("doc_unit")} placeholder="шт." /></Field>
+          <Field label="Рахунок дійсний, банківських днів"><input {...bind("invoice_days")} inputMode="numeric" placeholder="3" /></Field>
+          <Field label="Фірмовий колір"><div className="doc-color"><input type="color" value={v.doc_accent || "#C1D0E4"} onChange={(e) => setV({ ...v, doc_accent: e.target.value })} /><span className="hint">підсумок і картки сторін</span></div></Field>
+        </div>
+        <div className="cols">
+          <Field label="Сайт (унизу документів)"><input {...bind("doc_site")} placeholder="antony.com.ua" /></Field>
+          <Field label="Підпис унизу"><input {...bind("doc_note")} placeholder="Дякуємо за покупку!" /></Field>
+        </div>
+        <div><span className="lbl">Логотип у шапці (замість назви)</span>
+          <div className="doc-logo">
+            {v.doc_logo ? <img src={v.doc_logo} alt="Логотип" /> : <span className="hint">не завантажено — у шапці буде назва юрособи</span>}
+            <label className="btn sm"><Upload size={14} /> {v.doc_logo ? "Замінити" : "Завантажити"}
+              <input type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={async (e) => {
+                const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+                try { setV({ ...v, doc_logo: await toPng(f) }); } catch (err) { toast((err as Error).message, "error"); }
+              }} /></label>
+            {v.doc_logo && <button type="button" className="btn sm ghost" onClick={() => setV({ ...v, doc_logo: "" })}>Прибрати</button>}
+          </div>
+        </div>
+      </div>
+      <div className="card form">
+        <h2><ShieldCheck size={16} /> Гарантійний талон</h2>
+        <div className="cols c3">
+          <Field label="Гарантія за замовчуванням, міс." hint="Свою гарантію можна вказати в картці товару"><input {...bind("warranty_months")} inputMode="numeric" placeholder="12" /></Field>
+        </div>
+        <Field label={`Умови гарантійного обслуговування · ${terms} ${terms === 1 ? "пункт" : terms > 1 && terms < 5 ? "пункти" : "пунктів"}`}
+          hint="Кожен рядок — окремий пункт у талоні. {months} замінюється на гарантію за замовчуванням.">
+          <textarea {...bind("warranty_terms")} rows={12} className="terms-area" />
+        </Field>
+      </div>
+      <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button></div>
+    </form>
   );
 }
 
