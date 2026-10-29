@@ -13,6 +13,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -251,15 +252,15 @@ class NpAccount(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(160), default="")
     api_key: Mapped[str] = mapped_column(String(64), default="")
-    sender_ref: Mapped[str] = mapped_column(String(64), default="")
+    sender_ref: Mapped[str] = mapped_column(String(255), default="")
     sender_name: Mapped[str] = mapped_column(String(255), default="")
-    contact_ref: Mapped[str] = mapped_column(String(64), default="")
+    contact_ref: Mapped[str] = mapped_column(String(255), default="")
     contact_name: Mapped[str] = mapped_column(String(255), default="")
-    sender_phone: Mapped[str] = mapped_column(String(32), default="")
+    sender_phone: Mapped[str] = mapped_column(String(255), default="")
     city_name: Mapped[str] = mapped_column(String(255), default="")
-    city_ref: Mapped[str] = mapped_column(String(64), default="")
+    city_ref: Mapped[str] = mapped_column(String(255), default="")
     warehouse_name: Mapped[str] = mapped_column(String(255), default="")
-    warehouse_ref: Mapped[str] = mapped_column(String(64), default="")
+    warehouse_ref: Mapped[str] = mapped_column(String(255), default="")
     payer: Mapped[str] = mapped_column(String(16), default="Recipient")  # Recipient / Sender / ThirdPerson
     cargo_type: Mapped[str] = mapped_column(String(16), default="Parcel")  # Parcel / Cargo / Documents / TiresWheels / Pallet
     service_type: Mapped[str] = mapped_column(String(24), default="WarehouseWarehouse")
@@ -489,6 +490,9 @@ class Order(Base):
 
 
 Index("ix_orders_status_created", Order.status_id, Order.created_at)
+# один номер маркетплейсу — одне замовлення в магазині (захист від подвійного імпорту)
+Index("ux_orders_shop_external", Order.shop_id, Order.external_id, unique=True,
+      postgresql_where=text("shop_id IS NOT NULL"))
 
 
 class OrderItem(Base):

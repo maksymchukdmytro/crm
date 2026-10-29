@@ -1,0 +1,71 @@
+# Перевірка кожного пушу: тести сервера (PostgreSQL + Redis) і збірка інтерфейсу.
+# Сервер оновлюється з main сам (див. CLAUDE.md), тому в main зливаємо лише зелені гілки.
+name: CI
+
+on:
+  push:
+    branches: [main, "wip/**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: crm
+          POSTGRES_PASSWORD: crm
+          POSTGRES_DB: crm_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U crm -d crm_test" --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://crm:crm@localhost:5432/crm_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt pytest
+      - name: Тести
+        run: pytest -q -p no:cacheprovider
+      - name: Міграції з нуля до останньої
+        env:
+          DATABASE_URL: postgresql+psycopg://crm:crm@localhost:5432/crm_migrate
+          SECRET_KEY: ci
+        run: |
+          PGPASSWORD=crm psql -h localhost -U crm -d crm_test -c "CREATE DATABASE crm_migrate"
+          alembic upgrade head
+          alembic check
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Типи API збігаються зі схемою
+        run: |
+          npm run gen:api
+          git diff --exit-code -- src/lib/api-schema.d.ts
+      - name: Перевірка TypeScript і збірка
+        run: npm run build
