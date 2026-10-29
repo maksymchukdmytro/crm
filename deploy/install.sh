@@ -50,9 +50,9 @@ PYV="$(python3 -c 'import sys; print("%d%02d" % sys.version_info[:2])')"
 
 id "$APP_USER" >/dev/null 2>&1 || useradd --system --home "$APP" --shell /usr/sbin/nologin "$APP_USER"
 install -d -m 750 -o root -g "$APP_USER" "$ETC"
-FIRST=0
+
 if [ ! -s "$ENVF" ]; then
-  FIRST=1
+
   DB_PASS="$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')"
   ADMIN_PASS="$(head -c 9 /dev/urandom | od -An -tx1 | tr -d ' \n')"
   ( umask 027
@@ -187,7 +187,9 @@ chown postgres:"$APP_USER" "$BACKUP_DIR"; chmod 770 "$BACKUP_DIR"
 
 SCHEME=http; [ "$HTTPS_ONLY" = 1 ] && SCHEME=https
 say "Готово: $SCHEME://$DOMAIN$ROOT/"
-if [ "$FIRST" = 1 ]; then
+# пароль першого входу показуємо, доки в CRM ще ніхто не входив (навіть якщо перша спроба встановлення обірвалась)
+if [ -f "$ETC/initial-admin.txt" ] && ! sudo -u postgres psql -d crm -tAc \
+     "SELECT 1 FROM users WHERE last_login_at IS NOT NULL LIMIT 1" 2>/dev/null | grep -q 1; then
   echo "  Перший вхід: $(cat "$ETC/initial-admin.txt")  — змініть пароль у профілі CRM."
   echo "  (той самий пароль збережено у $ETC/initial-admin.txt)"
 fi
