@@ -4,14 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Archive, BadgeCheck, Boxes, Check, ChevronLeft, ChevronRight, Copy, Factory, FolderTree, Globe, GripVertical, ImagePlus, Package, Plus, Tags, Trash2, Wand2, X,
+  Archive, BadgeCheck, Boxes, Check, ChevronLeft, ChevronRight, Copy, Factory, FolderTree, Globe, GripVertical, ImagePlus, MoreHorizontal, Package, Plus, Tags, Trash2, Wand2, X,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { AttributeGroup, Category, Manufacturer, Product, ProductDetail } from "../lib/types";
 type ProductSummary = { days: number; qty: number; sum: number; margin: number; buyout_rate: number | null; upsell_share: number | null; orders: number; sold_total: number };
-import { Badge, Block, Button, confirmAction, Empty, Field, IconButton, Modal, Spinner, Tag, Toggle, Window } from "../components/ui";
+import { Badge, Block, Button, confirmAction, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, Tag, Toggle, Window, useMobile } from "../components/ui";
 import MultiSelect from "../components/MultiSelect";
 import { MovesTable } from "./Catalog";
 import "./products.css";
@@ -77,9 +77,11 @@ function ProductList({ editable }: { editable: boolean }) {
   const cats = useMemo(() => Object.fromEntries(meta.categories.map((c) => [c.id, c.name])), [meta.categories]);
   const brands = useMemo(() => Object.fromEntries(meta.manufacturers.map((m) => [m.id, m.name])), [meta.manufacturers]);
   const catOpts = categoryOptions(meta.categories);
+  const mobile = useMobile();
 
   return (
     <>
+      {editable && <MobileActs><RoundButton icon={Plus} label="Новий товар" primary onClick={() => setEdit("new")} /></MobileActs>}
       <div className="filters">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Назва, артикул або модель" />
         {catOpts.length > 0 && <select value={category} onChange={(e) => setCategory(e.target.value)}>
@@ -94,7 +96,30 @@ function ProductList({ editable }: { editable: boolean }) {
         <span className="spacer" />
         {editable && <button className="btn primary" onClick={() => setEdit("new")}><Plus size={15} /> Товар</button>}
       </div>
-      <div className="card flush tablewrap">
+      {mobile && (
+        <div className="pr-mlist">
+          {isLoading && <div className="m-card m-skel" aria-hidden><i /><i /><i /></div>}
+          {data?.map((p) => {
+            const st = !p.active ? ["архів", "#7C7B76"] : p.upsell ? ["допродаж", "#7C3AED"] : p.available <= 0 ? ["немає", "#DC2626"]
+              : p.available <= p.min_stock ? ["закінчується", "#D97706"] : ["у продажу", "#16A34A"];
+            const sale = p.discount_percent > 0 ? p.sale_price : p.price;
+            const mPct = sale > 0 && p.cost > 0 ? Math.round(((sale - p.cost) / sale) * 100) : null;
+            return (
+              <button key={p.id} type="button" className="pr-mrow" onClick={() => setEdit(p.id)}>
+                <span className="mc-thumb l">{p.photo ? <img src={`${ROOT}${p.photo}`} alt="" loading="lazy" /> : <Package size={20} />}</span>
+                <span className="pr-mt">
+                  <span className="pill" style={{ ["--c" as string]: st[1] }}>{st[0]}</span>
+                  <b className="ell">{p.name}</b>
+                  <small><b>{money(sale)} ₴</b> · {p.available} шт{mPct != null ? ` · маржа ${mPct}%` : ""}</small>
+                </span>
+                <ChevronRight size={18} className="pr-mgo" />
+              </button>
+            );
+          })}
+          {data && !data.length && <Empty><Package size={22} className="e-ico" />{dq || category || manufacturer || stockState ? "За цими фільтрами товарів немає" : "Додайте перший товар"}</Empty>}
+        </div>
+      )}
+      {!mobile && <div className="card flush tablewrap">
         <table className="t pr-table m-cards">
           <thead><tr><th>Товар</th><th>Категорія</th><th>Артикул</th><th className="num">Ціна</th><th className="num">Собівартість</th>
             <th className="num">Маржа</th><th className="num">Доступно</th><th className="num">Резерв</th></tr></thead>
@@ -124,7 +149,7 @@ function ProductList({ editable }: { editable: boolean }) {
             {data && !data.length && <tr><td colSpan={8}><Empty><Package size={22} className="e-ico" />{dq || category || manufacturer || stockState ? "За цими фільтрами товарів немає" : "Додайте перший товар — кнопка «Товар» праворуч угорі"}</Empty></td></tr>}
           </tbody>
         </table>
-      </div>
+      </div>}
       {edit !== null && <ProductModal id={edit} editable={editable} onClose={() => setEdit(null)} onCreated={(id) => setEdit(id)} />}
     </>
   );
@@ -134,6 +159,7 @@ function ProductList({ editable }: { editable: boolean }) {
 type VRow = { id?: number; name: string; sku: string; attribute_ids: number[]; price: string; active: boolean; initial_stock: string; stock?: number; reserved?: number };
 
 function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"; editable: boolean; onClose: () => void; onCreated: (id: number) => void }) {
+  const mobile = useMobile();
   const isNew = id === "new";
   const qc = useQueryClient();
   const toast = useToast();
@@ -241,8 +267,27 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
     </div>
   );
 
+  // телефон (мобільна v2): «‹ Товар ⋯», блоки одною колонкою, знизу «Зберегти»
+  const mhead = (
+    <div className="oc-mhead">
+      <RoundButton icon={ChevronLeft} label="Назад" onClick={onClose} />
+      <div className="oc-mhead-t"><b>{isNew ? "Новий товар" : "Товар"}</b>{!isNew && <small>{v("active", true) ? "у продажу" : "не в продажу"}</small>}</div>
+      {editable && !isNew ? (
+        <MenuButton button={({ open, toggle }) => <button type="button" className="rb" aria-label="Ще дії" aria-expanded={open} onClick={toggle}><MoreHorizontal size={20} /></button>}>
+          {(close) => (<>
+            <button className="pop-item" disabled={duplicate.isPending} onClick={() => { close(); duplicate.mutate(); }}><Copy size={16} />Дублювати</button>
+            <button className="pop-item danger" disabled={del.isPending} onClick={() => { close(); if (confirmAction(`${data?.sold ? "Перенести в архів" : "Видалити"} «${data?.name}»?`)) del.mutate(); }}>
+              {data?.sold ? <Archive size={16} /> : <Trash2 size={16} />}{data?.sold ? "В архів" : "Видалити"}</button>
+          </>)}
+        </MenuButton>
+      ) : <span className="rb-gap" aria-hidden />}
+    </div>
+  );
   return (
-    <Window size="xl" onClose={onClose} head={head} label={isNew ? "Новий товар" : String(v("name", ""))} bodyClass="pw-body">
+    <Window size="xl" onClose={onClose} head={mobile ? mhead : head} label={isNew ? "Новий товар" : String(v("name", ""))} bodyClass="pw-body">
+      {mobile && editable && (
+        <div className="oc-mbar"><Button variant="primary" icon={Check} disabled={save.isPending} onClick={() => saveAll()}>{save.isPending ? "Зберігаю…" : isNew ? "Створити товар" : "Зберегти"}</Button></div>
+      )}
       <fieldset className="pw-grid" disabled={!editable}>
         <div className="pw-col">
           <Block title="Основне">

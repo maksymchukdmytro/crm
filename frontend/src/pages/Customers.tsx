@@ -2,12 +2,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Ban, Check, ChevronLeft, Contact, MessageCircle, MessageSquare, Phone, Plus, Send, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Ban, Check, ChevronLeft, Contact, LockOpen, MessageCircle, MessageSquare, MoreHorizontal, Phone, Plus, Send, X } from "lucide-react";
 import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, money, phone } from "../lib/format";
 import type { CustomerDetail, CustomerList } from "../lib/types";
-import { Block, Button, Empty, Field, IconButton, Modal, Spinner, StatusPill, Tag, Toggle, UaPhone, Window } from "../components/ui";
+import { Block, Button, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, StatusPill, Tag, Toggle, UaPhone, Window, useMobile } from "../components/ui";
 import OrderModal from "./OrderCard";
 import "./customers.css";
 
@@ -30,6 +30,7 @@ export default function CustomersPage() {
   const dq = useDebounced(q, 300);
   useEffect(() => setPage(0), [dq, group, blacklist, sort, desc]);
   const params = { q: dq, group, blacklist, sort, desc, offset: page * 100, limit: 100 };
+  const mobile = useMobile();
   const { data, isFetching } = useQuery({ queryKey: ["customers", params], queryFn: () => api.get<CustomerList>(`/customers${qs(params)}`), placeholderData: keepPreviousData });
 
   return (
@@ -53,7 +54,34 @@ export default function CustomersPage() {
           <button className="btn icon" title={desc ? "За спаданням" : "За зростанням"} onClick={() => setDesc((d) => !d)}>{desc ? <ArrowDown size={15} /> : <ArrowUp size={15} />}</button>
         </span>
       </div>
-      <div className="card flush tablewrap">
+      <MobileActs><RoundButton icon={Plus} label="Новий покупець" primary onClick={() => setAdding(true)} /></MobileActs>
+      {mobile && <p className="list-sum cu-msum">{data ? `${money(data.total)} ${data.total % 10 === 1 && data.total % 100 !== 11 ? "покупець" : "покупців"}` : ""}</p>}
+      {mobile && (
+        <div className="m-list">
+          {!data && Array.from({ length: 4 }, (_, i) => <div key={i} className="m-card m-skel" aria-hidden><i /><i /><i /></div>)}
+          {data?.rows.map((c) => {
+            const ini = (c.name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+            const col = c.blacklisted ? "#DC2626" : c.group_color || "#3557A8";
+            return (
+              <div key={c.id} role="button" tabIndex={0} className="m-card cu-mcard" onClick={() => nav(`/customers/${c.id}`)}
+                onKeyDown={(e) => { if (e.key === "Enter") nav(`/customers/${c.id}`); }}>
+                <span className="m-av" style={{ background: `color-mix(in srgb, ${col} 13%, white)`, color: col }}>{ini}</span>
+                <div className="cu-mt">
+                  <div className="cu-m1"><b className="ell">{c.name || "Без імені"}</b><b className="num">{money(c.sum_delivered)} ₴</b></div>
+                  <small>{phone(c.phone)}</small>
+                  <div className="cu-m3">
+                    {c.blacklisted ? <span className="pill" style={{ ["--c" as string]: "#DC2626" }}>чорний список</span>
+                      : c.group ? <span className="pill" style={{ ["--c" as string]: c.group_color || "#64748b" }}>{c.group}</span> : null}
+                    <span>{c.orders} замовл. · викуп <b className={c.buyout_rate == null ? "" : c.buyout_rate >= 70 ? "t-ok" : c.buyout_rate >= 40 ? "t-warn" : "t-bad"}>{c.buyout_rate == null ? "—" : `${c.buyout_rate}%`}</b></span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {data && !data.rows.length && <div className="m-card m-empty"><Empty>{dq ? "Нікого не знайдено" : "Покупці з'являться із першими замовленнями"}</Empty></div>}
+        </div>
+      )}
+      {!mobile && <div className="card flush tablewrap">
         <table className="t cu-table m-cards">
           <thead><tr><th>Покупець</th><th>Група</th><th className="num">Замовлень</th><th className="num">Отримано</th><th className="num">Відмов</th>
             <th className="num">Викуп</th><th className="num">Сума отриманих</th><th>Останнє</th></tr></thead>
@@ -74,7 +102,7 @@ export default function CustomersPage() {
             {data && !data.rows.length && <tr><td colSpan={8}><Empty>{dq ? "Нікого не знайдено" : "Покупці з'являться із першими замовленнями"}</Empty></td></tr>}
           </tbody>
         </table>
-      </div>
+      </div>}
       {data && data.total > 100 && (
         <div className="cu-pages">
           <button className="btn sm" disabled={!page} onClick={() => setPage((p) => p - 1)}>Назад</button>
@@ -108,6 +136,7 @@ function CustomerCard({ id, onClose }: { id: number; onClose: () => void }) {
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   });
+  const mobile = useMobile();
   const statuses = Object.fromEntries(meta.statuses.map((s) => [s.id, s]));
   const pm = Object.fromEntries(meta.payment_methods.map((m) => [m.id, m]));
   if (!data) return <Window size="sm" onClose={onClose} title="Покупець"><Empty><Spinner /></Empty></Window>;
@@ -131,11 +160,56 @@ function CustomerCard({ id, onClose }: { id: number; onClose: () => void }) {
       </div>
     </div>
   );
+  // телефон (мобільна v2): «‹ Покупець ⋯», картка з аватаром і кнопками зв'язку, плитки, далі блоки; знизу «Нове замовлення» або «Зберегти»
+  const mhead = (
+    <div className="oc-mhead">
+      <RoundButton icon={ChevronLeft} label="Назад" onClick={onClose} />
+      <div className="oc-mhead-t"><b>Покупець</b>{since && <small>з {since}</small>}</div>
+      <MenuButton button={({ open, toggle }) => <button type="button" className="rb" aria-label="Ще дії" aria-expanded={open} onClick={toggle}><MoreHorizontal size={20} /></button>}>
+        {(close) => (
+          <button className="pop-item" onClick={() => { close(); setF({ ...f, blacklisted: !bl }); }}><Ban size={16} />{bl ? "Зняти з чорного списку" : "У чорний список"}</button>
+        )}
+      </MenuButton>
+    </div>
+  );
+  const mhero = mobile && (
+    <section className="cw-mhero">
+      <div className="cw-mhero-1">
+        <span className="m-av lg" style={data.group_color ? { background: `color-mix(in srgb, ${data.group_color} 13%, white)`, color: data.group_color } : undefined}>{initials}</span>
+        <div className="cw-mhero-t"><b className="ell">{data.name || "Без імені"}</b><span>{phone(data.phone)}</span></div>
+        {data.group && <span className="pill" style={{ ["--c" as string]: data.group_color || "#64748b" }}>{data.group}</span>}
+        {bl && <span className="pill" style={{ ["--c" as string]: "#DC2626" }}>ЧС</span>}
+      </div>
+      <div className="oc-hero-msg">
+        <a className="p" href={`tel:+${tel}`} aria-label="Подзвонити"><Phone size={18} /></a>
+        <a href={`viber://chat?number=%2B${tel}`} aria-label="Viber"><MessageCircle size={18} /></a>
+        <a href={`https://t.me/+${tel}`} target="_blank" rel="noreferrer" aria-label="Telegram"><Send size={18} /></a>
+        <a href={`sms:+${tel}`} aria-label="SMS"><MessageSquare size={18} /></a>
+      </div>
+      <div className="cw-mtiles">
+        <div><b>{data.orders}</b><small>замовлень</small></div>
+        <div><b className={data.buyout_rate != null && data.buyout_rate < 50 ? "t-bad" : ""}>{data.buyout_rate == null ? "—" : `${Math.round(data.buyout_rate)}%`}</b><small>викуп</small></div>
+        <div><b>{data.refused}</b><small>відмов</small></div>
+        <div><b>{data.sum_delivered >= 10000 ? `${(data.sum_delivered / 1000).toLocaleString("uk-UA", { maximumFractionDigits: 1 })}к` : money(data.sum_delivered)}</b><small>сума, ₴</small></div>
+      </div>
+    </section>
+  );
+  const mbar = mobile && (
+    <div className="oc-mbar">
+      <button type="button" className={`rb${bl ? " bad" : ""}`} aria-label={bl ? "Зняти з чорного списку" : "У чорний список"} onClick={() => setF({ ...f, blacklisted: !bl })}>
+        {bl ? <LockOpen size={20} /> : <Ban size={20} />}</button>
+      {dirty
+        ? <Button variant="primary" icon={Check} disabled={save.isPending} onClick={() => save.mutate(f)}>Зберегти</Button>
+        : <Button variant="primary" icon={Plus} onClick={() => nav(`/orders/new?phone=${data.phone}`)}>Нове замовлення</Button>}
+    </div>
+  );
   return (
-    <Window size="xl" onClose={onClose} head={head} label={data.name || "Покупець"} bodyClass="cw-body">
+    <Window size="xl" onClose={onClose} head={mobile ? mhead : head} label={data.name || "Покупець"} bodyClass="cw-body">
+      {mhero}
+      {mbar}
       <div className="cw-grid">
         <div className="cw-col">
-          <Block title="Профіль">
+          <Block title="Профіль" className="cw-profile">
             <div className="cw-hero">
               <span className="cw-av">{initials}</span>
               <div><div className="cw-name">{data.name || "Без імені"}</div>
@@ -164,14 +238,14 @@ function CustomerCard({ id, onClose }: { id: number; onClose: () => void }) {
               <div><b>{money(data.sum_delivered)}</b><span>Сума, ₴</span></div>
             </div>
           </Block>
-          <Block title="Чорний список">
+          <Block title="Чорний список" className="cw-bl">
             <Toggle checked={bl} onChange={(c) => setF({ ...f, blacklisted: c })} label={bl ? "У чорному списку" : "Не в чорному списку"} />
             {bl && <input className="cw-reason" value={v("blacklist_reason", "")} onChange={(e) => setF({ ...f, blacklist_reason: e.target.value })} placeholder="Причина, напр. «не забирає посилки»" aria-label="Причина" />}
             <p className="hint cw-hint">Нові замовлення з цього номера отримають позначку й попередження.</p>
           </Block>
         </div>
         <div className="cw-col cw-right">
-          <Block title="Замовлення" sub={`${data.history.length} · клік відкриває замовлення в цьому ж вікні`}>
+          <Block title="Замовлення" sub={mobile ? String(data.history.length) : `${data.history.length} · клік відкриває замовлення в цьому ж вікні`} className="cw-ords">
             {data.history.length ? (
               <div className="cw-orders" role="table">
                 <div className="cw-orow head" role="row"><span>№</span><span>Дата</span><span>Товари</span><span>Статус</span><span>Оплата</span><span>Доставка</span><span className="a-r">Сума</span></div>

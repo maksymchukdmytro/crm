@@ -2,13 +2,13 @@
 // Результати дзвінка: Недодзвон F1 · Передзвонити F2 · Відмова F3 · Дубль. Головна дія — «Створити замовлення» (Ctrl ⏎).
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Check, ChevronLeft, Copy, MessageCircle, Phone, PhoneMissed, PhoneOff, Plus, Send, Timer } from "lucide-react";
+import { Ban, Check, ChevronLeft, Copy, MessageCircle, MoreHorizontal, Package, Phone, PhoneMissed, PhoneOff, Plus, Send, Timer } from "lucide-react";
 import { api, ApiError } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, money, phone } from "../lib/format";
 import type { Order, OrderList } from "../lib/types";
-import { Block, Button, IconButton, PropertyList, StatusPill, Window, useOutside } from "../components/ui";
-import { WaitBadge, callbackTime, leadNo } from "./Leads";
+import { Block, Button, IconButton, MenuButton, PropertyList, RoundButton, StatusPill, Window, useMobile, useOutside } from "../components/ui";
+import { WaitBadge, WaitRing, callbackTime, leadNo } from "./Leads";
 import OrderModal from "./OrderCard";
 
 type Step = { order: Order; next_id: number | null };
@@ -19,6 +19,7 @@ export default function LeadWindow({ id, onClose, onOpen }: { id: number; onClos
   const qc = useQueryClient();
   const [pop, setPop] = useState<null | "callback" | "refused" | "duplicate">(null);
   const [fullCard, setFullCard] = useState(false);
+  const mobile = useMobile();
   const statuses = Object.fromEntries(meta.statuses.map((s) => [s.id, s]));
   const { data: o, isLoading } = useQuery({ queryKey: ["order", id], queryFn: () => api.get<Order>(`/orders/${id}`) });
   const queue = useQuery({
@@ -90,8 +91,70 @@ export default function LeadWindow({ id, onClose, onOpen }: { id: number; onClos
     </div>
   );
 
+  // телефон (мобільна v2): «‹ Лід Л-… ⋯», картка контакту з кільцем часу й кнопкою «Подзвонити», знизу результати дзвінка
+  const wait = qRows.find((r) => r.id === id)?.wait_minutes ?? null;
+  const ph = (o?.phone ?? "").replace(/\D/g, "");
+  const mhead = (
+    <div className="oc-mhead">
+      <RoundButton icon={ChevronLeft} label="Назад" onClick={onClose} />
+      <div className="oc-mhead-t"><b>Лід {leadNo(id)}</b>{o && <small>{[o.site, dt(o.created_at)].filter(Boolean).join(" · ")}</small>}</div>
+      {o && isOpen ? (
+        <MenuButton button={({ open, toggle }) => <button type="button" className="rb" aria-label="Ще дії" aria-expanded={open} onClick={toggle}><MoreHorizontal size={20} /></button>}>
+          {(closeMenu) => (<>
+            <button className="pop-item" onClick={() => { closeMenu(); setPop("duplicate"); }}><Copy size={16} />Позначити як дубль</button>
+            <button className="pop-item" onClick={() => { closeMenu(); setFullCard(true); }}><Plus size={16} />Відкрити повну картку</button>
+          </>)}
+        </MenuButton>
+      ) : <span className="rb-gap" aria-hidden />}
+    </div>
+  );
+  const mcontact = mobile && o && (
+    <section className="lw-mhero">
+      <div className="lw-mhero-1">
+        <WaitRing minutes={wait} size={56} />
+        <div className="lw-mhero-t">
+          <StatusPill status={statuses[o.status_id]} />
+          <b className="ell">{o.customer_name || "Без імені"}</b>
+          <span>{phone(o.phone)}{o.call_attempts ? ` · спроба ${o.call_attempts + 1}` : ""}</span>
+        </div>
+      </div>
+      {(o.duplicate_of_id || o.customer?.blacklisted) && (
+        <div className="lw-mhero-flags">
+          {o.duplicate_of_id && <span className="badge warn">Можливий дубль №{o.duplicate_of_id}</span>}
+          {o.customer?.blacklisted && <span className="badge bad"><Ban size={11} />У чорному списку</span>}
+        </div>
+      )}
+      {ph && (
+        <div className="lw-mhero-acts">
+          <a className="btn primary" href={`tel:+${ph}`}><Phone size={18} />Подзвонити</a>
+          <a className="btn" href={`viber://chat?number=%2B${ph}`} aria-label="Viber"><MessageCircle size={18} /></a>
+          <a className="btn" href={`https://t.me/+${ph}`} target="_blank" rel="noreferrer" aria-label="Telegram"><Send size={18} /></a>
+        </div>
+      )}
+      {o.customer && o.customer.orders > 0 && (
+        <div className="oc-hero-stats lw-mstats">
+          <div><b>{o.customer.orders}</b><small>замовлень</small></div>
+          <div><b>{o.customer.buyout_rate != null ? `${Math.round(o.customer.buyout_rate)}%` : "—"}</b><small>викуп</small></div>
+          <div><b>{money(o.customer.sum_delivered)} ₴</b><small>сума</small></div>
+        </div>
+      )}
+    </section>
+  );
+  const mrequest = mobile && o && (
+    <section className="lw-mreq">
+      <h3><span className="sq sm t-blue"><Package size={15} /></span>Запит<small>{o.site || "з форми"}</small></h3>
+      {o.items.map((i, n) => (
+        <div key={n} className="lw-mreq-i"><span className="mc-thumb l"><Package size={20} /></span>
+          <span className="lw-mreq-t"><b>{i.name}</b><small>{i.upsell ? "допродаж · " : ""}{i.qty} шт</small></span><b className="num">{money(i.price)} ₴</b></div>
+      ))}
+      {(o.utm_source || o.utm_campaign || o.comment) && <div className="mc-sep" />}
+      {(o.utm_source || o.utm_campaign) && <div className="lw-kv"><span>UTM</span><b>{[o.utm_source, o.utm_campaign].filter(Boolean).join(" · ")}</b></div>}
+      {o.comment && <div className="lw-kv"><span>Коментар</span><b className="pre">{o.comment}</b></div>}
+    </section>
+  );
+
   return (
-    <Window size="xl" onClose={onClose} head={head} label={`Лід ${leadNo(id)}`} bodyClass="lw-body"
+    <Window size="xl" onClose={onClose} head={mobile ? mhead : head} label={`Лід ${leadNo(id)}`} bodyClass="lw-body"
       footer={o && isOpen ? (
         <div className="lw-foot">
           <Button icon={PhoneMissed} kbd="F1" disabled={busy} onClick={() => result.mutate({ result: "no_answer" })}>Недодзвон</Button>
@@ -103,7 +166,7 @@ export default function LeadWindow({ id, onClose, onOpen }: { id: number; onClos
             <Button icon={PhoneOff} kbd="F3" disabled={busy} onClick={() => setPop(pop === "refused" ? null : "refused")}>Відмова</Button>
             {pop === "refused" && <ReasonPop onClose={() => setPop(null)} onPick={(rid) => result.mutate({ result: "refused", reason_id: rid })} />}
           </div>
-          <div className="lw-pop-wrap">
+          <div className="lw-pop-wrap lw-dup">
             <Button icon={Copy} disabled={busy} onClick={() => setPop(pop === "duplicate" ? null : "duplicate")}>Дубль</Button>
             {pop === "duplicate" && <DupPop initial={o.duplicate_of_id ?? undefined} onClose={() => setPop(null)} onPick={(did) => result.mutate({ result: "duplicate", duplicate_of_id: did })} />}
           </div>
@@ -125,7 +188,9 @@ export default function LeadWindow({ id, onClose, onOpen }: { id: number; onClos
       </aside>
       <div className="lw-main">
         {isLoading || !o ? <div className="skel-rows">{[0, 1, 2, 3].map((i) => <div key={i} className="skel-row"><span className="skel" /></div>)}</div> : (<>
-          <Block title="Контакт">
+          {mcontact}
+          {mrequest}
+          <Block title="Контакт" className="lw-contact">
             <div className="lw-name">{o.customer_name || "Без імені"}</div>
             <div className="lw-phone-row">
               <a className="phone-pill" href={`tel:+${o.phone.replace(/\D/g, "")}`}><Phone size={14} />{phone(o.phone)}</a>
@@ -141,7 +206,7 @@ export default function LeadWindow({ id, onClose, onOpen }: { id: number; onClos
               </div>
             )}
           </Block>
-          <Block title="Запит" sub={o.site || undefined}>
+          <Block title="Запит" sub={o.site || undefined} className="lw-req">
             <PropertyList items={[
               ...o.items.map((i, n) => ({ key: `i${n}`, label: n === 0 ? "Товар" : i.upsell ? "Допродаж" : "Ще товар", value: <span>{i.name} · {i.qty} шт · <b>{money(i.price)} ₴</b></span> })),
               { key: "sum", label: "Сума", value: <b>{money(o.total)} ₴</b> },

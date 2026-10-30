@@ -106,3 +106,23 @@ export function Ring({ value, unit, frac, color, size = 54, stroke = 4.5, classN
     </span>
   );
 }
+
+/** Телефон: панель знизу поверх затемнення (фільтри, вибір). Esc або тап по затемненню — закрити. */
+export function Sheet({ title, onClose, children, footer }: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+  return createPortal(
+    <div className="m-sheet-dim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="m-sheet" role="dialog" aria-modal="true" aria-label={typeof title === "string" ? title : undefined}>
+        <span className="m-sheet-grab" aria-hidden />
+        <div className="m-sheet-h"><h2>{title}</h2><button type="button" className="rb sm" aria-label="Закрити" onClick={onClose}><X size={17} /></button></div>
+        <div className="m-sheet-b">{children}</div>
+        {footer && <div className="m-sheet-f">{footer}</div>}
+      </div>
+    </div>,
+    document.body,
+  );
+}

@@ -33,6 +33,16 @@ export function WaitBadge({ row }: { row: Pick<OrderRow, "wait_minutes" | "remin
   return <span className={`lw-wait ${cls}`}><Clock3 size={12} />{waitText(m)}{attempts}</span>;
 }
 
+/** Кільце часу очікування ліда: хв / год / дн; колір і заповнення — за порогами з налаштувань. */
+export function WaitRing({ minutes, size = 54 }: { minutes: number | null | undefined; size?: number }) {
+  const meta = useMeta();
+  const m = minutes;
+  if (m == null) return <Ring value="—" frac={0} color="var(--faint)" size={size} />;
+  const color = m >= meta.lead_wait_bad_min ? "#DC2626" : m >= meta.lead_wait_warn_min ? "#D97706" : "#16A34A";
+  const [v, u] = m < 60 ? [Math.max(1, m), "хв"] : m < 1440 ? [Math.floor(m / 60), "год"] : [Math.floor(m / 1440), "дн"];
+  return <Ring value={v} unit={u} frac={Math.min(1, m / Math.max(1, meta.lead_wait_bad_min))} color={color} size={size} />;
+}
+
 export function waitText(m: number) {
   if (m < 1) return "щойно";
   if (m < 60) return `${m} хв`;
@@ -104,19 +114,12 @@ export default function LeadsPage() {
   const open = useCallback((o: { id: number }) => nav(`/leads/${o.id}${window.location.search}`), [nav]);
 
   // телефон (мобільна v2): кільце часу очікування, статус, ім'я, товар · сума, кнопка дзвінка
-  const waitRing = (o: OrderRow) => {
-    const m = o.wait_minutes;
-    if (m == null) return <Ring value="—" frac={0} color="var(--faint)" />;
-    const color = m >= meta.lead_wait_bad_min ? "#DC2626" : m >= meta.lead_wait_warn_min ? "#D97706" : "#16A34A";
-    const [v, u] = m < 60 ? [Math.max(1, m), "хв"] : m < 1440 ? [Math.floor(m / 60), "год"] : [Math.floor(m / 1440), "дн"];
-    return <Ring value={v} unit={u} frac={Math.min(1, m / Math.max(1, meta.lead_wait_bad_min))} color={color} />;
-  };
   const mobileCard = (o: OrderRow) => {
     const code = statuses[o.status_id]?.code ?? "";
     const callable = ["new", "no_answer", "callback"].includes(code);
     return (
       <div className="ml-card">
-        {waitRing(o)}
+        <WaitRing minutes={o.wait_minutes} />
         <div className="ml-t">
           <StatusPill status={statuses[o.status_id]} />
           <b>{o.customer_name || phone(o.phone) || "без імені"}</b>
