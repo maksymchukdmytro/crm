@@ -48,6 +48,9 @@ div.dense { flex: 1; min-height: 0; display: flex; flex-direction: column; borde
 .dense-body .dense-row.sel { background: var(--accent-soft); }
 .dense-body .dense-row.cur { box-shadow: inset 2px 0 0 var(--accent); background: #F6F9FE; }
 .dense-body .dense-row.focus { box-shadow: inset 0 0 0 1.5px var(--accent-line); }
+/* відкрите меню в рядку (документи накладних, дії) — поверх сусідніх рядків і не обрізається клітинкою */
+.dense-body .dense-row:has(.menu-pop) { z-index: 6; }
+.dense-row > span:has(.menu-pop) { overflow: visible; }
 .dense-group { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 4px; padding: 0 14px; font-size: 12.5px; color: var(--muted);
   background: var(--bg); border-bottom: 1px solid var(--line); white-space: nowrap; }
 .dense-group b { color: var(--ink); font-weight: 600; }
