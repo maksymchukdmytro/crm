@@ -328,3 +328,13 @@ label.gi-price { gap: 0; font-weight: 400; }
 .oc-acc-pick, .oc-select-pick { flex: 1; min-width: 0; }
 .oc-acc-pick .ipick-btn, .oc-select-pick .ipick-btn { min-height: 36px; font-size: 13px; }
 .prop-ipick.spick .ipick-btn { justify-content: flex-start; }
+
+/* «Часто беруть разом»: кожна пропозиція — своя кнопка-пігулка, додає лише цей товар */
+.gi-offers { flex-wrap: wrap; row-gap: 6px; }
+.gi-offers-l { flex: none !important; color: var(--muted); }
+.gi-offers-list { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
+.gi-offer { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; height: 28px; padding: 0 11px 0 9px; font: inherit; font-size: 12.5px;
+  color: var(--accent-ink-2); background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: var(--r-pill); cursor: pointer; }
+.gi-offer:hover { background: color-mix(in srgb, var(--accent) 14%, white); }
+.gi-offer b { font-weight: 450; color: var(--ink-2); white-space: nowrap; }
+.gi-offer .ell { min-width: 0; }
