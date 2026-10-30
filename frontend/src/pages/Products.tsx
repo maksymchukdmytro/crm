@@ -95,7 +95,7 @@ function ProductList({ editable }: { editable: boolean }) {
         {editable && <button className="btn primary" onClick={() => setEdit("new")}><Plus size={15} /> Товар</button>}
       </div>
       <div className="card flush tablewrap">
-        <table className="t pr-table">
+        <table className="t pr-table m-cards">
           <thead><tr><th>Товар</th><th>Категорія</th><th>Артикул</th><th className="num">Ціна</th><th className="num">Собівартість</th>
             <th className="num">Маржа</th><th className="num">Доступно</th><th className="num">Резерв</th></tr></thead>
           <tbody>

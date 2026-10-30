@@ -131,3 +131,25 @@ div.dense { flex: 1; min-height: 0; display: flex; flex-direction: column; borde
 .dc-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12.5px; color: var(--muted); min-width: 0; }
 .dc-sub > span { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dc-sub > span:empty { display: none; }
+
+/* телефон: старі таблиці (покупці, товари, накладені платежі) — картками; шапку ховаємо, клітинки йдуть рядком */
+@media (max-width: 768px) {
+  table.m-cards, table.m-cards tbody { display: block; width: 100%; }
+  table.m-cards thead { display: none; }
+  table.m-cards tr { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 10px 14px; border-bottom: 1px solid var(--line-2); }
+  table.m-cards td { display: block; padding: 0 !important; border: 0 !important; font-size: 12.5px; color: var(--muted); text-align: left !important; }
+  table.m-cards td:empty { display: none; }
+  table.m-cards td:first-child { flex: 1 1 100%; color: var(--ink); font-size: 14px; }
+  table.m-cards td[colspan] { flex: 1 1 100%; }
+  /* покупці: ім'я+телефон, далі група, замовлень, викуп, сума */
+  .cu-table td:nth-child(3)::after { content: " замовл."; }
+  .cu-table td:nth-child(4), .cu-table td:nth-child(5) { display: none; }
+  /* товари: назва; ціна, доступно; без собівартості, маржі й резерву для компактності */
+  .pr-table td:nth-child(5), .pr-table td:nth-child(6), .pr-table td:nth-child(8) { display: none; }
+  .pr-table td:nth-child(7)::after { content: " шт"; }
+  /* платежі: галочка й замовлення в першому рядку */
+  .pay-table td.sel { flex: none; order: -1; }
+  .pay-table td:nth-child(2) { flex: 1 1 calc(100% - 40px); color: var(--ink); font-size: 14px; }
+  table.m-cards.pay-table td:first-child { flex: none; }
+  table.m-cards.pay-table td:nth-child(2) { flex: 1 1 calc(100% - 40px); }
+}
