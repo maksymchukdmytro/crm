@@ -148,7 +148,7 @@
 .gi-mini { height: 20px !important; min-height: 0 !important; font-size: 11.5px; padding: 0 4px; border-color: transparent; color: var(--muted); }
 .gi-was { font-size: 11.5px; color: var(--muted); }
 /* ціна й сума в один рядок: ціна за одиницю — лише коли кількість > 1 або при наведенні (щоб не дублювати суму) */
-.gi-price { position: relative; display: flex; align-items: center; gap: 6px; cursor: text; }
+.gi-price { position: relative; display: flex; flex-direction: row; align-items: center; gap: 6px; cursor: text; font-weight: 400; }
 .gi-price input { opacity: 0; transition: opacity var(--t-fast); }
 .gi:hover .gi-price input, .gi-price input:focus, .gi-price.show input { opacity: 1; }
 .gi-sum { min-width: 74px; text-align: right; }
