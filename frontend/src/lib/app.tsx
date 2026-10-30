@@ -17,23 +17,28 @@ export function useStatusMap() {
 }
 
 // ---------------------------------------------------------------- toasts
-type Toast = { id: number; kind: "ok" | "error" | "warn"; text: string };
-const ToastCtx = createContext<(text: string, kind?: Toast["kind"]) => void>(() => {});
+type ToastOpts = { undo?: () => void; action?: { label: string; onClick: () => void } };
+type Toast = { id: number; kind: "ok" | "error" | "warn"; text: string } & ToastOpts;
+const ToastCtx = createContext<(text: string, kind?: Toast["kind"], opts?: ToastOpts) => void>(() => {});
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Toast[]>([]);
   const seq = useRef(0);
-  const push = useCallback((text: string, kind: Toast["kind"] = "ok") => {
+  const push = useCallback((text: string, kind: Toast["kind"] = "ok", opts: ToastOpts = {}) => {
     const id = ++seq.current;
-    setItems((x) => [...x, { id, kind, text }]);
-    setTimeout(() => setItems((x) => x.filter((t) => t.id !== id)), kind === "error" ? 8000 : 3500);
+    setItems((x) => [...x, { id, kind, text, ...opts }]);
+    setTimeout(() => setItems((x) => x.filter((t) => t.id !== id)), kind === "error" ? 8000 : opts.undo || opts.action ? 6000 : 3500);
   }, []);
   return (
     <ToastCtx.Provider value={push}>
       {children}
       <div className="toast-wrap">
         {items.map((t) => (
-          <div key={t.id} className={`flash ${t.kind}`} onClick={() => setItems((x) => x.filter((i) => i.id !== t.id))}>{t.text}</div>
+          <div key={t.id} className={`flash ${t.kind}`} role="status" onClick={() => setItems((x) => x.filter((i) => i.id !== t.id))}>
+            <span>{t.text}</span>
+            {t.action && <button className="undo" onClick={t.action.onClick}>{t.action.label}</button>}
+            {t.undo && <button className="undo" onClick={t.undo}>Скасувати</button>}
+          </div>
         ))}
       </div>
     </ToastCtx.Provider>
