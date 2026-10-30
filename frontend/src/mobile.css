@@ -173,10 +173,12 @@
   .mi-ent i { width: 8px; height: 8px; border-radius: 3px; flex: none; }
   .mi-docs { display: flex; gap: 6px; margin-top: 10px; }
   .mi-docs .doc-pills { display: flex; gap: 6px; width: 100%; }
-  .mi-docs .doc-pill-wrap, .mi-docs > .doc-pills > .doc-pill { flex: 1; min-width: 0; }
-  .mi-docs .doc-pill { height: 38px; flex: 1; justify-content: center; border-radius: 12px; background: #F2F3F5; border-color: transparent; font-size: 13px; }
+  .mi-docs .doc-pills { min-width: 0; }
+  .mi-docs .doc-pill-wrap, .mi-docs .doc-pills > .doc-pill { flex: 1 1 0; min-width: 0; }
+  .mi-docs .doc-pill { height: 38px; flex: 1 1 0; min-width: 0; overflow: hidden; gap: 4px; padding: 0 6px; justify-content: center; border-radius: 12px;
+    background: #F2F3F5; border-color: transparent; font-size: 12.5px; }
   .mi-docs .doc-pill-wrap .doc-pill { border-radius: 12px 0 0 12px; }
-  .mi-docs .doc-arrow { height: 38px; width: 24px; border-radius: 0 12px 12px 0; background: #F2F3F5; border-color: transparent; }
+  .mi-docs .doc-arrow { height: 38px; width: 22px; flex: none; border-radius: 0 12px 12px 0; background: #F2F3F5; border-color: transparent; }
   .mi-docs .doc-pill.off { background: #F7F7F8; color: #B5B4AF; }
 
   /* склад */
@@ -450,6 +452,9 @@
   .ttn-win .win-foot { border: 0; background: #F7F7F8; padding: 8px 16px calc(14px + env(safe-area-inset-bottom)); }
   .ttn-win .win-foot .btn.primary { flex: 1; height: 52px; border-radius: 16px; font-size: 15px; font-weight: 600; justify-content: center; }
   .ttn-win .ttn-foot-hint, .ttn-win kbd { display: none; }
+  .ttn-win .seg { display: flex; width: 100%; border-radius: 13px; background: #E8E9EC; }
+  .ttn-win .seg > button { flex: 1; min-width: 0; justify-content: center; height: 34px; padding: 0 6px; border-radius: 10px; font-size: 12.5px; }
+  .ttn-win .seg > button svg { display: none; }
 
   /* ------------------------------------------------------------ покупці */
   .customers .head { display: none; }
