@@ -273,6 +273,14 @@
 
 @media (max-width: 1100px) {
   .oc-grid { grid-template-columns: minmax(0, 1fr); }
+  /* одна колонка (телефон, вузький екран): покупець → товари → оплата → доставка → деталі й підсумок */
+  .oc-left, .oc-right { display: contents; }
+  .oc-grid > * , .oc-left > *, .oc-right > * { order: 10; }
+  .oc-cust { order: 1 !important; }
+  .oc-goods { order: 2 !important; }
+  .oc-pay { order: 3 !important; }
+  .oc-dlv { order: 4 !important; }
+  .oc-bottom { order: 5 !important; }
   .oc-bottom { grid-template-columns: minmax(0, 1fr); }
   .ttn-grid { grid-template-columns: minmax(0, 1fr); }
 }
@@ -282,7 +290,10 @@
   .oc-save-st { display: none; }
   .oc-head-acts .btn kbd { display: none; }
   .oc-body { padding: 10px !important; }
-  .gi { grid-template-columns: 34px minmax(0, 1fr) 24px; grid-template-areas: "ph main x" "ph qty price"; row-gap: 6px; }
+  .gi { grid-template-columns: 34px minmax(0, 1fr) auto 24px; grid-template-areas: "ph main main x" "ph qty price price"; row-gap: 6px; }
+  .gi-main { flex-wrap: wrap; row-gap: 2px; }
+  .gi-price { justify-self: end; }
+  .gi-price input { opacity: 1; }
   .gi-ph { grid-area: ph; } .gi-main { grid-area: main; } .gi-x { grid-area: x; } .gi .qty-step { grid-area: qty; justify-self: start; } .gi-price { grid-area: price; }
   .gi.up { margin-left: 14px; }
   .gi-link { opacity: 1; }

@@ -1775,6 +1775,11 @@
    },
    "DashCustomers": {
     "properties": {
+     "blacklisted": {
+      "default": 0,
+      "title": "Blacklisted",
+      "type": "integer"
+     },
      "new": {
       "title": "New",
       "type": "integer"
@@ -1789,6 +1794,22 @@
        }
       ],
       "title": "New Delta"
+     },
+     "new_prev": {
+      "default": 0,
+      "title": "New Prev",
+      "type": "integer"
+     },
+     "new_today": {
+      "default": 0,
+      "title": "New Today",
+      "type": "integer"
+     },
+     "repeat_share": {
+      "default": 0,
+      "description": "частка покупців з двома й більше замовленнями, %",
+      "title": "Repeat Share",
+      "type": "number"
      },
      "total": {
       "title": "Total",
@@ -1906,8 +1927,105 @@
     "title": "DashMonth",
     "type": "object"
    },
+   "DashPeriod": {
+    "properties": {
+     "date_from": {
+      "title": "Date From",
+      "type": "string"
+     },
+     "date_to": {
+      "title": "Date To",
+      "type": "string"
+     },
+     "prev_from": {
+      "title": "Prev From",
+      "type": "string"
+     },
+     "prev_to": {
+      "title": "Prev To",
+      "type": "string"
+     }
+    },
+    "required": [
+     "date_from",
+     "date_to",
+     "prev_from",
+     "prev_to"
+    ],
+    "title": "DashPeriod",
+    "type": "object"
+   },
+   "DashQuality": {
+    "properties": {
+     "approve_delta": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "зміна до попереднього періоду, в пунктах",
+      "title": "Approve Delta"
+     },
+     "approve_rate": {
+      "title": "Approve Rate",
+      "type": "number"
+     },
+     "buyout_delta": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Buyout Delta"
+     },
+     "buyout_rate": {
+      "title": "Buyout Rate",
+      "type": "number"
+     },
+     "upsell_delta": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Upsell Delta"
+     },
+     "upsell_rate": {
+      "title": "Upsell Rate",
+      "type": "number"
+     }
+    },
+    "required": [
+     "approve_rate",
+     "buyout_rate",
+     "upsell_rate"
+    ],
+    "title": "DashQuality",
+    "type": "object"
+   },
    "DashTeam": {
     "properties": {
+     "approve_rate": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "частка підтверджених серед сьогоднішніх заявок менеджера, %",
+      "title": "Approve Rate"
+     },
      "confirmed": {
       "description": "підтверджено сьогодні",
       "title": "Confirmed",
@@ -1928,6 +2046,12 @@
       ],
       "title": "Last Login"
      },
+     "leads": {
+      "default": 0,
+      "description": "заявок (лідів і замовлень), що надійшли на менеджера сьогодні",
+      "title": "Leads",
+      "type": "integer"
+     },
      "name": {
       "title": "Name",
       "type": "string"
@@ -1940,6 +2064,12 @@
      "role": {
       "title": "Role",
       "type": "string"
+     },
+     "sum": {
+      "default": 0,
+      "description": "сума підтверджених сьогодні",
+      "title": "Sum",
+      "type": "number"
      }
     },
     "required": [
@@ -2061,6 +2191,19 @@
      "month": {
       "$ref": "#/components/schemas/DashMonth"
      },
+     "period": {
+      "$ref": "#/components/schemas/DashPeriod"
+     },
+     "prev_days": {
+      "items": {
+       "$ref": "#/components/schemas/DashDay"
+      },
+      "title": "Prev Days",
+      "type": "array"
+     },
+     "quality": {
+      "$ref": "#/components/schemas/DashQuality"
+     },
      "team": {
       "items": {
        "$ref": "#/components/schemas/DashTeam"
@@ -2081,6 +2224,8 @@
     },
     "required": [
      "today",
+     "period",
+     "quality",
      "month",
      "customers",
      "attention",
@@ -14403,6 +14548,26 @@
   "/api/dashboard": {
    "get": {
     "operationId": "dashboard_api_dashboard_get",
+    "parameters": [
+     {
+      "description": "YYYY-MM або YYYY-MM-DD..YYYY-MM-DD; порожньо — поточний місяць",
+      "in": "query",
+      "name": "period",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "YYYY-MM або YYYY-MM-DD..YYYY-MM-DD; порожньо — поточний місяць",
+       "title": "Period"
+      }
+     }
+    ],
     "responses": {
      "200": {
       "content": {
@@ -14413,6 +14578,16 @@
        }
       },
       "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
      }
     },
     "summary": "Dashboard",

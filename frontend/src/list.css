@@ -115,3 +115,19 @@ div.dense { flex: 1; min-height: 0; display: flex; flex-direction: column; borde
 .doc-reissue { color: var(--accent) !important; background: var(--accent-soft) !important; border-color: var(--accent-line) !important; }
 .inv-foot { margin: 10px 0 0; font-size: 12px; }
 .doc-issued { display: inline-flex; align-items: center; gap: 3px; font-family: var(--mono); font-size: 11px; color: var(--ok-ink); }
+
+/* ---------------------------------------------------------------- телефон: рядки списку — картки (UI-DESIGN §13) */
+.dense-cards { border-radius: var(--r-block); }
+.dense-card { position: absolute; left: 0; right: 0; top: 0; display: flex; flex-direction: column; gap: 5px; padding: 11px 14px;
+  border-bottom: 1px solid var(--line-2); cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
+.dense-card:active { background: var(--hover); }
+.dense-card.sel { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.dense-card.cur { background: #F6F9FE; }
+.dc-top { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.dc-title { display: flex; align-items: baseline; gap: 8px; flex: 1; min-width: 0; font-size: 14px; font-weight: 450; overflow: hidden; white-space: nowrap; }
+.dc-title > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dc-title > span:first-child:not(:last-child) { flex: none; color: var(--muted); font-weight: 400; font-size: 12.5px; }
+.dc-end { flex: none; display: flex; gap: 8px; font-weight: 560; white-space: nowrap; }
+.dc-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12.5px; color: var(--muted); min-width: 0; }
+.dc-sub > span { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dc-sub > span:empty { display: none; }
