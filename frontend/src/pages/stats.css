@@ -197,3 +197,5 @@
   .st-fbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -14px; padding: 0 14px; }
   .st-fbar > * { flex: none; }
 }
+.stats .st-tiles { margin-bottom: 0; }
+.stats .st-kpis { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
