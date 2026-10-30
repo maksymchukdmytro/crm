@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronRight, CircleAlert, ClipboardList, Lock, PackagePlus, Plus, Search, ShoppingCart, Truck, Wallet, X } from "lucide-react";
+import { Check, ChevronRight, CircleAlert, Clock, ClipboardList, Lock, PackagePlus, Plus, Search, ShoppingCart, Truck, Wallet, X } from "lucide-react";
 import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num } from "../lib/format";
 import type { Move, Product, Purchase, Supplier, Warehouse } from "../lib/types";
-import { Badge, Button, DenseTable, Empty, Field, Modal, Segmented, Spinner, Window, type DenseCol } from "../components/ui";
+import { Badge, Button, DenseTable, Empty, Field, MobileActs, Modal, RoundButton, Segmented, Spinner, Tabs, Window, type DenseCol } from "../components/ui";
 
 
 export function MovesTable({ moves, compact = false }: { moves: Move[]; compact?: boolean }) {
@@ -67,8 +67,29 @@ export function WarehousePage() {
     { key: "buy", mobile: "sub", label: "", width: "96px", align: "right", render: (r) => (r.available <= 0 || (r.days_left != null && r.days_left <= 10))
       ? <Button size={30} onClick={() => nav(`/purchases?new=1&product=${r.product_id}`)}>Закупити</Button> : null },
   ];
+  // телефон (мобільна v2): назва·артикул і «доступно» праворуч; прогноз пігулкою, резерв, «Закупити»
+  const FC: Record<string, string> = { bad: "#DC2626", warn: "#D97706", ok: "#16A34A", muted: "#7C7B76" };
+  const mobileCard = (r: StockRow) => {
+    const l = leftText(r);
+    const buy = r.available <= 0 || (r.days_left != null && r.days_left <= 10);
+    return (<>
+      <div className="ms-head">
+        <div><b>{r.product}</b><small>{[r.variant, r.sku].filter(Boolean).join(" · ") || "—"}</small></div>
+        <div className="ms-av"><b className={r.available <= 0 ? "t-bad" : ""}>{r.available}</b><br /><small>доступно</small></div>
+      </div>
+      <div className="ms-foot">
+        <span className="pill" style={{ ["--c" as string]: FC[l.c] }}><Clock size={12} />{l.t}</span>
+        <span>резерв {r.reserved}</span>
+        {buy && <button type="button" className="buy" onClick={() => nav(`/purchases?new=1&product=${r.product_id}`)}>Закупити</button>}
+      </div>
+    </>);
+  };
   return (
     <div className="page-stock">
+      <MobileActs>
+        <RoundButton icon={ClipboardList} label="Інвентаризація" onClick={() => setAdjust({ product_id: "", variant_id: "" })} />
+        <RoundButton icon={PackagePlus} label="Прийняти товар" primary onClick={() => nav("/purchases?new=1")} />
+      </MobileActs>
       <div className="list-head st-head">
         <div><div className="crumbs muted">Склад · Залишки</div><h1>Склад</h1></div>
         <div className="list-acts">
@@ -84,13 +105,17 @@ export function WarehousePage() {
       </div>
       <div className="st-grid">
         <div className="st-main">
-          <div className="chips-row">
+          <Tabs className="m-only st-mtabs" label="Фільтр складу" value={filter} onChange={(k) => setSp(k === "all" ? {} : { filter: k })}
+            items={[{ key: "all", label: "Усі", count: data?.all ?? null }, { key: "low", label: "Закінчуються", count: data?.low ?? null, color: "#D97706" },
+              { key: "out", label: "Немає", count: data?.out ?? null, color: "#DC2626" }, { key: "dead", label: "Неліквід", count: data?.dead ?? null, color: "#7C7B76" }]} />
+          <div className="chips-row d-only">
             <Segmented label="Фільтр складу" value={filter} onChange={(k) => setSp(k === "all" ? {} : { filter: k })}
               items={[{ key: "all", label: "Усі" }, { key: "low", label: "Закінчуються" }, { key: "out", label: "Немає" }, { key: "dead", label: "Неліквід" }]} />
             <label className="list-search"><Search size={15} aria-hidden /><input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Товар або артикул" aria-label="Пошук на складі" /></label>
           </div>
           <DenseTable<StockRow> label="Залишки" rows={rows} cols={COLS} rowKey={(r) => r.product_id * 100000 + (r.variant_id ?? 0)} isLoading={isLoading}
             onOpen={(r) => setAdjust({ product_id: String(r.product_id), variant_id: r.variant_id ? String(r.variant_id) : "" })}
+            mobileCard={mobileCard}
             empty={<div className="empty-state"><p>{filter === "all" ? "Товарів ще немає" : "Тут порожньо — і це добре"}</p></div>} className="st-table" />
         </div>
         <aside className="block st-moves">

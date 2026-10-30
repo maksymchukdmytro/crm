@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity, BarChart3, Bell, Boxes, Building2, ChartColumnStacked, Check, ChevronDown, Contact, ExternalLink, FileText, History, Inbox,
   KanbanSquare, LogOut, Menu, MessageSquare, Package, PanelLeftClose, PanelLeftOpen, ReceiptText, ScanBarcode, Search, Settings,
-  ShoppingCart, UserPlus, UserRound, Wallet, House, PackagePlus, PhoneIncoming, AlarmClock,
+  ShoppingCart, UserPlus, UserRound, Wallet, House, PackagePlus, PhoneIncoming, AlarmClock, Ellipsis, ChevronRight,
 } from "lucide-react";
 import { api, ROOT } from "../lib/api";
 import { useLive, useMeta } from "../lib/app";
@@ -14,7 +14,7 @@ import { dt as dateTime } from "../lib/format";
 import type { Counters, Notifications, SavedFilter } from "../lib/types";
 import CommandPalette from "./CommandPalette";
 import { ErrorBoundary } from "../lib/monitoring";
-import { Fab, IconButton, MenuButton, inField, type QuickAction } from "./ui";
+import { Fab, IconButton, MenuButton, RoundButton, inField, type QuickAction } from "./ui";
 
 type Item = { to: string; label: string; icon: typeof Inbox };
 const NAV: Record<string, Item> = {
@@ -129,7 +129,7 @@ export default function Layout() {
 
   return (
     <div className={`app${collapsed ? " collapsed" : ""}`}>
-      <aside className={`sb${drawer ? " open" : ""}`} aria-label="Меню">
+      <aside className={`sb${drawer && !phone ? " open" : ""}`} aria-label="Меню">
         <div className="sb-top">
           <NavLink to="/" className="sb-logo" aria-label="mdmy — на головну"><span className="sb-mark">m</span><span className="sb-word">mdmy</span></NavLink>
           <span className={`live-dot${live ? " on" : ""}`} title={live ? "Оновлення в реальному часі" : "Оновлення кожні 30 с"} />
@@ -204,9 +204,13 @@ export default function Layout() {
           </MenuButton>
         </div>
       </aside>
-      {drawer && <div className="sb-backdrop" onClick={() => setDrawer(false)} />}
+      {drawer && !phone && <div className="sb-backdrop" onClick={() => setDrawer(false)} />}
+      {drawer && phone && (
+        <MoreSheet routes={routes} officeName={officeName} onOffice={(id) => setOffice.mutate(id)} onLogout={logout} />
+      )}
 
       <div className="app-main">
+        {phone && <MobileTop path={loc.pathname} onSearch={() => setPalette({})} due={counters.reminders_due} />}
         <header className="topbar">
           <IconButton className="burger-btn" icon={Menu} label="Меню" quiet onClick={() => setDrawer(true)} />
           <button className="top-search" onClick={() => setPalette({})}>
@@ -223,16 +227,119 @@ export default function Layout() {
       </div>
       {/* телефон (UI-DESIGN §13): нижні вкладки — Головна · Замовлення · «+» по центру · Ліди (або Накладні) · Ще */}
       <nav className="tabbar" aria-label="Нижнє меню">
-        <NavLink to="/home"><House size={20} /><span>Головна</span></NavLink>
-        <NavLink to="/orders"><ReceiptText size={20} /><span>Замовлення</span>{counters.orders_unsorted > 0 && <i className="count hot">{counters.orders_unsorted}</i>}</NavLink>
+        <NavLink to="/home" className={({ isActive }) => (isActive && !drawer ? "active" : "")}><House size={20} /><span>Головна</span></NavLink>
+        <NavLink to="/orders" className={({ isActive }) => (isActive && !drawer ? "active" : "")}><ReceiptText size={20} /><span>Замовлення</span>{counters.orders_unsorted > 0 && <i className="count hot">{counters.orders_unsorted}</i>}</NavLink>
         <span className="tb-gap" aria-hidden />
         {leadsOn
-          ? <NavLink to="/leads"><Inbox size={20} /><span>Ліди</span>{counters.leads_new > 0 && <i className="count hot">{counters.leads_new}</i>}</NavLink>
-          : <NavLink to="/invoices"><FileText size={20} /><span>Накладні</span></NavLink>}
-        <button type="button" onClick={() => setDrawer(true)} aria-label="Ще: усе меню"><Menu size={20} /><span>Ще</span></button>
+          ? <NavLink to="/leads" className={({ isActive }) => (isActive && !drawer ? "active" : "")}><Inbox size={20} /><span>Ліди</span>{counters.leads_new > 0 && <i className="count hot">{counters.leads_new}</i>}</NavLink>
+          : <NavLink to="/invoices" className={({ isActive }) => (isActive && !drawer ? "active" : "")}><FileText size={20} /><span>Накладні</span></NavLink>}
+        <button type="button" className={drawer ? "active" : ""} onClick={() => setDrawer((d) => !d)} aria-label="Ще: усе меню" aria-expanded={drawer}><Ellipsis size={20} /><span>Ще</span></button>
       </nav>
       <Fab onClick={() => nav("/orders/new")} actions={quick} />
       {palette && <CommandPalette onClose={() => setPalette(null)} placeholder={palette.hint} />}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- телефон (мобільна v2): шапка й екран «Ще»
+const WEEK = ["неділя", "понеділок", "вівторок", "середа", "четвер", "пʼятниця", "субота"];
+const MONTHS = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"];
+const SHORT: Record<string, string> = { invoices: "Накладні" };
+
+/** Велика назва розділу й круглі кнопки (пошук, кнопки сторінки через MobileActs); на головній — привітання. */
+function MobileTop({ path, onSearch, due }: { path: string; onSearch: () => void; due: number }) {
+  const meta = useMeta();
+  if (path === "/" || path.startsWith("/home")) {
+    const d = new Date();
+    const date = `${WEEK[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]}`.replace(/^./, (c) => c.toUpperCase());
+    const first = meta.user.name.split(/\s+/)[0] || meta.user.name;
+    return (
+      <div className="m-top m-hello">
+        <span className="m-av">{initials(meta.user.name)}</span>
+        <div className="m-hello-t"><small>{date}</small><b className="ell">Привіт, {first}</b></div>
+        <RoundButton icon={Search} label="Пошук" onClick={onSearch} />
+        <TopBell due={due} round />
+      </div>
+    );
+  }
+  const key = Object.keys(NAV).find((k) => path === NAV[k].to || path.startsWith(`${NAV[k].to}/`));
+  const title = key ? SHORT[key] ?? NAV[key].label : path.startsWith("/profile") ? "Профіль" : "";
+  return (
+    <div className="m-top">
+      <h1 className="ell">{title}</h1>
+      <RoundButton icon={Search} label="Пошук" onClick={onSearch} />
+      <span id="m-acts" className="m-acts" />
+    </div>
+  );
+}
+
+const MORE_TINT: Record<string, string> = {
+  invoices: "blue", customers: "purple", board: "gray", leads: "red", products: "orange", warehouse: "green", purchases: "blue",
+  payments: "green", stats: "purple", reports: "gray",
+};
+
+/** «Ще» на телефоні: картка користувача, розділи плитками за групами, нижче — налаштування, журнал, система. */
+function MoreSheet({ routes, officeName, onOffice, onLogout }: {
+  routes: string[]; officeName?: string; onOffice: (id: number | null) => void; onLogout: () => void;
+}) {
+  const meta = useMeta();
+  const nav = useNavigate();
+  const loc = useLocation();
+  const inBar = ["home", "orders", meta.leads_enabled && routes.includes("leads") ? "leads" : "invoices"];
+  const offices = meta.offices.filter((o) => meta.user.role === "admin" || !meta.user.offices?.length || meta.user.offices.includes(o.id));
+  const rowsKeys = ["settings", "audit", "system"].filter((k) => routes.includes(k));
+  return (
+    <div className="m-more" role="dialog" aria-label="Усі розділи">
+      <div className="mm-me">
+        <span className="m-av lg">{initials(meta.user.name)}</span>
+        <div className="mm-me-t"><b className="ell">{meta.user.name}</b><small className="ell">Відділ: {officeName ?? "усі"}</small></div>
+        {offices.length > 0 && (
+          <MenuButton className="mm-office" button={({ open, toggle }) => (
+            <button type="button" className="mm-chip" aria-haspopup="menu" aria-expanded={open} onClick={toggle}>Змінити<ChevronDown size={14} /></button>
+          )}>
+            {(close) => (<>
+              <button className="pop-item" onClick={() => { onOffice(null); close(); }}><span style={{ flex: 1 }}>Усі відділи</span>{meta.office == null && <Check size={15} />}</button>
+              {offices.map((o) => (
+                <button key={o.id} className="pop-item" onClick={() => { onOffice(o.id); close(); }}>
+                  <span style={{ flex: 1 }} className="ell">{o.name}</span>{meta.office === o.id && <Check size={15} />}
+                </button>
+              ))}
+            </>)}
+          </MenuButton>
+        )}
+      </div>
+      {GROUPS.filter(([t]) => t !== "Керування").map(([title, keys]) => {
+        const items = keys.filter((k) => routes.includes(k) && NAV[k] && !inBar.includes(k));
+        if (!items.length) return null;
+        return (
+          <section key={title} className="mm-group">
+            <div className="mm-cap">{title}</div>
+            <div className="mm-tiles">
+              {items.map((k) => {
+                const n = NAV[k];
+                return (
+                  <button key={k} type="button" className="mm-tile" onClick={() => nav(n.to)}>
+                    <span className={`sq t-${MORE_TINT[k] ?? "gray"}`}><n.icon size={18} /></span><b>{n.label}</b>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+      <div className="mm-rows">
+        {rowsKeys.map((k) => {
+          const n = NAV[k];
+          return (
+            <button key={k} type="button" className="mm-row" onClick={() => nav(n.to, k === "settings" ? { state: { bg: loc } } : undefined)}>
+              <n.icon size={19} /><span>{n.label}</span><ChevronRight size={17} />
+            </button>
+          );
+        })}
+        <button type="button" className="mm-row" onClick={() => nav("/profile")}><UserRound size={19} /><span>Мій профіль</span><ChevronRight size={17} /></button>
+        <a className="mm-row" href={`${ROOT}/classic/orders`}><ExternalLink size={19} /><span>Класичний інтерфейс</span><ChevronRight size={17} /></a>
+        <button type="button" className="mm-row bad" onClick={onLogout}><LogOut size={19} /><span>Вийти</span></button>
+      </div>
     </div>
   );
 }
@@ -241,13 +348,15 @@ function useNotifications(enabled: boolean) {
   return useQuery({ queryKey: ["notifications"], queryFn: () => api.get<Notifications>("/notifications"), enabled, staleTime: 15_000 });
 }
 
-function TopBell({ due }: { due: number }) {
+function TopBell({ due, round }: { due: number; round?: boolean }) {
   const nav = useNavigate();
   const [on, setOn] = useState(false);
   const q = useNotifications(on);
   return (
     <MenuButton className="top-pop" button={({ open, toggle }) => (
-      <IconButton icon={Bell} label={due ? `Нагадування: ${due}` : "Сповіщення"} count={due} aria-expanded={open} onClick={() => { setOn(true); toggle(); }} />
+      round
+        ? <RoundButton icon={Bell} label={due ? `Нагадування: ${due}` : "Сповіщення"} count={due} onClick={() => { setOn(true); toggle(); }} />
+        : <IconButton icon={Bell} label={due ? `Нагадування: ${due}` : "Сповіщення"} count={due} aria-expanded={open} onClick={() => { setOn(true); toggle(); }} />
     )}>
       {(close) => (
         <div className="note-list">

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  AlarmClock, Ban, Bookmark, CalendarDays, Check, Copy, Download, Eye, KanbanSquare, List, Phone, Printer, Receipt, RefreshCw, Search, Truck, UserRound, X,
+  AlarmClock, Ban, Bookmark, CalendarDays, Check, CircleAlert, Copy, Download, Eye, KanbanSquare, List, ListFilter, Package, Phone, Printer, Receipt, RefreshCw, Search, Truck, UserRound, X,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
@@ -13,7 +13,7 @@ import { PAY_ICONS } from "../components/payicons";
 import { MarkIcon } from "../components/marks";
 import type { OrderList, OrderRow } from "../lib/types";
 import {
-  BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, IconButton, MenuButton, PayCheck, Segmented, StatusPill, Tabs, Tag,
+  BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, IconButton, MenuButton, MobileActs, PayCheck, RoundButton, Segmented, Sheet, StatusPill, Tabs, Tag,
   useColumns, useOutside, type DenseCol, type TabItem,
 } from "../components/ui";
 import OrderModal from "./OrderCard";
@@ -192,12 +192,45 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
   const cols = colPrefs.visible.map((k) => COLS.find((c) => c.key === k)!).filter(Boolean);
 
 
+  // телефон (мобільна v2): картка — статус і позначки, №·час; покупець і сума; товар і доставка
+  const mobileCard = (o: OrderRow) => {
+    const due = o.remind_at && new Date(o.remind_at) <= new Date();
+    const main = o.items.filter((i) => !i.upsell);
+    const first = main[0] ?? o.items[0];
+    const rest = o.items.length - 1;
+    const day = isoDay(new Date(o.created_at ?? Date.now())) === isoDay(new Date());
+    const warn = o.blacklisted ? "Покупець у чорному списку" : o.no_stock ? "Товару не вистачає на складі" : o.duplicate_of_id ? `Можливий дубль №${o.duplicate_of_id}` : "";
+    const mk = o.mark_id ? marks[o.mark_id] : null;
+    return (<>
+      <div className="mc-top">
+        <StatusPill status={statuses[o.status_id]} />
+        {warn && <span className={`mc-flag ${o.blacklisted || o.no_stock ? "bad" : "warn"}`} title={warn} aria-label={warn}><CircleAlert size={14} /></span>}
+        {due && <span className="mc-flag bad" title="Нагадування настало" aria-label="Нагадування настало"><AlarmClock size={14} /></span>}
+        {mk && <span className="mc-flag" style={{ background: `color-mix(in srgb, ${mk.color} 14%, white)` }} title={mk.name}><MarkIcon icon={mk.icon} color={mk.color} size={13} /></span>}
+        <span className="mc-meta">№{o.id} · {day ? hhmm(o.created_at) : whenLabel(o.created_at)}</span>
+      </div>
+      <div className="mc-name"><b>{o.customer_name || <span className="muted">без імені</span>}</b><span className="sum">{money(o.total)} <small>₴</small></span></div>
+      <div className="mc-sep" />
+      <div className="mc-row">
+        <span className="mc-thumb"><Package size={14} /></span>
+        <span className="mc-goods">{first?.name ?? "—"}{rest > 0 && <span className="more"> +{rest}</span>}</span>
+        {o.delivery_method === "novaposhta" && (o.city_name || o.ttn) ? <span className="np-b" title={o.city_name}>НП</span>
+          : o.city_name || o.ttn ? <span className="mc-muted">{CARRIER_SHORT[o.delivery_method] ?? meta.delivery_methods[o.delivery_method]}</span>
+          : <span className="mc-muted">без доставки</span>}
+      </div>
+    </>);
+  };
+
   const anyFilter = FILTERS.some((k) => k !== "status" && k !== "q" && f[k]);
   const exportUrl = `${ROOT}/classic/orders/export.csv${qs({ status: f.status, q: f.q, manager: f.manager, date_from: f.date_from, date_to: f.date_to, delivery: f.delivery })}`;
   const selectedIds = [...sel];
+  const [sheet, setSheet] = useState(false);
 
   return (
-    <div className="page-list">
+    <div className={`page-list page-${stage}s`}>
+      <MobileActs><RoundButton icon={ListFilter} label="Фільтри" dot={anyFilter} onClick={() => setSheet(true)} /></MobileActs>
+      {sheet && <FilterSheet f={f} onClose={() => setSheet(false)} sources={sources}
+        onApply={(patch) => { setF(patch); setSheet(false); }} onReset={() => { setSp(f.status ? { status: f.status } : {}, { replace: true }); setSheet(false); }} />}
       <div className="list-head">
         <h1>{stage === "lead" ? "Ліди" : "Замовлення"}</h1>
         <span className="list-sum">{summary.map(([n, t], i) => <span key={i}>{i > 0 && " · "}<b>{n}</b> {t}</span>)}</span>
@@ -248,6 +281,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         onOpen={(o) => nav(`${base}/${o.id}${window.location.search}`)}
         isLoading={query.isLoading} onEndReached={endReached}
         rowClass={(o) => (o.remind_at && new Date(o.remind_at) <= new Date() ? "due" : "")}
+        mobileCard={mobileCard}
         actions={(o) => (<>
           {isUnsorted && <Button size={30} variant="soft" icon={Check} onClick={() => accept([o.id])}>Прийняти</Button>}
           {o.phone && <a className="icon-btn s28 quiet" href={`tel:+${o.phone.replace(/\D/g, "")}`} aria-label="Подзвонити" title="Подзвонити"><Phone size={15} /></a>}
@@ -285,6 +319,52 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
       {id && <OrderModal id={id} onClose={() => nav(`${base}${window.location.search}`)} onOpen={(oid) => nav(`${base}/${oid}${window.location.search}`)}
         ids={rows.map((r) => r.id)} />}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------- телефон: усі фільтри однією панеллю знизу (макет мобільної v2, екран 7)
+const PERIODS = (): [string, string, string][] => {
+  const t = new Date();
+  const d = (shift: number) => { const x = new Date(t); x.setDate(x.getDate() - shift); return isoDay(x); };
+  return [["Сьогодні", d(0), d(0)], ["Сьогодні й учора", d(1), d(0)], ["7 днів", d(6), d(0)], ["30 днів", d(29), d(0)],
+    ["Цей місяць", isoDay(new Date(t.getFullYear(), t.getMonth(), 1)), d(0)]];
+};
+function FilterSheet({ f, onClose, onApply, onReset, sources }: {
+  f: F; onClose: () => void; onApply: (p: Partial<F>) => void; onReset: () => void; sources: Record<number, { color: string }>;
+}) {
+  const meta = useMeta();
+  const [d, setD] = useState<Partial<F>>({ date_from: f.date_from, date_to: f.date_to, manager: f.manager, delivery: f.delivery, pm: f.pm, src: f.src, entity: f.entity });
+  const has = (k: keyof F, v: string) => (d[k] ?? "").split(",").includes(v);
+  const flip = (k: keyof F, v: string, single = false) => {
+    const cur = (d[k] ?? "").split(",").filter(Boolean);
+    const next = cur.includes(v) ? cur.filter((x) => x !== v) : single ? [v] : [...cur, v];
+    setD({ ...d, [k]: next.join(",") });
+  };
+  const chips = (k: keyof F, opts: { value: string; label: string; color?: string }[], single = false) => (
+    <div className="fs-chips">{opts.map((o) => (
+      <button key={o.value} type="button" className={`fs-chip${has(k, o.value) ? " on" : ""}`} aria-pressed={has(k, o.value)} onClick={() => flip(k, o.value, single)}>
+        {o.color && <i style={{ background: o.color }} />}{o.label}</button>
+    ))}</div>
+  );
+  const periods = PERIODS();
+  return (
+    <Sheet title="Фільтри" onClose={onClose}
+      footer={<><button type="button" className="btn" onClick={onReset}>Скинути</button><button type="button" className="btn primary" onClick={() => onApply(d)}>Показати</button></>}>
+      <div className="fs-l">Період</div>
+      <div className="fs-chips">{periods.map(([n, a, b]) => {
+        const on = d.date_from === a && d.date_to === b;
+        return <button key={n} type="button" className={`fs-chip${on ? " on" : ""}`} aria-pressed={on} onClick={() => setD({ ...d, date_from: on ? "" : a, date_to: on ? "" : b })}>{n}</button>;
+      })}</div>
+      <div className="fs-l">Менеджер</div>
+      {chips("manager", [...meta.managers.map((m) => ({ value: String(m.id), label: m.name })), { value: "none", label: "Без менеджера" }])}
+      <div className="fs-l">Доставка</div>
+      {chips("delivery", Object.entries(meta.delivery_methods).map(([k, n]) => ({ value: k, label: n })), true)}
+      <div className="fs-l">Джерело</div>
+      {chips("src", meta.order_sources.filter((s) => s.active).map((s) => ({ value: String(s.id), label: s.name, color: sources[s.id]?.color })))}
+      {meta.legal_entities.length > 0 && <><div className="fs-l">Юрособа</div>{chips("entity", meta.legal_entities.map((e) => ({ value: String(e.id), label: e.name })))}</>}
+      <div className="fs-l">Оплата</div>
+      {chips("pm", meta.payment_methods.map((m) => ({ value: String(m.id), label: m.name, color: PAY_ICONS[m.icon || ""]?.color })))}
+    </Sheet>
   );
 }
 

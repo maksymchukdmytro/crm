@@ -1,9 +1,9 @@
 // Панель масових дій, кнопка «+» з меню швидких дій, меню-поповер.
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Plus, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useOutside } from "./hooks";
+import { useMobile, useOutside } from "./hooks";
 
 export function BulkBar({ count, onClear, children, primary }: { count: number; onClear: () => void; children?: ReactNode; primary?: ReactNode }) {
   if (!count) return null;
@@ -68,5 +68,61 @@ export function MenuButton({ button, children, align = "right", className = "" }
       {button({ open, toggle })}
       {open && <div className={`pop menu-pop ${align}${up ? " up" : ""}`} role="menu">{children(() => setOpen(false))}</div>}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------- телефон (мобільна v2): круглі кнопки шапки, кільце
+/** Кругла кнопка 44 px у шапці телефона; primary — синя. */
+export function RoundButton({ icon: Icon, label, onClick, primary, dot, count, href }: {
+  icon: LucideIcon; label: string; onClick?: () => void; primary?: boolean; dot?: boolean; count?: number; href?: string;
+}) {
+  const inner = (<><Icon size={20} strokeWidth={1.8} />{dot && <span className="rb-dot" aria-hidden />}{!!count && <em className="rb-n">{count}</em>}</>);
+  if (href) return <a className={`rb${primary ? " p" : ""}`} href={href} aria-label={label} title={label}>{inner}</a>;
+  return <button type="button" className={`rb${primary ? " p" : ""}`} aria-label={label} title={label} onClick={onClick}>{inner}</button>;
+}
+
+/** Кнопки сторінки в шапці телефона (поруч із пошуком). На комп'ютері нічого не показує. */
+export function MobileActs({ children }: { children: ReactNode }) {
+  const mobile = useMobile();
+  const [el, setEl] = useState<HTMLElement | null>(null);
+  useEffect(() => { setEl(document.getElementById("m-acts")); }, [mobile]);
+  if (!mobile || !el) return null;
+  return createPortal(children, el);
+}
+
+/** Кільце-прогрес: значення в центрі, підпис дрібно під ним. frac — 0…1. */
+export function Ring({ value, unit, frac, color, size = 54, stroke = 4.5, className = "" }: {
+  value: ReactNode; unit?: ReactNode; frac: number; color: string; size?: number; stroke?: number; className?: string;
+}) {
+  const r = size / 2 - stroke, L = 2 * Math.PI * r, f = Math.max(0, Math.min(1, frac));
+  return (
+    <span className={`ring ${className}`} style={{ width: size, height: size, color }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#EEEEEA" strokeWidth={stroke} />
+        {f > 0 && <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"
+          strokeDasharray={`${L * f} ${L}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />}
+      </svg>
+      <span className="ring-v">{value}{unit != null && <small>{unit}</small>}</span>
+    </span>
+  );
+}
+
+/** Телефон: панель знизу поверх затемнення (фільтри, вибір). Esc або тап по затемненню — закрити. */
+export function Sheet({ title, onClose, children, footer }: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+  return createPortal(
+    <div className="m-sheet-dim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="m-sheet" role="dialog" aria-modal="true" aria-label={typeof title === "string" ? title : undefined}>
+        <span className="m-sheet-grab" aria-hidden />
+        <div className="m-sheet-h"><h2>{title}</h2><button type="button" className="rb sm" aria-label="Закрити" onClick={onClose}><X size={17} /></button></div>
+        <div className="m-sheet-b">{children}</div>
+        {footer && <div className="m-sheet-f">{footer}</div>}
+      </div>
+    </div>,
+    document.body,
   );
 }

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlarmClock, ArrowLeft, ArrowUpRight, Ban, Bell, Building2, Check, ChevronDown, CircleCheck, Copy, CreditCard, ExternalLink, FileText, History,
+  AlarmClock, ArrowLeft, ArrowUpRight, Ban, Bell, Building2, Check, ChevronDown, ChevronLeft, CircleCheck, Copy, CreditCard, ExternalLink, FileText, History,
   Landmark, ListChecks, Lock, MessageCircle, MessageSquare, MoreHorizontal, Pencil, Phone, Plus, Printer, Receipt, RefreshCw, ScanBarcode,
   Send, ShieldCheck, Tag as TagIcon, Trash2, Truck, Wallet, X,
 } from "lucide-react";
@@ -14,7 +14,8 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { Order } from "../lib/types";
 import {
-  Block, Button, Checklist, IconButton, MenuButton, PayCheck, Segmented, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useOutside, type CheckItem,
+  Block, Button, Checklist, IconButton, MenuButton, PayCheck, Ring, RoundButton, Segmented, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useMobile, useOutside,
+  type CheckItem,
 } from "../components/ui";
 import { flag, PayLabel } from "../components/payicons";
 import { IconPick, MarkIcon, SelectPick } from "../components/marks";
@@ -66,6 +67,8 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   const [history, setHistory] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const sentRef = useRef("");
+  const mobile = useMobile();
+  const [editCust, setEditCust] = useState(false);
   const wantTtnRef = useRef(false);
   const againRef = useRef(false);
 
@@ -243,8 +246,92 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
     </div>
   );
 
+  // ---------------- телефон (мобільна v2): шапка «‹ Замовлення №… ⋯», картка покупця, смуга статусу, плитки дій, «Що лишилось», нижня смуга дій
+  const title = isNew ? (isLeadNew ? "Новий лід" : "Нове замовлення") : `Замовлення №${oid}`;
+  const srcName = meta.order_sources.find((x) => x.id === form.source_id)?.name ?? order?.site ?? "";
+  const mhead = (
+    <div className="oc-mhead">
+      <RoundButton icon={mobile && isNew ? X : ChevronLeft} label="Назад" onClick={close} />
+      <div className="oc-mhead-t"><b>{title}</b>{order?.created_at && <small>{dateTime(order.created_at)}{srcName && ` · ${srcName}`}</small>}</div>
+      {order ? (
+        <MenuButton button={({ open, toggle }) => <button type="button" className="rb" aria-label="Ще дії" aria-expanded={open} onClick={toggle}><MoreHorizontal size={20} /></button>}>
+          {(closeMenu) => (<>
+            <button className="pop-item" onClick={() => { closeMenu(); setHistory(true); }}><History size={16} />Історія й коментарі</button>
+            <button className="pop-item" onClick={() => { closeMenu(); setEditCust((x) => !x); }}><Pencil size={16} />{editCust ? "Сховати дані покупця" : "Змінити дані покупця"}</button>
+            <button className="pop-item" onClick={() => { closeMenu(); navigate(`/orders/new?from=${oid}`); }}><Plus size={16} />Нове замовлення цьому покупцю</button>
+            <a className="pop-item" href={`${ROOT}/classic/orders/${oid}/print`} target="_blank" rel="noreferrer" onClick={closeMenu}><Printer size={16} />Бланк замовлення</a>
+          </>)}
+        </MenuButton>
+      ) : <span className="rb-gap" aria-hidden />}
+    </div>
+  );
+  const paidAll = total > 0 && cod <= 0;
+  const todo = order?.todo ?? [];
+  const todoLeft = todo.filter((t) => t.state !== "done");
+  const ph = digits(form.phone);
+  const confirmedSt = byCode.confirmed;
+  const primary: { label: string; icon: typeof Check; run: () => void; disabled?: boolean } = isNew
+    ? { label: `Створити · ${money(total)} ₴`, icon: Check, run: () => saveNow(), disabled: save.isPending }
+    : code === "unsorted" && confirmedSt?.active
+      ? { label: "Прийняти замовлення", icon: Check, run: () => changeStatus(confirmedSt.id), disabled: closed }
+      : order && !order.ttn && !closed && form.delivery_method !== "pickup" && !SHIPPED.includes(code)
+        ? { label: "Створити ТТН", icon: Truck, run: openTtn, disabled: save.isPending || action.isPending }
+        : dirty ? { label: "Зберегти", icon: Check, run: () => saveNow(), disabled: save.isPending || closed }
+          : { label: "Готово", icon: Check, run: close };
+  const cust = order?.customer;
+  const mtop = mobile && order && (<>
+    <section className="oc-hero">
+      <div className="oc-hero-1">
+        <span className="m-av lg">{(form.customer_name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}</span>
+        <div className="oc-hero-t"><b className="ell">{form.customer_name || "Без імені"}</b><span>{form.phone ? `+${ph}`.replace(/^\+380(\d{2})(\d{3})(\d{2})(\d{2})$/, "+380 $1 $2 $3 $4") : "без телефону"}</span></div>
+        <div className="oc-hero-sum"><b>{money(paidAll ? total : cod)}<small> ₴</small></b><small>{paidAll ? "оплачено" : "до сплати"}</small></div>
+      </div>
+      {ph && (
+        <div className="oc-hero-msg">
+          <a className="p" href={`tel:+${ph}`} aria-label="Подзвонити"><Phone size={18} /></a>
+          <a href={`viber://chat?number=%2B${ph}`} aria-label="Написати у Viber"><MessageCircle size={18} /></a>
+          <a href={`https://t.me/+${ph}`} target="_blank" rel="noreferrer" aria-label="Написати в Telegram"><Send size={18} /></a>
+          <button type="button" onClick={() => setHistory(true)} aria-label="SMS і коментарі"><MessageSquare size={18} /></button>
+        </div>
+      )}
+      <div className="oc-hero-stats">
+        <div><b>{order.customer?.orders ?? 1}</b><small>замовлень</small></div>
+        <div><b>{cust && cust.buyout_rate != null && cust.delivered + cust.refused > 0 ? `${cust.buyout_rate}%` : "—"}</b><small>викуп</small></div>
+        <div><b className="ell">{meta.legal_entities.find((e) => e.id === form.legal_entity_id)?.name ?? "—"}</b><small>юрособа</small></div>
+      </div>
+    </section>
+    <MobileStatus statusId={form.status_id} onPick={changeStatus} disabled={closed} />
+    <div className="oc-mtiles">
+      <button type="button" className="oc-mtile" disabled={closed && !order.ttn} onClick={() => (order.ttn ? printLabel(order.id, toast) : openTtn())}>
+        <span className="sq t-blue"><Truck size={18} /></span>{order.ttn ? "Наклейка" : "ТТН"}</button>
+      <PrintMenu order={order} onBefore={saveAsync} onError={(m) => toast(m, "error")} />
+      {order.checkbox_ready ? <CheckMenu order={order} busy={action.isPending} onReceipt={(k) => action.mutate({ path: "/receipts", body: { kind: k } })} />
+        : <button type="button" className="oc-mtile" disabled title="Каса Checkbox не налаштована"><span className="sq t-green"><Receipt size={18} /></span>Чек</button>}
+      <RemindButton value={form.remind_at} onChange={(v) => { set({ remind_at: v }); }} />
+    </div>
+    {todo.length > 0 && (
+      <section className="oc-left-ring">
+        <Ring value={`${todo.length - todoLeft.length}/${todo.length}`} frac={(todo.length - todoLeft.length) / todo.length} color="#16A34A" size={50} />
+        <div><b>{todoLeft.length ? "Що лишилось" : "Усе зроблено"}</b>
+          {todoLeft.length > 0 && <div className="oc-left-chips">{todoLeft.map((t) => (
+            <button key={t.key} type="button" disabled={!t.action} title={t.hint || undefined} onClick={() => t.action && runTodo(t.action)}>{t.label.split(" ")[0]}</button>
+          ))}</div>}
+        </div>
+      </section>
+    )}
+  </>);
+  const mbar = mobile && (
+    <div className="oc-mbar">
+      {isNew
+        ? <Button variant="soft" icon={Truck} onClick={openTtn} disabled={save.isPending}>ТТН</Button>
+        : ph ? <a className="rb" href={`tel:+${ph}`} aria-label="Подзвонити"><Phone size={20} /></a> : null}
+      <Button variant="primary" icon={primary.icon} disabled={primary.disabled} onClick={primary.run}>{primary.label}</Button>
+    </div>
+  );
+
   return (
-    <Window size="xl" onClose={close} head={head} label={isNew ? (isLeadNew ? "Новий лід" : "Нове замовлення") : `Замовлення №${oid}`} bodyClass="oc-body">
+    <Window size="xl" onClose={close} head={mobile ? mhead : head} label={title} bodyClass={`oc-body${mobile && !isNew && !editCust ? " m-no-cust" : ""}`}>
+      {mtop}
       {closed && (
         <div className="oc-strip lock"><Lock size={15} /><span>Замовлення закрите — «{status?.name}». Зміни вимкнено, щоб не зачепити склад і оплати.</span>
           <button className="btn sm" onClick={() => setUnlocked(true)}><Pencil size={14} />Редагувати</button></div>
@@ -287,6 +374,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
         </div>
       </div>
 
+      {mbar}
       {ttnOpen && order && (
         <TtnDialog order={order} accountId={form.np_account_id} onClose={() => setTtnOpen(false)}
           onCreated={(o, labelUrl) => {
@@ -368,6 +456,38 @@ function StatusTrack({ statusId, onPick, disabled }: { statusId: number; onPick:
         <ReasonPicker statusId={reasonFor} onClose={() => setReasonFor(null)} onPick={(rid) => { onPick(reasonFor, rid); setReasonFor(null); }} />
       )}
     </nav>
+  );
+}
+
+/** Телефон: смуга на всю ширину кольором поточного статусу; «змінити» відкриває список статусів (з причиною для відмови). */
+function MobileStatus({ statusId, onPick, disabled }: { statusId: number; onPick: (id: number, reasonId?: number) => void; disabled?: boolean }) {
+  const meta = useMeta();
+  const [reasonFor, setReasonFor] = useState<number | null>(null);
+  const cur = meta.statuses.find((s) => s.id === statusId);
+  const orderSt = meta.statuses.filter((s) => s.active && (s.stage ?? "order") === "order");
+  const leadSt = meta.statuses.filter((s) => s.active && s.stage === "lead");
+  const pick = (id: number) => {
+    const s = meta.statuses.find((x) => x.id === id);
+    if (s && (s.code === "cancelled" || s.code === "refused") && meta.reasons.some((r) => r.active && r.status_ids.includes(id))) { setReasonFor(id); return; }
+    onPick(id);
+  };
+  return (
+    <div className="oc-mstatus-wrap">
+      <MenuButton className="oc-mstatus-menu" align="left" button={({ open, toggle }) => (
+        <button type="button" className="oc-mstatus" style={{ ["--c" as string]: cur?.color ?? "#7C7B76" }} aria-expanded={open} disabled={disabled} onClick={toggle}>
+          <i /><b>{cur?.name ?? "Статус"}</b><span>змінити<ChevronDown size={15} /></span>
+        </button>
+      )}>
+        {(closeMenu) => (<>
+          {orderSt.map((s) => (
+            <button key={s.id} className="pop-item" disabled={s.id === statusId} onClick={() => { closeMenu(); pick(s.id); }}><StatusPill status={s} current={s.id === statusId} /></button>
+          ))}
+          {leadSt.length > 0 && <div className="note-head">Повернути в ліди</div>}
+          {leadSt.map((s) => <button key={s.id} className="pop-item" onClick={() => { closeMenu(); pick(s.id); }}><StatusPill status={s} /></button>)}
+        </>)}
+      </MenuButton>
+      {reasonFor && <ReasonPicker statusId={reasonFor} onClose={() => setReasonFor(null)} onPick={(rid) => { onPick(reasonFor, rid); setReasonFor(null); }} />}
+    </div>
   );
 }
 

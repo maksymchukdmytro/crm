@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useId, useMemo, useR
 import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowDown, ArrowUp, Building2, Check, CircleAlert, Copy, FileText, KeyRound, Landmark, Layers, ListChecks, MessageSquare, Plus, Receipt, RefreshCw,
+  ArrowDown, ArrowUp, Building2, Check, ChevronLeft, ChevronRight, CircleAlert, Copy, FileText, KeyRound, Landmark, Layers, ListChecks, MessageSquare, Plus, Receipt, RefreshCw,
   Search, Send, ShieldCheck, SlidersHorizontal, Star, Store, Trash2, Truck, Upload, Users as UsersIcon, Wallet, Webhook as WebhookIcon, X, type LucideIcon,
 } from "lucide-react";
 import { api } from "../lib/api";
@@ -11,7 +11,7 @@ import { dt, phone } from "../lib/format";
 import type { BlockedIp, Cashier, CustomerGroup, DirItem, LegalEntity, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { MarkLookPick } from "../components/marks";
-import { Badge, Button, Empty, Field, IconButton, NpAutocomplete, SkeletonRows, Toggle, Window } from "../components/ui";
+import { Badge, Button, Empty, Field, IconButton, NpAutocomplete, RoundButton, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
 
 type S = Settings;
 
@@ -32,6 +32,16 @@ const SECTIONS: { key: string; label: string; icon: LucideIcon; sub: string; wor
   { key: "customers", label: "Покупці", icon: UsersIcon, sub: "Групи покупців і IP-адреси, з яких не приймати заявки.", words: "групи ip спам блок оптовик" },
   { key: "users", label: "Користувачі", icon: KeyRound, sub: "Менеджери, склад і адміністратори: ролі, доступ до відділів, паролі.", words: "менеджер роль пароль доступ логін" },
 ];
+
+const M_GROUPS: [string, string[]][] = [
+  ["Робота", ["general", "statuses", "dirs", "users"]],
+  ["Гроші й доставка", ["entities", "delivery", "checkbox", "market"]],
+  ["Зв'язок і документи", ["webhook", "sms", "telegram", "docs", "customers"]],
+];
+const M_TINT: Record<string, string> = {
+  general: "gray", statuses: "purple", dirs: "blue", users: "purple", entities: "green", delivery: "red", checkbox: "teal", market: "orange",
+  webhook: "blue", sms: "blue", telegram: "blue", docs: "gray", customers: "purple",
+};
 
 type Entry = { dirty: boolean; save: () => Promise<unknown>; cancel: () => void };
 const SetCtx = createContext<{ put: (id: string, e: Entry | null) => void } | null>(null);
@@ -77,10 +87,14 @@ export default function SettingsPage() {
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
   const shown = SECTIONS.filter((x) => !q.trim() || `${x.label} ${x.words} ${x.sub}`.toLowerCase().includes(q.trim().toLowerCase()));
+  // телефон (мобільна v2): спершу список розділів групами, розділ — окремим екраном зі стрілкою «назад»
+  const mobile = useMobile();
+  const listMode = mobile && !fromUrl;
 
   const guard = () => !dirty.length || window.confirm("Є незбережені зміни. Вийти без збереження?");
+  const back = () => { if (guard()) nav("/settings", { replace: true, state: loc.state }); };
   const go = (k: string) => {
-    if (k === cur.key || !guard()) return;
+    if ((k === cur.key && !listMode) || !guard()) return;
     try { localStorage.setItem("crm-settings-tab", k); } catch { /* приватне вікно */ }
     nav(`/settings/${k}`, { replace: true, state: loc.state });
   };
@@ -104,7 +118,31 @@ export default function SettingsPage() {
   return (
     <Window size="lg" className="win-settings" onClose={close} head={<></>} label="Налаштування" bodyClass="set-body">
       <SetCtx.Provider value={ctx}>
-        <div className="set-grid">
+        {listMode && (
+          <div className="set-mlist">
+            <div className="set-mtop"><h1>Налаштування</h1><RoundButton icon={X} label="Закрити" onClick={close} /></div>
+            <label className="set-msearch"><Search size={17} aria-hidden />
+              <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Знайти налаштування" aria-label="Знайти налаштування" /></label>
+            {M_GROUPS.map(([title, keys]) => {
+              const items = shown.filter((x) => keys.includes(x.key));
+              if (!items.length) return null;
+              return (
+                <section key={title}>
+                  <div className="set-mcap">{title}</div>
+                  <div className="set-mrows">
+                    {items.map((x) => (
+                      <button key={x.key} type="button" className="set-mrow" onClick={() => go(x.key)}>
+                        <span className={`sq sm t-${M_TINT[x.key] ?? "gray"}`}><x.icon size={15} /></span><span className="ell">{x.label}</span><ChevronRight size={17} />
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+            {!shown.length && <p className="hint set-none">Нічого не знайдено</p>}
+          </div>
+        )}
+        {!listMode && <div className="set-grid">
           <nav className="set-nav" aria-label="Розділи налаштувань">
             <div className="set-title">Налаштування</div>
             <label className="set-search"><Search size={15} aria-hidden />
@@ -121,8 +159,9 @@ export default function SettingsPage() {
           <div className="set-main">
             <div className="set-scroll">
               <div className="set-head">
+                {mobile && <RoundButton icon={ChevronLeft} label="До розділів" onClick={back} />}
                 <div><h2>{cur.label}</h2><p>{cur.sub}</p></div>
-                <IconButton icon={X} label="Закрити (Esc)" onClick={close} />
+                {!mobile && <IconButton icon={X} label="Закрити (Esc)" onClick={close} />}
               </div>
               {!data ? <SkeletonRows rows={6} /> : <Section key={cur.key} k={cur.key} s={data} />}
             </div>
@@ -134,7 +173,7 @@ export default function SettingsPage() {
               <Button variant="primary" icon={Check} disabled={!dirty.length || busy} onClick={saveAll}>{busy ? "Зберігаю…" : "Зберегти зміни"}</Button>
             </div>
           </div>
-        </div>
+        </div>}
       </SetCtx.Provider>
     </Window>
   );

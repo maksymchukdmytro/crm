@@ -14,6 +14,7 @@ import "./leads.css";
 import "./card.css";
 import "./catalog.css";
 import "./settings.css";
+import "./mobile.css";
 
 initMonitoring();
 
