@@ -4,14 +4,14 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import {
-  ArrowDown, ArrowUp, Building2, CalendarDays, ChartColumnStacked, ChevronDown, CircleDot, Download, Filter, Flag, FolderTree, Globe, Hash, Landmark, Layers,
-  Megaphone, Package, PencilLine, RotateCcw, Search, ShoppingBag, Truck, User as UserIcon, Wallet,
+  ArrowDown, ArrowUp, Building2, CalendarDays, ChevronDown, CircleDot, Download, Flag, FolderTree, Globe, Hash, Landmark, Layers,
+  Link2, ListFilter, Megaphone, Package, PencilLine, RotateCcw, Search, ShoppingBag, Truck, User as UserIcon, Wallet,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { useMeta } from "../lib/app";
 import { dt, isoDay, money, phone } from "../lib/format";
 import type { Stats, StatsBreakdown, StatsOptions, StatsOrders, StatsProduct, StatsSegments, StatsSummary, Status } from "../lib/types";
-import { Empty, Pill, Spinner } from "../components/ui";
+import { Empty, Pill, Spinner, Tabs } from "../components/ui";
 import MultiSelect, { EMPTY, type MsOption } from "../components/MultiSelect";
 import StatsChart, { type ChartStatus } from "../components/StatsChart";
 import OrderModal from "./OrderCard";
@@ -125,53 +125,89 @@ export default function StatsPage() {
     ...[1, 2, 3, 4].filter((i) => meta.extra_on?.[i - 1] ?? true).map((i) => ({ key: `extra${i}` as ListKey, label: extraName(i), icon: <PencilLine size={15} />, options: strOpts(`extra${i}`), empty: true })),
   ];
 
+  // часті фільтри — чипами в рядку, решта (і пошук) — під «Ще N фільтрів і пошук» (UI-DESIGN §11)
+  const FREQ: ListKey[] = ["product", "manager", "office", "delivery", "payment", "source"];
+  const shownF = filters.filter((f) => !f.hide);
+  const freq = shownF.filter((f) => FREQ.includes(f.key) || lists[f.key].length > 0);
+  const rest = shownF.filter((f) => !freq.includes(f));
+  const restActive = rest.filter((f) => lists[f.key].length).length + (upsell ? 1 : 0) + (search ? 1 : 0);
+  const share = () => { navigator.clipboard?.writeText(window.location.href); };
+
   const exportHref = (kind: string, extra: Record<string, string> = {}) => `${ROOT}/api/stats/export.csv${qs({ ...params, kind, ...extra })}`;
   const addFilter = (k: ListKey, v: string) => set({ [k]: lists[k].includes(v) ? lists[k] : [...lists[k], v] });
 
   return (
     <div className="stats">
-      <div className="head">
-        <h1><span className="h-ico"><ChartColumnStacked size={18} /></span>Статистика {main.isFetching && <span className="spinner sm" />}</h1>
-        <div className="actions">
-          <button className="btn sm ghost st-filters-toggle" onClick={() => setShowFilters((x) => !x)}><Filter size={15} />Фільтри{activeCount ? ` · ${activeCount}` : ""}</button>
-          {activeCount > 0 && <button className="btn sm ghost" onClick={() => set(Object.fromEntries([...LIST_KEYS, "upsell", "search"].map((k) => [k, null])))}><RotateCcw size={14} />Скинути фільтри</button>}
+      <div className="st-head">
+        <h1>Статистика</h1>{main.isFetching && <span className="spinner sm" />}
+        <div className="st-head-r">
+          <label className="st-sel" title="За якою датою рахувати замовлення"><CalendarDays size={15} />
+            <span className="st-sel-pre">За датою:</span>
+            <select value={dateField} onChange={(e) => set({ date_field: e.target.value })}>
+              {Object.entries(opts.data?.date_fields ?? { created: "Додане" }).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select><ChevronDown size={14} /></label>
+          <label className="st-sel"><select value={preset} onChange={(e) => set({ p: e.target.value === "d30" ? null : e.target.value, ...(e.target.value === "custom" ? { from, to } : { from: null, to: null }) })}>
+            {PRESETS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select><ChevronDown size={14} /></label>
+          {preset === "custom" ? (
+            <span className="st-dates"><input type="date" value={from} max={to} onChange={(e) => set({ from: e.target.value })} /><span>—</span>
+              <input type="date" value={to} min={from} onChange={(e) => set({ to: e.target.value })} /></span>
+          ) : data && <span className="st-period">{data.date_from.split("-").reverse().join(".")} — {data.date_to.split("-").reverse().join(".")}</span>}
+          <span className="seg st-group" role="radiogroup" aria-label="Групування">
+            {GROUPS.map(([k, v]) => <button key={k} role="radio" aria-checked={group === k} className={group === k ? "on" : ""} onClick={() => set({ group: k === "auto" ? null : k })}>{v}</button>)}
+          </span>
+          <button className="btn sm" onClick={share} title="Скопіювати посилання з фільтрами"><Link2 size={14} />Поділитися</button>
         </div>
       </div>
 
-      <div className="st-bar">
-        <label className="st-sel" title="За якою датою рахувати замовлення"><CalendarDays size={15} />
-          <select value={dateField} onChange={(e) => set({ date_field: e.target.value })}>
-            {Object.entries(opts.data?.date_fields ?? { created: "Додане" }).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select><ChevronDown size={14} /></label>
-        <label className="st-sel"><select value={preset} onChange={(e) => set({ p: e.target.value === "d30" ? null : e.target.value, ...(e.target.value === "custom" ? { from, to } : { from: null, to: null }) })}>
-          {PRESETS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select><ChevronDown size={14} /></label>
-        {preset === "custom" ? (
-          <span className="st-dates"><input type="date" value={from} max={to} onChange={(e) => set({ from: e.target.value })} /><span>—</span>
-            <input type="date" value={to} min={from} onChange={(e) => set({ to: e.target.value })} /></span>
-        ) : data && <span className="st-period">{data.date_from.split("-").reverse().join(".")} — {data.date_to.split("-").reverse().join(".")}</span>}
-        <span className="st-seg" role="group" aria-label="Групування">
-          {GROUPS.map(([k, v]) => <button key={k} className={group === k ? "on" : ""} onClick={() => set({ group: k === "auto" ? null : k })}>{v}</button>)}
-        </span>
+      <div className="st-fbar">
+        {freq.map((f) => (
+          <MultiSelect key={f.key} className="st-chip" label={f.label} placeholder={f.label} icon={f.icon} options={f.options} allowEmpty={f.empty}
+            value={lists[f.key]} onChange={(v) => set({ [f.key]: v })} />
+        ))}
+        <button className={`st-more${showFilters ? " open" : ""}${restActive ? " on" : ""}`} onClick={() => setShowFilters((x) => !x)} aria-expanded={showFilters}>
+          <ListFilter size={14} />Ще {rest.length + 1} фільтрів і пошук{restActive ? ` · ${restActive}` : ""}<ChevronDown size={13} className={showFilters ? "rot" : ""} /></button>
+        {activeCount > 0 && <button className="link-btn" onClick={() => set(Object.fromEntries([...LIST_KEYS, "upsell", "search"].map((k) => [k, null])))}><RotateCcw size={13} />Скинути</button>}
       </div>
-
-      <div className={`st-body ${showFilters ? "filters-open" : ""}`}>
-        <aside className="st-filters">
+      {showFilters && (
+        <div className="st-fmore">
           <div className="st-search"><Search size={15} /><input type="search" placeholder="Пошук у полях 1–4 і коментарі" defaultValue={search}
             onKeyDown={(e) => { if (e.key === "Enter") set({ search: (e.target as HTMLInputElement).value.trim() }); }}
             onBlur={(e) => { if (e.target.value.trim() !== search) set({ search: e.target.value.trim() }); }} /></div>
-          {filters.filter((f) => !f.hide).map((f) => (
+          {rest.map((f) => (
             <MultiSelect key={f.key} label={f.label} placeholder={f.label} icon={f.icon} options={f.options} allowEmpty={f.empty}
               value={lists[f.key]} onChange={(v) => set({ [f.key]: v })} />
           ))}
           <MultiSelect single label="Допродаж" placeholder="Допродаж: усі" icon={<Layers size={15} />}
             options={[{ value: "with", label: "Лише з допродажем" }, { value: "without", label: "Без допродажу" }]}
             value={upsell ? [upsell] : []} onChange={(v) => set({ upsell: v[0] ?? null })} />
-        </aside>
+        </div>
+      )}
 
+      <div className="st-body2">
         <section className="st-main">
           {!data ? <div className="card"><Empty><Spinner /></Empty></div> : <>
-            <div className="card st-chart">
+            <div className="st-tiles">
+              <Tile title="Замовлення" value={data.summary.orders} delta={delta(data, "orders")}
+                rows={[["Без допродажів", data.summary.orders_plain], ["Допродані", data.summary.orders_upsell], ["% допродажів", `${data.summary.upsell_rate}%`]]} />
+              <Tile title="Товари" value={data.summary.qty} delta={delta(data, "qty")}
+                rows={[["Основні", data.summary.qty_main], ["Допродані", data.summary.qty_upsell], ["% допроданих", `${data.summary.qty_upsell_rate}%`]]} />
+              <Tile title="Маржа" value={money(data.summary.margin)} delta={delta(data, "margin")}
+                rows={[["Основна", money(data.summary.margin_main)], ["Допродажу", money(data.summary.margin_upsell)], ["Середня", money(data.summary.margin_avg)]]} />
+              <Tile title="Сума" value={money(data.summary.sum)} delta={delta(data, "sum")}
+                rows={[["Основна", money(data.summary.sum_main)], ["Допродажу", money(data.summary.sum_upsell)], ["Середній чек", money(data.summary.avg_check)]]} />
+            </div>
+            <div className="st-kpis">
+              <Kpi label="Апрув" value={`${data.summary.approve_rate}%`} sub={`${data.summary.approved} підтверджено`} d={pp(data, "approve_rate")} />
+              <Kpi label="Викуп" value={data.summary.delivered + data.summary.refused ? `${data.summary.buyout_rate}%` : "—"} sub={`${data.summary.delivered} отримано · ${data.summary.refused} відмов`} d={data.summary.delivered + data.summary.refused ? pp(data, "buyout_rate") : null} />
+              <Kpi label="Відправлено" value={data.summary.shipped} sub={data.summary.orders ? `${Math.round(data.summary.shipped * 100 / data.summary.orders)}% від замовлень` : ""} d={delta(data, "shipped")} />
+              <Kpi label="Середній чек" value={`${money(data.summary.avg_check)} ₴`} sub={`маржа ${money(data.summary.margin_avg)} ₴`} d={delta(data, "avg_check")} />
+              <Kpi label="Час підтвердження" value={data.summary.confirm_avg_min == null ? "—" : minutes(data.summary.confirm_avg_min)} sub="від додавання до апруву"
+                d={data.prev && data.prev.orders >= MIN_PREV_ORDERS && data.prev.confirm_avg_min && data.summary.confirm_avg_min != null ? { v: pct(data.summary.confirm_avg_min, data.prev.confirm_avg_min), good: data.summary.confirm_avg_min <= data.prev.confirm_avg_min, unit: "%" } : null} />
+              {data.summary.duplicates > 0 && <Kpi label="Дублі" value={data.summary.duplicates} sub="не псують апрув, якщо не підтверджені" d={null} />}
+            </div>
+            {data.prev && <p className="hint st-prev">Порівняння з попереднім періодом {data.prev.date_from.split("-").reverse().join(".")} — {data.prev.date_to.split("-").reverse().join(".")}: {data.prev.orders} замовлень, {money(data.prev.sum)} ₴.</p>}
+            <div className="card st-chart"><h2 className="st-chart-h">Статуси по днях<small>стовпці — статуси, лінія — усі · клік по легенді ховає статус</small></h2>
               {data.summary.orders === 0
                 ? <Empty>За вибраний період і фільтри замовлень немає</Empty>
                 : <div className="st-chart-in">
@@ -193,32 +229,9 @@ export default function StatsPage() {
                 </div>}
             </div>
 
-            <div className="st-tiles">
-              <Tile title="Замовлення" value={data.summary.orders} delta={delta(data, "orders")}
-                rows={[["Без допродажів", data.summary.orders_plain], ["Допродані", data.summary.orders_upsell], ["% допродажів", `${data.summary.upsell_rate}%`]]} />
-              <Tile title="Товари" value={data.summary.qty} delta={delta(data, "qty")}
-                rows={[["Основні", data.summary.qty_main], ["Допродані", data.summary.qty_upsell], ["% допроданих", `${data.summary.qty_upsell_rate}%`]]} />
-              <Tile title="Маржа" value={money(data.summary.margin)} delta={delta(data, "margin")}
-                rows={[["Основна", money(data.summary.margin_main)], ["Допродажу", money(data.summary.margin_upsell)], ["Середня", money(data.summary.margin_avg)]]} />
-              <Tile title="Сума" value={money(data.summary.sum)} delta={delta(data, "sum")}
-                rows={[["Основна", money(data.summary.sum_main)], ["Допродажу", money(data.summary.sum_upsell)], ["Середній чек", money(data.summary.avg_check)]]} />
-            </div>
-            <div className="st-kpis">
-              <Kpi label="Апрув" value={`${data.summary.approve_rate}%`} sub={`${data.summary.approved} підтверджено`} d={pp(data, "approve_rate")} />
-              <Kpi label="Викуп" value={data.summary.delivered + data.summary.refused ? `${data.summary.buyout_rate}%` : "—"} sub={`${data.summary.delivered} отримано · ${data.summary.refused} відмов`} d={data.summary.delivered + data.summary.refused ? pp(data, "buyout_rate") : null} />
-              <Kpi label="Відправлено" value={data.summary.shipped} sub={data.summary.orders ? `${Math.round(data.summary.shipped * 100 / data.summary.orders)}% від замовлень` : ""} d={delta(data, "shipped")} />
-              <Kpi label="Середній чек" value={`${money(data.summary.avg_check)} ₴`} sub={`маржа ${money(data.summary.margin_avg)} ₴`} d={delta(data, "avg_check")} />
-              <Kpi label="Час підтвердження" value={data.summary.confirm_avg_min == null ? "—" : minutes(data.summary.confirm_avg_min)} sub="від додавання до апруву"
-                d={data.prev && data.prev.orders >= MIN_PREV_ORDERS && data.prev.confirm_avg_min && data.summary.confirm_avg_min != null ? { v: pct(data.summary.confirm_avg_min, data.prev.confirm_avg_min), good: data.summary.confirm_avg_min <= data.prev.confirm_avg_min, unit: "%" } : null} />
-              {data.summary.duplicates > 0 && <Kpi label="Дублі" value={data.summary.duplicates} sub="не псують апрув, якщо не підтверджені" d={null} />}
-            </div>
-            {data.prev && <p className="hint st-prev">Порівняння з попереднім періодом {data.prev.date_from.split("-").reverse().join(".")} — {data.prev.date_to.split("-").reverse().join(".")}: {data.prev.orders} замовлень, {money(data.prev.sum)} ₴.</p>}
 
-            <div className="tabs st-tabs">
-              {[["products", "Товари"], ["breakdown", "Розрізи"], ["orders", "Замовлення"], ["segments", "Цінові сегменти"]].map(([k, v]) => (
-                <a key={k} className={tab === k ? "on" : ""} onClick={() => { setTab(k); set({ tab: k === "products" ? null : k }); }}>{v}</a>
-              ))}
-            </div>
+            <Tabs label="Розрізи статистики" className="st-tabs2" value={tab} onChange={(k) => { setTab(k); set({ tab: k === "products" ? null : k }); }}
+              items={[{ key: "products", label: "Товари" }, { key: "breakdown", label: "Розрізи" }, { key: "orders", label: "Замовлення" }, { key: "segments", label: "Цінові сегменти" }]} />
             {tab === "products" && <ProductsTab qkey={key} params={params} exportHref={exportHref("products")} onPick={(id) => id && addFilter("product", String(id))} />}
             {tab === "breakdown" && <BreakdownTab qkey={key} params={params} dims={opts.data?.dimensions ?? {}} extraName={extraName}
               exportHref={(dim) => exportHref("breakdown", { dim })} onPick={(dim, v) => DIM_TO_FILTER[dim] && addFilter(DIM_TO_FILTER[dim], v)} />}
