@@ -754,8 +754,10 @@ def settings_save(section: str, request: Request, data: dict[str, str | bool | i
             bad("Логотип: PNG до 1 МБ")
         if k == "doc_accent" and val and not re.fullmatch(r"#[0-9a-fA-F]{6}", val):
             bad("Колір документів: формат #RRGGBB")
-        if k in ("invoice_days", "warranty_months") and val and not val.isdigit():
+        if k in ("invoice_days", "warranty_months", "lead_wait_warn_min", "lead_wait_bad_min", "lead_noanswer_remind_min") and val and not val.isdigit():
             bad("Вкажіть ціле число")
+        if k == "lead_to_order_status" and val not in ("confirmed", "unsorted"):
+            bad("Статус замовлення з ліда: confirmed або unsorted")
         if st.get(db, k) != val:
             st.set_value(db, k, val)
             changed.append(k)

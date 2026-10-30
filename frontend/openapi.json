@@ -2391,6 +2391,212 @@
     "title": "HistoryOut",
     "type": "object"
    },
+   "LeadQueueOut": {
+    "properties": {
+     "ids": {
+      "items": {
+       "type": "integer"
+      },
+      "title": "Ids",
+      "type": "array"
+     }
+    },
+    "required": [
+     "ids"
+    ],
+    "title": "LeadQueueOut",
+    "type": "object"
+   },
+   "LeadResultIn": {
+    "additionalProperties": false,
+    "properties": {
+     "at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Час передзвону (ISO)",
+      "title": "At"
+     },
+     "duplicate_of_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Duplicate Of Id"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "maxLength": 2000,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     },
+     "reason_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason Id"
+     },
+     "result": {
+      "enum": [
+       "no_answer",
+       "callback",
+       "refused",
+       "duplicate"
+      ],
+      "title": "Result",
+      "type": "string"
+     }
+    },
+    "required": [
+     "result"
+    ],
+    "title": "LeadResultIn",
+    "type": "object"
+   },
+   "LeadStepOut": {
+    "properties": {
+     "next_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Next Id"
+     },
+     "order": {
+      "$ref": "#/components/schemas/OrderOut"
+     }
+    },
+    "required": [
+     "order"
+    ],
+    "title": "LeadStepOut",
+    "type": "object"
+   },
+   "LeadTabsOut": {
+    "properties": {
+     "all": {
+      "default": 0,
+      "title": "All",
+      "type": "integer"
+     },
+     "callback": {
+      "default": 0,
+      "title": "Callback",
+      "type": "integer"
+     },
+     "converted": {
+      "default": 0,
+      "title": "Converted",
+      "type": "integer"
+     },
+     "duplicate": {
+      "default": 0,
+      "title": "Duplicate",
+      "type": "integer"
+     },
+     "new": {
+      "default": 0,
+      "title": "New",
+      "type": "integer"
+     },
+     "no_answer": {
+      "default": 0,
+      "title": "No Answer",
+      "type": "integer"
+     },
+     "open": {
+      "default": 0,
+      "title": "Open",
+      "type": "integer"
+     },
+     "refused": {
+      "default": 0,
+      "title": "Refused",
+      "type": "integer"
+     }
+    },
+    "title": "LeadTabsOut",
+    "type": "object"
+   },
+   "LeadsPreviewOut": {
+    "properties": {
+     "enabled": {
+      "title": "Enabled",
+      "type": "boolean"
+     },
+     "open": {
+      "title": "Open",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "enabled",
+     "open"
+    ],
+    "title": "LeadsPreviewOut",
+    "type": "object"
+   },
+   "LeadsToggleIn": {
+    "additionalProperties": false,
+    "properties": {
+     "enabled": {
+      "title": "Enabled",
+      "type": "boolean"
+     },
+     "move_open": {
+      "default": false,
+      "title": "Move Open",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "enabled"
+    ],
+    "title": "LeadsToggleIn",
+    "type": "object"
+   },
+   "LeadsToggleOut": {
+    "properties": {
+     "enabled": {
+      "title": "Enabled",
+      "type": "boolean"
+     },
+     "moved": {
+      "default": 0,
+      "title": "Moved",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "enabled"
+    ],
+    "title": "LeadsToggleOut",
+    "type": "object"
+   },
    "LegalEntityIn": {
     "additionalProperties": false,
     "properties": {
@@ -4492,6 +4698,17 @@
       "title": "Items",
       "type": "array"
      },
+     "lead_tabs": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/LeadTabsOut"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Лічильники вкладок лідів (stage=lead)"
+     },
      "next": {
       "anyOf": [
        {
@@ -4528,6 +4745,11 @@
       "title": "Address",
       "type": "string"
      },
+     "call_attempts": {
+      "default": 0,
+      "title": "Call Attempts",
+      "type": "integer"
+     },
      "carrier_ref": {
       "title": "Carrier Ref",
       "type": "string"
@@ -4559,6 +4781,17 @@
       },
       "title": "Comments",
       "type": "array"
+     },
+     "converted_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Converted At"
      },
      "country": {
       "default": "UA",
@@ -4714,6 +4947,17 @@
       ],
       "title": "Label",
       "type": "string"
+     },
+     "last_call_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Call At"
      },
      "last_name": {
       "default": "",
@@ -5070,6 +5314,11 @@
       "title": "Blacklisted",
       "type": "boolean"
      },
+     "call_attempts": {
+      "default": 0,
+      "title": "Call Attempts",
+      "type": "integer"
+     },
      "city_name": {
       "title": "City Name",
       "type": "string"
@@ -5077,6 +5326,17 @@
      "cod_amount": {
       "title": "Cod Amount",
       "type": "number"
+     },
+     "converted_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Converted At"
      },
      "country": {
       "default": "UA",
@@ -5162,6 +5422,17 @@
       },
       "title": "Items",
       "type": "array"
+     },
+     "last_call_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Call At"
      },
      "legal_entity_id": {
       "anyOf": [
@@ -5330,6 +5601,18 @@
      "utm_source": {
       "title": "Utm Source",
       "type": "string"
+     },
+     "wait_minutes": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Ліди: скільки хвилин чекає дзвінка (None — не чекає)",
+      "title": "Wait Minutes"
      },
      "warehouse_name": {
       "default": "",
@@ -9693,6 +9976,11 @@
       "title": "Address",
       "type": "string"
      },
+     "call_attempts": {
+      "default": 0,
+      "title": "Call Attempts",
+      "type": "integer"
+     },
      "carrier_ref": {
       "title": "Carrier Ref",
       "type": "string"
@@ -9729,6 +10017,17 @@
       },
       "title": "Comments",
       "type": "array"
+     },
+     "converted_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Converted At"
      },
      "country": {
       "default": "UA",
@@ -9884,6 +10183,17 @@
       ],
       "title": "Label",
       "type": "string"
+     },
+     "last_call_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Call At"
      },
      "last_name": {
       "default": "",
@@ -12033,6 +12343,50 @@
     ]
    }
   },
+  "/api/leads/queue": {
+   "get": {
+    "description": "Черга дзвінків для вікна ліда: хто чекає найдовше; передзвони й недодзвони — коли настане час.",
+    "operationId": "lead_queue_api_leads_queue_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "filter",
+      "required": false,
+      "schema": {
+       "default": "all",
+       "title": "Filter",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LeadQueueOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Lead Queue",
+    "tags": [
+     "leads"
+    ]
+   }
+  },
   "/api/me": {
    "get": {
     "operationId": "me_api_me_get",
@@ -12383,7 +12737,7 @@
   },
   "/api/orders": {
    "get": {
-    "description": "Курсор: sort=new — найновіші вгорі (before=<id>), sort=old — найстаріші вгорі («Несортовані», after=<id>).",
+    "description": "Курсор: sort=new — найновіші вгорі (before=<id>), sort=old — найстаріші вгорі («Несортовані», after=<id>).\nЛіди: stage=lead&tab=open|new|no_answer|callback|duplicate|refused|converted|all, sort=wait — хто чекає найдовше (без курсора, до 500).",
     "operationId": "list_orders_api_orders_get",
     "parameters": [
      {
@@ -12413,6 +12767,16 @@
       "schema": {
        "default": "new",
        "title": "Sort",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "tab",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Tab",
        "type": "string"
       }
      },
@@ -12715,6 +13079,48 @@
     ]
    }
   },
+  "/api/orders/{order_id}/convert": {
+   "post": {
+    "operationId": "lead_convert_api_orders__order_id__convert_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LeadStepOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Lead Convert",
+    "tags": [
+     "leads"
+    ]
+   }
+  },
   "/api/orders/{order_id}/documents": {
    "get": {
     "description": "Дані для друку: видаткова накладна, рахунок-фактура, гарантійний талон (PDF збирає браузер).",
@@ -12840,6 +13246,58 @@
     "summary": "Order Label",
     "tags": [
      "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/lead-result": {
+   "post": {
+    "operationId": "lead_result_api_orders__order_id__lead_result_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LeadResultIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LeadStepOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Lead Result",
+    "tags": [
+     "leads"
     ]
    }
   },
@@ -14391,6 +14849,68 @@
     "summary": "Directory Save",
     "tags": [
      "admin"
+    ]
+   }
+  },
+  "/api/settings/leads": {
+   "post": {
+    "operationId": "leads_toggle_api_settings_leads_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LeadsToggleIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LeadsToggleOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Leads Toggle",
+    "tags": [
+     "leads"
+    ]
+   }
+  },
+  "/api/settings/leads/preview": {
+   "get": {
+    "operationId": "leads_preview_api_settings_leads_preview_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LeadsPreviewOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Leads Preview",
+    "tags": [
+     "leads"
     ]
    }
   },

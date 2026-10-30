@@ -22,7 +22,7 @@ export default function SettingsPage() {
       <div className="head"><h1><span className="h-ico"><SettingsIcon size={18} /></span>Налаштування</h1></div>
       <nav className="subnav">{Object.entries(TABS).map(([k, n]) => <a key={k} className={tab === k ? "on" : ""} onClick={() => choose(k as keyof typeof TABS)}>{n}</a>)}</nav>
       {!data ? <Empty><Spinner /></Empty> : <>
-        {tab === "general" && <General s={data} />}
+        {tab === "general" && <><LeadsSection s={data} /><General s={data} /></>}
         {tab === "entities" && <LegalEntities s={data} />}
         {tab === "docs" && <DocsSettings s={data} />}
         {tab === "customers" && <CustomerSettings />}
@@ -76,6 +76,56 @@ function General({ s }: { s: S }) {
       </div>
       <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button></div>
     </form>
+  );
+}
+
+// «Розділ Ліди» (UI-DESIGN §4.3, §12): два режими роботи CRM. Вимкнення з відкритими лідами — з підтвердженням перенесення.
+function LeadsSection({ s }: { s: S }) {
+  const meta = useMeta();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const save = useSave();
+  const { v, bind } = useForm(s, ["lead_wait_warn_min", "lead_wait_bad_min", "lead_noanswer_remind_min", "lead_to_order_status"]);
+  const toggle = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      let move_open = false;
+      if (!enabled) {
+        const p = await api.get<{ open: number }>("/settings/leads/preview");
+        if (p.open > 0) {
+          if (!window.confirm(`${p.open} відкритих лідів — перенести в «Несортовані»? Без перенесення вони лишаться в базі, але розділ буде прихований.`)) {
+            if (!window.confirm("Вимкнути розділ без перенесення лідів?")) throw new Error("cancel");
+          } else move_open = true;
+        }
+      }
+      return api.post<{ enabled: boolean; moved: number }>("/settings/leads", { enabled, move_open });
+    },
+    onSuccess: (r) => {
+      qc.invalidateQueries();
+      toast(r.enabled ? "Розділ «Ліди» увімкнено" : r.moved ? `Розділ вимкнено, перенесено в «Несортовані»: ${r.moved}` : "Розділ «Ліди» вимкнено");
+    },
+    onError: (e) => { if ((e as Error).message !== "cancel") toast(errText(e), "error"); },
+  });
+  return (
+    <section className="card form narrow leads-card">
+      <div className="lc-head">
+        <div>
+          <h2>Розділ «Ліди»</h2>
+          <p className="hint">Для лендингів і форм, де покупцеві треба подзвонити: заявка → Ліди → дзвінок → «Створити замовлення».
+            Вимкніть, якщо замовлення приходять готовими (сайт з кошиком, Rozetka, Prom) — тоді заявки з форм ідуть одразу в «Несортовані».</p>
+        </div>
+        <span className="switch"><input type="checkbox" role="switch" aria-label="Розділ «Ліди»" checked={meta.leads_enabled} disabled={toggle.isPending}
+          onChange={(e) => toggle.mutate(e.target.checked)} /><span /></span>
+      </div>
+      {meta.leads_enabled && (
+        <form className="lc-grid" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/general", body: v }); }}>
+          <Field label="Чекає — помаранчевим після, хв"><input type="number" min={1} {...bind("lead_wait_warn_min")} /></Field>
+          <Field label="Чекає — червоним після, хв"><input type="number" min={1} {...bind("lead_wait_bad_min")} /></Field>
+          <Field label="Нагадати після недодзвону через, хв"><input type="number" min={5} {...bind("lead_noanswer_remind_min")} /></Field>
+          <Field label="Замовлення з ліда отримує статус"><select {...bind("lead_to_order_status")}><option value="confirmed">Прийнятий</option><option value="unsorted">Несортований</option></select></Field>
+          <div className="form-actions"><button className="btn" disabled={save.isPending}>Зберегти пороги</button></div>
+        </form>
+      )}
+    </section>
   );
 }
 

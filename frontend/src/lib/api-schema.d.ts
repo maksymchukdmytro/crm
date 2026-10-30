@@ -354,6 +354,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/leads/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lead Queue
+         * @description Черга дзвінків для вікна ліда: хто чекає найдовше; передзвони й недодзвони — коли настане час.
+         */
+        get: operations["lead_queue_api_leads_queue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me": {
         parameters: {
             query?: never;
@@ -524,6 +544,7 @@ export interface paths {
         /**
          * List Orders
          * @description Курсор: sort=new — найновіші вгорі (before=<id>), sort=old — найстаріші вгорі («Несортовані», after=<id>).
+         *     Ліди: stage=lead&tab=open|new|no_answer|callback|duplicate|refused|converted|all, sort=wait — хто чекає найдовше (без курсора, до 500).
          */
         get: operations["list_orders_api_orders_get"];
         put?: never;
@@ -604,6 +625,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{order_id}/convert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lead Convert */
+        post: operations["lead_convert_api_orders__order_id__convert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{order_id}/documents": {
         parameters: {
             query?: never;
@@ -658,6 +696,23 @@ export interface paths {
         get: operations["order_label_api_orders__order_id__label_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{order_id}/lead-result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lead Result */
+        post: operations["lead_result_api_orders__order_id__lead_result_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1074,6 +1129,40 @@ export interface paths {
          *     (якщо є замовлення з цим значенням — лише вимикаємо, щоб не зламати історію).
          */
         put: operations["directory_save_api_settings_dir__kind__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/leads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Leads Toggle */
+        post: operations["leads_toggle_api_settings_leads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/leads/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Leads Preview */
+        get: operations["leads_preview_api_settings_leads_preview_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -2544,6 +2633,106 @@ export interface components {
             /** User */
             user: string;
         };
+        /** LeadQueueOut */
+        LeadQueueOut: {
+            /** Ids */
+            ids: number[];
+        };
+        /** LeadResultIn */
+        LeadResultIn: {
+            /**
+             * At
+             * @description Час передзвону (ISO)
+             */
+            at?: string | null;
+            /** Duplicate Of Id */
+            duplicate_of_id?: number | null;
+            /** Note */
+            note?: string | null;
+            /** Reason Id */
+            reason_id?: number | null;
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "no_answer" | "callback" | "refused" | "duplicate";
+        };
+        /** LeadStepOut */
+        LeadStepOut: {
+            /** Next Id */
+            next_id?: number | null;
+            order: components["schemas"]["OrderOut"];
+        };
+        /** LeadTabsOut */
+        LeadTabsOut: {
+            /**
+             * All
+             * @default 0
+             */
+            all: number;
+            /**
+             * Callback
+             * @default 0
+             */
+            callback: number;
+            /**
+             * Converted
+             * @default 0
+             */
+            converted: number;
+            /**
+             * Duplicate
+             * @default 0
+             */
+            duplicate: number;
+            /**
+             * New
+             * @default 0
+             */
+            new: number;
+            /**
+             * No Answer
+             * @default 0
+             */
+            no_answer: number;
+            /**
+             * Open
+             * @default 0
+             */
+            open: number;
+            /**
+             * Refused
+             * @default 0
+             */
+            refused: number;
+        };
+        /** LeadsPreviewOut */
+        LeadsPreviewOut: {
+            /** Enabled */
+            enabled: boolean;
+            /** Open */
+            open: number;
+        };
+        /** LeadsToggleIn */
+        LeadsToggleIn: {
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Move Open
+             * @default false
+             */
+            move_open: boolean;
+        };
+        /** LeadsToggleOut */
+        LeadsToggleOut: {
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Moved
+             * @default 0
+             */
+            moved: number;
+        };
         /** LegalEntityIn */
         LegalEntityIn: {
             /**
@@ -3381,6 +3570,8 @@ export interface components {
             groups?: components["schemas"]["DayGroup"][];
             /** Items */
             items: components["schemas"]["OrderRowOut"][];
+            /** @description Лічильники вкладок лідів (stage=lead) */
+            lead_tabs?: components["schemas"]["LeadTabsOut"] | null;
             /** Next */
             next: number | null;
             /** Total */
@@ -3390,6 +3581,11 @@ export interface components {
         OrderOut: {
             /** Address */
             address: string;
+            /**
+             * Call Attempts
+             * @default 0
+             */
+            call_attempts: number;
             /** Carrier Ref */
             carrier_ref: string;
             /**
@@ -3407,6 +3603,8 @@ export interface components {
             comment: string;
             /** Comments */
             comments: components["schemas"]["CommentOut"][];
+            /** Converted At */
+            converted_at?: string | null;
             /**
              * Country
              * @default UA
@@ -3485,6 +3683,8 @@ export interface components {
              * @enum {string}
              */
             label: "" | "rozetka" | "carrier";
+            /** Last Call At */
+            last_call_at?: string | null;
             /**
              * Last Name
              * @default
@@ -3592,10 +3792,17 @@ export interface components {
              * @default false
              */
             blacklisted: boolean;
+            /**
+             * Call Attempts
+             * @default 0
+             */
+            call_attempts: number;
             /** City Name */
             city_name: string;
             /** Cod Amount */
             cod_amount: number;
+            /** Converted At */
+            converted_at?: string | null;
             /**
              * Country
              * @default UA
@@ -3630,6 +3837,8 @@ export interface components {
             id: number;
             /** Items */
             items: components["schemas"]["OrderRowItem"][];
+            /** Last Call At */
+            last_call_at?: string | null;
             /** Legal Entity Id */
             legal_entity_id?: number | null;
             /** Manager Id */
@@ -3674,6 +3883,11 @@ export interface components {
             utm_campaign: string;
             /** Utm Source */
             utm_source: string;
+            /**
+             * Wait Minutes
+             * @description Ліди: скільки хвилин чекає дзвінка (None — не чекає)
+             */
+            wait_minutes?: number | null;
             /**
              * Warehouse Name
              * @default
@@ -5286,6 +5500,11 @@ export interface components {
         TrackOut: {
             /** Address */
             address: string;
+            /**
+             * Call Attempts
+             * @default 0
+             */
+            call_attempts: number;
             /** Carrier Ref */
             carrier_ref: string;
             /**
@@ -5308,6 +5527,8 @@ export interface components {
             comment: string;
             /** Comments */
             comments: components["schemas"]["CommentOut"][];
+            /** Converted At */
+            converted_at?: string | null;
             /**
              * Country
              * @default UA
@@ -5386,6 +5607,8 @@ export interface components {
              * @enum {string}
              */
             label: "" | "rozetka" | "carrier";
+            /** Last Call At */
+            last_call_at?: string | null;
             /**
              * Last Name
              * @default
@@ -6471,6 +6694,37 @@ export interface operations {
             };
         };
     };
+    lead_queue_api_leads_queue_get: {
+        parameters: {
+            query?: {
+                filter?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadQueueOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     me_api_me_get: {
         parameters: {
             query?: never;
@@ -6754,6 +7008,7 @@ export interface operations {
                 before?: number;
                 after?: number;
                 sort?: string;
+                tab?: string;
                 limit?: number;
                 counts?: number;
             };
@@ -6970,6 +7225,37 @@ export interface operations {
             };
         };
     };
+    lead_convert_api_orders__order_id__convert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadStepOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     order_documents_api_orders__order_id__documents_get: {
         parameters: {
             query?: never;
@@ -7051,6 +7337,41 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                     "application/pdf": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lead_result_api_orders__order_id__lead_result_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadResultIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadStepOut"];
                 };
             };
             /** @description Validation Error */
@@ -8104,6 +8425,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    leads_toggle_api_settings_leads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadsToggleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadsToggleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    leads_preview_api_settings_leads_preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadsPreviewOut"];
                 };
             };
         };
