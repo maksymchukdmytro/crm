@@ -228,10 +228,10 @@ export default function Layout() {
       {/* телефон (UI-DESIGN §13): нижні вкладки — Головна · Замовлення · «+» по центру · Ліди (або Накладні) · Ще */}
       <nav className="tabbar" aria-label="Нижнє меню">
         <NavLink to="/home" className={({ isActive }) => (isActive && !drawer ? "active" : "")}><House size={20} /><span>Головна</span></NavLink>
-        <NavLink to="/orders" className={({ isActive }) => (isActive && !drawer ? "active" : "")}><ReceiptText size={20} /><span>Замовлення</span>{counters.orders_unsorted > 0 && <i className="count hot">{counters.orders_unsorted}</i>}</NavLink>
+        <NavLink to="/orders" className={({ isActive }) => (isActive && !drawer ? "active" : "")}><ReceiptText size={20} /><span>Замовлення</span>{counters.orders_unsorted > 0 && <i className="count hot">{counters.orders_unsorted > 99 ? "99+" : counters.orders_unsorted}</i>}</NavLink>
         <span className="tb-gap" aria-hidden />
         {leadsOn
-          ? <NavLink to="/leads" className={({ isActive }) => (isActive && !drawer ? "active" : "")}><Inbox size={20} /><span>Ліди</span>{counters.leads_new > 0 && <i className="count hot">{counters.leads_new}</i>}</NavLink>
+          ? <NavLink to="/leads" className={({ isActive }) => (isActive && !drawer ? "active" : "")}><Inbox size={20} /><span>Ліди</span>{counters.leads_new > 0 && <i className="count hot">{counters.leads_new > 99 ? "99+" : counters.leads_new}</i>}</NavLink>
           : <NavLink to="/invoices" className={({ isActive }) => (isActive && !drawer ? "active" : "")}><FileText size={20} /><span>Накладні</span></NavLink>}
         <button type="button" className={drawer ? "active" : ""} onClick={() => setDrawer((d) => !d)} aria-label="Ще: усе меню" aria-expanded={drawer}><Ellipsis size={20} /><span>Ще</span></button>
       </nav>

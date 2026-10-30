@@ -125,7 +125,7 @@ export default function LeadsPage() {
           <small>{o.items[0]?.name ?? "—"} · {money(o.total)} ₴</small>
         </div>
         {o.phone && callable && (
-          <a className={`ml-call${rows[0]?.id === o.id ? " p" : ""}`} href={`tel:+${o.phone.replace(/\D/g, "")}`} aria-label={`Подзвонити: ${o.customer_name || phone(o.phone)}`}
+          <a className="ml-call" href={`tel:+${o.phone.replace(/\D/g, "")}`} aria-label={`Подзвонити: ${o.customer_name || phone(o.phone)}`}
             onClick={(e) => { e.stopPropagation(); open(o); }}><Phone size={20} /></a>
         )}
       </div>
