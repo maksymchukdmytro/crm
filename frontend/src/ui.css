@@ -380,3 +380,12 @@ button.link { color: var(--accent-ink-2); }
 .skel-row .skel { flex: 1; max-width: 160px; }
 .win:focus, .win:focus-visible, .side-panel:focus, .side-panel:focus-visible { outline: none; }
 label.btn { flex-direction: row; }
+
+/* ---------------------------------------------------------------- телефон з маскою «+380» */
+.ua-phone { display: flex; align-items: center; min-width: 0; height: 36px; padding: 0 0 0 10px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--r-field); font-variant-numeric: tabular-nums; }
+.ua-phone:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
+.ua-phone .ua-pre { flex: none; color: var(--ink); }
+.ua-phone input { flex: 1; min-width: 0; height: 34px; min-height: 0 !important; padding: 0 8px 0 5px; border: 0 !important; background: none; box-shadow: none !important;
+  font-variant-numeric: tabular-nums; }
+.phone-pill-in .ua-phone { flex: 1; height: auto; padding: 0; border: 0; background: none; box-shadow: none; }

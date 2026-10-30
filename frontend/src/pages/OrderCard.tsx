@@ -14,7 +14,7 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { Order } from "../lib/types";
 import {
-  Block, Button, Checklist, IconButton, MenuButton, PayCheck, Segmented, SidePanel, StatusPill, Tag, Window, inField, useOutside, type CheckItem,
+  Block, Button, Checklist, IconButton, MenuButton, PayCheck, Segmented, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useOutside, type CheckItem,
 } from "../components/ui";
 import { flag, PayLabel } from "../components/payicons";
 import { IconPick, MarkIcon } from "../components/marks";
@@ -503,8 +503,7 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
           <select className="ph-country" value={form.country} disabled={readOnly} onChange={(e) => set({ country: e.target.value })} aria-label="Країна">
             {Object.entries(meta.countries).map(([cc, n]) => <option key={cc} value={cc} title={n}>{cc} · {n}</option>)}
           </select>
-          <input value={form.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="+380 __ ___ __ __" inputMode="tel" aria-label="Телефон"
-            disabled={readOnly} autoFocus={isNew} />
+          <UaPhone value={form.phone} country={form.country} onChange={(v) => set({ phone: v })} aria-label="Телефон" disabled={readOnly} autoFocus={isNew} />
         </span>
         {tel.length >= 10 && <>
           <a className="icon-btn" href={`tel:+${tel}`} aria-label="Подзвонити" title="Подзвонити"><Phone size={16} /></a>
