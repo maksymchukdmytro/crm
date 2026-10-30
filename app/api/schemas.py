@@ -1698,6 +1698,26 @@ class DashCustomers(Out):
     total: int
     new: int
     new_delta: float | None = None
+    new_prev: int = 0
+    new_today: int = 0
+    repeat_share: float = Field(0, description="частка покупців з двома й більше замовленнями, %")
+    blacklisted: int = 0
+
+
+class DashPeriod(Out):
+    date_from: str
+    date_to: str
+    prev_from: str
+    prev_to: str
+
+
+class DashQuality(Out):
+    approve_rate: float
+    buyout_rate: float
+    upsell_rate: float
+    approve_delta: float | None = Field(None, description="зміна до попереднього періоду, в пунктах")
+    buyout_delta: float | None = None
+    upsell_delta: float | None = None
 
 
 class DashAttention(Out):
@@ -1732,15 +1752,21 @@ class DashTeam(Out):
     role: str
     confirmed: int = Field(description="підтверджено сьогодні")
     new: int = Field(description="нових замовлень на ньому сьогодні")
+    leads: int = Field(0, description="лідів сьогодні (оброблених і відкритих)")
+    sum: float = Field(0, description="сума підтверджених сьогодні")
+    approve_rate: float | None = None
     last_login: str | None = None
 
 
 class DashboardOut(Out):
     today: DashToday
+    period: DashPeriod
+    quality: DashQuality
     month: DashMonth
     customers: DashCustomers
     attention: DashAttention
     days: list[DashDay]
+    prev_days: list[DashDay] = Field(default_factory=list)
     team: list[DashTeam] = Field(default_factory=list)
     top: list[DashTop]
 

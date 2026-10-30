@@ -273,6 +273,14 @@
 
 @media (max-width: 1100px) {
   .oc-grid { grid-template-columns: minmax(0, 1fr); }
+  /* одна колонка (телефон, вузький екран): покупець → товари → оплата → доставка → деталі й підсумок */
+  .oc-left, .oc-right { display: contents; }
+  .oc-grid > * , .oc-left > *, .oc-right > * { order: 10; }
+  .oc-cust { order: 1 !important; }
+  .oc-goods { order: 2 !important; }
+  .oc-pay { order: 3 !important; }
+  .oc-dlv { order: 4 !important; }
+  .oc-bottom { order: 5 !important; }
   .oc-bottom { grid-template-columns: minmax(0, 1fr); }
   .ttn-grid { grid-template-columns: minmax(0, 1fr); }
 }
