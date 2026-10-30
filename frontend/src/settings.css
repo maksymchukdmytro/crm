@@ -42,6 +42,13 @@
 .set-bar .hint { margin: 0; font-size: 12.5px; }
 .set-warn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 450; color: var(--warn-ink); }
 
+/* у вікні налаштувань таблиця й форма «Новий …» — одна під одною: збоку таблиця стискається до нечитабельного */
+.set-scroll .grid.two { grid-template-columns: minmax(0, 1fr); }
+.set-scroll .t td input:not([type=checkbox]):not([type=radio]):not([type=color]), .set-scroll .t td select { min-width: 120px; }
+.set-scroll .t td .sub { white-space: nowrap; }
+.set-scroll .t td .btn { white-space: nowrap; }
+.set-scroll .chips .chip, .set-scroll .t .chip { white-space: nowrap; }
+
 @media (max-width: 900px) {
   .set-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .set-nav { padding: 12px; border-right: 0; border-bottom: 1px solid var(--line); }

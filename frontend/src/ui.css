@@ -391,3 +391,10 @@ label.btn { flex-direction: row; }
 .ua-phone input { flex: 1; min-width: 0; height: 34px; min-height: 0 !important; padding: 0 8px 0 5px; border: 0 !important; background: none; box-shadow: none !important;
   font-variant-numeric: tabular-nums; }
 .phone-pill-in .ua-phone { flex: 1; height: auto; padding: 0; border: 0; background: none; box-shadow: none; }
+
+/* вкладки статусів — кожна своїм легким кольором статусу; вибрана — насиченим */
+.tabs button.tinted { background: color-mix(in srgb, var(--c) 11%, white); color: color-mix(in srgb, var(--c) 72%, black); }
+.tabs button.tinted:hover { background: color-mix(in srgb, var(--c) 18%, white); }
+.tabs button.tinted .n:not(.hot) { color: color-mix(in srgb, var(--c) 55%, white); }
+.tabs button.tinted.on { background: var(--c); color: #fff; }
+.tabs button.tinted.on .n:not(.hot) { color: rgba(255, 255, 255, .8); }

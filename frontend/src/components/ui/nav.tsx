@@ -1,5 +1,5 @@
 // Вкладки-пігулки з лічильниками й «Ще», сегмент, фільтр-чип, статус-пігулка, позначка.
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Check, ChevronDown, Plus, X } from "lucide-react";
 import type { Status } from "../../lib/types";
 import { useOutside } from "./hooks";
@@ -24,7 +24,7 @@ export function Tag({ kind = "", children, title, icon }: { kind?: "" | "ok" | "
 }
 
 // ---------------------------------------------------------------- вкладки
-export type TabItem<K extends string = string> = { key: K; label: ReactNode; count?: number | null; hot?: boolean; title?: string };
+export type TabItem<K extends string = string> = { key: K; label: ReactNode; count?: number | null; hot?: boolean; title?: string; color?: string };
 
 /** Вкладки, що не вмістились у ширину, ховаються в «Ще ▾» (активна завжди лишається видимою). */
 export function Tabs<K extends string>({ items, value, onChange, className = "", label = "Вкладки" }: {
@@ -66,7 +66,8 @@ export function Tabs<K extends string>({ items, value, onChange, className = "",
     hidden = items.filter((_, i) => i >= visible - 1 && i !== activeIdx);
   }
   const tab = (t: TabItem<K>) => (
-    <button key={t.key} role="tab" aria-selected={t.key === value} className={t.key === value ? "on" : ""} title={t.title}
+    <button key={t.key} role="tab" aria-selected={t.key === value} className={`${t.key === value ? "on" : ""}${t.color ? " tinted" : ""}`} title={t.title}
+      style={t.color ? ({ "--c": t.color } as CSSProperties) : undefined}
       onClick={() => onChange(t.key)}>
       {t.label}
       {t.count != null && <span className={`n${t.hot && t.count ? " hot" : ""}`}>{t.count}</span>}
