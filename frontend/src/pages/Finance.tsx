@@ -64,7 +64,7 @@ export function PaymentsPage() {
         {sel.size > 0 && <div className="bulk on">Вибрано: <strong>{sel.size}</strong>
           <input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Примітка (№ виписки)" style={{ width: 220 }} />
           <button className="btn primary sm" onClick={() => receive.mutate()}>Позначити «Гроші отримано»</button></div>}
-        <div className="tablewrap"><table className="t dense">
+        <div className="tablewrap"><table className="t dense pay-table m-cards">
           <thead><tr><th className="sel" /><th>Замовлення</th><th>ТТН</th><th>Служба</th><th className="num">Сума</th><th>Статус</th><th>Дата</th></tr></thead>
           <tbody>
             {!data && <tr><td colSpan={7}><Empty><Spinner /></Empty></td></tr>}

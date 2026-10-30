@@ -54,7 +54,7 @@ export default function CustomersPage() {
         </span>
       </div>
       <div className="card flush tablewrap">
-        <table className="t cu-table">
+        <table className="t cu-table m-cards">
           <thead><tr><th>Покупець</th><th>Група</th><th className="num">Замовлень</th><th className="num">Отримано</th><th className="num">Відмов</th>
             <th className="num">Викуп</th><th className="num">Сума отриманих</th><th>Останнє</th></tr></thead>
           <tbody>
