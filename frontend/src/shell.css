@@ -121,21 +121,28 @@ body:has(.bulkbar, .bulk.on, .win-backdrop, .modal, .side-panel) .fab-wrap { dis
 }
 
 
-/* ---------------------------------------------------------------- телефон: нижні вкладки й «+» по центру (UI-DESIGN §13) */
+/* ---------------------------------------------------------------- телефон: нижня панель (UI-DESIGN §13, рішення власника 30.10)
+   Білий острівець з матовим склом, що «пливе» над вмістом; синій «+» по центру; активна вкладка — синя іконка на світло-синій пігулці. */
 .tabbar { display: none; }
 @media (max-width: 768px) {
-  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 54; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
-    height: calc(58px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: var(--surface); border-top: 1px solid var(--line); }
-  .tabbar a, .tabbar button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 48px;
-    padding: 0; font: inherit; font-size: 11px; color: var(--muted); background: none; border: 0; text-decoration: none; -webkit-tap-highlight-color: transparent; }
-  .tabbar a.active { color: var(--accent); font-weight: 450; }
-  .tabbar .count { position: absolute; top: 5px; left: calc(50% + 6px); min-width: 17px; height: 17px; padding: 0 5px; border-radius: var(--r-pill); font-size: 10px;
-    font-style: normal; line-height: 17px; text-align: center; background: var(--accent); color: #fff; }
-  .fab-wrap { left: 50%; right: auto; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom)); align-items: center; z-index: 56; }
-  .fab { width: 54px; height: 54px; box-shadow: 0 6px 16px -6px rgba(46, 107, 230, .7), 0 0 0 4px var(--surface); }
+  .tabbar { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 54; display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; height: 66px; border-radius: 24px;
+    background: rgba(255, 255, 255, .88); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    box-shadow: 0 12px 30px -10px rgba(31, 31, 28, .25), 0 0 0 1px rgba(31, 31, 28, .06); }
+  .tabbar a, .tabbar button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px;
+    padding: 0; font: inherit; font-size: 11px; font-weight: 450; color: #8A8984; background: none; border: 0; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+  .tabbar a > svg, .tabbar button > svg { box-sizing: content-box; padding: 4px 11px; border-radius: var(--r-pill); transition: background var(--t-fast); }
+  .tabbar a.active { color: var(--accent); }
+  .tabbar a.active > svg { background: var(--accent-soft); }
+  .tabbar .count { position: absolute; top: 2px; left: calc(50% + 8px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--r-pill); font-size: 10.5px;
+    font-weight: 560; font-style: normal; line-height: 18px; text-align: center; background: var(--accent); color: #fff; box-shadow: 0 0 0 2px #fff; }
+  .fab-wrap { left: 50%; right: auto; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom)); align-items: center; z-index: 56; }
+  .fab { width: 54px; height: 54px; border-radius: 18px; box-shadow: 0 8px 18px -6px rgba(46, 107, 230, .7); }
+  .fab.open { transform: rotate(45deg); }
   .fab-menu { align-self: center; }
-  .work { padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important; }
+  .work { padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important; }
   .burger-btn { display: none !important; }
   body:has(.win-backdrop, .modal, .side-panel) .tabbar { display: none; }
-  .bulkbar { bottom: calc(66px + env(safe-area-inset-bottom)) !important; }
+  .bulkbar { bottom: calc(88px + env(safe-area-inset-bottom)) !important; }
+}
 }
