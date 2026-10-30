@@ -62,8 +62,10 @@ export default function Layout() {
   const [drawer, setDrawer] = useState(false);
   const [palette, setPalette] = useState<null | { initial?: string; hint?: string }>(null);
   const [narrow, setNarrow] = useState(() => window.matchMedia("(max-width: 1279px)").matches);
+  // На телефоні меню — висувна панель на всю висоту, тому «згорнутою» вона не буває.
+  const [phone, setPhone] = useState(() => window.matchMedia("(max-width: 768px)").matches);
   const prefCollapsed = meta.prefs?.["sidebar.collapsed"] === true;
-  const collapsed = narrow || prefCollapsed;
+  const collapsed = !phone && (narrow || prefCollapsed);
   const canProducts = meta.user.role === "admin" || meta.user.role === "warehouse";
   const leadsOn = meta.leads_enabled && meta.nav.includes("leads");
   const routes = meta.nav.filter((k) => k !== "leads" || leadsOn);
@@ -81,9 +83,11 @@ export default function Layout() {
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1279px)");
-    const h = () => setNarrow(mq.matches);
+    const mp = window.matchMedia("(max-width: 768px)");
+    const h = () => { setNarrow(mq.matches); setPhone(mp.matches); };
     mq.addEventListener("change", h);
-    return () => mq.removeEventListener("change", h);
+    mp.addEventListener("change", h);
+    return () => { mq.removeEventListener("change", h); mp.removeEventListener("change", h); };
   }, []);
 
   const quick: QuickAction[] = [

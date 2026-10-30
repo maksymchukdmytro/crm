@@ -102,9 +102,9 @@ body:has(.bulkbar, .bulk.on, .win-backdrop, .modal, .side-panel) .fab-wrap { dis
 /* ---------------------------------------------------------------- телефон і планшет */
 @media (max-width: 768px) {
   .app, .app.collapsed { grid-template-columns: minmax(0, 1fr); }
-  .sb { position: fixed; z-index: 70; left: 0; top: 0; bottom: 0; width: 272px; transform: translateX(-102%); transition: transform var(--t) var(--ease);
+  .sb, .app.collapsed .sb { position: fixed; z-index: 70; overflow: hidden; left: 0; top: 0; bottom: 0; width: 272px; transform: translateX(-102%); transition: transform var(--t) var(--ease);
     border-right: 1px solid var(--line); align-items: stretch !important; }
-  .sb.open { transform: none; box-shadow: var(--shadow-lg); }
+  .sb.open, .app.collapsed .sb.open { transform: none; box-shadow: var(--shadow-lg); }
   .app.collapsed .sb-txt, .app.collapsed .sb-word, .app.collapsed .sb-title { display: revert; }
   .app.collapsed .sb-item, .app.collapsed .sb-office-btn, .app.collapsed .sb-me { width: 100%; justify-content: flex-start; padding: 0 10px; }
   .app.collapsed .sb-group { align-items: stretch; border-top: 0; }
