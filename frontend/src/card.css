@@ -238,6 +238,20 @@
 .ttn-after .hint { display: flex; align-items: center; gap: 5px; margin: 2px 0 0; }
 .ttn-foot-hint { display: inline-flex; align-items: center; gap: 6px; }
 
+/* товари — головне праворуч: блок розтягується на всю висоту, деталі й підсумок під ним — компактні (як на макеті) */
+@media (min-width: 1101px) {
+  .oc-grid { align-items: stretch; }
+  .oc-right .oc-goods { flex: 1 1 auto; min-height: 360px; display: flex; flex-direction: column; }
+  .oc-goods .oc-totals { margin-top: auto; }
+  .oc-bottom { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+  .oc-details .props { grid-template-columns: 74px minmax(0, 1fr) 74px minmax(0, 1fr); column-gap: 12px; }
+  .oc-details .props > dt, .oc-details .props > dd { min-height: 28px; padding: 1px 0; }
+  .oc-details .props > dt { font-size: 12.5px; }
+  .oc-details .props > dt.wide { grid-column: 1; }
+  .oc-details .props > dd.wide { grid-column: 2 / -1; }
+  .oc-details .props.utm { grid-template-columns: 74px minmax(0, 1fr) 74px minmax(0, 1fr); }
+}
+
 @media (max-width: 1100px) {
   .oc-grid { grid-template-columns: minmax(0, 1fr); }
   .oc-bottom { grid-template-columns: minmax(0, 1fr); }
