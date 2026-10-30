@@ -35,7 +35,7 @@
 .cols-lbl { display: flex; align-items: center; gap: 8px; flex: 1; min-height: 30px; font-size: 13px; cursor: pointer; }
 
 /* таблиця */
-.dense { flex: 1; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-block); background: var(--surface); overflow: hidden; }
+div.dense { flex: 1; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-block); background: var(--surface); overflow: hidden; }
 .dense-row { display: grid; align-items: center; column-gap: 8px; padding: 0 12px; font-size: 12.5px; }
 .dense-row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dense-row > .a-right { text-align: right; }
@@ -88,7 +88,7 @@
   .list-acts .seg { display: none; }
   .chips-row { flex-wrap: nowrap; overflow-x: auto; margin-right: -14px; padding-right: 14px; scrollbar-width: none; }
   .chip-pop { position: fixed; left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; }
-  .dense { height: 70vh; }
+  div.dense { height: 70vh; }
 }
 
 /* видаткові накладні (макет 08) */

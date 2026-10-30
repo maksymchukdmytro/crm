@@ -13,6 +13,7 @@ import "./list.css";
 import "./leads.css";
 import "./card.css";
 import "./catalog.css";
+import "./settings.css";
 
 initMonitoring();
 

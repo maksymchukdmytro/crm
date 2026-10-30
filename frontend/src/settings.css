@@ -1,0 +1,55 @@
+/* Налаштування (UI-DESIGN §12, макет 15): вікно 1180 × 780, розділи зліва на --bg, внизу смуга «Зберегти зміни». */
+.win.win-settings { overflow: hidden; }
+.win-settings > .win-body.set-body { padding: 0; overflow: hidden; display: flex; }
+.set-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: 240px minmax(0, 1fr); }
+
+.set-nav { display: flex; flex-direction: column; gap: 10px; min-height: 0; padding: 22px 12px 14px; background: var(--bg); border-right: 1px solid var(--line); }
+.set-title { padding: 0 8px 4px; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+.set-search { position: relative; display: flex; flex-direction: row; align-items: center; margin: 0; }
+.set-search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.set-search input { width: 100%; height: 34px; padding-left: 32px; border-radius: var(--r-field); background: var(--surface); }
+.set-items { display: flex; flex-direction: column; gap: 2px; overflow: auto; min-height: 0; }
+.set-item { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; font: inherit; font-size: 13.5px; color: var(--ink); text-align: left;
+  background: none; border: 0; border-radius: var(--r-pill); cursor: pointer; transition: background var(--t-fast, .15s); }
+.set-item svg { color: var(--muted); flex: none; }
+.set-item:hover { background: var(--soft); }
+.set-item.on { background: var(--surface); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+.set-item.on svg { color: var(--accent); }
+.set-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.set-none { padding: 4px 10px; }
+
+.set-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.set-scroll { flex: 1; min-height: 0; overflow: auto; padding: 24px 26px 24px; display: flex; flex-direction: column; gap: 12px; }
+.set-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+.set-head > div { flex: 1; min-width: 0; }
+.set-head h2 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.015em; }
+.set-head p { margin: 4px 0 0; color: var(--muted); font-size: 13.5px; }
+.set-head .icon-btn { flex: none; }
+
+/* вміст розділів: картки-блоки без тіней, звичні відступи */
+.set-scroll .card { border-radius: var(--r-block); box-shadow: none; }
+.set-scroll .card h2 { font-size: 15px; font-weight: 600; margin: 0 0 10px; }
+.set-scroll .form.narrow { max-width: none; }
+.set-scroll .stack > * + * { margin-top: 12px; }
+.set-scroll .grid { gap: 12px; }
+.set-scroll .form .toggle-row + .toggle-row { margin-top: 2px; }
+.set-stack { display: flex; flex-direction: column; gap: 12px; }
+.set-scroll .leads-card { margin-bottom: 0; border-color: var(--accent-line); }
+.set-scroll .lc-grid { margin-top: 12px; }
+
+.set-bar { display: flex; align-items: center; gap: 8px; padding: 12px 26px; border-top: 1px solid var(--line); background: var(--surface); }
+.set-bar .spacer { flex: 1; }
+.set-bar .hint { margin: 0; font-size: 12.5px; }
+.set-warn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--warn-ink); }
+
+@media (max-width: 900px) {
+  .set-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .set-nav { padding: 12px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .set-title, .set-search { display: none; }
+  .set-items { flex-direction: row; overflow-x: auto; scrollbar-width: none; }
+  .set-item { flex: none; }
+  .set-scroll { padding: 16px; }
+  .set-scroll .grid.half, .set-scroll .grid.two { grid-template-columns: minmax(0, 1fr); }
+  .set-bar { padding: 10px 16px; }
+  .set-bar .hint { display: none; }
+}

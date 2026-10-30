@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity, BellRing, CheckCircle2, CircleAlert, Copy, FlaskConical } from "lucide-react";
 import { api, ROOT } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { ago, dt } from "../lib/format";
-import type { Settings, SystemStatus, TestData } from "../lib/types";
-import { Badge, Empty, Field, Kpi, Spinner, confirmAction } from "../components/ui";
+import type { SystemStatus, TestData } from "../lib/types";
+import { Badge, Empty, Kpi, Spinner, confirmAction } from "../components/ui";
 
 const CHECK_NAMES: Record<string, string> = { database: "База даних", redis: "Redis (черга й події)", worker: "Фоновий воркер" };
 const ALERT_NAMES: Record<string, string> = { sms_failed: "Помилки SMS/Viber", queue: "Переповнена черга", no_leads: "Немає нових заявок" };
@@ -15,14 +15,8 @@ export default function SystemPage() {
   const qc = useQueryClient();
   const toast = useToast();
   const { data, isFetching } = useQuery({ queryKey: ["system"], queryFn: () => api.get<SystemStatus>("/system"), refetchInterval: 20_000 });
-  const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: () => api.get<Settings>("/settings") });
-  const [f, setF] = useState<Record<string, string> | null>(null);
-  const v = f ?? { alert_tg_token: settings?.values.alert_tg_token ?? "", alert_tg_chat: settings?.values.alert_tg_chat ?? "", alert_no_leads_hours: settings?.values.alert_no_leads_hours ?? "0" };
-  const save = useMutation({
-    mutationFn: () => api.put<Settings>("/settings/alerts", v),
-    onSuccess: (s) => { qc.setQueryData(["settings"], s); setF(null); toast("Збережено"); },
-    onError: (e) => toast(errText(e), "error"),
-  });
+  const nav = useNavigate();
+  const loc = useLocation();
   const test = useMutation({ mutationFn: () => api.post("/system/alert-test"), onSuccess: () => toast("Тестове сповіщення надіслано в Telegram"), onError: (e) => toast(errText(e), "error") });
 
   const td = useQuery({ queryKey: ["test-data"], queryFn: () => api.get<TestData>("/system/test-data") });
@@ -100,15 +94,12 @@ export default function SystemPage() {
               onClick={() => confirmAction("Видалити всі тестові замовлення й товари? Справжні дані не зачіпаються.") && tdAction.mutate("delete")}>Видалити тестові дані</button>}
           </div>
         </div>
-        <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+        <div className="card form">
           <h2><BellRing size={16} style={{ verticalAlign: -2 }} /> Сповіщення в Telegram</h2>
-          <p className="hint">CRM напише, коли: не відправляються SMS, перевізник не відповідає 3 перевірки поспіль, черга задач переповнена, давно немає заявок з лендингів. І ще раз — коли все відновиться.</p>
-          <Field label="Токен бота" hint="Створіть бота в @BotFather і вставте його токен"><input className="mono" placeholder="не вказано" value={v.alert_tg_token} onChange={(e) => setF({ ...v, alert_tg_token: e.target.value })} autoComplete="off" /></Field>
-          <Field label="ID чату" hint="Напишіть боту будь-що, потім дізнайтесь ID у @userinfobot (для групи — ID групи з мінусом)"><input value={v.alert_tg_chat} onChange={(e) => setF({ ...v, alert_tg_chat: e.target.value })} /></Field>
-          <Field label="Сповістити, якщо немає заявок, год" hint="Лише з 8:00 до 22:00. 0 — не стежити"><input type="number" min={0} value={v.alert_no_leads_hours} onChange={(e) => setF({ ...v, alert_no_leads_hours: e.target.value })} /></Field>
-          <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button>
+          <p className="hint">CRM пише в Telegram, коли щось зламалось або давно немає заявок. Бот і чат — у «Налаштуваннях → Telegram».</p>
+          <div className="form-actions"><button type="button" className="btn" onClick={() => nav("/settings/telegram", { state: { bg: loc } })}>Відкрити налаштування</button>
             <button type="button" className="btn" onClick={() => test.mutate()} disabled={test.isPending}>Надіслати тестове</button></div>
-        </form>
+        </div>
         </div>
       </div>
     </div>

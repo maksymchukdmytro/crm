@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, type Location } from "react-router-dom";
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, ROOT } from "./lib/api";
 import { report } from "./lib/monitoring";
@@ -31,6 +31,10 @@ const qc = new QueryClient({
 
 function Gate() {
   const client = useQueryClient();
+  const loc = useLocation();
+  // Налаштування — вікно поверх сторінки, з якої їх відкрили (state.bg); за прямим посиланням — поверх порожньої сторінки.
+  const bg = (loc.state as { bg?: Location } | null)?.bg;
+  const overlay = !!bg && loc.pathname.startsWith("/settings");
   const { data, error, isLoading } = useQuery({ queryKey: ["meta"], queryFn: () => api.get<Meta>("/meta"), staleTime: 60_000 });
   useEffect(() => {
     const h = () => client.setQueryData(["meta"], undefined);
@@ -46,7 +50,7 @@ function Gate() {
 
   return (
     <RealtimeProvider>
-      <Routes>
+      <Routes location={overlay ? bg : loc}>
         <Route element={<Layout />}>
           <Route index element={<Navigate to={can("home") ? "/home" : "/orders"} replace />} />
           {can("home") && <Route path="home" element={<HomePage />} />}
@@ -66,12 +70,13 @@ function Gate() {
           {can("stats") && <Route path="stats" element={<StatsPage />} />}
           {can("reports") && <Route path="reports" element={<ReportsPage />} />}
           {can("audit") && <Route path="audit" element={<AuditPage />} />}
-          {can("settings") && <Route path="settings" element={<SettingsPage />} />}
+          {can("settings") && <Route path="settings/*" element={<SettingsPage />} />}
           {can("system") && <Route path="system" element={<SystemPage />} />}
           <Route path="profile" element={<ProfilePage />} />
           <Route path="*" element={<div className="empty big"><h1>Сторінку не знайдено</h1></div>} />
         </Route>
       </Routes>
+      {overlay && can("settings") && <SettingsPage />}
     </RealtimeProvider>
   );
 }

@@ -158,7 +158,8 @@ export default function Layout() {
                 {items.map((k) => {
                   const n = NAV[k];
                   return (
-                    <NavLink key={k} to={n.to} title={collapsed ? n.label : undefined} className={({ isActive }) => `sb-item${isActive ? " on" : ""}`}>
+                    <NavLink key={k} to={n.to} title={collapsed ? n.label : undefined} className={({ isActive }) => `sb-item${isActive ? " on" : ""}`}
+                      state={k === "settings" && !loc.pathname.startsWith("/settings") ? { bg: loc } : undefined}>
                       <n.icon size={17} strokeWidth={1.8} /><span className="sb-txt ell">{n.label}</span>{counterFor(k)}
                     </NavLink>
                   );
