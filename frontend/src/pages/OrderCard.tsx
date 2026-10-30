@@ -31,6 +31,10 @@ const SHIPPED = ["shipped", "arrived", "delivered", "refused", "returned"];
 const STOCK_TEXT: Record<string, string> = { reserve: "товар буде зарезервовано", ship: "товар буде списано зі складу", return: "товар повернеться на залишок", release: "резерв буде знято" };
 const COD_TEXT: Record<string, string> = { control: "контроль оплати", backward: "грошовий переказ", none: "без післяплати" };
 
+// «Створити ТТН» у ще не створеному замовленні: спершу створюємо замовлення, а вікно ТТН відкриваємо вже в ньому
+// (картка перемонтовується з новим id, тому номер переносимо через змінну модуля)
+let ttnAfterCreate: number | null = null;
+
 export default function OrderModal({ id, onClose, onOpen, ids }: { id: string; onClose: () => void; onOpen: (id: number) => void; ids?: number[] }) {
   return <OrderCard key={id} id={id} onClose={onClose} onOpen={onOpen} ids={ids} />;
 }
@@ -61,6 +65,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   const [history, setHistory] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const sentRef = useRef("");
+  const wantTtnRef = useRef(false);
   const againRef = useRef(false);
 
   // заповнити форму (і оновлювати, якщо замовлення змінили інші, а ми нічого не редагували)
@@ -112,7 +117,10 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
       setVersion(o.version);
       setBaseline(sentRef.current);
       setSaveState("saved");
-      if (isNew) { toast(`Замовлення №${o.id} створено`); onOpen(o.id); }
+      if (isNew) {
+        if (wantTtnRef.current) { wantTtnRef.current = false; ttnAfterCreate = o.id; }
+        toast(`Замовлення №${o.id} створено`); onOpen(o.id);
+      }
     },
     onError: (e) => {
       setSaveState("error");
@@ -168,7 +176,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); saveNow(); return; }
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !isNew && order && !order.ttn && form.delivery_method === "novaposhta") { e.preventDefault(); openTtn(); return; }
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && (isNew || (order && !order.ttn)) && form.delivery_method === "novaposhta") { e.preventDefault(); openTtn(); return; }
       if (e.ctrlKey || e.metaKey || e.altKey || inField(e) || ttnOpen) return;
       const k = e.key.toLowerCase();
       if (k === "h" && !isNew) { e.preventDefault(); setHistory((x) => !x); }
@@ -183,11 +191,25 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   });
 
   const openTtn = async () => {
-    if (isNew) { toast("Спершу створіть замовлення", "warn"); return; }
+    if (save.isPending || action.isPending) return;
+    if (isNew) {
+      wantTtnRef.current = true;
+      try { await save.mutateAsync(); } catch { wantTtnRef.current = false; }
+      return;
+    }
     await saveAsync();
     if (form.delivery_method === "novaposhta") setTtnOpen(true);
     else action.mutate({ path: "/ttn" });
   };
+  // щойно створене кнопкою «Створити ТТН» — одразу відкрити вікно ТТН
+  useEffect(() => {
+    if (isNew || !order || ttnAfterCreate !== order.id) return;
+    ttnAfterCreate = null;
+    if (order.ttn) return;
+    if (order.delivery_method === "novaposhta") setTtnOpen(true);
+    else action.mutate({ path: "/ttn" });
+  }, [order]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const close = () => { if (dirty && !isNew) saveNow(); else if (dirty && isNew && !window.confirm("Замовлення ще не створено. Закрити без збереження?")) return; onClose(); };
 
   if (!isNew && (isLoading || !order || !baseline)) {
@@ -712,8 +734,8 @@ function DeliveryBlock({ order, form, set, cod, codKind, step, readOnly, locked,
           ) : dm === "rozetka" ? (
             <p className="hint">ТТН RMP-… створюється в кабінеті продавця Rozetka; вставте її сюди — маркування друкується з API Rozetka.</p>
           ) : carrier?.configured ? (
-            <Button variant="soft" wide icon={Truck} kbd={dm === "novaposhta" ? "Ctrl ⏎" : undefined} disabled={busy || readOnly || isNew}
-              title={isNew ? "Спершу створіть замовлення" : undefined} onClick={onCreateTtn}>Створити ТТН</Button>
+            <Button variant="soft" wide icon={Truck} kbd={dm === "novaposhta" ? "Ctrl ⏎" : undefined} disabled={readOnly}
+              title={isNew ? "Замовлення буде створено, і відкриється вікно ТТН" : undefined} onClick={onCreateTtn}>Створити ТТН</Button>
           ) : carrier ? <p className="hint">Щоб створювати ТТН, заповніть доступи в «Налаштування → Доставка».</p> : null}
           {order && (hasTtn || carrier) && (
             <MenuButton button={({ open, toggle }) => <IconButton icon={MoreHorizontal} label="Ще дії з ТТН" aria-expanded={open} onClick={toggle} />}>
@@ -761,8 +783,6 @@ function DetailsBlock({ order, form, set, readOnly, onTake }: { order?: Order; f
         render={(m) => <span className="mark-line"><MarkIcon icon={m.icon} color={m.color} size={15} /><span>{m.name}</span></span>}
         placeholder={<span className="muted">—</span>} />
     ) },
-    { k: "comment", label: "Коментар", v: <textarea className="prop-area" rows={1} value={form.comment} disabled={readOnly} onChange={(e) => set({ comment: e.target.value })}
-      onInput={(e) => { const t = e.currentTarget; t.style.height = "auto"; t.style.height = `${t.scrollHeight}px`; }} placeholder="—" aria-label="Коментар" /> },
     ...EXTRA.flatMap((f, i) => ((meta.extra_on?.[i] ?? true) ? [{ k: f, label: meta.extra_fields[i] || `Поле ${i + 1}`, v: (
       <span className="prop-val"><input className="prop-in" value={form[f]} disabled={readOnly} onChange={(e) => set({ [f]: e.target.value } as Partial<Form>)} placeholder="—" aria-label={meta.extra_fields[i] || `Поле ${i + 1}`} />
         {/^https?:\/\//.test(form[f]) && <a href={form[f]} target="_blank" rel="noreferrer" aria-label="Відкрити посилання"><ExternalLink size={13} /></a>}</span>
@@ -770,9 +790,14 @@ function DetailsBlock({ order, form, set, readOnly, onTake }: { order?: Order; f
     ...(reasons.length || ["cancelled", "refused", "lead_refused"].includes(status?.code ?? "") ? [{ k: "reason", label: "Причина", v: sel(form.reason_id, (v) => set({ reason_id: v }), reasons.length ? reasons : meta.reasons.filter((r) => r.active), "не вказано", "Причина") }] : []),
     ...(order?.shop_id ? [{ k: "mp", label: "Маркетплейс", v: <span className="prop-val">{meta.shops[String(order.shop_id)] ?? "Маркетплейс"} · №{order.external_id}{order.external_status && <span className="muted"> · {order.external_status}</span>}</span> }] : []),
   ];
+  rows.push(
+    { k: "comment", label: "Коментар", v: <textarea className="prop-area" rows={1} value={form.comment} disabled={readOnly} onChange={(e) => set({ comment: e.target.value })}
+      onInput={(e) => { const t = e.currentTarget; t.style.height = "auto"; t.style.height = `${t.scrollHeight}px`; }} placeholder="—" aria-label="Коментар" /> }
+  );
   return (
     <Block title="Деталі" className="oc-details">
-      <dl className="props">{rows.map((r) => [<dt key={`t-${r.k}`}>{r.label}</dt>, <dd key={`d-${r.k}`}>{r.v}</dd>])}</dl>
+      <dl className="props">{rows.map((r) => [<dt key={`t-${r.k}`} className={r.k === "comment" ? "wide" : undefined}>{r.label}</dt>,
+        <dd key={`d-${r.k}`} className={r.k === "comment" ? "wide" : undefined}>{r.v}</dd>])}</dl>
       <button type="button" className="link-btn utm-toggle" aria-expanded={utm} onClick={() => setUtm((x) => !x)}>
         UTM і сайт {form.utm_source && <span className="muted">· {form.utm_source}</span>}<ChevronDown size={13} className={utm ? "rot" : ""} /></button>
       {utm && (

@@ -56,6 +56,9 @@
 .app.collapsed .sb-dot { margin: 0; }
 .app.collapsed .sb-me { width: 44px; padding: 6px; justify-content: center; border-radius: var(--r-pill); }
 .app.collapsed .sb-nav { align-items: center; }
+/* згорнуте меню: меню користувача відкривається праворуч від аватара, а не обрізається вузькою панеллю */
+.app.collapsed .sb { overflow: visible; z-index: 40; }
+.app.collapsed .sb-me-wrap .menu-pop { left: calc(100% + 8px); right: auto; bottom: 0; top: auto; width: max-content; min-width: 212px; }
 
 /* ---------------------------------------------------------------- верхня смуга й робоча область */
 .app-main { display: flex; flex-direction: column; min-width: 0; padding: 0 12px 12px 0; }
@@ -105,6 +108,7 @@ body:has(.bulkbar, .bulk.on, .win-backdrop, .modal, .side-panel) .fab-wrap { dis
   .app.collapsed .sb-txt, .app.collapsed .sb-word, .app.collapsed .sb-title { display: revert; }
   .app.collapsed .sb-item, .app.collapsed .sb-office-btn, .app.collapsed .sb-me { width: 100%; justify-content: flex-start; padding: 0 10px; }
   .app.collapsed .sb-group { align-items: stretch; border-top: 0; }
+  .app.collapsed .sb-me-wrap .menu-pop { left: 0; bottom: calc(100% + 6px); width: 100%; }
   .sb-backdrop { position: fixed; inset: 0; z-index: 65; background: rgba(31, 31, 28, .3); }
   .app-main { padding: 0; }
   .topbar { height: 56px; padding: 0 12px; gap: 8px; }
