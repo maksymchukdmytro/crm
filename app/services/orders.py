@@ -232,9 +232,21 @@ def _apply_directories(db: Session, fields: dict):
             fields["office_id"] = src.office_id
 
 
+def initial_status(db: Session, origin: str) -> Status:
+    """Початковий статус (UI-DESIGN §4.2–4.3): заявка з форми (webhook) — «Новий» лід, якщо розділ «Ліди» увімкнено;
+    решта (маркетплейс, сайт, вручну, форма при вимкнених лідах) — «Несортований»."""
+    leads_on = st.get(db, "leads_enabled") != "0"
+    codes = ["new", "unsorted"] if origin in ("webhook", "form", "lead") and leads_on else ["unsorted", "new"]
+    for code in codes:
+        s = status_by_code(db, code)
+        if s is not None and s.is_active:
+            return s
+    return db.query(Status).filter(Status.is_active.is_(True)).order_by(Status.sort).first()
+
+
 def create_order(db: Session, data: dict, items_data: list[dict], user: User | None = None,
                  source: str = "manual") -> Order:
-    new_status = status_by_code(db, "new") or db.query(Status).order_by(Status.sort).first()
+    new_status = initial_status(db, source)
     fields = _clean_fields(data)
     _apply_directories(db, fields)
     order = Order(status=new_status, **fields)

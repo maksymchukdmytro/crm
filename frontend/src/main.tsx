@@ -9,6 +9,7 @@ import "./app.css";
 import "./theme.css";
 import "./ui.css";
 import "./shell.css";
+import "./list.css";
 
 initMonitoring();
 

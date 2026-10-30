@@ -67,12 +67,30 @@ function payload(f: Form, version?: string) {
   };
 }
 
-export default function OrderModal({ id, onClose, onOpen }: { id: string; onClose: () => void; onOpen: (id: number) => void }) {
+export default function OrderModal({ id, onClose, onOpen, ids }: { id: string; onClose: () => void; onOpen: (id: number) => void; ids?: number[] }) {
   const dirtyRef = useRef(false);
   const close = useCallback(() => {
     if (dirtyRef.current && !window.confirm("Є незбережені зміни. Закрити без збереження?")) return;
     onClose();
   }, [onClose]);
+  // J / K — наступне й попереднє замовлення зі списку (поза полями вводу)
+  useEffect(() => {
+    if (!ids?.length) return;
+    const h = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (e.ctrlKey || e.metaKey || e.altKey || t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName)) return;
+      const k = e.key.toLowerCase();
+      if (k !== "j" && k !== "k") return;
+      const i = ids.indexOf(Number(id));
+      const next = ids[i + (k === "j" ? 1 : -1)];
+      if (i < 0 || next == null) return;
+      if (dirtyRef.current && !window.confirm("Є незбережені зміни. Перейти без збереження?")) return;
+      e.preventDefault();
+      onOpen(next);
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [ids, id, onOpen]);
   return (
     <Modal onClose={close} wide>
       <OrderCard key={id} id={id} onOpen={onOpen} dirtyRef={dirtyRef} />
@@ -89,7 +107,9 @@ function OrderCard({ id, onOpen, dirtyRef }: { id: string; onOpen: (id: number) 
   const isNew = id === "new";
   const oid = isNew ? 0 : Number(id);
   const fromId = isNew ? Number(sp.get("from") || 0) : 0;
-  const newStatus = meta.statuses.find((s) => s.code === "new")?.id ?? meta.statuses[0]?.id;
+  // нове замовлення — «Несортований», новий лід — «Новий»
+  const newStatus = (window.location.pathname.includes("/leads") ? meta.statuses.find((s) => s.code === "new")
+    : meta.statuses.find((s) => s.code === "unsorted" && s.active) ?? meta.statuses.find((s) => s.code === "new"))?.id ?? meta.statuses[0]?.id;
 
   const { data: order, error, isLoading } = useQuery({
     queryKey: ["order", oid],

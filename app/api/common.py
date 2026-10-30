@@ -147,14 +147,28 @@ def j_order_row(o: Order) -> dict:
         "office_id": o.office_id, "np_account_id": o.np_account_id, "legal_entity_id": o.legal_entity_id, "reason_id": o.reason_id,
         "shop_id": o.shop_id, "external_id": o.external_id or "", "external_status": o.external_status or "", "mark_id": o.mark_id, "remind_at": iso(o.remind_at),
         "country": o.country or "UA",
-        "delivery_method": o.delivery_method, "city_name": o.city_name, "ttn": o.ttn,
+        "delivery_method": o.delivery_method, "city_name": o.city_name, "warehouse_name": o.warehouse_name or "", "ttn": o.ttn,
         "delivery_state": o.delivery_state or "", "delivery_status": o.delivery_status or "",
         "utm_source": o.utm_source, "utm_campaign": o.utm_campaign, "site": o.site,
         "duplicate_of_id": o.duplicate_of_id, "created_at": iso(o.created_at),
         "status_changed_at": iso(o.status_changed_at),
         "customer_id": o.customer_id, "blacklisted": bool(o.customer and o.customer.is_blacklisted),
         "pay_check": pay_check.check(o),
+        "customer_group": ({"name": o.customer.group.name, "color": o.customer.group.color}
+                           if o.customer is not None and o.customer.group is not None else None),
+        "no_stock": _no_stock(o),
     }
+
+
+def _no_stock(o: Order) -> bool:
+    """Товару не вистачає на складі (для ще не зарезервованих замовлень): попередження в рядку «Несортованих»."""
+    if o.stock_reserved or o.stock_shipped:
+        return False
+    for i in o.items:
+        src = i.variant if i.variant_id and i.variant is not None else i.product
+        if src is not None and i.product_id and src.available < (i.qty or 0):
+            return True
+    return False
 
 
 def j_order(o: Order) -> dict:

@@ -8,17 +8,20 @@ from . import settings as st
 
 # code, назва, колір, порядок, дія зі складом, рахується як апрув, фінальний
 DEFAULT_STATUSES = [
-    ("new", "Новий", "#3b82f6", 10, "none", False, False),
-    ("no_answer", "Недозвон", "#a855f7", 20, "none", False, False),
-    ("callback", "Передзвонити", "#8b5cf6", 30, "none", False, False),
-    ("confirmed", "Підтверджено", "#0ea5e9", 40, "reserve", True, False),
+    ("new", "Новий", "#2E6BE6", 10, "none", False, False),
+    ("no_answer", "Недодзвон", "#D97706", 20, "none", False, False),
+    ("callback", "Передзвонити", "#7C3AED", 30, "none", False, False),
+    ("unsorted", "Несортований", "#7C7B76", 5, "none", False, False),
+    ("confirmed", "Прийнятий", "#2E6BE6", 40, "reserve", True, False),
     ("packing", "Комплектується", "#14b8a6", 50, "reserve", True, False),
-    ("shipped", "Відправлено", "#f59e0b", 60, "ship", True, False),
-    ("delivered", "Отримано", "#16a34a", 70, "ship", True, True),
-    ("refused", "Відмова / повертається", "#ef4444", 80, "ship", True, False),
-    ("returned", "Повернення на складі", "#78716c", 90, "return", True, True),
-    ("cancelled", "Скасовано", "#6b7280", 100, "release", False, True),
+    ("shipped", "Відправлений", "#6D5BD0", 60, "ship", True, False),
+    ("arrived", "Очікує на отримання", "#D97706", 65, "none", True, False),
+    ("delivered", "Завершений", "#16A34A", 70, "ship", True, True),
+    ("refused", "Відмова на пошті", "#E11D48", 80, "ship", True, False),
+    ("returned", "Повернуто на склад", "#64748B", 90, "return", True, True),
+    ("cancelled", "Відмова", "#DC2626", 100, "release", False, True),
     ("duplicate", "Дубль", "#9ca3af", 110, "release", False, True),
+    ("lead_refused", "Відмова ліда", "#94A3B8", 105, "release", False, True),
 ]
 
 # Види оплат як у LP-CRM (ті самі id): id, назва, значок, розрахунок (cod / partial / prepaid), тип Checkbox, активний.
@@ -83,7 +86,7 @@ MARK_LOOKS = {
     "Написати в WhatsApp": ("message", "#25d366"), "Попросити відгук": ("star", "#ca8a04"),
 }
 
-LEAD_CODES = ("new", "no_answer", "callback", "duplicate")  # статуси розділу «Ліди»
+LEAD_CODES = ("new", "no_answer", "callback", "duplicate", "lead_refused")  # статуси розділу «Ліди»
 
 DEFAULT_CUSTOMER_GROUPS = [("Покупець", "#64748b"), ("Оптовик", "#0ea5e9"), ("Дропшипер", "#a855f7"), ("Партнер", "#16a34a")]
 
@@ -98,6 +101,7 @@ def seed(db: Session):
         for code, name, color, sort, action, approved, final in DEFAULT_STATUSES:
             db.add(Status(code=code, name=name, color=color, sort=sort, stock_action=action,
                           counts_as_approved=approved, is_final=final, is_system=True,
+                          is_active=code != "packing",  # «Комплектується» — запасний, у новій доріжці статусів його немає
                           stage="lead" if code in LEAD_CODES else "order"))
         db.flush()
         for code, text in DEFAULT_TEMPLATES.items():

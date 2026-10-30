@@ -1575,6 +1575,11 @@
       "title": "On Way",
       "type": "integer"
      },
+     "orders_unsorted": {
+      "default": 0,
+      "title": "Orders Unsorted",
+      "type": "integer"
+     },
      "reminders": {
       "title": "Reminders",
       "type": "integer"
@@ -1913,6 +1918,38 @@
      "top"
     ],
     "title": "DashboardOut",
+    "type": "object"
+   },
+   "DayGroup": {
+    "properties": {
+     "count": {
+      "title": "Count",
+      "type": "integer"
+     },
+     "day": {
+      "description": "Дата за місцевим часом, YYYY-MM-DD",
+      "title": "Day",
+      "type": "string"
+     },
+     "sum": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       }
+      ],
+      "description": "Сума без скасованих і дублів",
+      "title": "Sum"
+     }
+    },
+    "required": [
+     "day",
+     "count",
+     "sum"
+    ],
+    "title": "DayGroup",
     "type": "object"
    },
    "DayRow": {
@@ -2281,6 +2318,24 @@
      "color"
     ],
     "title": "GroupShort",
+    "type": "object"
+   },
+   "GroupTag": {
+    "properties": {
+     "color": {
+      "title": "Color",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "color"
+    ],
+    "title": "GroupTag",
     "type": "object"
    },
    "HTTPValidationError": {
@@ -4422,6 +4477,14 @@
       ],
       "title": "Counts"
      },
+     "groups": {
+      "description": "Підсумки за днями для дат на цій сторінці",
+      "items": {
+       "$ref": "#/components/schemas/DayGroup"
+      },
+      "title": "Groups",
+      "type": "array"
+     },
      "items": {
       "items": {
        "$ref": "#/components/schemas/OrderRowOut"
@@ -5031,6 +5094,16 @@
       ],
       "title": "Created At"
      },
+     "customer_group": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/GroupTag"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
      "customer_id": {
       "anyOf": [
        {
@@ -5122,6 +5195,11 @@
        }
       ],
       "title": "Mark Id"
+     },
+     "no_stock": {
+      "default": false,
+      "title": "No Stock",
+      "type": "boolean"
      },
      "np_account_id": {
       "anyOf": [
@@ -5251,6 +5329,11 @@
      },
      "utm_source": {
       "title": "Utm Source",
+      "type": "string"
+     },
+     "warehouse_name": {
+      "default": "",
+      "title": "Warehouse Name",
       "type": "string"
      }
     },
@@ -12300,6 +12383,7 @@
   },
   "/api/orders": {
    "get": {
+    "description": "Курсор: sort=new — найновіші вгорі (before=<id>), sort=old — найстаріші вгорі («Несортовані», after=<id>).",
     "operationId": "list_orders_api_orders_get",
     "parameters": [
      {
@@ -12310,6 +12394,26 @@
        "default": 0,
        "title": "Before",
        "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "after",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "After",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "sort",
+      "required": false,
+      "schema": {
+       "default": "new",
+       "title": "Sort",
+       "type": "string"
       }
      },
      {

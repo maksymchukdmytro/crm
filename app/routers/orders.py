@@ -11,7 +11,7 @@ from starlette.datastructures import FormData
 from ..carriers import CARRIERS, CarrierError, get_carrier
 from ..db import get_db
 from ..deps import Forbidden, staff
-from ..models import AuditLog, Order, Payment, Product, SmsMessage, Status, User
+from ..models import AuditLog, Order, Payment, Product, SmsMessage, Status, User, utcnow
 from ..services import audit, delivery, payments
 from ..services import orders as svc
 from ..services import settings as st
@@ -47,10 +47,26 @@ def _apply(q, f: dict, with_status: bool = True):
         if digits and len(digits) <= 9 and digits == text.strip().lstrip("#"):
             conds.append(Order.id == int(digits))
         q = q.filter(or_(*conds))
-    if f.get("manager") == "none":
-        q = q.filter(Order.manager_id.is_(None))
-    elif f.get("manager"):
-        q = q.filter(Order.manager_id == svc.to_int(f["manager"]))
+    if f.get("manager"):  # кілька через кому; «none» — без менеджера
+        vals = [x for x in f["manager"].split(",") if x]
+        ids = [svc.to_int(x) for x in vals if svc.to_int(x)]
+        conds = ([Order.manager_id.in_(ids)] if ids else []) + ([Order.manager_id.is_(None)] if "none" in vals else [])
+        if conds:
+            q = q.filter(or_(*conds))
+    # фільтри-чипи нового інтерфейсу: id через кому
+    for key, col in (("src", Order.source_id), ("entity", Order.legal_entity_id), ("pm", Order.payment_method_id), ("mark", Order.mark_id)):
+        if f.get(key):
+            vals = [x for x in f[key].split(",") if x]
+            ids = [svc.to_int(x) for x in vals if svc.to_int(x)]
+            conds = ([col.in_(ids)] if ids else []) + ([col.is_(None)] if "none" in vals else [])
+            if conds:
+                q = q.filter(or_(*conds))
+    if f.get("remind") == "due":
+        q = q.filter(Order.remind_at.isnot(None), Order.remind_at <= utcnow())
+    if f.get("ttn") == "none":
+        q = q.filter(Order.ttn == "")
+    elif f.get("ttn") == "has":
+        q = q.filter(Order.ttn != "")
     d1, d2 = parse_date(f.get("date_from")), parse_date(f.get("date_to"))
     if d1 or d2:
         start, end = period_bounds(d1 or d2, d2 or d1)

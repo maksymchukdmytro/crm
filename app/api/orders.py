@@ -4,13 +4,13 @@ from __future__ import annotations
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session, selectinload
 
 from ..carriers import CARRIERS, CarrierError
 from ..db import get_db
 from ..deps import Forbidden
-from ..models import AuditLog, Order, Payment, SmsMessage, Status, User, utcnow
+from ..models import AuditLog, Customer, Order, OrderItem, Payment, SmsMessage, Status, User, utcnow
 from ..routers.orders import _apply
 from ..services import audit, delivery, payments, queue
 from ..services import orders as svc
@@ -22,7 +22,7 @@ from .schemas import BulkIn, BulkOut, DocumentsOut, OrderIn, OrderListOut, Order
 from .common import bad, iso, j_order, j_order_row, staff
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
-FILTERS = ("status", "q", "manager", "date_from", "date_to", "delivery", "source", "dup", "pay", "stage")
+FILTERS = ("status", "q", "manager", "date_from", "date_to", "delivery", "source", "dup", "pay", "stage", "src", "entity", "pm", "mark", "remind", "ttn")
 
 
 def _get(db: Session, order_id: int, user: User) -> Order:
@@ -142,15 +142,26 @@ def _fields(data: dict) -> dict:
 
 # ------------------------------------------------------------------ список
 @router.get("", response_model=OrderListOut)
-def list_orders(request: Request, before: int = 0, limit: int = Query(100, le=500), counts: int = 1,
+def list_orders(request: Request, before: int = 0, after: int = 0, sort: str = "new", limit: int = Query(100, le=500), counts: int = 1,
                 db: Session = Depends(get_db), user: User = Depends(staff)):
+    """Курсор: sort=new — найновіші вгорі (before=<id>), sort=old — найстаріші вгорі («Несортовані», after=<id>)."""
     f = {k: (request.query_params.get(k) or "").strip() for k in FILTERS}
     base = svc.visible_orders_query(db, user)
     q = _apply(base, f)
-    page_q = q.filter(Order.id < before) if before else q
-    rows = (page_q.options(selectinload(Order.items), selectinload(Order.customer), selectinload(Order.payment_method)).order_by(Order.id.desc()).limit(limit + 1).all())
-    out = {"items": [j_order_row(o) for o in rows[:limit]],
-           "next": rows[limit - 1].id if len(rows) > limit else None}
+    old = sort == "old"
+    if old:
+        page_q = q.filter(Order.id > after) if after else q
+        order_by = Order.id.asc()
+    else:
+        page_q = q.filter(Order.id < before) if before else q
+        order_by = Order.id.desc()
+    rows = (page_q.options(selectinload(Order.items).selectinload(OrderItem.product), selectinload(Order.items).selectinload(OrderItem.variant),
+                           selectinload(Order.customer).selectinload(Customer.group), selectinload(Order.payment_method))
+            .order_by(order_by).limit(limit + 1).all())
+    page = rows[:limit]
+    out = {"items": [j_order_row(o) for o in page],
+           "next": rows[limit - 1].id if len(rows) > limit else None,
+           "groups": _day_groups(db, q, page)}
     if counts:
         out["total"] = q.count()
         by_status = dict(_apply(base, f, with_status=False).with_entities(Order.status_id, func.count(Order.id))
@@ -158,6 +169,25 @@ def list_orders(request: Request, before: int = 0, limit: int = Query(100, le=50
         out["counts"] = {str(k): v for k, v in by_status.items()}
         out["all"] = sum(by_status.values())
     return out
+
+
+def _has_reasons(db: Session) -> bool:
+    from ..models import StatusReason
+    return db.query(StatusReason.id).filter(StatusReason.is_active.is_(True)).first() is not None
+
+
+def _day_groups(db: Session, q, page: list[Order]) -> list[dict]:
+    """Рядки-групи за днями: «Сьогодні, 29 жовтня · 10 замовлень · 12 316 ₴». Сума — без скасованих і дублів."""
+    if not page:
+        return []
+    from ..services.stats import local_expr, to_local
+    days = sorted({to_local(o.created_at).date() for o in page if o.created_at})
+    day = func.date(local_expr(Order.created_at))
+    excluded = [sid for (sid,) in db.query(Status.id).filter(Status.code.in_(("cancelled", "duplicate", "lead_refused")))]
+    paid = func.sum(case((Order.status_id.in_(excluded), 0), else_=Order.total)) if excluded else func.sum(Order.total)
+    rows = (q.with_entities(day, func.count(Order.id), func.coalesce(paid, 0)).filter(day.in_(days))
+            .group_by(day).order_by(None).all())
+    return [{"day": d.isoformat(), "count": int(n), "sum": float(s or 0)} for d, n, s in rows]
 
 
 @router.get("/sources", response_model=list[str])
@@ -211,6 +241,8 @@ def update_order(order_id: int, body: OrderIn, db: Session = Depends(get_db), us
         status = db.get(Status, sid)
         if status is None:
             bad("Невідомий статус")
+        if status.code == "cancelled" and not order.reason_id and _has_reasons(db):
+            bad("Вкажіть причину відмови")
         svc.change_status(db, order, status, user)
     # оновити час зміни навіть якщо змінився лише статус — для перевірки версії
     order.updated_at = utcnow()

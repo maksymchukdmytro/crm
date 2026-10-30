@@ -52,7 +52,7 @@ def test_saved_filters_and_counters(api, db, products):
     new_order(api, products)
     oid = new_order(api, products, phone="0672223344")["id"]
     st = api.get("/api/meta").json()["statuses"]
-    new_id = next(s["id"] for s in st if s["code"] == "new")
+    new_id = next(s["id"] for s in st if s["code"] == "unsorted")
     r = api.post("/api/saved-filters", json={"name": "Нові", "color": "#7C3AED", "query": f"?status={new_id}&evil=1"})
     assert r.status_code == 200, r.text
     sf = r.json()
