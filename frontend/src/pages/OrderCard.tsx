@@ -31,6 +31,10 @@ const SHIPPED = ["shipped", "arrived", "delivered", "refused", "returned"];
 const STOCK_TEXT: Record<string, string> = { reserve: "товар буде зарезервовано", ship: "товар буде списано зі складу", return: "товар повернеться на залишок", release: "резерв буде знято" };
 const COD_TEXT: Record<string, string> = { control: "контроль оплати", backward: "грошовий переказ", none: "без післяплати" };
 
+// «Створити ТТН» у ще не створеному замовленні: спершу створюємо замовлення, а вікно ТТН відкриваємо вже в ньому
+// (картка перемонтовується з новим id, тому номер переносимо через змінну модуля)
+let ttnAfterCreate: number | null = null;
+
 export default function OrderModal({ id, onClose, onOpen, ids }: { id: string; onClose: () => void; onOpen: (id: number) => void; ids?: number[] }) {
   return <OrderCard key={id} id={id} onClose={onClose} onOpen={onOpen} ids={ids} />;
 }
@@ -61,6 +65,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   const [history, setHistory] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const sentRef = useRef("");
+  const wantTtnRef = useRef(false);
   const againRef = useRef(false);
 
   // заповнити форму (і оновлювати, якщо замовлення змінили інші, а ми нічого не редагували)
@@ -112,7 +117,10 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
       setVersion(o.version);
       setBaseline(sentRef.current);
       setSaveState("saved");
-      if (isNew) { toast(`Замовлення №${o.id} створено`); onOpen(o.id); }
+      if (isNew) {
+        if (wantTtnRef.current) { wantTtnRef.current = false; ttnAfterCreate = o.id; }
+        toast(`Замовлення №${o.id} створено`); onOpen(o.id);
+      }
     },
     onError: (e) => {
       setSaveState("error");
@@ -168,7 +176,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); saveNow(); return; }
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !isNew && order && !order.ttn && form.delivery_method === "novaposhta") { e.preventDefault(); openTtn(); return; }
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && (isNew || (order && !order.ttn)) && form.delivery_method === "novaposhta") { e.preventDefault(); openTtn(); return; }
       if (e.ctrlKey || e.metaKey || e.altKey || inField(e) || ttnOpen) return;
       const k = e.key.toLowerCase();
       if (k === "h" && !isNew) { e.preventDefault(); setHistory((x) => !x); }
@@ -183,11 +191,25 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   });
 
   const openTtn = async () => {
-    if (isNew) { toast("Спершу створіть замовлення", "warn"); return; }
+    if (isNew) {
+      if (save.isPending) return;
+      wantTtnRef.current = true;
+      try { await save.mutateAsync(); } catch { wantTtnRef.current = false; }
+      return;
+    }
     await saveAsync();
     if (form.delivery_method === "novaposhta") setTtnOpen(true);
     else action.mutate({ path: "/ttn" });
   };
+  // щойно створене кнопкою «Створити ТТН» — одразу відкрити вікно ТТН
+  useEffect(() => {
+    if (isNew || !order || ttnAfterCreate !== order.id) return;
+    ttnAfterCreate = null;
+    if (order.ttn) return;
+    if (order.delivery_method === "novaposhta") setTtnOpen(true);
+    else action.mutate({ path: "/ttn" });
+  }, [order]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const close = () => { if (dirty && !isNew) saveNow(); else if (dirty && isNew && !window.confirm("Замовлення ще не створено. Закрити без збереження?")) return; onClose(); };
 
   if (!isNew && (isLoading || !order || !baseline)) {
@@ -712,8 +734,8 @@ function DeliveryBlock({ order, form, set, cod, codKind, step, readOnly, locked,
           ) : dm === "rozetka" ? (
             <p className="hint">ТТН RMP-… створюється в кабінеті продавця Rozetka; вставте її сюди — маркування друкується з API Rozetka.</p>
           ) : carrier?.configured ? (
-            <Button variant="soft" wide icon={Truck} kbd={dm === "novaposhta" ? "Ctrl ⏎" : undefined} disabled={busy || readOnly || isNew}
-              title={isNew ? "Спершу створіть замовлення" : undefined} onClick={onCreateTtn}>Створити ТТН</Button>
+            <Button variant="soft" wide icon={Truck} kbd={dm === "novaposhta" ? "Ctrl ⏎" : undefined} disabled={busy || readOnly}
+              title={isNew ? "Замовлення буде створено, і відкриється вікно ТТН" : undefined} onClick={onCreateTtn}>Створити ТТН</Button>
           ) : carrier ? <p className="hint">Щоб створювати ТТН, заповніть доступи в «Налаштування → Доставка».</p> : null}
           {order && (hasTtn || carrier) && (
             <MenuButton button={({ open, toggle }) => <IconButton icon={MoreHorizontal} label="Ще дії з ТТН" aria-expanded={open} onClick={toggle} />}>
