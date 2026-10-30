@@ -7,7 +7,7 @@ import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, money, phone } from "../lib/format";
 import type { CustomerDetail, CustomerList } from "../lib/types";
-import { Block, Button, Empty, Field, IconButton, Modal, Spinner, StatusPill, Tag, Toggle, Window } from "../components/ui";
+import { Block, Button, Empty, Field, IconButton, Modal, Spinner, StatusPill, Tag, Toggle, UaPhone, Window } from "../components/ui";
 import OrderModal from "./OrderCard";
 import "./customers.css";
 
@@ -143,7 +143,7 @@ function CustomerCard({ id, onClose }: { id: number; onClose: () => void }) {
             </div>
             <div className="oc-phone-row">
               <span className="phone-pill-in"><Phone size={14} className="muted" />
-                <input value={"phone" in f ? String(f.phone) : phone(data.phone)} onChange={(e) => setF({ ...f, phone: e.target.value })} inputMode="tel" aria-label="Телефон" /></span>
+                <UaPhone value={"phone" in f ? String(f.phone) : data.phone} country={data.country || "UA"} onChange={(x) => setF({ ...f, phone: x })} aria-label="Телефон" /></span>
               <a className="icon-btn" href={`tel:+${tel}`} aria-label="Подзвонити" title="Подзвонити"><Phone size={16} /></a>
               <a className="icon-btn" href={`viber://chat?number=%2B${tel}`} aria-label="Viber" title="Viber"><MessageCircle size={16} /></a>
               <a className="icon-btn" href={`https://t.me/+${tel}`} target="_blank" rel="noreferrer" aria-label="Telegram" title="Telegram"><Send size={16} /></a>
@@ -154,7 +154,7 @@ function CustomerCard({ id, onClose }: { id: number; onClose: () => void }) {
               <Field label="Email"><input type="email" value={v("email", "")} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
               <Field label="Група"><select value={v<number | null>("group_id", null) ?? ""} onChange={(e) => setF({ ...f, group_id: e.target.value ? Number(e.target.value) : null })}>
                 <option value="">без групи</option>{meta.customer_groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</select></Field>
-              <Field label="Додатковий телефон"><input value={v("phone2", "") ? ("phone2" in f ? String(f.phone2) : phone(String(v("phone2", "")))) : ""} onChange={(e) => setF({ ...f, phone2: e.target.value })} inputMode="tel" placeholder="—" /></Field>
+              <Field label="Додатковий телефон"><UaPhone value={"phone2" in f ? String(f.phone2) : String(v("phone2", "") || "")} onChange={(x) => setF({ ...f, phone2: x })} aria-label="Додатковий телефон" /></Field>
             </div>
             <Field label="Коментар"><textarea rows={2} value={v("comment", "")} onChange={(e) => setF({ ...f, comment: e.target.value })} placeholder="Бачать менеджери в картці замовлення" /></Field>
             <div className="tiles4">
@@ -225,7 +225,7 @@ function NewCustomer({ onClose, onCreated }: { onClose: () => void; onCreated: (
   return (
     <Modal onClose={onClose} size="sm" title="Новий покупець">
       <form className="form" onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
-        <Field label="Телефон"><input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} inputMode="tel" required autoFocus placeholder="+380…" /></Field>
+        <Field label="Телефон"><UaPhone value={f.phone} onChange={(x) => setF({ ...f, phone: x })} required autoFocus aria-label="Телефон" /></Field>
         <Field label="Ім'я"><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
         <Field label="Email"><input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
         <Field label="Група"><select value={f.group_id} onChange={(e) => setF({ ...f, group_id: e.target.value ? Number(e.target.value) : "" })}>

@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { DndContext, DragOverlay, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { Eye, EyeOff, KanbanSquare } from "lucide-react";
+import { Eye, EyeOff, KanbanSquare, List } from "lucide-react";
+import { Segmented } from "../components/ui";
 import { api, qs } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { ago, itemsLabel, money, phone } from "../lib/format";
@@ -63,6 +64,8 @@ export default function BoardPage() {
       <div className="head">
         <h1><span className="h-ico"><KanbanSquare size={18} /></span>Дошка</h1>
         <div className="actions">
+          <Segmented label="Вигляд" value="board" onChange={(k) => { if (k === "list") nav("/orders"); }}
+            items={[{ key: "list", label: "Стрічка", icon: <List size={14} /> }, { key: "board", label: "Дошка", icon: <KanbanSquare size={14} /> }]} />
           <button className="btn ghost" onClick={() => { const v = !showFinal; setShowFinal(v); localStorage.setItem("crm-board-final", v ? "1" : "0"); }}>
             {showFinal ? <EyeOff size={15} /> : <Eye size={15} />} {showFinal ? "Сховати завершені" : "Показати завершені"}
           </button>

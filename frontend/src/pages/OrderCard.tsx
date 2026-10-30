@@ -14,7 +14,7 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { Order } from "../lib/types";
 import {
-  Block, Button, Checklist, IconButton, MenuButton, PayCheck, Segmented, SidePanel, StatusPill, Tag, Window, inField, useOutside, type CheckItem,
+  Block, Button, Checklist, IconButton, MenuButton, PayCheck, Segmented, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useOutside, type CheckItem,
 } from "../components/ui";
 import { flag, PayLabel } from "../components/payicons";
 import { IconPick, MarkIcon } from "../components/marks";
@@ -503,8 +503,7 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
           <select className="ph-country" value={form.country} disabled={readOnly} onChange={(e) => set({ country: e.target.value })} aria-label="Країна">
             {Object.entries(meta.countries).map(([cc, n]) => <option key={cc} value={cc} title={n}>{cc} · {n}</option>)}
           </select>
-          <input value={form.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="+380 __ ___ __ __" inputMode="tel" aria-label="Телефон"
-            disabled={readOnly} autoFocus={isNew} />
+          <UaPhone value={form.phone} country={form.country} onChange={(v) => set({ phone: v })} aria-label="Телефон" disabled={readOnly} autoFocus={isNew} />
         </span>
         {tel.length >= 10 && <>
           <a className="icon-btn" href={`tel:+${tel}`} aria-label="Подзвонити" title="Подзвонити"><Phone size={16} /></a>
@@ -760,6 +759,7 @@ function DeliveryBlock({ order, form, set, cod, codKind, step, readOnly, locked,
 function DetailsBlock({ order, form, set, readOnly, onTake }: { order?: Order; form: Form; set: (p: Partial<Form>) => void; readOnly: boolean; onTake: () => void }) {
   const meta = useMeta();
   const [utm, setUtm] = useState(false);
+  const [extra, setExtra] = useState(false);
   const status = meta.statuses.find((s) => s.id === form.status_id);
   const reasons = meta.reasons.filter((r) => r.status_ids.includes(form.status_id));
   const srcOffice = meta.order_sources.find((x) => x.id === form.source_id)?.office_id;
@@ -770,36 +770,50 @@ function DetailsBlock({ order, form, set, readOnly, onTake }: { order?: Order; f
       <option value="">{empty}</option>{items.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
     </select>
   );
-  const rows: { k: string; label: string; v: React.ReactNode }[] = [
-    { k: "mgr", label: "Менеджер", v: meta.user.role === "admin"
-      ? sel(form.manager_id, (v) => set({ manager_id: v }), meta.managers, "не призначений", "Менеджер")
-      : <span className="prop-val">{order?.manager?.name ?? "не призначений"}{canTake && !readOnly && <button className="link-btn" onClick={onTake}>Взяти собі</button>}</span> },
-    { k: "office", label: "Відділ", v: <span className="prop-val muted">{office ?? "—"}</span> },
+  const mgr = meta.user.role === "admin"
+    ? sel(form.manager_id, (v) => set({ manager_id: v }), meta.managers, "не призначений", "Менеджер")
+    : <span className="prop-val">{order?.manager?.name ?? "не призначений"}{canTake && !readOnly && <button className="link-btn" onClick={onTake}>Взяти собі</button>}</span>;
+  // розкладка (вимога власника): Джерело | Менеджер, Відділ | Юрособа, далі коментар на всю ширину у 2 рядки
+  const rows: { k: string; label: string; v: React.ReactNode; wide?: boolean }[] = [
     { k: "src", label: "Джерело", v: sel(form.source_id, (v) => set({ source_id: v }), meta.order_sources, "не вказано", "Джерело") },
-    ...(meta.legal_entities.length ? [{ k: "le", label: "Юрособа", v: sel(form.legal_entity_id, (v) => set({ legal_entity_id: v }), meta.legal_entities, "за замовчуванням", "Юрособа") }] : []),
+    { k: "mgr", label: "Менеджер", v: mgr },
+    { k: "office", label: "Відділ", v: <span className="prop-val muted">{office ?? "—"}</span> },
+    { k: "le", label: "Юрособа", v: meta.legal_entities.length
+      ? sel(form.legal_entity_id, (v) => set({ legal_entity_id: v }), meta.legal_entities, "за замовчуванням", "Юрособа")
+      : <span className="prop-val muted">—</span> },
+    { k: "comment", label: "Коментар", wide: true, v: <textarea className="prop-area" rows={2} value={form.comment} disabled={readOnly} onChange={(e) => set({ comment: e.target.value })}
+      placeholder="Коментар до замовлення" aria-label="Коментар" /> },
     { k: "mark", label: "Позначка", v: (
       <IconPick items={meta.marks} value={form.mark_id || null} ariaLabel="Позначка" emptyLabel="Без позначки" className="prop-ipick"
         onChange={(id) => !readOnly && set({ mark_id: id ?? "" })}
         render={(m) => <span className="mark-line"><MarkIcon icon={m.icon} color={m.color} size={15} /><span>{m.name}</span></span>}
         placeholder={<span className="muted">—</span>} />
     ) },
-    ...EXTRA.flatMap((f, i) => ((meta.extra_on?.[i] ?? true) ? [{ k: f, label: meta.extra_fields[i] || `Поле ${i + 1}`, v: (
-      <span className="prop-val"><input className="prop-in" value={form[f]} disabled={readOnly} onChange={(e) => set({ [f]: e.target.value } as Partial<Form>)} placeholder="—" aria-label={meta.extra_fields[i] || `Поле ${i + 1}`} />
-        {/^https?:\/\//.test(form[f]) && <a href={form[f]} target="_blank" rel="noreferrer" aria-label="Відкрити посилання"><ExternalLink size={13} /></a>}</span>
-    ) }] : [])),
     ...(reasons.length || ["cancelled", "refused", "lead_refused"].includes(status?.code ?? "") ? [{ k: "reason", label: "Причина", v: sel(form.reason_id, (v) => set({ reason_id: v }), reasons.length ? reasons : meta.reasons.filter((r) => r.active), "не вказано", "Причина") }] : []),
-    ...(order?.shop_id ? [{ k: "mp", label: "Маркетплейс", v: <span className="prop-val">{meta.shops[String(order.shop_id)] ?? "Маркетплейс"} · №{order.external_id}{order.external_status && <span className="muted"> · {order.external_status}</span>}</span> }] : []),
+    ...(order?.shop_id ? [{ k: "mp", label: "Маркетплейс", wide: true, v: <span className="prop-val">{meta.shops[String(order.shop_id)] ?? "Маркетплейс"} · №{order.external_id}{order.external_status && <span className="muted"> · {order.external_status}</span>}</span> }] : []),
   ];
-  rows.push(
-    { k: "comment", label: "Коментар", v: <textarea className="prop-area" rows={1} value={form.comment} disabled={readOnly} onChange={(e) => set({ comment: e.target.value })}
-      onInput={(e) => { const t = e.currentTarget; t.style.height = "auto"; t.style.height = `${t.scrollHeight}px`; }} placeholder="—" aria-label="Коментар" /> }
-  );
+  // поля 1–4 — згорнуто, як UTM
+  const extras = EXTRA.map((f, i) => ({ f, i, name: meta.extra_fields[i] || `Поле ${i + 1}` })).filter((x) => meta.extra_on?.[x.i] ?? true);
+  const filled = extras.filter((x) => form[x.f]).length;
   return (
     <Block title="Деталі" className="oc-details">
-      <dl className="props">{rows.map((r) => [<dt key={`t-${r.k}`} className={r.k === "comment" ? "wide" : undefined}>{r.label}</dt>,
-        <dd key={`d-${r.k}`} className={r.k === "comment" ? "wide" : undefined}>{r.v}</dd>])}</dl>
-      <button type="button" className="link-btn utm-toggle" aria-expanded={utm} onClick={() => setUtm((x) => !x)}>
-        UTM і сайт {form.utm_source && <span className="muted">· {form.utm_source}</span>}<ChevronDown size={13} className={utm ? "rot" : ""} /></button>
+      <dl className="props">{rows.map((r) => [<dt key={`t-${r.k}`} className={r.wide ? "wide" : undefined}>{r.label}</dt>,
+        <dd key={`d-${r.k}`} className={r.wide ? "wide" : undefined}>{r.v}</dd>])}</dl>
+      <div className="det-toggles">
+        {extras.length > 0 && (
+          <button type="button" className="link-btn utm-toggle" aria-expanded={extra} onClick={() => setExtra((x) => !x)}>
+            {extras.length === 4 ? "Поля 1–4" : "Додаткові поля"} {filled > 0 && <span className="muted">· заповнено {filled}</span>}<ChevronDown size={13} className={extra ? "rot" : ""} /></button>
+        )}
+        <button type="button" className="link-btn utm-toggle" aria-expanded={utm} onClick={() => setUtm((x) => !x)}>
+          UTM і сайт {form.utm_source && <span className="muted">· {form.utm_source}</span>}<ChevronDown size={13} className={utm ? "rot" : ""} /></button>
+      </div>
+      {extra && (
+        <dl className="props utm">
+          {extras.map(({ f, name }) => [<dt key={`t${f}`}>{name}</dt>, <dd key={`d${f}`}><span className="prop-val">
+            <input className="prop-in" value={form[f]} disabled={readOnly} onChange={(e) => set({ [f]: e.target.value } as Partial<Form>)} placeholder="—" aria-label={name} />
+            {/^https?:\/\//.test(form[f]) && <a href={form[f]} target="_blank" rel="noreferrer" aria-label="Відкрити посилання"><ExternalLink size={13} /></a>}</span></dd>])}
+        </dl>
+      )}
       {utm && (
         <dl className="props utm">
           <dt>Сайт</dt><dd><input className="prop-in" value={form.site} disabled={readOnly} onChange={(e) => set({ site: e.target.value })} placeholder="—" aria-label="Сайт" /></dd>

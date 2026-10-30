@@ -181,6 +181,10 @@
 .prop-ipick .ipick-btn { min-height: 30px; border-color: transparent; background: transparent; padding: 2px 6px; font-size: 13px; }
 .prop-ipick .ipick-btn:hover { background: var(--hover); }
 .utm-toggle { margin-top: 8px; }
+.det-toggles { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.oc-details .props > dd .prop-area { min-height: 54px; border: 1px solid var(--line) !important; background: var(--surface); margin-left: 0; }
+.oc-details .props > dd .prop-area:focus { border-color: var(--accent) !important; }
+.oc-details .props > dt.wide { align-self: start; padding-top: 8px; }
 .props.utm { margin-top: 6px; }
 
 /* підсумок */
@@ -240,8 +244,15 @@
 
 /* товари — головне праворуч: блок розтягується на всю висоту, деталі й підсумок під ним — компактні (як на макеті) */
 @media (min-width: 1101px) {
+  /* сітка заповнює вікно до низу (як на макеті), без порожнього місця */
+  .oc-body { display: flex; flex-direction: column; }
+  .oc-body > .oc-grid { flex: 1 0 auto; }
+  .oc-left > .block:last-child { flex: 1 0 auto; }
+  .oc-bottom > .block, .oc-bottom > .oc-sum { height: 100%; }
   .oc-grid { align-items: stretch; }
-  .oc-right .oc-goods { flex: 1 1 auto; min-height: 360px; display: flex; flex-direction: column; }
+  /* товари ростуть, але не витісняють деталі й підсумок за межі екрана; решту висоти забирає нижній ряд */
+  .oc-right .oc-goods { flex: 1 1 auto; min-height: 240px; max-height: max(300px, calc(100vh - 430px)); overflow: auto; display: flex; flex-direction: column; }
+  .oc-right > .oc-bottom { flex: 1 0 auto; }
   .oc-goods .oc-totals { margin-top: auto; }
   .oc-bottom { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
   .oc-details .props { grid-template-columns: 74px minmax(0, 1fr) 74px minmax(0, 1fr); column-gap: 12px; }

@@ -1,6 +1,7 @@
 // Поля (UI-DESIGN §15): підпис над полем, помилка під ним, синій підпис «звідки взялося».
 import { useId, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { Minus, Plus, RotateCcw } from "lucide-react";
+import { uaDigits, uaFormat, uaStore } from "../../lib/format";
 
 /** Джерело автозаповнення: «з покупця» / «змінено вручну · повернути». */
 export type FromHint = { text: string; manual?: boolean; onReset?: () => void };
@@ -62,13 +63,40 @@ export function MoneyInput({ label, hint, error, from, value, onChange, ...rest 
   );
 }
 
-/** Телефон: лише цифри, «+380» за замовчуванням. */
-export function PhoneInput({ label, hint, error, from, value, onChange, ...rest }: InputProps & { value: string; onChange: (v: string) => void }) {
+/** Поле номера без підпису. Для України (country = UA або не вказано) «+380» стоїть окремо, вводяться 9 цифр:
+ *  0 на початку, «380» і «+380» при вставці з'їдаються, довше 9 цифр не вводиться. Значення — «+380933990007». */
+export function UaPhone({ value, onChange, country = "UA", className = "", ...rest }: Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> & {
+  value: string; onChange: (v: string) => void; country?: string;
+}) {
+  if (country && country !== "UA") {
+    return <input type="tel" inputMode="tel" autoComplete="tel" value={value} className={className}
+      onChange={(e) => onChange(e.target.value.replace(/[^\d+ ()-]/g, ""))} {...rest} />;
+  }
+  const d = uaDigits(value);
+  return (
+    <span className={`ua-phone ${className}`}>
+      <span className="ua-pre" aria-hidden>+380</span>
+      <input type="tel" inputMode="numeric" autoComplete="tel-national" placeholder="__ ___ __ __" value={uaFormat(d)} maxLength={12}
+        onChange={(e) => {
+          let nd = uaDigits(e.target.value);
+          // стерли пробіл між групами — стираємо цифру перед курсором, інакше Backspace «застрягає»
+          if (nd === d && e.target.value.length < uaFormat(d).length) {
+            const before = e.target.value.slice(0, e.target.selectionStart ?? e.target.value.length).replace(/\D/g, "").length;
+            nd = d.slice(0, Math.max(0, before - 1)) + d.slice(before);
+          }
+          onChange(uaStore(nd));
+        }}
+        onPaste={(e) => { e.preventDefault(); onChange(uaStore(uaDigits(e.clipboardData.getData("text")))); }} {...rest} />
+    </span>
+  );
+}
+
+/** Телефон з підписом. */
+export function PhoneInput({ label, hint, error, from, value, onChange, country, ...rest }: InputProps & { value: string; onChange: (v: string) => void; country?: string }) {
   const id = useId();
   return (
     <FieldBox label={label} hint={hint} error={error} from={from} htmlFor={id}>
-      <input id={id} type="tel" inputMode="tel" autoComplete="tel" placeholder="+380" value={value}
-        onChange={(e) => onChange(e.target.value.replace(/[^\d+ ()-]/g, ""))} aria-invalid={!!error || undefined} {...rest} />
+      <UaPhone id={id} value={value} onChange={onChange} country={country} aria-invalid={!!error || undefined} {...rest} />
     </FieldBox>
   );
 }

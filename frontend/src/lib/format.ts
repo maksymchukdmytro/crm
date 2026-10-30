@@ -20,6 +20,22 @@ export function phone(v: string | null | undefined): string {
   return v ?? "";
 }
 
+/** Маска українського номера: «+380» уже стоїть, людина вводить лише 9 цифр.
+ *  Зайве з'їдається: 0 на початку (0933990007), 380 або +380 при вставці, 80 з «80933990007». */
+export function uaDigits(raw: string | null | undefined): string {
+  let d = (raw ?? "").replace(/\D/g, "");
+  if (d.startsWith("380")) d = d.slice(3);
+  else if (d.length >= 11 && d.startsWith("80")) d = d.slice(2);
+  while (d.startsWith("0")) d = d.slice(1);
+  return d.slice(0, 9);
+}
+/** 933990007 → «93 399 00 07» */
+export function uaFormat(d: string): string {
+  return [d.slice(0, 2), d.slice(2, 5), d.slice(5, 7), d.slice(7, 9)].filter(Boolean).join(" ");
+}
+/** Що зберігати в замовленні: «+380933990007» або порожньо. */
+export const uaStore = (d: string) => (d ? `+380${d}` : "");
+
 const dtf = new Intl.DateTimeFormat("uk-UA", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 const dshort = new Intl.DateTimeFormat("uk-UA", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 const donly = new Intl.DateTimeFormat("uk-UA", { day: "2-digit", month: "2-digit", year: "numeric" });
