@@ -924,6 +924,51 @@
     "title": "CheckOut",
     "type": "object"
    },
+   "CommentNote": {
+    "properties": {
+     "at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "At"
+     },
+     "customer": {
+      "title": "Customer",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "order_id": {
+      "title": "Order Id",
+      "type": "integer"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     },
+     "user": {
+      "title": "User",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "order_id",
+     "customer",
+     "user",
+     "text",
+     "at"
+    ],
+    "title": "CommentNote",
+    "type": "object"
+   },
    "CommentOut": {
     "properties": {
      "created_at": {
@@ -957,6 +1002,35 @@
      "created_at"
     ],
     "title": "CommentOut",
+    "type": "object"
+   },
+   "CountersOut": {
+    "properties": {
+     "leads_new": {
+      "default": 0,
+      "title": "Leads New",
+      "type": "integer"
+     },
+     "orders_unsorted": {
+      "default": 0,
+      "title": "Orders Unsorted",
+      "type": "integer"
+     },
+     "reminders_due": {
+      "default": 0,
+      "title": "Reminders Due",
+      "type": "integer"
+     },
+     "saved": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "description": "id збереженого фільтра → кількість",
+      "title": "Saved",
+      "type": "object"
+     }
+    },
+    "title": "CountersOut",
     "type": "object"
    },
    "CustomerDetailOut": {
@@ -2596,6 +2670,16 @@
       "title": "Company",
       "type": "string"
      },
+     "counters": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/CountersOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
      "countries": {
       "additionalProperties": {
        "type": "string"
@@ -2639,6 +2723,21 @@
       },
       "title": "Extra On",
       "type": "array"
+     },
+     "lead_wait_bad_min": {
+      "default": 15,
+      "title": "Lead Wait Bad Min",
+      "type": "integer"
+     },
+     "lead_wait_warn_min": {
+      "default": 5,
+      "title": "Lead Wait Warn Min",
+      "type": "integer"
+     },
+     "leads_enabled": {
+      "default": true,
+      "title": "Leads Enabled",
+      "type": "boolean"
      },
      "legal_entities": {
       "items": {
@@ -2686,6 +2785,18 @@
       "title": "Np Accounts",
       "type": "array"
      },
+     "office": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Відділ, вибраний у боковій панелі; null — усі",
+      "title": "Office"
+     },
      "offices": {
       "items": {
        "$ref": "#/components/schemas/SourceOut"
@@ -2727,6 +2838,12 @@
        "type": "string"
       },
       "title": "Payment Types",
+      "type": "object"
+     },
+     "prefs": {
+      "additionalProperties": true,
+      "description": "Налаштування користувача (user_prefs)",
+      "title": "Prefs",
       "type": "object"
      },
      "products": {
@@ -2945,6 +3062,26 @@
      "name"
     ],
     "title": "NamedShort",
+    "type": "object"
+   },
+   "NotificationsOut": {
+    "properties": {
+     "comments": {
+      "items": {
+       "$ref": "#/components/schemas/CommentNote"
+      },
+      "title": "Comments",
+      "type": "array"
+     },
+     "reminders": {
+      "items": {
+       "$ref": "#/components/schemas/ReminderNote"
+      },
+      "title": "Reminders",
+      "type": "array"
+     }
+    },
+    "title": "NotificationsOut",
     "type": "object"
    },
    "NpAccountIn": {
@@ -3426,6 +3563,24 @@
      "except_ids"
     ],
     "title": "NpRuleOut",
+    "type": "object"
+   },
+   "OfficeIn": {
+    "additionalProperties": false,
+    "properties": {
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Office Id"
+     }
+    },
+    "title": "OfficeIn",
     "type": "object"
    },
    "Ok": {
@@ -5506,6 +5661,41 @@
     "title": "PhotoOut",
     "type": "object"
    },
+   "PrefIn": {
+    "additionalProperties": false,
+    "properties": {
+     "value": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "items": {},
+        "type": "array"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "number"
+       },
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "title": "PrefIn",
+    "type": "object"
+   },
    "ProductDeleteOut": {
     "properties": {
      "deleted": {
@@ -6772,6 +6962,41 @@
     "title": "RegistryRow",
     "type": "object"
    },
+   "ReminderNote": {
+    "properties": {
+     "at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "At"
+     },
+     "customer": {
+      "title": "Customer",
+      "type": "string"
+     },
+     "due": {
+      "title": "Due",
+      "type": "boolean"
+     },
+     "order_id": {
+      "title": "Order Id",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "order_id",
+     "customer",
+     "at",
+     "due"
+    ],
+    "title": "ReminderNote",
+    "type": "object"
+   },
    "ReportOut": {
     "properties": {
      "date_from": {
@@ -6829,6 +7054,137 @@
      "products"
     ],
     "title": "ReportOut",
+    "type": "object"
+   },
+   "SavedFilterIn": {
+    "additionalProperties": false,
+    "properties": {
+     "color": {
+      "anyOf": [
+       {
+        "maxLength": 9,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Color"
+     },
+     "is_shared": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Shared"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "maxLength": 80,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "query": {
+      "anyOf": [
+       {
+        "maxLength": 2000,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Query"
+     },
+     "section": {
+      "anyOf": [
+       {
+        "enum": [
+         "orders",
+         "leads",
+         "products",
+         "customers",
+         "invoices"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Section"
+     },
+     "sort": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sort"
+     }
+    },
+    "title": "SavedFilterIn",
+    "type": "object"
+   },
+   "SavedFilterOut": {
+    "properties": {
+     "color": {
+      "title": "Color",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "is_shared": {
+      "title": "Is Shared",
+      "type": "boolean"
+     },
+     "mine": {
+      "title": "Mine",
+      "type": "boolean"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "query": {
+      "title": "Query",
+      "type": "string"
+     },
+     "section": {
+      "title": "Section",
+      "type": "string"
+     },
+     "sort": {
+      "title": "Sort",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "section",
+     "name",
+     "color",
+     "query",
+     "sort",
+     "is_shared",
+     "mine"
+    ],
+    "title": "SavedFilterOut",
     "type": "object"
    },
    "SeatIn": {
@@ -11174,6 +11530,27 @@
     ]
    }
   },
+  "/api/counters": {
+   "get": {
+    "operationId": "get_counters_api_counters_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CountersOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Get Counters",
+    "tags": [
+     "shell"
+    ]
+   }
+  },
   "/api/customer-groups": {
    "get": {
     "operationId": "groups_api_customer_groups_get",
@@ -11633,6 +12010,123 @@
     ]
    }
   },
+  "/api/me/office": {
+   "put": {
+    "description": "Перемикач відділу в боковій панелі. null — усі доступні відділи.",
+    "operationId": "set_office_api_me_office_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OfficeIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Set Office",
+    "tags": [
+     "shell"
+    ]
+   }
+  },
+  "/api/me/prefs": {
+   "get": {
+    "operationId": "get_prefs_api_me_prefs_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response Get Prefs Api Me Prefs Get",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Get Prefs",
+    "tags": [
+     "shell"
+    ]
+   }
+  },
+  "/api/me/prefs/{key}": {
+   "put": {
+    "operationId": "put_pref_api_me_prefs__key__put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "key",
+      "required": true,
+      "schema": {
+       "title": "Key",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PrefIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Pref",
+    "tags": [
+     "shell"
+    ]
+   }
+  },
   "/api/meta": {
    "get": {
     "operationId": "meta_api_meta_get",
@@ -11695,6 +12189,27 @@
     "summary": "Names Split",
     "tags": [
      "core"
+    ]
+   }
+  },
+  "/api/notifications": {
+   "get": {
+    "operationId": "notifications_api_notifications_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NotificationsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Notifications",
+    "tags": [
+     "shell"
     ]
    }
   },
@@ -13428,6 +13943,184 @@
     "summary": "Reports",
     "tags": [
      "admin"
+    ]
+   }
+  },
+  "/api/saved-filters": {
+   "get": {
+    "operationId": "list_saved_api_saved_filters_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "section",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Section",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/SavedFilterOut"
+         },
+         "title": "Response List Saved Api Saved Filters Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Saved",
+    "tags": [
+     "shell"
+    ]
+   },
+   "post": {
+    "operationId": "create_saved_api_saved_filters_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SavedFilterIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SavedFilterOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Saved",
+    "tags": [
+     "shell"
+    ]
+   }
+  },
+  "/api/saved-filters/{fid}": {
+   "delete": {
+    "operationId": "delete_saved_api_saved_filters__fid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "fid",
+      "required": true,
+      "schema": {
+       "title": "Fid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Saved",
+    "tags": [
+     "shell"
+    ]
+   },
+   "patch": {
+    "operationId": "update_saved_api_saved_filters__fid__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "fid",
+      "required": true,
+      "schema": {
+       "title": "Fid",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SavedFilterIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SavedFilterOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Update Saved",
+    "tags": [
+     "shell"
     ]
    }
   },

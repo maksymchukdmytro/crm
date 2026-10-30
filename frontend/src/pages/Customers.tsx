@@ -1,6 +1,6 @@
 // Покупці: один запис на телефон; замовлення, викуп і відмови рахуються із замовлень. Групи й чорний список.
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Ban, Contact, Plus, ShieldCheck } from "lucide-react";
 import { api, qs } from "../lib/api";
@@ -23,7 +23,9 @@ export default function CustomersPage() {
   const [sort, setSort] = useState("last");
   const [desc, setDesc] = useState(true);
   const [page, setPage] = useState(0);
-  const [adding, setAdding] = useState(false);
+  const [sp, setSp] = useSearchParams();
+  const [adding, setAdding] = useState(() => !!sp.get("new"));
+  useEffect(() => { if (sp.get("new")) { setAdding(true); const n = new URLSearchParams(sp); n.delete("new"); setSp(n, { replace: true }); } }, [sp, setSp]);
   const dq = useDebounced(q, 300);
   useEffect(() => setPage(0), [dq, group, blacklist, sort, desc]);
   const params = { q: dq, group, blacklist, sort, desc, offset: page * 100, limit: 100 };

@@ -229,6 +229,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/counters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Counters */
+        get: operations["get_counters_api_counters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/customer-groups": {
         parameters: {
             query?: never;
@@ -355,6 +372,60 @@ export interface paths {
         patch: operations["me_update_api_me_patch"];
         trace?: never;
     };
+    "/api/me/office": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Office
+         * @description Перемикач відділу в боковій панелі. null — усі доступні відділи.
+         */
+        put: operations["set_office_api_me_office_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/prefs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Prefs */
+        get: operations["get_prefs_api_me_prefs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/prefs/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Pref */
+        put: operations["put_pref_api_me_prefs__key__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/meta": {
         parameters: {
             query?: never;
@@ -384,6 +455,23 @@ export interface paths {
          * @description Розбір ПІБ одним рядком — для підказки в картці замовлення (що буде прізвищем, ім'ям, по батькові).
          */
         get: operations["names_split_api_names_split_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Notifications */
+        get: operations["notifications_api_notifications_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -877,6 +965,42 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/saved-filters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Saved */
+        get: operations["list_saved_api_saved_filters_get"];
+        put?: never;
+        /** Create Saved */
+        post: operations["create_saved_api_saved_filters_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/saved-filters/{fid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Saved */
+        delete: operations["delete_saved_api_saved_filters__fid__delete"];
+        options?: never;
+        head?: never;
+        /** Update Saved */
+        patch: operations["update_saved_api_saved_filters__fid__patch"];
         trace?: never;
     };
     "/api/settings": {
@@ -1842,6 +1966,21 @@ export interface components {
             /** Ok */
             ok: boolean;
         };
+        /** CommentNote */
+        CommentNote: {
+            /** At */
+            at: string | null;
+            /** Customer */
+            customer: string;
+            /** Id */
+            id: number;
+            /** Order Id */
+            order_id: number;
+            /** Text */
+            text: string;
+            /** User */
+            user: string;
+        };
         /** CommentOut */
         CommentOut: {
             /** Created At */
@@ -1852,6 +1991,31 @@ export interface components {
             text: string;
             /** User */
             user: string;
+        };
+        /** CountersOut */
+        CountersOut: {
+            /**
+             * Leads New
+             * @default 0
+             */
+            leads_new: number;
+            /**
+             * Orders Unsorted
+             * @default 0
+             */
+            orders_unsorted: number;
+            /**
+             * Reminders Due
+             * @default 0
+             */
+            reminders_due: number;
+            /**
+             * Saved
+             * @description id збереженого фільтра → кількість
+             */
+            saved?: {
+                [key: string]: number;
+            };
         };
         /** CustomerDetailOut */
         CustomerDetailOut: {
@@ -2532,6 +2696,7 @@ export interface components {
             checkbox_ready: boolean;
             /** Company */
             company: string;
+            counters?: components["schemas"]["CountersOut"] | null;
             /** Countries */
             countries?: {
                 [key: string]: string;
@@ -2556,6 +2721,21 @@ export interface components {
              * @description Які з полів 1–4 показувати в картці
              */
             extra_on?: boolean[];
+            /**
+             * Lead Wait Bad Min
+             * @default 15
+             */
+            lead_wait_bad_min: number;
+            /**
+             * Lead Wait Warn Min
+             * @default 5
+             */
+            lead_wait_warn_min: number;
+            /**
+             * Leads Enabled
+             * @default true
+             */
+            leads_enabled: boolean;
             /** Legal Entities */
             legal_entities?: components["schemas"]["EntityShort"][];
             /** Managers */
@@ -2570,6 +2750,11 @@ export interface components {
             nav: string[];
             /** Np Accounts */
             np_accounts?: components["schemas"]["NpAccountShort"][];
+            /**
+             * Office
+             * @description Відділ, вибраний у боковій панелі; null — усі
+             */
+            office?: number | null;
             /** Offices */
             offices?: components["schemas"]["SourceOut"][];
             /** Order Sources */
@@ -2590,6 +2775,13 @@ export interface components {
             /** Payment Types */
             payment_types: {
                 [key: string]: string;
+            };
+            /**
+             * Prefs
+             * @description Налаштування користувача (user_prefs)
+             */
+            prefs?: {
+                [key: string]: unknown;
             };
             /** Products */
             products: components["schemas"]["ProductOut"][];
@@ -2667,6 +2859,13 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+        };
+        /** NotificationsOut */
+        NotificationsOut: {
+            /** Comments */
+            comments?: components["schemas"]["CommentNote"][];
+            /** Reminders */
+            reminders?: components["schemas"]["ReminderNote"][];
         };
         /** NpAccountIn */
         NpAccountIn: {
@@ -2910,6 +3109,11 @@ export interface components {
             np_code: string;
             /** Status Id */
             status_id: number;
+        };
+        /** OfficeIn */
+        OfficeIn: {
+            /** Office Id */
+            office_id?: number | null;
         };
         /** Ok */
         Ok: {
@@ -3586,6 +3790,13 @@ export interface components {
             /** Url */
             url: string;
         };
+        /** PrefIn */
+        PrefIn: {
+            /** Value */
+            value?: {
+                [key: string]: unknown;
+            } | unknown[] | string | number | boolean | null;
+        };
         /** ProductDeleteOut */
         ProductDeleteOut: {
             /**
@@ -4042,6 +4253,17 @@ export interface components {
             /** Ttn */
             ttn: string;
         };
+        /** ReminderNote */
+        ReminderNote: {
+            /** At */
+            at: string | null;
+            /** Customer */
+            customer: string;
+            /** Due */
+            due: boolean;
+            /** Order Id */
+            order_id: number;
+        };
         /** ReportOut */
         ReportOut: {
             /** Date From */
@@ -4061,6 +4283,40 @@ export interface components {
             /** Products */
             products: components["schemas"]["ProductReportRow"][];
             total: components["schemas"]["Bucket"];
+        };
+        /** SavedFilterIn */
+        SavedFilterIn: {
+            /** Color */
+            color?: string | null;
+            /** Is Shared */
+            is_shared?: boolean | null;
+            /** Name */
+            name?: string | null;
+            /** Query */
+            query?: string | null;
+            /** Section */
+            section?: ("orders" | "leads" | "products" | "customers" | "invoices") | null;
+            /** Sort */
+            sort?: number | null;
+        };
+        /** SavedFilterOut */
+        SavedFilterOut: {
+            /** Color */
+            color: string;
+            /** Id */
+            id: number;
+            /** Is Shared */
+            is_shared: boolean;
+            /** Mine */
+            mine: boolean;
+            /** Name */
+            name: string;
+            /** Query */
+            query: string;
+            /** Section */
+            section: string;
+            /** Sort */
+            sort: number;
         };
         /** SeatIn */
         SeatIn: {
@@ -5888,6 +6144,26 @@ export interface operations {
             };
         };
     };
+    get_counters_api_counters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountersOut"];
+                };
+            };
+        };
+    };
     groups_api_customer_groups_get: {
         parameters: {
             query?: never;
@@ -6202,6 +6478,96 @@ export interface operations {
             };
         };
     };
+    set_office_api_me_office_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfficeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_prefs_api_me_prefs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    put_pref_api_me_prefs__key__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrefIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     meta_api_meta_get: {
         parameters: {
             query?: never;
@@ -6249,6 +6615,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    notifications_api_notifications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationsOut"];
                 };
             };
         };
@@ -7412,6 +7798,136 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_saved_api_saved_filters_get: {
+        parameters: {
+            query?: {
+                section?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedFilterOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_saved_api_saved_filters_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedFilterIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedFilterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_saved_api_saved_filters__fid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_saved_api_saved_filters__fid__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fid: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedFilterIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedFilterOut"];
                 };
             };
             /** @description Validation Error */

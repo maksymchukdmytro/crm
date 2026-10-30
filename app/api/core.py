@@ -33,11 +33,12 @@ from ..models import (
     utcnow,
 )
 from ..security import hash_password, throttle, verify_password
-from ..services import audit
+from ..services import audit, prefs
 from ..services import np as np_svc
 from ..services import settings as st
 from ..services.events import CHANNEL
 from .schemas import LoginIn, LoginOut, MeIn, MetaOut, NameSplitOut, Ok, UserOut
+from .shell import counters as shell_counters
 from .common import api_user, bad, j_payment_method, j_product, j_source, j_status, j_user
 
 router = APIRouter(prefix="/api", tags=["core"])
@@ -169,6 +170,12 @@ def meta(db: Session = Depends(get_db), user: User = Depends(api_user)):
         "legal_entities": [{"id": x.id, "name": x.name, "is_default": x.is_default, "has_cashier": x.id in with_cashier}
                            for x in db.query(LegalEntity).filter(LegalEntity.is_active.is_(True)).order_by(LegalEntity.sort, LegalEntity.id)],
         "checkbox_ready": bool(with_cashier) or db.query(CheckboxCashier).filter(CheckboxCashier.is_active.is_(True)).count() > 0,
+        "office": prefs.current_office(db, user),
+        "leads_enabled": s.get("leads_enabled", "1") != "0",
+        "lead_wait_warn_min": int(s.get("lead_wait_warn_min") or 5),
+        "lead_wait_bad_min": int(s.get("lead_wait_bad_min") or 15),
+        "counters": shell_counters(db, user),
+        "prefs": prefs.all_for(db, user),
     }
 
 

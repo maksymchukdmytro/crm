@@ -162,7 +162,13 @@ Rozetka (логін + пароль) і Prom (API-токен): перевірка
   фільтр-чип, перемикач, вікна 18 px. Компоненти — `components/ui/*` (Button, IconButton, StatusPill, Tag, Tabs з «Ще», Segmented,
   FilterChip, FieldBox / TextInput / MoneyInput / PhoneInput / QtyStepper / Toggle, Block, SummaryBlock, PropertyList, Checklist, Feed,
   SkeletonRows, Window, SidePanel, BulkBar, Fab, MenuButton); повідомлення з «Скасувати» (`toast(text, kind, {undo})`).
-- [ ] Крок 2. Каркас, збережені фільтри, налаштування користувача (0016)
+- [x] **Крок 2. Каркас** (`wip/ui-2-shell`, міграція 0016): бокова панель 236 px (`components/Layout.tsx`, `shell.css`) — логотип mdmy,
+  перемикач відділу (pref `office`; обмежує `visible_orders_query`, тобто списки, лічильники, головну й статистику), групи меню,
+  лічильники (сині — нові ліди й несортовані), збережені фільтри з кількістю, користувач з меню (профіль, згорнути меню, класичний,
+  вийти); під 1280 px — смуга іконок 64 px. Верхня смуга: пошук Ctrl K з групами Замовлення / Покупці / Товари / Дії, коментарі колег і
+  нагадування. Кнопка «+» (клік — нове замовлення, наведення — 5 дій) і клавіші N / L / P / C / T. Таблиці `saved_filters`, `user_prefs`;
+  API `GET/PUT /api/me/prefs`, `PUT /api/me/office`, `GET /api/counters`, `/api/saved-filters` (CRUD), `GET /api/notifications`;
+  у `/api/meta` — `office`, `counters`, `prefs`, `leads_enabled`. Тести — `tests/test_shell.py`.
 - [ ] Крок 3. Статуси й «Несортовані», щільний список замовлень (0017)
 - [ ] Крок 4. Ліди (0018)
 - [ ] Крок 5. Картка замовлення, рахунки юрособ, «Що лишилось», вікно ТТН, реєстр НП (0019)
