@@ -542,6 +542,8 @@
   /* «Новий покупець» та інші старі вікна — білою карткою з відступами */
   .modal { padding: 12px; align-items: center; background: rgba(24, 24, 22, .38); }
   .modal-box.sm, .modal-box.md, .modal-box.lg { height: auto; max-height: calc(100dvh - 24px); border-radius: var(--m-r); padding: 4px 2px 6px; }
+  /* широкі таблиці (журнал, статуси, користувачі) гортаються всередині своєї картки, а не всією сторінкою */
+  .work .card:has(table.t), .set-scroll .card:has(table.t), .work .card > div:has(> table.t) { overflow-x: auto; }
   /* дзвіночок: текст зліва */
   .m-top .menu-pop { text-align: left; }
   /* дуже вузькі екрани (320–359 px) */
