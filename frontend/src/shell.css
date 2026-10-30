@@ -1,0 +1,117 @@
+/* Каркас (UI-DESIGN §3): бокова панель 236 px на фоні, верхня смуга 48 px, робоча область — білий блок 18 px. */
+.app { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: 100vh; min-height: 100dvh; background: var(--bg); }
+.app.collapsed { grid-template-columns: 64px minmax(0, 1fr); }
+
+/* ---------------------------------------------------------------- бокова панель */
+.sb { position: sticky; top: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column; gap: 10px; padding: 14px 12px 12px; background: var(--bg); overflow: hidden; }
+.sb-top { display: flex; align-items: center; gap: 8px; padding: 2px 6px; min-height: 32px; }
+.sb-logo { display: flex; align-items: center; gap: 9px; color: var(--ink); text-decoration: none; }
+.sb-mark { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--r-field); background: var(--accent); color: #fff;
+  font-weight: 700; font-size: 15px; letter-spacing: -0.02em; flex: none; }
+.sb-word { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+.sb .live-dot { margin-left: auto; width: 7px; height: 7px; border-radius: var(--r-pill); background: var(--faint); flex: none; }
+.sb .live-dot.on { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+.sb-office { width: 100%; }
+.sb-office-btn { display: flex; align-items: center; gap: 8px; width: 100%; height: 34px; padding: 0 12px; font: inherit; font-size: 13px; color: var(--ink-2);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pill); cursor: pointer; text-align: left; }
+.sb-office-btn:hover { border-color: #DCDCD8; color: var(--ink); }
+.sb-office-btn > svg { flex: none; color: var(--muted); }
+.sb-office-btn .sb-txt:first-of-type { flex: 1; }
+.sb-office .menu-pop { left: 0; right: 0; width: 100%; min-width: 212px; }
+.sb-nav { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 10px; margin: 0 -4px; padding: 0 4px; scrollbar-width: thin; }
+.sb-group { display: flex; flex-direction: column; gap: 1px; }
+.sb-title { font-size: 11.5px; color: var(--muted); padding: 4px 10px 3px; white-space: nowrap; }
+.sb-item { position: relative; display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; font-size: 13.5px; font-weight: 500;
+  color: var(--ink-2); text-decoration: none; border: 1px solid transparent; border-radius: var(--r-pill); transition: background var(--t-fast), color var(--t-fast); }
+.sb-item > svg { flex: none; color: var(--muted); }
+.sb-item .sb-txt { flex: 1; }
+.sb-item:hover { background: var(--hover); color: var(--ink); }
+.sb-item.on { background: var(--surface); border-color: var(--line); color: var(--ink); }
+.sb-item.on > svg { color: var(--accent); }
+.sb-item .count { margin-left: auto; }
+.sb-dot { width: 8px; height: 8px; border-radius: var(--r-mark); flex: none; margin: 0 4px; }
+.sb-saved { font-weight: 450; }
+.sb-foot { border-top: 0; }
+.sb-me-wrap { width: 100%; }
+.sb-me { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--r-block); cursor: pointer; text-align: left; }
+.sb-me:hover { border-color: #DCDCD8; }
+.sb-me .av, .av { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent-ink-2);
+  font-size: 11.5px; font-weight: 600; flex: none; }
+.sb-me-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.sb-me-txt b { font-weight: 500; font-size: 13.5px; }
+.sb-me-txt small { font-size: 12px; color: var(--muted); }
+.sb-me-wrap .menu-pop { bottom: calc(100% + 6px); top: auto; left: 0; width: 100%; min-width: 212px; }
+
+/* згорнута панель — смуга іконок 64 px */
+.app.collapsed .sb { padding: 14px 10px 12px; align-items: center; }
+.app.collapsed .sb-txt, .app.collapsed .sb-word, .app.collapsed .sb-title, .app.collapsed .sb .live-dot { display: none; }
+.app.collapsed .sb-top { padding: 2px 0; justify-content: center; }
+.app.collapsed .sb-office-btn { width: 40px; height: 40px; padding: 0; justify-content: center; }
+.app.collapsed .sb-group { align-items: center; gap: 2px; padding-top: 6px; border-top: 1px solid var(--line); }
+.app.collapsed .sb-group:first-child { border-top: 0; padding-top: 0; }
+.app.collapsed .sb-item { width: 40px; height: 36px; padding: 0; justify-content: center; }
+.app.collapsed .sb-item .count { position: absolute; top: -2px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; font-size: 10px; }
+.app.collapsed .sb-item .count:not(.hot) { display: none; }
+.app.collapsed .sb-dot { margin: 0; }
+.app.collapsed .sb-me { width: 44px; padding: 6px; justify-content: center; border-radius: var(--r-pill); }
+.app.collapsed .sb-nav { align-items: center; }
+
+/* ---------------------------------------------------------------- верхня смуга й робоча область */
+.app-main { display: flex; flex-direction: column; min-width: 0; padding: 0 12px 12px 0; }
+.topbar { display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 2px; flex: none; }
+.top-search { display: flex; align-items: center; gap: 10px; flex: 0 1 480px; min-width: 0; height: 38px; padding: 0 8px 0 14px; font: inherit; font-size: 13px;
+  color: var(--faint); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-field); cursor: text; text-align: left; }
+.top-search:hover { border-color: #DCDCD8; }
+.top-search > svg { flex: none; color: var(--muted); }
+.top-search > span { flex: 1; }
+.top-search kbd, .palette-in kbd { font-family: var(--mono); font-size: 10.5px; color: var(--muted); background: var(--soft); border: 1px solid var(--line);
+  border-radius: var(--r-mark); padding: 1px 6px; }
+.top-acts { margin-left: auto; display: flex; gap: 8px; }
+.burger-btn { display: none !important; }
+.top-pop .menu-pop { width: 340px; max-width: calc(100vw - 24px); padding: 6px; }
+.note-list { display: flex; flex-direction: column; max-height: 420px; overflow-y: auto; }
+.note-head { font-size: 12px; color: var(--muted); padding: 6px 10px 4px; }
+.note-empty { padding: 14px 10px; color: var(--muted); font-size: 13px; }
+.pop-item.note { align-items: flex-start; height: auto; padding: 8px 10px; border-radius: var(--r-field); }
+.pop-item.note > svg { margin-top: 2px; }
+.pop-item.note > svg.due { color: var(--bad); }
+.note-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.note-txt b { font-weight: 500; }
+.note-txt small { font-size: 11.5px; color: var(--muted); }
+.note-body { color: var(--ink-2); font-size: 12.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.work { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-window); padding: 22px 24px 28px; }
+
+/* шапки сторінок (поки сторінки не переведено): заголовок 22 px без значка */
+.work .head { margin-bottom: 16px; }
+.work .head h1 { font-size: 22px; font-weight: 600; }
+.work .h-ico { display: none; }
+.work .head h1 small { font-size: 13px; color: var(--muted); font-weight: 400; }
+
+/* кнопка «+» ховається, коли вибрано рядки або відкрито запис */
+body:has(.bulkbar, .bulk.on, .win-backdrop, .modal, .side-panel) .fab-wrap { display: none; }
+
+/* палітра пошуку — групи */
+.palette { border-radius: var(--r-window) !important; }
+.palette-group { font-size: 11.5px; color: var(--muted); padding: 8px 10px 3px; }
+.palette-item { border-radius: var(--r-field); }
+
+/* ---------------------------------------------------------------- телефон і планшет */
+@media (max-width: 768px) {
+  .app, .app.collapsed { grid-template-columns: minmax(0, 1fr); }
+  .sb { position: fixed; z-index: 70; left: 0; top: 0; bottom: 0; width: 272px; transform: translateX(-102%); transition: transform var(--t) var(--ease);
+    border-right: 1px solid var(--line); align-items: stretch !important; }
+  .sb.open { transform: none; box-shadow: var(--shadow-lg); }
+  .app.collapsed .sb-txt, .app.collapsed .sb-word, .app.collapsed .sb-title { display: revert; }
+  .app.collapsed .sb-item, .app.collapsed .sb-office-btn, .app.collapsed .sb-me { width: 100%; justify-content: flex-start; padding: 0 10px; }
+  .app.collapsed .sb-group { align-items: stretch; border-top: 0; }
+  .sb-backdrop { position: fixed; inset: 0; z-index: 65; background: rgba(31, 31, 28, .3); }
+  .app-main { padding: 0; }
+  .topbar { height: 56px; padding: 0 12px; gap: 8px; }
+  .burger-btn { display: inline-grid !important; }
+  .top-search { height: 40px; flex: 1; }
+  .top-acts .menu-btn:first-child { display: none; }
+  .top-search kbd { display: none; }
+  .work { border-radius: 0; border-left: 0; border-right: 0; padding: 16px 14px 90px; }
+  .fab-wrap { right: 16px; bottom: 16px; }
+}

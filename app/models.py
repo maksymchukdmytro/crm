@@ -789,6 +789,28 @@ class AuditLog(Base):
 Index("ix_audit_entity", AuditLog.entity, AuditLog.entity_id)
 
 
+class SavedFilter(Base):
+    """Збережений фільтр списку (бокова панель): назва, кольорова мітка, рядок адреси «?status=…&manager=…»."""
+    __tablename__ = "saved_filters"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    section: Mapped[str] = mapped_column(String(20), default="orders")
+    name: Mapped[str] = mapped_column(String(80))
+    color: Mapped[str] = mapped_column(String(9), default="#2E6BE6")
+    query: Mapped[str] = mapped_column(Text, default="")
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+    is_shared: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class UserPref(Base):
+    """Налаштування користувача: колонки списків, щільність, згорнута панель, поточний відділ."""
+    __tablename__ = "user_prefs"
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    key: Mapped[str] = mapped_column(String(60), primary_key=True)
+    value: Mapped[dict | list | str | int | None] = mapped_column(JSON, nullable=True)
+
+
 # ---------------------------------------------------------------- автоматичні дати замовлення
 @event.listens_for(Session, "before_flush")
 def _order_dates(session: Session, _ctx, _instances):

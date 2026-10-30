@@ -372,6 +372,10 @@ def visible_orders_query(db: Session, user: User):
         q = q.filter((Order.manager_id == user.id) | (Order.manager_id.is_(None)))
     if user.role != "admin" and user.offices:  # доступ лише до своїх відділів (замовлення без відділу — усім)
         q = q.filter(Order.office_id.is_(None) | Order.office_id.in_([int(x) for x in user.offices]))
+    from . import prefs
+    office = prefs.current_office(db, user)  # відділ, вибраний у боковій панелі
+    if office is not None:
+        q = q.filter(Order.office_id == office)
     return q
 
 

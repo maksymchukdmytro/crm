@@ -79,7 +79,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         pending = new Set();
         flush = undefined;
         keys.forEach((k) => {
-          if (k === "orders") qc.invalidateQueries({ queryKey: ["orders"] });
+          if (k === "orders") { qc.invalidateQueries({ queryKey: ["orders"] }); qc.invalidateQueries({ queryKey: ["counters"] }); }
           else if (k === "products") { qc.invalidateQueries({ queryKey: ["products"] }); qc.invalidateQueries({ queryKey: ["warehouse"] }); qc.invalidateQueries({ queryKey: ["meta"] }); }
           else if (k.startsWith("order:")) qc.invalidateQueries({ queryKey: ["order", Number(k.slice(6))] });
         });

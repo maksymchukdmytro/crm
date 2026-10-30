@@ -175,6 +175,68 @@ class MetaOut(Out):
     customer_groups: list[GroupShort] = Field(default_factory=list)
     legal_entities: list[EntityShort] = Field(default_factory=list)
     checkbox_ready: bool = False
+    office: int | None = Field(None, description="Відділ, вибраний у боковій панелі; null — усі")
+    leads_enabled: bool = True
+    lead_wait_warn_min: int = 5
+    lead_wait_bad_min: int = 15
+    counters: CountersOut | None = None
+    prefs: dict = Field(default_factory=dict, description="Налаштування користувача (user_prefs)")
+
+
+class CountersOut(Out):
+    leads_new: int = 0
+    orders_unsorted: int = 0
+    reminders_due: int = 0
+    saved: dict[str, int] = Field(default_factory=dict, description="id збереженого фільтра → кількість")
+
+
+class PrefIn(In):
+    value: dict | list | str | int | float | bool | None = None
+
+
+class OfficeIn(In):
+    office_id: int | None = None
+
+
+class SavedFilterIn(In):
+    name: str | None = Field(None, max_length=80)
+    section: Literal["orders", "leads", "products", "customers", "invoices"] | None = None
+    color: str | None = Field(None, max_length=9)
+    query: str | None = Field(None, max_length=2000)
+    sort: int | None = None
+    is_shared: bool | None = None
+
+
+class SavedFilterOut(Out):
+    id: int
+    section: str
+    name: str
+    color: str
+    query: str
+    sort: int
+    is_shared: bool
+    mine: bool
+
+
+class ReminderNote(Out):
+    order_id: int
+    customer: str
+    at: str | None
+    due: bool
+
+
+class CommentNote(Out):
+    id: int
+    order_id: int
+    customer: str
+    user: str
+    text: str
+    at: str | None
+
+
+class NotificationsOut(Out):
+    reminders: list[ReminderNote] = Field(default_factory=list)
+    comments: list[CommentNote] = Field(default_factory=list)
 
 
 class EntityShort(Out):

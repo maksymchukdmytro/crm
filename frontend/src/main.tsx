@@ -8,6 +8,7 @@ import "./base.css";
 import "./app.css";
 import "./theme.css";
 import "./ui.css";
+import "./shell.css";
 
 initMonitoring();
 

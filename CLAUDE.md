@@ -80,7 +80,7 @@ app/tasks.py         задачі воркера arq: SMS, ТТН, трекін�
 app/routers/, templates/  класичний інтерфейс /classic (запасний) і webhook прийому заявок
 frontend/src/pages/  React-сторінки: Home (головна), Orders (ліди й замовлення), OrderCard, TtnDialog, Board, Products, Customers,
                      Catalog (склад), Stats, Finance, Settings, System
-migrations/versions/ 0001…0015
+migrations/versions/ 0001…0016
 ```
 Стек: Python 3.12, FastAPI, SQLAlchemy 2, PostgreSQL 16, Redis + arq, Alembic; React 19, TypeScript, Vite.
 

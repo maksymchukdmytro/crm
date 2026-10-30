@@ -63,7 +63,13 @@ function ProductList({ editable }: { editable: boolean }) {
   const [manufacturer, setManufacturer] = useState("");
   const [stockState, setStockState] = useState("");
   const [edit, setEdit] = useState<number | "new" | null>(sp.get("new") ? "new" : null);
-  useEffect(() => { if (sp.get("new")) { setEdit("new"); const n = new URLSearchParams(sp); n.delete("new"); setSp(n, { replace: true }); } }, [sp, setSp]);
+  useEffect(() => {
+    const open = sp.get("open");
+    if (sp.get("new") || open) {
+      setEdit(open ? Number(open) : "new");
+      const n = new URLSearchParams(sp); n.delete("new"); n.delete("open"); setSp(n, { replace: true });
+    }
+  }, [sp, setSp]);
   const dq = useDebounced(q, 250);
   const params = { q: dq, show, category, manufacturer, stock_state: stockState };
   const { data, isLoading } = useQuery({ queryKey: ["products", params], queryFn: () => api.get<Product[]>(`/products${qs(params)}`) });

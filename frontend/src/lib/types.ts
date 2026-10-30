@@ -71,3 +71,6 @@ export type BlockedIp = S["BlockedIpOut"];
 export type Variant = S["VariantOut"];
 export type Dashboard = S["DashboardOut"];
 export type Documents = S["DocumentsOut"];
+export type Counters = S["CountersOut"];
+export type SavedFilter = S["SavedFilterOut"];
+export type Notifications = S["NotificationsOut"];
