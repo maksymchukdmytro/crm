@@ -150,5 +150,6 @@ div.dense { flex: 1; min-height: 0; display: flex; flex-direction: column; borde
   /* платежі: галочка й замовлення в першому рядку */
   .pay-table td.sel { flex: none; order: -1; }
   .pay-table td:nth-child(2) { flex: 1 1 calc(100% - 40px); color: var(--ink); font-size: 14px; }
-  .pay-table td:first-child { flex: none; }
+  table.m-cards.pay-table td:first-child { flex: none; }
+  table.m-cards.pay-table td:nth-child(2) { flex: 1 1 calc(100% - 40px); }
 }
