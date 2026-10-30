@@ -250,7 +250,9 @@
   .oc-left > .block:last-child { flex: 1 0 auto; }
   .oc-bottom > .block, .oc-bottom > .oc-sum { height: 100%; }
   .oc-grid { align-items: stretch; }
-  .oc-right .oc-goods { flex: 1 1 auto; min-height: 360px; display: flex; flex-direction: column; }
+  /* товари ростуть, але не витісняють деталі й підсумок за межі екрана; решту висоти забирає нижній ряд */
+  .oc-right .oc-goods { flex: 1 1 auto; min-height: 240px; max-height: max(300px, calc(100vh - 430px)); overflow: auto; display: flex; flex-direction: column; }
+  .oc-right > .oc-bottom { flex: 1 0 auto; }
   .oc-goods .oc-totals { margin-top: auto; }
   .oc-bottom { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
   .oc-details .props { grid-template-columns: 74px minmax(0, 1fr) 74px minmax(0, 1fr); column-gap: 12px; }
