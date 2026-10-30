@@ -73,17 +73,17 @@ export default function InvoicesPage() {
   };
 
   const COLS: DenseCol<Row>[] = [
-    { key: "num", label: "№ накладної", width: "112px", render: (r) => <span className={`mono doc-num${r.state === "void" ? " void" : ""}`}>{r.number_text}</span> },
-    { key: "date", label: "Дата", width: "56px", render: (r) => <span className="num muted">{r.issued_at ? new Date(r.issued_at).toLocaleDateString("uk-UA", { day: "2-digit", month: "2-digit" }) : ""}</span> },
-    { key: "order", label: "Замовл.", width: "70px", render: (r) => r.order_id ? <button type="button" className="link-btn" onClick={() => setOpen(r.order_id)}>№{r.order_id}</button> : <span className="muted">—</span> },
-    { key: "buyer", label: "Покупець", width: "minmax(140px, 1.2fr)", title: (r) => r.customer, render: (r) => (
+    { key: "num", label: "№ накладної", width: "96px", render: (r) => <span className={`mono doc-num${r.state === "void" ? " void" : ""}`}>{r.number_text}</span> },
+    { key: "date", label: "Дата", width: "48px", render: (r) => <span className="num muted">{r.issued_at ? new Date(r.issued_at).toLocaleDateString("uk-UA", { day: "2-digit", month: "2-digit" }) : ""}</span> },
+    { key: "order", label: "Замовл.", width: "62px", render: (r) => r.order_id ? <button type="button" className="link-btn" onClick={() => setOpen(r.order_id)}>№{r.order_id}</button> : <span className="muted">—</span> },
+    { key: "buyer", label: "Покупець", width: "minmax(110px, 1.2fr)", title: (r) => r.customer, render: (r) => (
       <span className="o-cust"><span className="ell">{r.customer || "—"}</span>
         {r.state === "void" && <Tag>Анульовано</Tag>}
         {r.changed && <Tag kind="warn" title="Замовлення змінилось після видачі документа">змінилось</Tag>}</span>
     ) },
-    { key: "entity", label: "Юрособа", width: "minmax(140px, 1fr)", render: (r) => <span className="o-dot-txt"><i style={{ background: colors[r.entity_id ?? 0] ?? "var(--faint)" }} /><span className="ell">{r.entity || "—"}</span></span> },
-    { key: "sum", label: "Сума", width: "92px", align: "right", render: (r) => <b className="num">{money(r.total)} ₴</b> },
-    { key: "fix", label: "", width: "36px", align: "center", render: (r) => r.changed && r.state === "active"
+    { key: "entity", label: "Юрособа", width: "minmax(110px, 1fr)", render: (r) => <span className="o-dot-txt"><i style={{ background: colors[r.entity_id ?? 0] ?? "var(--faint)" }} /><span className="ell">{r.entity || "—"}</span></span> },
+    { key: "sum", label: "Сума", width: "84px", align: "right", render: (r) => <b className="num">{money(r.total)} ₴</b> },
+    { key: "fix", label: "", width: "28px", align: "center", render: (r) => r.changed && r.state === "active"
       ? <IconButton size={28} icon={RefreshCw} label="Перевипустити" className="doc-reissue" onClick={() => reissue.mutate(r.id)} /> : null },
     { key: "docs", label: "Документи", width: "356px", align: "right", render: (r) => <span className="doc-pills">{docBtn(r, "waybill")}{docBtn(r, "invoice")}{docBtn(r, "warranty")}</span> },
   ];
