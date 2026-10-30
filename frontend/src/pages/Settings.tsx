@@ -1,81 +1,221 @@
-import { useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Building2, Copy, Plus, RefreshCw, Settings as SettingsIcon, Star, Trash2, Upload, FileText, ShieldCheck, Wallet } from "lucide-react";
+import {
+  ArrowDown, ArrowUp, Building2, Check, CircleAlert, Copy, FileText, KeyRound, Landmark, Layers, ListChecks, MessageSquare, Plus, Receipt, RefreshCw,
+  Search, Send, ShieldCheck, SlidersHorizontal, Star, Store, Trash2, Truck, Upload, Users as UsersIcon, Wallet, Webhook as WebhookIcon, X, type LucideIcon,
+} from "lucide-react";
 import { api } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, phone } from "../lib/format";
 import type { BlockedIp, Cashier, CustomerGroup, DirItem, LegalEntity, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { MarkLookPick } from "../components/marks";
-import { Badge, Empty, Field, NpAutocomplete, Spinner } from "../components/ui";
+import { Badge, Button, Empty, Field, IconButton, NpAutocomplete, SkeletonRows, Toggle, Window } from "../components/ui";
 
 type S = Settings;
-const TABS = { general: "Загальні", entities: "Юрособи", docs: "Документи", dirs: "Довідники", statuses: "Статуси", checkbox: "Checkbox", delivery: "Доставка", market: "Маркетплейси",
-  webhook: "Прийом заявок", sms: "SMS / Viber", customers: "Покупці", users: "Користувачі" };
+
+// Налаштування (UI-DESIGN §12, макет 15): вікно поверх сторінки, розділи зліва з пошуком, знизу одна смуга «Зберегти зміни».
+// Автозбереження тут немає: кожна форма реєструє свій стан (змінено / зберегти / скасувати), смуга зберігає всі змінені разом.
+const SECTIONS: { key: string; label: string; icon: LucideIcon; sub: string; words: string }[] = [
+  { key: "general", label: "Загальні", icon: SlidersHorizontal, sub: "Як працює CRM для всієї команди: розділ «Ліди», дублі, розподіл заявок, трекінг посилок.", words: "ліди компанія назва дублі розподіл трекінг менеджери бачать недодзвон" },
+  { key: "statuses", label: "Статуси", icon: ListChecks, sub: "Етапи ліда й замовлення: назва, колір, порядок і що робити зі складом.", words: "статус колір склад резерв списати апрув фінальний" },
+  { key: "dirs", label: "Довідники", icon: Layers, sub: "Види оплат, відділи, джерела, причини, позначки й додаткові поля замовлення.", words: "оплати відділи джерела причини позначки поля extra" },
+  { key: "entities", label: "Юрособи", icon: Landmark, sub: "ФОП і ТОВ: каса, рахунки для передоплати, реквізити й префікси документів.", words: "фоп тов реквізити iban рахунки передоплата префікс підпис банк" },
+  { key: "delivery", label: "Нова Пошта", icon: Truck, sub: "Ключі НП для кожного ФОП, правила статусів за ТТН, а також Укрпошта й Meest.", words: "нп ключ api відправник ттн укрпошта meest правила доставка" },
+  { key: "checkbox", label: "Checkbox", icon: Receipt, sub: "Каса на кожен ФОП і автоматичні чеки за статусами замовлення.", words: "каса чек фіскальний зміна ліцензія пароль" },
+  { key: "market", label: "Маркетплейси", icon: Store, sub: "Rozetka і Prom: імпорт замовлень кожні 5 хвилин і передача статусів назад.", words: "rozetka prom розетка пром магазин імпорт" },
+  { key: "webhook", label: "Прийом заявок", icon: WebhookIcon, sub: "Адреса для форм лендингів, поля заявки й приклад HTML-форми.", words: "лендинг форма webhook ключ utm curl" },
+  { key: "sms", label: "SMS і Viber", icon: MessageSquare, sub: "TurboSMS: автоматичні повідомлення за статусами, шаблони й журнал відправлень.", words: "turbosms смс вайбер шаблон повідомлення" },
+  { key: "telegram", label: "Telegram", icon: Send, sub: "Сповіщення в Telegram, коли щось зламалось або давно немає заявок.", words: "бот сповіщення чат тривога" },
+  { key: "docs", label: "Документи", icon: FileText, sub: "Видаткова накладна, рахунок-фактура й гарантійний талон: нумерація, вигляд і коли видавати.", words: "видаткова накладна рахунок гарантія логотип префікс друк" },
+  { key: "customers", label: "Покупці", icon: UsersIcon, sub: "Групи покупців і IP-адреси, з яких не приймати заявки.", words: "групи ip спам блок оптовик" },
+  { key: "users", label: "Користувачі", icon: KeyRound, sub: "Менеджери, склад і адміністратори: ролі, доступ до відділів, паролі.", words: "менеджер роль пароль доступ логін" },
+];
+
+type Entry = { dirty: boolean; save: () => Promise<unknown>; cancel: () => void };
+const SetCtx = createContext<{ put: (id: string, e: Entry | null) => void } | null>(null);
+/** Поки йде «Зберегти зміни», окремі форми не показують свій тост «Збережено» — смуга покаже один. */
+const quiet = { on: false };
+
+/** Зареєструвати форму в смузі збереження. */
+function useRegister(dirty: boolean, save: () => Promise<unknown>, cancel: () => void) {
+  const ctx = useContext(SetCtx);
+  const id = useId();
+  const fn = useRef({ save, cancel });
+  fn.current = { save, cancel };
+  useEffect(() => { ctx?.put(id, { dirty, save: () => fn.current.save(), cancel: () => fn.current.cancel() }); }, [ctx, id, dirty]);
+  useEffect(() => () => ctx?.put(id, null), [ctx, id]);
+}
+
+/** Стан списку з «точкою відліку»: змінено, якщо відрізняється від того, що прийшло з сервера (без службових key). */
+const snap = (x: unknown) => JSON.stringify(x, (k, val) => (k === "key" ? undefined : val));
+function useTracked<T>(init: () => T) {
+  const [st, setSt] = useState(() => { const v = init(); return { v, raw: v, base: snap(v) }; });
+  const set = (next: T | ((p: T) => T)) => setSt((p) => ({ ...p, v: typeof next === "function" ? (next as (p: T) => T)(p.v) : next }));
+  const reset = (v: T) => setSt({ v, raw: v, base: snap(v) });
+  return { value: st.v, set, reset, restore: () => setSt((p) => ({ ...p, v: p.raw })), dirty: snap(st.v) !== st.base };
+}
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<keyof typeof TABS>(() => (localStorage.getItem("crm-settings-tab") as keyof typeof TABS) || "general");
+  const nav = useNavigate();
+  const loc = useLocation();
+  const toast = useToast();
+  const bg = (loc.state as { bg?: Location } | null)?.bg;
+  const fromUrl = loc.pathname.match(/\/settings\/([a-z]+)/)?.[1];
+  const stored = (() => { try { return localStorage.getItem("crm-settings-tab"); } catch { return null; } })();
+  const cur = SECTIONS.find((x) => x.key === fromUrl) ?? SECTIONS.find((x) => x.key === stored) ?? SECTIONS[0];
   const { data } = useQuery({ queryKey: ["settings"], queryFn: () => api.get<S>("/settings") });
-  const choose = (t: keyof typeof TABS) => { setTab(t); localStorage.setItem("crm-settings-tab", t); };
+  const [entries, setEntries] = useState<Record<string, Entry>>({});
+  const put = useCallback((id: string, e: Entry | null) => setEntries((p) => {
+    const n = { ...p };
+    if (e) n[id] = e; else delete n[id];
+    return n;
+  }), []);
+  const ctx = useMemo(() => ({ put }), [put]);
+  const dirty = Object.values(entries).filter((e) => e.dirty);
+  const [busy, setBusy] = useState(false);
+  const [q, setQ] = useState("");
+  const shown = SECTIONS.filter((x) => !q.trim() || `${x.label} ${x.words} ${x.sub}`.toLowerCase().includes(q.trim().toLowerCase()));
+
+  const guard = () => !dirty.length || window.confirm("Є незбережені зміни. Вийти без збереження?");
+  const go = (k: string) => {
+    if (k === cur.key || !guard()) return;
+    try { localStorage.setItem("crm-settings-tab", k); } catch { /* приватне вікно */ }
+    nav(`/settings/${k}`, { replace: true, state: loc.state });
+  };
+  const close = () => { if (guard()) nav(bg ?? "/", { replace: !bg }); };
+  const saveAll = async () => {
+    if (!dirty.length || busy) return;
+    setBusy(true);
+    quiet.on = true;
+    try {
+      for (const e of dirty) await e.save();
+      toast("Зміни збережено");
+    } catch { /* помилку вже показала сама форма */ } finally { quiet.on = false; setBusy(false); }
+  };
+  const cancelAll = () => dirty.forEach((e) => e.cancel());
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); saveAll(); } };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  });
+
   return (
-    <div>
-      <div className="head"><h1><span className="h-ico"><SettingsIcon size={18} /></span>Налаштування</h1></div>
-      <nav className="subnav">{Object.entries(TABS).map(([k, n]) => <a key={k} className={tab === k ? "on" : ""} onClick={() => choose(k as keyof typeof TABS)}>{n}</a>)}</nav>
-      {!data ? <Empty><Spinner /></Empty> : <>
-        {tab === "general" && <><LeadsSection s={data} /><General s={data} /></>}
-        {tab === "entities" && <LegalEntities s={data} />}
-        {tab === "docs" && <DocsSettings s={data} />}
-        {tab === "customers" && <CustomerSettings />}
-        {tab === "dirs" && <Directories s={data} />}
-        {tab === "market" && <Shops s={data} />}
-        {tab === "checkbox" && <CheckboxSettings s={data} />}
-        {tab === "webhook" && <Webhook s={data} />}
-        {tab === "delivery" && <Delivery s={data} />}
-        {tab === "sms" && <Sms s={data} />}
-        {tab === "statuses" && <Statuses s={data} />}
-        {tab === "users" && <Users s={data} />}
-      </>}
-    </div>
+    <Window size="lg" className="win-settings" onClose={close} head={<></>} label="Налаштування" bodyClass="set-body">
+      <SetCtx.Provider value={ctx}>
+        <div className="set-grid">
+          <nav className="set-nav" aria-label="Розділи налаштувань">
+            <div className="set-title">Налаштування</div>
+            <label className="set-search"><Search size={15} aria-hidden />
+              <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Знайти налаштування" aria-label="Знайти налаштування"
+                onKeyDown={(e) => { if (e.key === "Enter" && shown[0]) go(shown[0].key); }} /></label>
+            <div className="set-items">
+              {shown.map((x) => (
+                <button key={x.key} type="button" className={`set-item ${x.key === cur.key ? "on" : ""}`} aria-current={x.key === cur.key ? "page" : undefined} onClick={() => go(x.key)}>
+                  <x.icon size={16} strokeWidth={1.8} aria-hidden />{x.label}</button>
+              ))}
+              {!shown.length && <p className="hint set-none">Нічого не знайдено</p>}
+            </div>
+          </nav>
+          <div className="set-main">
+            <div className="set-scroll">
+              <div className="set-head">
+                <div><h2>{cur.label}</h2><p>{cur.sub}</p></div>
+                <IconButton icon={X} label="Закрити (Esc)" onClick={close} />
+              </div>
+              {!data ? <SkeletonRows rows={6} /> : <Section key={cur.key} k={cur.key} s={data} />}
+            </div>
+            <div className={`set-bar ${dirty.length ? "dirty" : ""}`}>
+              {dirty.length ? <span className="set-warn"><CircleAlert size={14} aria-hidden />Є незбережені зміни</span>
+                : <span className="hint">Зміни зберігаються кнопкою «Зберегти зміни» або Ctrl S</span>}
+              <span className="spacer" />
+              <Button onClick={cancelAll} disabled={!dirty.length || busy}>Скасувати</Button>
+              <Button variant="primary" icon={Check} disabled={!dirty.length || busy} onClick={saveAll}>{busy ? "Зберігаю…" : "Зберегти зміни"}</Button>
+            </div>
+          </div>
+        </div>
+      </SetCtx.Provider>
+    </Window>
   );
 }
 
+function Section({ k, s }: { k: string; s: S }) {
+  switch (k) {
+    case "general": return <div className="set-stack"><LeadsSection s={s} /><General s={s} /></div>;
+    case "statuses": return <Statuses s={s} />;
+    case "dirs": return <Directories s={s} />;
+    case "entities": return <LegalEntities s={s} />;
+    case "delivery": return <Delivery s={s} />;
+    case "checkbox": return <CheckboxSettings s={s} />;
+    case "market": return <Shops s={s} />;
+    case "webhook": return <Webhook s={s} />;
+    case "sms": return <Sms s={s} />;
+    case "telegram": return <TelegramSettings s={s} />;
+    case "docs": return <DocsSettings s={s} />;
+    case "customers": return <CustomerSettings />;
+    case "users": return <Users s={s} />;
+    default: return null;
+  }
+}
+
+type SaveVars = { path: string; body?: unknown; method?: "put" | "post" | "del" };
 function useSave() {
   const qc = useQueryClient();
   const toast = useToast();
-  return useMutation({
-    mutationFn: ({ path, body, method = "put" }: { path: string; body?: unknown; method?: "put" | "post" | "del" }) =>
+  const m = useMutation({
+    mutationFn: ({ path, body, method = "put" }: SaveVars) =>
       method === "del" ? api.del<S>(path) : method === "post" ? api.post<S>(path, body as Record<string, unknown>) : api.put<S>(path, body as Record<string, unknown>),
-    onSuccess: (s) => { if (s?.values) qc.setQueryData(["settings"], s); qc.invalidateQueries({ queryKey: ["meta"] }); toast(s?.message ?? "Збережено"); },
+    onSuccess: (s) => { if (s?.values) qc.setQueryData(["settings"], s); qc.invalidateQueries({ queryKey: ["meta"] }); if (!quiet.on) toast(s?.message ?? "Збережено"); },
     onError: (e) => toast(errText(e), "error"),
   });
+  /** mutate повертає Promise — його чекає смуга «Зберегти зміни»; помилка вже показана тостом. */
+  const mutate = (vars: SaveVars, opts?: { onSuccess?: (x: S) => void }) => {
+    const p = m.mutateAsync(vars).then((x) => { opts?.onSuccess?.(x); return x; });
+    p.catch(() => undefined);
+    return p;
+  };
+  return { isPending: m.isPending, mutate };
 }
 
-function useForm(s: S, keys: string[]) {
-  const [v, setV] = useState<Record<string, string>>(() => Object.fromEntries(keys.map((k) => [k, s.values[k] ?? ""])));
+/** Форма з ключів налаштувань. З path — реєструється в смузі «Зберегти зміни». */
+function useForm(s: S, keys: string[], path?: string) {
+  const save = useSave();
+  const [base, setBase] = useState<Record<string, string>>(() => Object.fromEntries(keys.map((k) => [k, s.values[k] ?? ""])));
+  const [v, setV] = useState<Record<string, string>>(base);
   const bind = (k: string) => ({ value: v[k] ?? "", onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setV({ ...v, [k]: e.target.value }) });
   const check = (k: string) => ({ checked: v[k] === "1", onChange: (e: React.ChangeEvent<HTMLInputElement>) => setV({ ...v, [k]: e.target.checked ? "1" : "0" }) });
-  return { v, setV, bind, check };
+  const dirty = keys.some((k) => (v[k] ?? "") !== (base[k] ?? ""));
+  useRegister(!!path && dirty, () => save.mutate({ path: path!, body: v }).then(() => setBase(v)), () => setV(base));
+  return { v, setV, bind, check, dirty };
 }
+
+const noSubmit = (e: React.FormEvent) => e.preventDefault();
 
 function Secret({ label, k, bind, hint }: { label: string; k: string; bind: (k: string) => object; hint?: string }) {
   return <Field label={label} hint={hint}><input className="mono" autoComplete="off" placeholder="не вказано" {...bind(k)} /></Field>;
 }
 
 function General({ s }: { s: S }) {
-  const save = useSave();
-  const { v, bind, check } = useForm(s, ["company_name", "duplicate_days", "auto_assign", "managers_see_own_only", "auto_status_from_tracking", "tracking_interval_min"]);
+  const { v, setV, bind } = useForm(s, ["company_name", "duplicate_days", "auto_assign", "managers_see_own_only", "auto_status_from_tracking", "tracking_interval_min"], "/settings/general");
+  const flag = (k: string) => ({ checked: v[k] === "1", onChange: (c: boolean) => setV({ ...v, [k]: c ? "1" : "0" }) });
   return (
-    <form className="card form narrow" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/general", body: v }); }}>
-      <Field label="Назва компанії"><input {...bind("company_name")} /></Field>
-      <Field label="Пошук дублів за телефоном, днів" hint="0 — вимкнути"><input type="number" min={0} {...bind("duplicate_days")} /></Field>
-      <Field label="Розподіл нових заявок"><select {...bind("auto_assign")}><option value="off">Вручну — менеджер бере сам</option><option value="round_robin">По черзі між менеджерами</option></select></Field>
-      <Field label="Перевіряти статуси посилок кожні, хв"><input type="number" min={5} {...bind("tracking_interval_min")} /></Field>
-      <div className="checks">
-        <label className="check"><input type="checkbox" {...check("managers_see_own_only")} /> Менеджери бачать лише свої та нерозподілені замовлення</label>
-        <label className="check"><input type="checkbox" {...check("auto_status_from_tracking")} /> Змінювати статус за трекінгом (Відправлено → Отримано / Відмова)</label>
-      </div>
-      <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button></div>
-    </form>
+    <>
+      <form className="card form" onSubmit={noSubmit}>
+        <h2>Компанія</h2>
+        <Field label="Назва в CRM і SMS"><input {...bind("company_name")} /></Field>
+      </form>
+      <form className="card form" onSubmit={noSubmit}>
+        <h2>Замовлення</h2>
+        <div className="cols c3">
+          <Field label="Пошук дублів за телефоном, днів" hint="0 — не шукати"><input type="number" min={0} {...bind("duplicate_days")} /></Field>
+          <Field label="Розподіл нових заявок"><select {...bind("auto_assign")}><option value="off">Вручну — менеджер бере сам</option><option value="round_robin">По черзі між менеджерами</option></select></Field>
+          <Field label="Перевіряти посилки кожні, хв"><input type="number" min={5} {...bind("tracking_interval_min")} /></Field>
+        </div>
+        <Toggle {...flag("managers_see_own_only")} label="Менеджери бачать лише свої й нерозподілені замовлення" />
+        <Toggle {...flag("auto_status_from_tracking")} label="Змінювати статус за трекінгом (Відправлений → Отриманий / Відмова)" />
+      </form>
+    </>
   );
 }
 
@@ -84,8 +224,7 @@ function LeadsSection({ s }: { s: S }) {
   const meta = useMeta();
   const qc = useQueryClient();
   const toast = useToast();
-  const save = useSave();
-  const { v, bind } = useForm(s, ["lead_wait_warn_min", "lead_wait_bad_min", "lead_noanswer_remind_min", "lead_to_order_status"]);
+  const { bind } = useForm(s, ["lead_wait_warn_min", "lead_wait_bad_min", "lead_noanswer_remind_min", "lead_to_order_status"], "/settings/general");
   const toggle = useMutation({
     mutationFn: async (enabled: boolean) => {
       let move_open = false;
@@ -117,12 +256,11 @@ function LeadsSection({ s }: { s: S }) {
           onChange={(e) => toggle.mutate(e.target.checked)} /><span /></span>
       </div>
       {meta.leads_enabled && (
-        <form className="lc-grid" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/general", body: v }); }}>
+        <form className="lc-grid" onSubmit={noSubmit}>
           <Field label="Чекає — помаранчевим після, хв"><input type="number" min={1} {...bind("lead_wait_warn_min")} /></Field>
           <Field label="Чекає — червоним після, хв"><input type="number" min={1} {...bind("lead_wait_bad_min")} /></Field>
           <Field label="Нагадати після недодзвону через, хв"><input type="number" min={5} {...bind("lead_noanswer_remind_min")} /></Field>
           <Field label="Замовлення з ліда отримує статус"><select {...bind("lead_to_order_status")}><option value="confirmed">Прийнятий</option><option value="unsorted">Несортований</option></select></Field>
-          <div className="form-actions"><button className="btn" disabled={save.isPending}>Зберегти пороги</button></div>
         </form>
       )}
     </section>
@@ -172,14 +310,13 @@ var p = new URLSearchParams(location.search), f = document.forms[0];
 }
 
 function Delivery({ s }: { s: S }) {
-  const save = useSave();
-  const up = useForm(s, ["up_bearer", "up_token", "up_tracking_bearer", "up_sender_uuid", "up_sandbox", "up_type"]);
-  const me = useForm(s, ["meest_username", "meest_password", "meest_sender_branch_id", "meest_sender_name", "meest_sender_phone"]);
+  const up = useForm(s, ["up_bearer", "up_token", "up_tracking_bearer", "up_sender_uuid", "up_sandbox", "up_type"], "/settings/up");
+  const me = useForm(s, ["meest_username", "meest_password", "meest_sender_branch_id", "meest_sender_name", "meest_sender_phone"], "/settings/meest");
   return (
     <div className="stack">
       <NpAccounts s={s} />
       <div className="grid half">
-        <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/up", body: up.v }); }}>
+        <form className="card form" onSubmit={noSubmit}>
           <h2>Укрпошта <Badge kind="warn">бета</Badge></h2>
           <Secret label="Bearer eCom" k="up_bearer" bind={up.bind} /><Secret label="Counterparty token" k="up_token" bind={up.bind} />
           <Secret label="Bearer StatusTracking" k="up_tracking_bearer" bind={up.bind} hint="Якщо порожньо — Bearer eCom" />
@@ -188,14 +325,12 @@ function Delivery({ s }: { s: S }) {
             <Field label="Тип відправлення"><select {...up.bind("up_type")}><option value="STANDARD">Стандарт</option><option value="EXPRESS">Експрес</option></select></Field>
           </div>
           <label className="check"><input type="checkbox" {...up.check("up_sandbox")} /> Тестове середовище</label>
-          <div className="form-actions"><button className="btn primary">Зберегти</button></div>
         </form>
-        <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/meest", body: me.v }); }}>
+        <form className="card form" onSubmit={noSubmit}>
           <h2>Meest <Badge kind="warn">бета</Badge></h2>
           <div className="cols"><Field label="Логін API"><input {...me.bind("meest_username")} /></Field><Secret label="Пароль API" k="meest_password" bind={me.bind} /></div>
           <Field label="ID відділення відправника"><input className="mono" {...me.bind("meest_sender_branch_id")} /></Field>
           <div className="cols"><Field label="Відправник"><input {...me.bind("meest_sender_name")} /></Field><Field label="Телефон"><input {...me.bind("meest_sender_phone")} /></Field></div>
-          <div className="form-actions"><button className="btn primary">Зберегти</button></div>
         </form>
       </div>
     </div>
@@ -205,19 +340,18 @@ function Delivery({ s }: { s: S }) {
 function Sms({ s }: { s: S }) {
   const save = useSave();
   const toast = useToast();
-  const f = useForm(s, ["sms_enabled", "sms_token", "sms_sender", "viber_sender"]);
+  const f = useForm(s, ["sms_enabled", "sms_token", "sms_sender", "viber_sender"], "/settings/sms");
   const [test, setTest] = useState({ phone: "", channel: "sms" });
   const [nt, setNt] = useState({ status_id: s.statuses[0]?.id ?? 0, channel: "sms", text: "" });
   const testMut = useMutation({ mutationFn: () => api.post("/settings/sms-test", test), onSuccess: () => toast("Тестове повідомлення відправлено"), onError: (e) => toast(errText(e), "error") });
   return (
     <div className="grid half">
       <div className="stack">
-        <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/sms", body: f.v }); }}>
+        <form className="card form" onSubmit={noSubmit}>
           <h2>TurboSMS</h2>
           <label className="check"><input type="checkbox" {...f.check("sms_enabled")} /> Автоматично надсилати при зміні статусу</label>
           <Secret label="Токен API" k="sms_token" bind={f.bind} hint="turbosms.ua → Підключення → API (HTTP)" />
           <div className="cols"><Field label="Альфа-ім'я SMS"><input {...f.bind("sms_sender")} /></Field><Field label="Відправник Viber"><input {...f.bind("viber_sender")} /></Field></div>
-          <div className="form-actions"><button className="btn primary">Зберегти</button></div>
         </form>
         <form className="card form" onSubmit={(e) => { e.preventDefault(); testMut.mutate(); }}>
           <h2>Тестове повідомлення</h2>
@@ -265,7 +399,9 @@ function TemplateRow({ t, statuses, onSave }: { t: S["sms_templates"][number]; s
 
 function Statuses({ s }: { s: S }) {
   const save = useSave();
-  const [rows, setRows] = useState(s.statuses);
+  const tr = useTracked(() => s.statuses);
+  const rows = tr.value, setRows = tr.set;
+  useRegister(tr.dirty, () => save.mutate({ path: "/settings/statuses", body: rows }, { onSuccess: (x) => tr.reset(x.statuses) }), tr.restore);
   const [nw, setNw] = useState({ name: "", color: "#64748b", stock_action: "none", sort: 200 });
   const upd = (id: number, patch: Partial<Status>) => setRows(rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   return (
@@ -283,13 +419,12 @@ function Statuses({ s }: { s: S }) {
               <td><input type="checkbox" checked={r.approved} onChange={(e) => upd(r.id, { approved: e.target.checked })} /></td>
               <td><input type="checkbox" checked={r.final} onChange={(e) => upd(r.id, { final: e.target.checked })} /></td>
               <td><input type="checkbox" checked={r.active} disabled={r.code === "new"} onChange={(e) => upd(r.id, { active: e.target.checked })} /></td>
-              <td>{!r.system && <button className="btn sm danger" onClick={() => { if (window.confirm("Видалити статус?")) save.mutate({ path: `/settings/statuses/${r.id}`, method: "del" }, { onSuccess: (x) => setRows(x.statuses) }); }}><Trash2 size={13} /></button>}</td>
+              <td>{!r.system && <button className="btn sm danger" onClick={() => { if (window.confirm("Видалити статус?")) save.mutate({ path: `/settings/statuses/${r.id}`, method: "del" }, { onSuccess: (x) => tr.reset(x.statuses) }); }}><Trash2 size={13} /></button>}</td>
             </tr>
           ))}</tbody>
         </table>
-        <div style={{ padding: 12 }}><button className="btn primary" onClick={() => save.mutate({ path: "/settings/statuses", body: rows })}>Зберегти статуси</button></div>
       </div>
-      <form className="card row" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/statuses", body: nw, method: "post" }, { onSuccess: (x) => { setRows(x.statuses); setNw({ ...nw, name: "" }); } }); }}>
+      <form className="card row" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/statuses", body: nw, method: "post" }, { onSuccess: (x) => { tr.reset(x.statuses); setNw({ ...nw, name: "" }); } }); }}>
         <Field label="Новий статус"><input value={nw.name} onChange={(e) => setNw({ ...nw, name: e.target.value })} required /></Field>
         <Field label="Колір"><input type="color" value={nw.color} onChange={(e) => setNw({ ...nw, color: e.target.value })} /></Field>
         <Field label="Дія зі складом"><select value={nw.stock_action} onChange={(e) => setNw({ ...nw, stock_action: e.target.value })}>{Object.entries(s.stock_actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
@@ -375,10 +510,9 @@ function Directories({ s }: { s: S }) {
 }
 
 function ExtraFields({ s }: { s: S }) {
-  const save = useSave();
-  const { v, bind, check } = useForm(s, ["extra1_name", "extra2_name", "extra3_name", "extra4_name", "extra1_on", "extra2_on", "extra3_on", "extra4_on"]);
+  const { v, bind, check } = useForm(s, ["extra1_name", "extra2_name", "extra3_name", "extra4_name", "extra1_on", "extra2_on", "extra3_on", "extra4_on"], "/settings/fields");
   return (
-    <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/fields", body: v }); }}>
+    <form className="card form" onSubmit={noSubmit}>
       <h2>Додаткові поля замовлення</h2>
       <p className="hint">До чотирьох довільних полів у картці (магазин маркетплейсу, номер замовлення Rozetka, посилання…). Вимкнені поля не показуються в картці й фільтрах; дані в них зберігаються. З лендингу — як extra1–extra4.</p>
       <div className="xf-list">{[1, 2, 3, 4].map((i) => (
@@ -388,7 +522,6 @@ function ExtraFields({ s }: { s: S }) {
           <input {...bind(`extra${i}_name`)} placeholder={`Назва поля ${i}`} disabled={v[`extra${i}_on`] === "0"} aria-label={`Назва поля ${i}`} />
         </div>
       ))}</div>
-      <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button></div>
     </form>
   );
 }
@@ -399,13 +532,15 @@ const rk = () => `r${++rowSeq}`;
 
 function DirEditor({ kind, title, hint, items, statuses, offices }: { kind: string; title: string; hint: string; items: (DirItem | Reason)[]; statuses?: Status[]; offices?: DirItem[] }) {
   const save = useSave();
-  const [rows, setRows] = useState<Row<DirItem & { status_ids?: number[] }>[]>(() => items.map((x) => ({ ...x, key: rk() })));
+  const tr = useTracked<Row<DirItem & { status_ids?: number[] }>[]>(() => items.map((x) => ({ ...x, key: rk() })));
+  const rows = tr.value, setRows = tr.set;
   const upd = (key: string, patch: Partial<DirItem & { status_ids?: number[]; delete?: boolean }>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const visible = rows.filter((r) => !r.delete);
   const [open, setOpen] = useState("");
   const submit = () => save.mutate({ path: `/settings/dir/${kind}`, method: "put", body: rows.filter((r) => r.name.trim()).map((r, i) => ({ id: r.id || undefined, name: r.name, active: r.active, sort: i * 10, delete: !!r.delete, status_ids: r.status_ids, office_id: offices ? r.office_id ?? null : undefined,
     ...(kind === "marks" ? { icon: r.icon ?? "tag", color: r.color ?? "#475569" } : {}) })) },
-    { onSuccess: (x) => { const list = (x as S)[kind === "sources" ? "order_sources" : (kind as "offices" | "reasons" | "marks")] as (DirItem | Reason)[]; setRows(list.map((y) => ({ ...y, key: rk() }))); } });
+    { onSuccess: (x) => { const list = (x as S)[kind === "sources" ? "order_sources" : (kind as "offices" | "reasons" | "marks")] as (DirItem | Reason)[]; tr.reset(list.map((y) => ({ ...y, key: rk() }))); } });
+  useRegister(tr.dirty, submit, tr.restore);
   return (
     <div className="card">
       <h2>{title} <span className="muted">{visible.length}</span></h2>
@@ -430,8 +565,6 @@ function DirEditor({ kind, title, hint, items, statuses, offices }: { kind: stri
       </div>
       <div className="form-actions">
         <button type="button" className="btn sm" onClick={() => setRows([...rows, { id: 0, name: "", active: true, sort: 0, status_ids: [], key: rk() }])}><Plus size={14} /> Додати</button>
-        <span className="spacer" />
-        <button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти</button>
       </div>
     </div>
   );
@@ -439,12 +572,14 @@ function DirEditor({ kind, title, hint, items, statuses, offices }: { kind: stri
 
 function PaymentMethods({ s }: { s: S }) {
   const save = useSave();
-  const [rows, setRows] = useState<Row<PaymentMethod>[]>(() => s.payment_methods.map((m) => ({ ...m, key: rk() })));
+  const tr = useTracked<Row<PaymentMethod>[]>(() => s.payment_methods.map((m) => ({ ...m, key: rk() })));
+  const rows = tr.value, setRows = tr.set;
   const [showOff, setShowOff] = useState(false);
   const upd = (key: string, patch: Partial<PaymentMethod>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const move = (i: number, d: number) => { const a = [...rows]; const j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; setRows(a); };
   const submit = () => save.mutate({ path: "/settings/payment-methods", method: "put", body: rows.filter((r) => r.name.trim()).map((r, i) => ({ id: r.id || undefined, name: r.name, icon: r.icon, kind: r.kind, checkbox_type: r.checkbox_type, np_cod: r.np_cod ?? "", active: r.active, sort: i * 10 })) },
-    { onSuccess: (x) => setRows((x as S).payment_methods.map((m) => ({ ...m, key: rk() }))) });
+    { onSuccess: (x) => tr.reset((x as S).payment_methods.map((m) => ({ ...m, key: rk() }))) });
+  useRegister(tr.dirty, submit, tr.restore);
   const shown = rows.map((r, i) => [r, i] as const).filter(([r]) => showOff || r.active);
   return (
     <div className="card flush">
@@ -483,8 +618,6 @@ function PaymentMethods({ s }: { s: S }) {
       </table></div>
       <div className="form-actions pad">
         <button type="button" className="btn sm" onClick={() => { setShowOff(true); setRows([...rows, { id: 0, name: "", icon: "cash", kind: "cod", checkbox_type: "", np_cod: "", image: "", active: true, sort: 0, key: rk() }]); }}><Plus size={14} /> Додати вид оплати</button>
-        <span className="spacer" />
-        <button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти види оплат</button>
       </div>
     </div>
   );
@@ -499,13 +632,15 @@ type Sender = { ref: string; name: string; contacts: { ref: string; name: string
 
 function NpAccounts({ s }: { s: S }) {
   const save = useSave();
-  const [rows, setRows] = useState<Acc[]>(() => s.np_accounts.map((a) => ({ ...a, key: rk() })));
+  const tr = useTracked<Acc[]>(() => s.np_accounts.map((a) => ({ ...a, key: rk() })));
+  const rows = tr.value, setRows = tr.set;
   const [open, setOpen] = useState<string>(() => (s.np_accounts.length === 1 ? "" : ""));
-  const reset = (x: S) => setRows(x.np_accounts.map((a) => ({ ...a, key: rk() })));
+  const reset = (x: S) => tr.reset(x.np_accounts.map((a) => ({ ...a, key: rk() })));
   const upd = (key: string, patch: Partial<Acc>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const body = () => rows.map((r) => ({ ...r, key: undefined, id: r.id || undefined }));
   const submit = () => save.mutate({ path: "/settings/np-accounts", method: "put", body: body() }, { onSuccess: (x) => reset(x as S) });
   const sync = (id: number) => save.mutate({ path: `/settings/np-accounts/${id}/sync`, method: "post" }, { onSuccess: (x) => reset(x as S) });
+  useRegister(tr.dirty, submit, tr.restore);
   const visible = rows.filter((r) => !r.delete);
   const blank = (): Acc => ({ id: 0, name: "", api_key: "", sender_ref: "", sender_name: "", contact_ref: "", contact_name: "", sender_phone: "",
     city_name: "", city_ref: "", warehouse_name: "", warehouse_ref: "", payer: "Recipient", cargo_type: "Parcel", service_type: "WarehouseWarehouse",
@@ -591,7 +726,6 @@ function NpAccounts({ s }: { s: S }) {
             );
           })}
         </div>
-        {rows.length > 0 && <div className="form-actions mt"><button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти ключі</button></div>}
       </div>
       <NpRules s={s} />
     </div>
@@ -601,7 +735,10 @@ function NpAccounts({ s }: { s: S }) {
 function NpRules({ s }: { s: S }) {
   const save = useSave();
   type R = { key: string; np_code: string; status_id: number; except_ids: number[] };
-  const [rows, setRows] = useState<R[]>(() => s.np_status_rules.map((r) => ({ ...r, key: rk() })));
+  const tr = useTracked<R[]>(() => s.np_status_rules.map((r) => ({ ...r, key: rk() })));
+  const rows = tr.value, setRows = tr.set;
+  useRegister(tr.dirty, () => save.mutate({ path: "/settings/np-rules", method: "put", body: rows.map(({ key: _k, ...r }) => r) },
+    { onSuccess: (x) => tr.reset((x as S).np_status_rules.map((r) => ({ ...r, key: rk() }))) }), tr.restore);
   const [open, setOpen] = useState("");
   const statuses = s.statuses.filter((x) => x.active);
   const upd = (key: string, patch: Partial<R>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -626,8 +763,6 @@ function NpRules({ s }: { s: S }) {
           </div>
         ))}
       </div>}
-      <div className="form-actions mt"><button type="button" className="btn primary" disabled={save.isPending}
-        onClick={() => save.mutate({ path: "/settings/np-rules", method: "put", body: rows.map(({ key: _k, ...r }) => r) }, { onSuccess: (x) => setRows((x as S).np_status_rules.map((r) => ({ ...r, key: rk() }))) })}>Зберегти правила</button></div>
     </div>
   );
 }
@@ -640,13 +775,15 @@ function Shops({ s }: { s: S }) {
   const meta = useMeta();
   const save = useSave();
   const toast = useToast();
-  const [rows, setRows] = useState<ShopRow[]>(() => s.shops.map((x) => ({ ...x, key: rk() })));
+  const tr = useTracked<ShopRow[]>(() => s.shops.map((x) => ({ ...x, key: rk() })));
+  const rows = tr.value, setRows = tr.set;
   const [open, setOpen] = useState("");
   const [result, setResult] = useState<Record<number, { check?: ShopCheck; sync?: ShopSync }>>({});
-  const reset = (x: S) => setRows(x.shops.map((y) => ({ ...y, key: rk() })));
+  const reset = (x: S) => tr.reset(x.shops.map((y) => ({ ...y, key: rk() })));
   const upd = (key: string, patch: Partial<ShopRow>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const submit = () => save.mutate({ path: "/settings/shops", method: "put", body: rows.map(({ key: _k, directory: _d, last_sync_at: _l, last_error: _e, imported: _i, ...r }) => ({ ...r, id: r.id || undefined, since: r.since ? r.since.slice(0, 10) : null })) },
     { onSuccess: (x) => reset(x as S) });
+  useRegister(tr.dirty, submit, tr.restore);
   const run = async (id: number, what: "check" | "sync") => {
     try {
       const res = await api.post<ShopCheck | ShopSync>(`/settings/shops/${id}/${what}`);
@@ -748,7 +885,6 @@ function Shops({ s }: { s: S }) {
           );
         })}
       </div>
-      {rows.length > 0 && <div className="form-actions mt"><button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти</button></div>}
     </div>
   );
 }
@@ -760,8 +896,11 @@ const COND = { none: "Без умови (для всіх)", office: "Відді�
 function CheckboxSettings({ s }: { s: S }) {
   const save = useSave();
   const toast = useToast();
-  const [rows, setRows] = useState<CashRow[]>(() => s.cashiers.map((c) => ({ ...c, key: rk() })));
-  const auto = useForm(s, ["cb_sell_status", "cb_return_status", "cb_prepay_status", "cb_postpay_status"]);
+  const tr = useTracked<CashRow[]>(() => s.cashiers.map((c) => ({ ...c, key: rk() })));
+  const rows = tr.value, setRows = tr.set;
+  useRegister(tr.dirty, () => save.mutate({ path: "/settings/checkbox-cashiers", method: "put", body: rows.map(({ key: _k, last_error: _e, sort: _s, ...r }) => ({ ...r, id: r.id || undefined })) },
+    { onSuccess: (x) => tr.reset((x as S).cashiers.map((c) => ({ ...c, key: rk() }))) }), tr.restore);
+  const auto = useForm(s, ["cb_sell_status", "cb_return_status", "cb_prepay_status", "cb_postpay_status"], "/settings/checkbox");
   const upd = (key: string, patch: Partial<CashRow>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const move = (i: number, d: number) => { const a = [...rows]; const j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; setRows(a); };
   const visible = rows.map((r, i) => [r, i] as const).filter(([r]) => !r.delete);
@@ -816,10 +955,8 @@ function CheckboxSettings({ s }: { s: S }) {
             </div>
           ))}
         </div>
-        {rows.length > 0 && <div className="form-actions mt"><button type="button" className="btn primary" disabled={save.isPending}
-          onClick={() => save.mutate({ path: "/settings/checkbox-cashiers", method: "put", body: rows.map(({ key: _k, last_error: _e, sort: _s, ...r }) => ({ ...r, id: r.id || undefined })) }, { onSuccess: (x) => setRows((x as S).cashiers.map((c) => ({ ...c, key: rk() }))) })}>Зберегти каси</button></div>}
       </div>
-      <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/checkbox", body: auto.v }); }}>
+      <form className="card form" onSubmit={noSubmit}>
         <h2>Автоматичні чеки</h2>
         <p className="hint">Чек створюється сам, коли замовлення переходить у вибраний статус (один раз на замовлення).</p>
         <div className="cols">
@@ -827,7 +964,6 @@ function CheckboxSettings({ s }: { s: S }) {
             <Field key={k} label={n}><select {...auto.bind(k)}><option value="">вручну</option>{statuses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
           ))}
         </div>
-        <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button></div>
       </form>
     </div>
   );
@@ -839,7 +975,8 @@ type EntRow = LegalEntity & { key: string; delete?: boolean };
 
 function LegalEntities({ s }: { s: S }) {
   const save = useSave();
-  const [rows, setRows] = useState<EntRow[]>(() => s.legal_entities.map((x) => ({ ...x, key: rk() })));
+  const tr = useTracked<EntRow[]>(() => s.legal_entities.map((x) => ({ ...x, key: rk() })));
+  const rows = tr.value, setRows = tr.set;
   const upd = (key: string, patch: Partial<EntRow>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const visible = rows.filter((r) => !r.delete);
   const [openReq, setOpenReq] = useState("");
@@ -848,7 +985,8 @@ function LegalEntities({ s }: { s: S }) {
     bank: r.bank ?? "", phone: r.phone ?? "", vat_note: r.vat_note ?? "Без ПДВ", signer: r.signer ?? "",
     waybill_prefix: r.waybill_prefix ?? "", invoice_prefix: r.invoice_prefix ?? "", warranty_prefix: r.warranty_prefix ?? "",
     is_default: r.is_default, is_active: r.is_active, delete: !!r.delete })) },
-    { onSuccess: (x) => setRows((x as S).legal_entities.map((y) => ({ ...y, key: rk() }))) });
+    { onSuccess: (x) => tr.reset((x as S).legal_entities.map((y) => ({ ...y, key: rk() }))) });
+  useRegister(tr.dirty, submit, tr.restore);
   return (
     <div className="card">
       <div className="card-head"><h2><Building2 size={16} /> Юридичні особи <span className="muted">{visible.length}</span></h2>
@@ -887,7 +1025,6 @@ function LegalEntities({ s }: { s: S }) {
           </div>
         ))}
       </div>
-      <div className="form-actions mt"><span className="spacer" /><button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти юрособи</button></div>
     </div>
   );
 }
@@ -954,13 +1091,12 @@ function toPng(file: File): Promise<string> {
 }
 
 function DocsSettings({ s }: { s: S }) {
-  const save = useSave();
   const toast = useToast();
   const { v, setV, bind, check } = useForm(s, ["doc_prefix", "invoice_prefix", "warranty_prefix", "doc_unit", "doc_accent", "doc_site", "doc_note",
-    "doc_logo", "invoice_days", "warranty_months", "warranty_terms", "doc_auto_issue", "doc_in_parcel"]);
+    "doc_logo", "invoice_days", "warranty_months", "warranty_terms", "doc_auto_issue", "doc_in_parcel"], "/settings/docs");
   const terms = (v.warranty_terms || "").split("\n").filter((t) => t.trim()).length;
   return (
-    <form className="form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/docs", body: v }); }}>
+    <form className="set-stack" onSubmit={noSubmit}>
       <div className="card form">
         <h2><FileText size={16} /> Документи замовлення</h2>
         <p className="hint">Кнопка «Друк» у картці замовлення: видаткова накладна, рахунок-фактура й гарантійний талон в одному стилі.
@@ -1008,7 +1144,25 @@ function DocsSettings({ s }: { s: S }) {
           <textarea {...bind("warranty_terms")} rows={12} className="terms-area" />
         </Field>
       </div>
-      <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Зберегти</button></div>
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------- Telegram: сповіщення про збої
+function TelegramSettings({ s }: { s: S }) {
+  const toast = useToast();
+  const f = useForm(s, ["alert_tg_token", "alert_tg_chat", "alert_no_leads_hours"], "/settings/alerts");
+  const test = useMutation({ mutationFn: () => api.post("/system/alert-test"), onSuccess: () => toast("Тестове сповіщення надіслано в Telegram"), onError: (e) => toast(errText(e), "error") });
+  return (
+    <form className="card form" onSubmit={noSubmit}>
+      <h2>Сповіщення про збої</h2>
+      <p className="hint">CRM напише, коли не відправляються SMS, перевізник не відповідає 3 перевірки поспіль, черга задач переповнена або давно немає заявок з лендингів — і ще раз, коли все відновиться.</p>
+      <Secret label="Токен бота" k="alert_tg_token" bind={f.bind} hint="Створіть бота в @BotFather і вставте його токен" />
+      <div className="cols">
+        <Field label="ID чату" hint="Напишіть боту, потім дізнайтесь ID у @userinfobot (для групи — з мінусом)"><input {...f.bind("alert_tg_chat")} /></Field>
+        <Field label="Сповістити, якщо немає заявок, год" hint="Лише з 8:00 до 22:00. 0 — не стежити"><input type="number" min={0} {...f.bind("alert_no_leads_hours")} /></Field>
+      </div>
+      <div className="form-actions"><Button icon={Send} onClick={() => test.mutate()} disabled={test.isPending || f.dirty} title={f.dirty ? "Спершу збережіть зміни" : undefined}>Надіслати тестове</Button></div>
     </form>
   );
 }
