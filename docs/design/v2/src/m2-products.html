@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><title>Товари</title>
+<link rel="stylesheet" href="base.css"><script src="icons.js"></script><script src="m2.js"></script>
+<style>
+.seg2 { display: flex; gap: 22px; padding: 0 16px; border-bottom: 1px solid #E4E5E8; margin: 0 0 12px; }
+.seg2 span { padding: 0 0 10px; font-size: 15px; color: var(--muted); font-weight: 500; }
+.seg2 span.on { color: var(--ink); font-weight: 650; border-bottom: 2.5px solid var(--ink); }
+.fl { display: flex; gap: 8px; padding: 0 16px; margin-bottom: 12px; }
+.fc { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 12px; background: #fff; font-size: 13.5px; font-weight: 500; box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+.fc svg.i { width: 14px; height: 14px; color: var(--muted); }
+.pr { display: flex; align-items: center; gap: 12px; padding: 12px; }
+.pr + .pr { border-top: 1px solid #F2F2F0; }
+.ok { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px; display: inline-flex; align-items: center; gap: 4px; }
+</style></head>
+<body><div class="phone" id="p"></div>
+<script>
+const pr = (n, price, stock, st, extra = "") => `<div class="pr"><span class="thumb" style="width:58px;height:58px;border-radius:14px">${icon("box")}</span>
+  <div style="flex:1;min-width:0">${st}<b style="display:block;font-size:15.5px;font-weight:600;margin-top:4px" class="ell">${n}</b>
+  <span style="font-size:13px" class="num"><b style="font-weight:650">${price} ₴</b><span class="muted"> · ${stock}${extra}</span></span></div>${icon("right")}</div>`;
+const act = `<span class="ok" style="background:#E6F5EC;color:#17663D">● у продажу</span>`, low = `<span class="ok" style="background:#FDF0DF;color:#9A5205">● закінчується</span>`, up = `<span class="ok" style="background:#F0ECFC;color:#5A3FB8">допродаж</span>`;
+document.getElementById("p").innerHTML = `
+<div class="hdr"><h1>Товари</h1><span class="cb">${icon("barcode")}</span><span class="cb" style="background:var(--accent);color:#fff">${icon("plus")}</span></div>
+<div class="seg2"><span class="on">Товари 13</span><span>Категорії</span><span>Виробники</span><span>Атрибути</span></div>
+<div class="fl"><span class="fc" style="flex:1;color:var(--muted)">${icon("search")}Назва або артикул</span><span class="fc">Залишок${icon("down")}</span><span class="fc">${icon("filter")}</span></div>
+<div class="body" style="padding-top:0">
+  <section class="blk" style="padding:4px">
+    ${pr("Кавоварка Delonghi", "2 499", "12 шт", act, " · маржа 36%")}
+    ${pr("Бездротовий мікрофон", "1 899", "3 шт", low, " · маржа 34%")}
+    ${pr("Екшн-камера 4K", "5 499", "100 шт", act, " · маржа 22%")}
+    ${pr("Набір капсул 50 шт", "349", "30 шт", up)}
+    ${pr("Кільцева лампа 26 см", "899", "100 шт", act)}
+  </section>
+</div>
+${dock("more")}`;
+document.body.dataset.ready = 1;
+</script></body></html>

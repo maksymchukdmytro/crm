@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><title>Ще</title>
+<link rel="stylesheet" href="base.css"><script src="icons.js"></script><script src="m2.js"></script>
+<style>
+.me { display: flex; align-items: center; gap: 12px; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tl { background: #fff; border-radius: 20px; padding: 14px 12px 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 2px rgba(16,24,40,.04); position: relative; }
+.tl .ic { width: 42px; height: 42px; border-radius: 14px; }
+.tl b { font-size: 13.5px; font-weight: 600; line-height: 1.2; }
+.tl .n { position: absolute; top: 12px; right: 12px; font-size: 12px; font-weight: 700; padding: 2px 7px; border-radius: 99px; }
+.gt { font-size: 13px; font-weight: 650; color: var(--muted); padding: 2px 4px 0; }
+.rowx { display: flex; align-items: center; gap: 12px; padding: 13px 4px; font-size: 15.5px; }
+.rowx + .rowx { border-top: 1px solid #F2F2F0; }
+</style></head>
+<body><div class="phone" id="p"></div>
+<script>
+const t = (ic, c, label, n, nc) => `<div class="tl"><span class="ic ${c}">${icon(ic)}</span><b>${label}</b>${n ? `<span class="n" style="${nc}">${n}</span>` : ""}</div>`;
+const red = "background:#FCE9E8;color:#B42318", ora = "background:#FDF0DF;color:#9A5205";
+document.getElementById("p").innerHTML = `
+<div class="body" style="padding-top:18px;gap:12px">
+  <section class="blk me"><span class="av" style="width:48px;height:48px;font-size:16px">А</span><div style="flex:1"><b style="display:block;font-size:17px;font-weight:650">Адміністратор</b><span class="muted" style="font-size:13.5px">Відділ: усі</span></div><span class="fc" style="height:36px;padding:0 12px;border-radius:12px;background:#F4F5F7;display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500">Змінити ${icon("down")}</span></section>
+  <div class="gt">Продажі</div>
+  <div class="tiles">${t("doc", "blue", "Видаткові накладні")}${t("users", "violet", "Покупці")}${t("board", "gray", "Дошка")}</div>
+  <div class="gt">Склад</div>
+  <div class="tiles">${t("box", "orange", "Товари")}${t("boxes", "green", "Склад", "3", ora)}${t("cart", "blue", "Закупівлі")}</div>
+  <div class="gt">Гроші й аналітика</div>
+  <div class="tiles">${t("wallet", "green", "Оплати")}${t("chart", "violet", "Статистика")}${t("report", "gray", "Звіти")}</div>
+  <section class="blk" style="padding:4px 14px">
+    <div class="rowx">${icon("gear")}<span style="flex:1">Налаштування</span>${icon("right")}</div>
+    <div class="rowx">${icon("history")}<span style="flex:1">Журнал дій</span>${icon("right")}</div>
+    <div class="rowx">${icon("pulse")}<span style="flex:1">Система</span><span class="n" style="font-size:12px;font-weight:700;padding:2px 7px;border-radius:99px;${red}">!</span></div>
+  </section>
+</div>
+${dock("more")}`;
+document.body.dataset.ready = 1;
+</script></body></html>

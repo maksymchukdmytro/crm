@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><title>Замовлення</title>
+<link rel="stylesheet" href="base.css"><script src="icons.js"></script><script src="m2.js"></script>
+<style>
+.oc { background: #fff; border-radius: 20px; padding: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04); display: flex; flex-direction: column; gap: 10px; }
+.oc .r1 { display: flex; align-items: center; gap: 8px; }
+.oc .r2 { display: flex; align-items: baseline; gap: 10px; }
+.oc .nm { flex: 1; min-width: 0; font-size: 17px; font-weight: 650; letter-spacing: -.01em; }
+.oc .sum { font-size: 18px; font-weight: 700; letter-spacing: -.02em; }
+.oc .r3 { display: flex; align-items: center; gap: 10px; padding-top: 10px; border-top: 1px solid #F2F2F0; }
+.np { height: 22px; padding: 0 6px; border-radius: 6px; background: #E53935; color: #fff; font-size: 10.5px; font-weight: 800; display: inline-grid; place-items: center; flex: none; }
+.flag { width: 26px; height: 26px; border-radius: 99px; display: grid; place-items: center; flex: none; }
+.flag svg.i { width: 14px; height: 14px; }
+</style></head>
+<body><div class="phone" id="p"></div>
+<script>
+const o = (no, date, nm, sum, st, prod, more, dv, flags = "") => `<div class="oc">
+  <div class="r1">${stPill(st)}${flags}<span style="flex:1"></span><span class="muted num" style="font-size:12.5px">№${no} · ${date}</span></div>
+  <div class="r2"><span class="nm ell">${nm}</span><span class="sum num">${sum}<span class="cur">₴</span></span></div>
+  <div class="r3"><span class="thumb" style="width:34px;height:34px;border-radius:10px">${icon("box")}</span>
+    <span style="flex:1;min-width:0;font-size:14px" class="ell">${prod}${more ? ` <span class="muted">${more}</span>` : ""}</span>
+    ${dv}</div></div>`;
+const np = `<span class="np">НП</span>`, none = `<span class="muted" style="font-size:12.5px">без доставки</span>`;
+document.getElementById("p").innerHTML = `
+<div class="hdr"><h1>Замовлення</h1><span class="cb">${icon("search")}</span><span class="cb">${icon("filter")}<span class="badge" style="min-width:9px;width:9px;height:9px;padding:0;top:2px;right:2px"></span></span></div>
+<div class="chipsx" style="margin-bottom:12px"><span class="st" style="background:#1C1C1A;color:#fff">Усі<span class="n">42</span></span>${stTab("u", "Несортовані", 16)}${stTab("c", "Прийняті", 2)}${stTab("s", "Відправлені", 2)}${stTab("w", "На пошті", 1)}</div>
+<div class="body" style="gap:10px">
+  ${o(44, "17:10", "Олена Коваль", "1 899", "u", "Бездротовий мікрофон", "", np, `<span class="flag" style="background:#FDF0DF;color:#9A5205" title="Можливий дубль">${icon("alert")}</span>`)}
+  ${o(43, "17:00", "Андрій Мельник", "2 000", "u", "Набір капсул 50 шт", "+1", none, `<span class="flag" style="background:#EAF1FE;color:#2458C4" title="Коментар">${icon("chat")}</span>`)}
+  ${o(42, "16:37", "Микола Бондаренко", "3 899", "s", "Радіосистема DJI Mic 2", "", np)}
+  ${o(40, "15:50", "Тарас Ткаченко", "5 499", "w", "Екшн-камера 4K", "", np)}
+</div>
+${dock("orders")}`;
+document.body.dataset.ready = 1;
+</script></body></html>

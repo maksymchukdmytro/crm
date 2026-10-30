@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><title>Головна</title>
+<link rel="stylesheet" href="base.css"><script src="icons.js"></script><script src="shell.js"></script>
+<style>
+.pg { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 20px 22px 18px; overflow: hidden; }
+.hd { display: flex; align-items: center; gap: 12px; }
+.hd h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+.seg { display: flex; padding: 3px; border-radius: 99px; background: var(--soft); }
+.seg button { height: 30px; padding: 0 14px; border: 0; border-radius: 99px; background: none; font-size: 13.5px; color: var(--muted); }
+.seg button.on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.07); }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
+.tile { border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; }
+.tile .top { display: flex; align-items: center; justify-content: space-between; font-size: 13.5px; color: var(--muted); font-weight: 500; }
+.tile .top span:first-child { display: inline-flex; align-items: center; gap: 7px; }
+.tile .v { margin-top: 10px; font-size: 30px; line-height: 1; font-weight: 600; letter-spacing: -.03em; }
+.tile .v .cur { font-size: 18px; }
+.tile .rows { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line-2); display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+.tile .rows div { display: flex; justify-content: space-between; }
+.tile .rows span:first-child { color: var(--muted); }
+.tile .rows b { font-weight: 500; }
+.attn { border: 1px solid var(--line); border-radius: 16px; display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); overflow: hidden; }
+.at { padding: 12px 16px; display: flex; flex-direction: column; gap: 3px; position: relative; }
+.at + .at { border-left: 1px solid var(--line-2); }
+.at .ic { color: var(--muted); }
+.at b { font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+.at span { font-size: 12.5px; color: var(--muted); }
+.at.bad b, .at.bad .ic { color: var(--bad-ink); }
+.at.warn b, .at.warn .ic { color: var(--warn-ink); }
+.at.zero { opacity: .5; }
+.at .go { position: absolute; right: 10px; top: 12px; color: var(--faint); }
+.grid2 { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0,1.75fr) minmax(0,1.25fr); grid-template-rows: minmax(0,1.2fr) minmax(0,1fr); gap: 14px; }
+.box { border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px; display: flex; flex-direction: column; min-height: 0; }
+.bh { display: flex; align-items: center; gap: 12px; }
+.lg { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.chart { flex: 1; min-height: 0; margin-top: 10px; display: grid; grid-template-columns: 46px 1fr; gap: 8px; }
+.ax { display: flex; flex-direction: column; justify-content: space-between; padding-bottom: 20px; font-size: 11.5px; color: var(--muted); text-align: right; }
+.plot { position: relative; display: flex; align-items: flex-end; gap: 4px; border-bottom: 1px solid var(--line); height: 100%; }
+.plot i { flex: 1; border-radius: 4px 4px 0 0; background: #A9C2F3; }
+.plot i.today { background: var(--accent); }
+.gridl { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--line); }
+.q { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; }
+.q + .q { margin-top: 12px; }
+.q .r b { display: block; font-size: 19px; font-weight: 600; text-align: right; }
+.tbl { display: grid; gap: 0; align-items: center; font-size: 13.5px; }
+.tbl > span { height: 34px; display: flex; align-items: center; border-top: 1px solid var(--line-2); }
+.tbl > span.h { height: 28px; font-size: 12px; color: var(--muted); border-top: 0; }
+.tbl .r { justify-content: flex-end; padding-left: 10px; }
+</style></head>
+<body>
+<div class="app" id="app"></div>
+<script>
+const tile = (ic, label, v, cur, delta, up, rows) => `<div class="tile"><div class="top"><span>${icon(ic)}${label}</span>${delta ? `<span class="delta ${up ? "up" : "down"}">${icon(up ? "arrowup" : "arrowdown")}${delta}</span>` : ""}</div>
+  <div class="v num">${v}${cur ? `<span class="cur">${cur}</span>` : ""}</div>
+  <div class="rows">${rows.map(([a, b]) => `<div><span>${a}</span><b class="num">${b}</b></div>`).join("")}</div></div>`;
+const attn = [["inbox", 4, "нових лідів", "bad"], ["clock", 16, "несортованих", "bad"], ["box", 2, "чекають відправки", "warn"], ["pin", 1, "чекають на пошті", "warn"], ["bell", 0, "нагадування зараз", "zero"], ["truck", 7, "у дорозі", ""], ["wallet", "24 300 ₴", "очікуємо післяплату", ""], ["alert", 3, "товари закінчуються", "warn"]].slice(0, 7)
+  .map(([ic, n, l, k]) => `<div class="at ${k}"><span class="ic">${icon(ic)}</span><b class="num">${n}</b><span>${l}</span><span class="go">${icon("right")}</span></div>`).join("");
+const v = [21, 28, 35, 22, 18, 31, 40, 42, 33, 29, 24, 38, 45, 30, 27, 41, 48, 36, 26, 22, 44, 50, 39, 31, 28, 46, 52, 41, 35, 19];
+const p = [25, 22, 30, 28, 24, 26, 33, 35, 30, 27, 29, 31, 36, 34, 28, 30, 38, 33, 29, 27, 35, 40, 37, 32, 30, 38, 41, 36, 33, 31];
+const bars = v.map((x, i) => `<i class="${i === v.length - 1 ? "today" : ""}" style="height:${x / 60 * 100}%"></i>`).join("");
+const pts = p.map((x, i) => `${((i + .5) / 30 * 100).toFixed(2)},${(100 - x / 60 * 100).toFixed(1)}`).join(" ");
+const C = 2 * Math.PI * 17;
+const ring = (val, color) => `<svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="17" fill="none" stroke="#EFEFEC" stroke-width="5"/><circle cx="22" cy="22" r="17" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${C * val / 100} ${C}" transform="rotate(-90 22 22)"/></svg>`;
+const q = [["Апрув", 72, "+3 п.", 1, "підтверджені з усіх заявок", "var(--accent)"], ["Викуп", 78, "−2 п.", 0, "отримані серед отриманих і відмов", "var(--ok)"], ["Допродаж", 31, "+5 п.", 1, "замовлення з допродажем", "var(--violet)"]]
+  .map(([l, val, d, up, hint, c]) => `<div class="q">${ring(val, c)}<div><div style="font-size:14px">${l}</div><div class="muted" style="font-size:12px">${hint}</div></div><div class="r"><b class="num">${val}%</b><span class="delta ${up ? "up" : "down"}" style="height:20px;font-size:11.5px">${d}</span></div></div>`).join("");
+const topRows = [["Павербанк Volt 20 000", 142, "227 058"], ["Чохол MagSafe", 118, "52 982"], ["Навушники TWS Pro", 64, "82 560"]]
+  .map(([n, k, s]) => `<span class="ell">${n}</span><span class="r num muted">${k}</span><span class="r num" style="font-weight:500">${s} ₴</span>`).join("");
+const team = [["ОЛ", "Олена Литвин", 14, 9, "78%", "12 940"], ["АН", "Андрій Нечай", 11, 6, "64%", "8 210"], ["ІГ", "Ірина Гуменюк", 5, 3, "60%", "3 870"]]
+  .map(([i, n, l, o, a, s]) => `<span style="gap:8px"><span class="av s">${i}</span><span class="ell">${n}</span></span><span class="r num">${l}</span><span class="r num">${o}</span><span class="r num">${a}</span><span class="r num" style="font-weight:500">${s} ₴</span>`).join("");
+
+document.getElementById("app").innerHTML = sidebar("home") + `
+<div class="main">${topbar()}
+  <section class="work"><div class="pg">
+    <div class="hd"><h1>Головна</h1><span class="muted">Пʼятниця, 30 жовтня · усі відділи</span><span style="flex:1"></span>
+      <div class="seg"><button class="on">Жовтень</button><button>Вересень</button><button>Свій період</button></div></div>
+    <div class="tiles">
+      ${tile("clock", "Сьогодні", "18 896", "₴", "68% до вчора", 0, [["Замовлень · сер. чек", "5 · 3 779 ₴"], ["Учора", "58 501 ₴"]])}
+      ${tile("calendar", "Жовтень", "130 020", "₴", "9% до вересня", 1, [["Замовлень · сер. чек", "39 · 3 334 ₴"], ["1–30 вересня", "119 280 ₴"]])}
+      ${tile("users", "Покупці", "3 412", "", "", 1, [["Повторні", "27%"], ["У чорному списку", "14"]])}
+      ${tile("plus", "Нові покупці", "+128", "", "6%", 1, [["Сьогодні", "+9"], ["1–30 вересня", "+121"]])}
+    </div>
+    <div><div class="lbl" style="margin:0 0 8px 2px">Потребує уваги</div><div class="attn">${attn}</div></div>
+    <div class="grid2">
+      <div class="box">
+        <div class="bh"><span class="h2">Продажі за жовтень</span>
+          <span class="lg"><span style="width:10px;height:10px;border-radius:3px;background:#A9C2F3"></span>жовтень</span>
+          <span class="lg"><span style="width:16px;border-top:2px dashed #8A8984"></span>вересень</span>
+          <span style="flex:1"></span><span class="muted" style="font-size:12.5px">сума за день · без скасованих і дублів</span></div>
+        <div class="chart"><div class="ax"><span>60 тис</span><span>30 тис</span><span>0</span></div>
+          <div style="display:flex;flex-direction:column;min-height:0">
+            <div class="plot"><span class="gridl" style="top:0"></span><span class="gridl" style="top:50%"></span>${bars}
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="#8A8984" stroke-width="1.6" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/></svg></div>
+            <div style="display:flex;justify-content:space-between;padding-top:5px;font-size:11.5px;color:var(--muted)"><span>1</span><span>8</span><span>15</span><span>22</span><span>30</span></div></div></div>
+      </div>
+      <div class="box"><div class="bh" style="margin-bottom:12px"><span class="h2">Якість продажів</span><span class="muted" style="font-size:12.5px">до вересня</span></div>${q}</div>
+      <div class="box"><div class="bh"><span class="h2" style="flex:1">Топ товарів жовтня</span><span style="font-size:13px;color:var(--accent-ink);font-weight:500">Статистика</span></div>
+        <div class="tbl" style="grid-template-columns:minmax(0,1fr) 60px 100px;margin-top:6px"><span class="h">Товар</span><span class="h r">Шт</span><span class="h r">Сума</span>${topRows}</div></div>
+      <div class="box"><div class="bh"><span class="h2">Команда сьогодні</span><span class="muted" style="font-size:12px">видно адміністратору</span></div>
+        <div class="tbl" style="grid-template-columns:minmax(0,1fr) 38px 52px 48px 76px;margin-top:6px"><span class="h">Менеджер</span><span class="h r">Лідів</span><span class="h r">Замовл.</span><span class="h r">Апрув</span><span class="h r">Сума</span>${team}</div></div>
+    </div>
+  </div></section>
+</div>`;
+document.body.dataset.ready = 1;
+</script>
+</body></html>

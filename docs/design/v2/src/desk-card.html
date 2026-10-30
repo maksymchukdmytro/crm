@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><title>Картка замовлення</title>
+<link rel="stylesheet" href="base.css"><script src="icons.js"></script>
+<style>
+body { background: #8E8E8A; }
+.wrap { width: 1440px; height: 900px; padding: 18px 22px; }
+.win { height: 100%; background: var(--bg); border-radius: 18px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.25); }
+.wh { display: flex; align-items: center; gap: 8px; height: 60px; padding: 0 12px 0 12px; background: #fff; border-bottom: 1px solid var(--line); }
+.idn { display: flex; flex-direction: column; line-height: 1.2; margin: 0 8px 0 2px; white-space: nowrap; }
+.idn b { font-size: 15px; font-weight: 600; }
+.idn small { font-size: 12px; color: var(--muted); }
+.track { display: flex; align-items: center; }
+.st { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: 99px; border: 1px solid var(--line); background: #fff; font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+.st.done { background: var(--soft); color: var(--muted); }
+.st.done svg.i { width: 13px; height: 13px; color: var(--ok); stroke-width: 2.6; }
+.st.cur { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+.ln { width: 12px; height: 1px; background: #D8D8D3; }
+.saved { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--muted); margin-right: 4px; }
+.saved svg.i { width: 14px; height: 14px; color: var(--ok); stroke-width: 2.6; }
+.body { flex: 1; min-height: 0; display: grid; grid-template-columns: 370px minmax(0,1fr) 318px; gap: 14px; padding: 14px; }
+.col { display: flex; flex-direction: column; gap: 14px; min-width: 0; min-height: 0; }
+.blk { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.bh { display: flex; align-items: center; gap: 8px; }
+.bh .step { width: 20px; height: 20px; border-radius: 99px; background: var(--soft); color: var(--muted); font-size: 11px; font-weight: 600; display: grid; place-items: center; }
+.bh .t { font-size: 13px; font-weight: 600; color: var(--ink-2); flex: 1; }
+.name { font-size: 21px; font-weight: 600; letter-spacing: -.015em; }
+.ph { display: flex; align-items: center; gap: 5px; } .ph .ibtn { width: 32px; height: 32px; } .ph .ibtn svg.i { width: 15px; height: 15px; }
+.ph .f { flex: 1; min-width: 0; white-space: nowrap; display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 99px; font-size: 15px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line-2); padding-top: 12px; }
+.stats div + div { border-left: 1px solid var(--line-2); padding-left: 12px; }
+.stats b { display: block; font-size: 15px; font-weight: 600; }
+.stats span { font-size: 12px; color: var(--muted); }
+.meta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.meta svg.i { color: var(--muted); }
+.links { display: flex; gap: 16px; font-size: 13px; color: var(--accent-ink); font-weight: 500; }
+.sel { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border: 1px solid #DCDCD6; border-radius: 10px; background: #fff; font-size: 14px; }
+.sel .v { flex: 1; }
+.sel svg.i.d { width: 14px; height: 14px; color: var(--muted); }
+.sel.empty .v { color: var(--muted); }
+.note { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.np { height: 18px; padding: 0 5px; border-radius: 4px; background: #E53935; color: #fff; font-size: 10px; font-weight: 700; display: inline-grid; place-items: center; }
+.ghost-f { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: 10px; background: var(--soft); font-size: 13.5px; color: var(--muted); }
+.gl { display: grid; grid-template-columns: 44px minmax(0,1fr) 108px 80px 88px 24px; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+.thumb { width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #EDEDEA, #E2E2DE); display: grid; place-items: center; color: var(--faint); }
+.qty { display: flex; align-items: center; justify-content: space-between; height: 32px; padding: 0 4px; border: 1px solid var(--line); border-radius: 99px; }
+.qty button { width: 24px; height: 24px; border: 0; background: none; color: var(--muted); font-size: 16px; }
+.add { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 1px dashed #D5D5CF; border-radius: 12px; color: var(--muted); font-size: 13.5px; }
+.offer { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 99px; background: #F5F8FE; border: 1px solid var(--accent-line); font-size: 13px; }
+.offer b { color: var(--accent-ink); }
+.tot { margin-top: auto; border-top: 1px solid var(--line-2); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
+.tot div { display: flex; justify-content: space-between; align-items: center; }
+.tot span:first-child { color: var(--muted); }
+.dg { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px 14px; }
+.fl { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.fl > span { font-size: 12px; color: var(--muted); }
+.fl .sel { height: 34px; font-size: 13.5px; }
+.pay-sum { background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 16px; padding: 18px; }
+.pay-sum .big { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; }
+.pay-sum .big b { font-size: 38px; line-height: 1; font-weight: 600; letter-spacing: -.03em; color: #1A49A8; }
+.pay-sum .big span { font-size: 21px; font-weight: 500; color: #86A6E4; }
+.pay-sum .rows { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--accent-line); display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
+.pay-sum .rows div { display: flex; justify-content: space-between; }
+.pay-sum .rows span:first-child { color: #44506B; }
+.todo { display: flex; align-items: center; gap: 10px; min-height: 24px; font-size: 13.5px; }
+.todo .c { width: 18px; height: 18px; border-radius: 99px; border: 1.5px solid #C8C7C1; display: grid; place-items: center; flex: none; }
+.todo.done .c { background: var(--ok); border-color: var(--ok); color: #fff; }
+.todo.done .c svg.i { width: 11px; height: 11px; stroke-width: 3.4; }
+.todo.done span { color: var(--muted); text-decoration: line-through; }
+.todo .go { margin-left: auto; font-size: 12.5px; color: var(--accent-ink); font-weight: 500; }
+.bar { height: 4px; border-radius: 99px; background: var(--soft); overflow: hidden; }
+.bar i { display: block; width: 40%; height: 100%; background: var(--ok); }
+.ev { display: grid; grid-template-columns: 40px 1fr; gap: 8px; font-size: 13px; }
+.ev small { display: block; font-size: 12px; color: var(--muted); }
+</style></head>
+<body>
+<div class="wrap"><div class="win" id="w"></div></div>
+<script>
+const track = [["Новий", "done"], ["Несортований", "cur"], ["Прийнятий"], ["Відправлений"], ["Очікує на отримання"], ["Завершений"]]
+  .map(([l, k], i) => (i ? '<span class="ln"></span>' : "") + `<span class="st ${k || ""}">${k === "done" ? icon("check") : ""}${l}</span>`).join("");
+const fld = (l, v, empty) => `<div class="fl"><span>${l}</span><div class="sel ${empty ? "empty" : ""}"><span class="v ell">${v}</span>${icon("down", "d")}</div></div>`;
+document.getElementById("w").innerHTML = `
+<div class="wh">
+  <button class="ibtn flat">${icon("left")}</button>
+  <div class="idn"><b>№27</b><small>30.10, 13:50</small></div>
+  <div class="track">${track}<button class="ibtn" style="width:30px;height:30px;margin-left:8px" title="Відмова, повернення, дубль">${icon("more")}</button></div>
+  <span style="flex:1"></span>
+  <span class="saved">${icon("check")}Збережено</span>
+  <button class="btn">${icon("printer")}Друк${icon("down")}</button>
+  <button class="btn">${icon("receipt")}Чек${icon("down")}</button>
+  <button class="ibtn" title="Нагадування">${icon("bell")}</button>
+  <button class="ibtn" title="Історія (H)">${icon("history")}<span class="badge">3</span></button>
+  <button class="ibtn flat" title="Закрити (Esc)">${icon("x")}</button>
+</div>
+<div class="body">
+  <div class="col">
+    <section class="blk">
+      <div class="bh"><span class="step">1</span><span class="t">Покупець</span><span class="tag info">новий</span></div>
+      <div class="name">Коваленко Олена Петрівна</div>
+      <div class="ph"><span class="f num">🇺🇦&nbsp;+380 67 111 22 33</span>
+        <button class="ibtn" title="Подзвонити">${icon("phone")}</button><button class="ibtn" title="Viber">${icon("viber")}</button><button class="ibtn" title="Telegram">${icon("send")}</button><button class="ibtn" title="SMS">${icon("chat")}</button></div>
+      <div class="stats"><div><b>1</b><span>замовлення</span></div><div><b>—</b><span>викуп</span></div><div><b>0</b><span>відмов</span></div><div><b class="num">0<span class="cur">₴</span></b><span>сума</span></div></div>
+      <div class="meta">${icon("bank")}<span style="flex:1">Максимчук О. В. · <span style="color:var(--ok-ink)">каса ✓ ключ НП ✓</span></span><span style="color:var(--accent-ink);font-weight:500">змінити</span></div>
+      <div class="links"><span>+ Email</span><span>+ Нове замовлення цьому клієнту</span></div>
+    </section>
+    <section class="blk">
+      <div class="bh"><span class="step">3</span><span class="t">Оплата</span><button class="btn" style="height:30px">${icon("receipt")}Чек</button></div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:8px;white-space:nowrap">
+        <div class="sel empty"><span class="v">Оберіть вид оплати</span>${icon("down", "d")}</div>
+        <div class="sel"><span class="v muted" style="font-size:12.5px">Передоплата</span><span class="num">0 ₴</span></div>
+      </div>
+      <div class="note">${icon("arrowup")}<span style="flex:1">У ТТН піде: післяплата 2 499 ₴</span><span style="color:var(--accent-ink);font-weight:500">+ Оплата</span></div>
+    </section>
+    <section class="blk" style="flex:1">
+      <div class="bh"><span class="step">4</span><span class="t">Доставка</span></div>
+      <div class="sel empty"><span class="np">НП</span><span class="v">Місто й відділення</span>${icon("down", "d")}</div>
+      <div class="ghost-f">${icon("barcode")}ТТН з'явиться після створення</div>
+      <div class="note">${icon("wallet")}Післяплата 2 499 ₴ · платить одержувач</div>
+      <div style="display:flex;gap:8px;margin-top:auto">
+        <button class="btn soft" style="flex:1;justify-content:center;height:40px">${icon("truck")}Створити ТТН <kbd>Ctrl ⏎</kbd></button>
+        <button class="ibtn" style="width:40px;height:40px" title="SMS з ТТН, реєстр, наклейка">${icon("more")}</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="blk" style="flex:1">
+      <div class="bh"><span class="step">2</span><span class="t" style="font-size:15px;color:var(--ink)">Товари <span class="muted" style="font-weight:400;font-size:13px">1 позиція</span></span>
+        <button class="btn" style="height:30px">${icon("plus")}Товар</button><button class="btn" style="height:30px">${icon("plus")}Допродаж</button></div>
+      <div class="gl">
+        <span class="thumb">${icon("box")}</span>
+        <span class="two" style="display:flex;flex-direction:column;min-width:0"><b style="font-weight:500;font-size:14.5px" class="ell">Кавоварка Delonghi</b><small class="muted" style="font-size:12.5px">ART-001 · на складі 12 шт</small></span>
+        <span class="qty"><button>−</button><b>1</b><button>+</button></span>
+        <span class="muted num" style="text-align:right;font-size:13px">× 2 499</span>
+        <b class="num" style="text-align:right;font-size:15px">2 499<span class="cur">₴</span></b>
+        <button class="ibtn flat" style="width:24px;height:24px">${icon("x")}</button>
+      </div>
+      <div class="add">${icon("search")}Додати товар: назва, артикул або штрихкод</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span class="note">${icon("sparkle")}Часто беруть разом</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="offer"><b>+</b>Набір капсул 50 шт<span class="muted">349 ₴</span></span>
+          <span class="offer"><b>+</b>Адаптер Lightning<span class="muted">349 ₴</span></span>
+          <span class="offer"><b>+</b>Карта пам'яті 64 ГБ<span class="muted">399 ₴</span></span>
+        </div>
+      </div>
+      <div class="tot">
+        <div><span>Товари</span><b class="num" style="font-weight:500">2 499 ₴</b></div>
+        <div><span>Знижка</span><span class="sel num" style="height:30px;width:110px;justify-content:flex-end;color:var(--muted)">0 ₴</span></div>
+        <div><span>Собівартість · прибуток</span><span class="num">1 600 ₴ · <b style="color:var(--ok-ink)">899 ₴</b></span></div>
+      </div>
+    </section>
+    <section class="blk">
+      <div class="bh"><span class="t">Деталі</span></div>
+      <div class="dg">${fld("Джерело", "не вказано", 1)}${fld("Менеджер", "не призначений", 1)}${fld("Відділ", "—", 1)}${fld("Юрособа", "Максимчук О. В.")}${fld("Позначка", "—", 1)}${fld("Нагадати", "не нагадувати", 1)}</div>
+      <div class="sel empty" style="height:40px"><span class="v">Коментар до замовлення</span></div>
+      <div class="links"><span>Поля 1–4 ▾</span><span>UTM і сайт ▾</span></div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="pay-sum">
+      <div style="font-size:13px;color:var(--accent-ink);font-weight:500">До сплати при отриманні</div>
+      <div class="big"><b class="num">2 499</b><span>₴</span></div>
+      <div class="rows"><div><span>Товари</span><span class="num">2 499 ₴</span></div><div><span>Оплата</span><span>не вибрано</span></div><div><span>Чек</span><span style="color:var(--accent-ink);text-decoration:underline">не пробитий</span></div></div>
+    </section>
+    <section class="blk">
+      <div class="bh"><span class="t">Що лишилось</span><span class="muted" style="font-size:12.5px">2 з 5</span></div>
+      <div class="bar"><i></i></div>
+      ${[["Покупець і телефон", 1], ["Товари", 1], ["Вид оплати", 0, "Вибрати"], ["Доставка й ТТН", 0, "Створити"], ["Видаткова в посилку", 0, "Друк"]]
+        .map(([l, d, go]) => `<div class="todo ${d ? "done" : ""}"><span class="c">${d ? icon("check") : ""}</span><span>${l}</span>${go ? `<span class="go">${go}</span>` : ""}</div>`).join("")}
+    </section>
+    <section class="blk" style="flex:1">
+      <div class="bh"><span class="t">Історія</span><span style="font-size:12.5px;color:var(--accent-ink);font-weight:500">Уся · H</span></div>
+      <div class="ev"><span class="muted num">14:05</span><span>Дзвінок · недодзвон<small>Олена Литвин</small></span></div>
+      <div class="ev"><span class="muted num">13:52</span><span>Статус → Несортований<small>Система</small></span></div>
+      <div class="ev"><span class="muted num">13:50</span><span>Створено з лендингу<small>landing-1 · utm facebook</small></span></div>
+    </section>
+  </div>
+</div>`;
+document.body.dataset.ready = 1;
+</script>
+</body></html>

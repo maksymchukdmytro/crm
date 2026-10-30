@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><title>Ліди</title>
+<link rel="stylesheet" href="base.css"><script src="icons.js"></script><script src="m2.js"></script>
+<style>
+.q { background: linear-gradient(135deg, #2F6BE8, #1F4FC0); color: #fff; border-radius: 24px; padding: 18px; display: flex; align-items: center; gap: 14px; }
+.q b { font-size: 30px; font-weight: 700; letter-spacing: -.03em; line-height: 1; }
+.q .go { margin-left: auto; height: 46px; padding: 0 16px; border-radius: 16px; background: #fff; color: #1F4FC0; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.lc { background: #fff; border-radius: 20px; padding: 12px 12px 12px 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+.tm { width: 50px; height: 50px; flex: none; position: relative; display: grid; place-items: center; }
+.tm svg.r { position: absolute; inset: 0; }
+.tm b { font-size: 12px; font-weight: 700; line-height: 1.05; text-align: center; }
+.call { width: 50px; height: 50px; border-radius: 16px; display: grid; place-items: center; flex: none; }
+</style></head>
+<body><div class="phone" id="p"></div>
+<script>
+ST.ln = ["Новий", "#2F6BE8"]; ST.na = ["Недодзвон", "#D9820B"]; ST.cb = ["Передзвонити", "#6D4FD1"];
+const C = 2 * Math.PI * 21;
+const lc = (nm, prod, sum, st, t1, t2, frac, col, hot) => `<div class="lc">
+  <span class="tm"><svg class="r" viewBox="0 0 50 50" aria-hidden="true"><circle cx="25" cy="25" r="21" fill="none" stroke="#EEF0F2" stroke-width="4"/><circle cx="25" cy="25" r="21" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${C * frac} ${C}" transform="rotate(-90 25 25)"/></svg><b style="color:${col}">${t1}<br><span style="font-size:10px;font-weight:600">${t2}</span></b></span>
+  <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px">${stPill(st)}</div>
+    <b style="display:block;font-size:16px;font-weight:650;margin-top:5px" class="ell">${nm}</b>
+    <span class="muted ell" style="display:block;font-size:13px">${prod} · <span class="num">${sum} ₴</span></span></div>
+  <span class="call" style="${hot ? "background:var(--accent);color:#fff" : "background:#EAF1FE;color:#2458C4"}">${icon("phone")}</span></div>`;
+document.getElementById("p").innerHTML = `
+<div class="hdr"><h1>Ліди</h1><span class="cb">${icon("search")}</span><span class="cb">${icon("filter")}</span></div>
+<div class="chipsx" style="margin-bottom:12px"><span class="st" style="background:#1C1C1A;color:#fff">Відкриті<span class="n">6</span></span>${stTab("ln", "Нові", 4)}${stTab("na", "Недодзвон", 2)}${stTab("cb", "Передзвонити", 0)}</div>
+<div class="body" style="gap:10px">
+  <section class="q"><div><b>6</b><div style="font-size:13px;opacity:.85;margin-top:4px">чекають дзвінка<br>найдовше — 1 день</div></div><span class="go">${icon("phone")}Дзвонити</span></section>
+  ${lc("Петренко Іван", "Кавоварка Delonghi", "2 299", "ln", "1", "дн", 1, "#D93025", 1)}
+  ${lc("Коваленко Олена", "Кавоварка Delonghi", "2 499", "ln", "6", "год", .8, "#D93025")}
+  ${lc("Дмитро Савчук", "Екшн-камера 4K", "5 499", "na", "54", "хв", .55, "#D9820B")}
+  ${lc("Оксана Кравець", "Штатив-монопод", "2 797", "ln", "3", "хв", .1, "#1E8A52")}
+</div>
+${dock("leads")}`;
+document.body.dataset.ready = 1;
+</script></body></html>
