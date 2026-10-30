@@ -571,7 +571,10 @@ class Order(Base):
     external_status: Mapped[str] = mapped_column(String(120), default="")
     reason_id: Mapped[int | None] = mapped_column(ForeignKey("status_reasons.id"), nullable=True)
     mark_id: Mapped[int | None] = mapped_column(ForeignKey("order_marks.id"), nullable=True)
-    remind_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)  # нагадати менеджеру
+    remind_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)  # нагадати менеджеру / час передзвону ліда
+    call_attempts: Mapped[int] = mapped_column(Integer, default=0)  # спроби дзвінка ліду (недодзвон, передзвонити)
+    last_call_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    converted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)  # коли з ліда створено замовлення
     country: Mapped[str] = mapped_column(String(2), default="UA")
 
     customer_name: Mapped[str] = mapped_column(String(255), default="")  # «Прізвище Ім'я По батькові» — для пошуку й показу

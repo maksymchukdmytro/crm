@@ -375,3 +375,4 @@ button.link { color: var(--accent-ink-2); }
 .skel-rows { display: flex; flex-direction: column; }
 .skel-row { display: flex; gap: 18px; align-items: center; height: 31px; padding: 0 12px; border-bottom: 1px solid var(--line-2); }
 .skel-row .skel { flex: 1; max-width: 160px; }
+.win:focus, .win:focus-visible, .side-panel:focus, .side-panel:focus-visible { outline: none; }

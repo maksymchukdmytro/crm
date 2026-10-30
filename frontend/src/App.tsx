@@ -8,6 +8,7 @@ import type { Meta } from "./lib/types";
 import Layout from "./components/Layout";
 import { Spinner } from "./components/ui";
 import OrdersPage from "./pages/Orders";
+import LeadsPage from "./pages/Leads";
 import BoardPage from "./pages/Board";
 import { PurchasesPage, WarehousePage } from "./pages/Catalog";
 import ProductsPage from "./pages/Products";
@@ -48,8 +49,8 @@ function Gate() {
         <Route element={<Layout />}>
           <Route index element={<Navigate to={can("home") ? "/home" : "/orders"} replace />} />
           {can("home") && <Route path="home" element={<HomePage />} />}
-          {can("leads") && <Route path="leads" element={<OrdersPage stage="lead" key="lead" />} />}
-          {can("leads") && <Route path="leads/:id" element={<OrdersPage stage="lead" key="lead" />} />}
+          {can("leads") && data.leads_enabled && <Route path="leads" element={<LeadsPage />} />}
+          {can("leads") && data.leads_enabled && <Route path="leads/:id" element={<LeadsPage />} />}
           <Route path="orders" element={<OrdersPage key="order" />} />
           <Route path="orders/:id" element={<OrdersPage key="order" />} />
           {can("customers") && <Route path="customers" element={<CustomersPage />} />}

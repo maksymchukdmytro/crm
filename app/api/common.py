@@ -157,7 +157,14 @@ def j_order_row(o: Order) -> dict:
         "customer_group": ({"name": o.customer.group.name, "color": o.customer.group.color}
                            if o.customer is not None and o.customer.group is not None else None),
         "no_stock": _no_stock(o),
+        "call_attempts": o.call_attempts or 0, "last_call_at": iso(o.last_call_at), "converted_at": iso(o.converted_at),
+        "wait_minutes": _lead_wait(o),
     }
+
+
+def _lead_wait(o: Order):
+    from ..services.leads import wait_minutes
+    return wait_minutes(o)
 
 
 def _no_stock(o: Order) -> bool:
@@ -182,6 +189,7 @@ def j_order(o: Order) -> dict:
         "delivery_cost": money(o.delivery_cost), "prepayment": money(o.prepayment), "discount": money(o.discount),
         "total": money(o.total), "cod_amount": money(o.cod_amount),
         "duplicate_of_id": o.duplicate_of_id, "stock_reserved": o.stock_reserved, "stock_shipped": o.stock_shipped,
+        "call_attempts": o.call_attempts or 0, "last_call_at": iso(o.last_call_at), "converted_at": iso(o.converted_at),
         "created_at": iso(o.created_at), "updated_at": iso(o.updated_at), "shipped_at": iso(o.shipped_at),
         "delivered_at": iso(o.delivered_at), "delivery_checked_at": iso(o.delivery_checked_at),
         "version": o.updated_at.isoformat() if o.updated_at else "",

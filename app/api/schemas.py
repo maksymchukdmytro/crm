@@ -297,6 +297,10 @@ class OrderRowOut(Out):
     warehouse_name: str = ""
     customer_group: GroupTag | None = None
     no_stock: bool = False
+    call_attempts: int = 0
+    last_call_at: str | None = None
+    converted_at: str | None = None
+    wait_minutes: int | None = Field(None, description="Ліди: скільки хвилин чекає дзвінка (None — не чекає)")
     office_id: int | None = None
     np_account_id: int | None = None
     legal_entity_id: int | None = None
@@ -337,7 +341,19 @@ class DayGroup(Out):
     sum: Num = Field(description="Сума без скасованих і дублів")
 
 
+class LeadTabsOut(Out):
+    open: int = 0
+    new: int = 0
+    no_answer: int = 0
+    callback: int = 0
+    duplicate: int = 0
+    refused: int = 0
+    converted: int = 0
+    all: int = 0
+
+
 class OrderListOut(Out):
+    lead_tabs: LeadTabsOut | None = Field(None, description="Лічильники вкладок лідів (stage=lead)")
     items: list[OrderRowOut]
     next: int | None
     total: int | None = None
@@ -421,6 +437,9 @@ class OrderCustomer(Out):
 
 
 class OrderOut(Out):
+    call_attempts: int = 0
+    last_call_at: str | None = None
+    converted_at: str | None = None
     label: Literal["", "rozetka", "carrier"] = Field("", description="що друкувати біля ТТН: маркування Rozetka чи наклейку перевізника")
     pay_check: PayCheckOut | None = None
     ttn_cod_kind: str = ""
@@ -1686,3 +1705,36 @@ class DocumentsOut(Out):
     seller: DocSeller
     docs: dict[str, str]
 
+
+
+# ---------------------------------------------------------------- ліди
+class LeadResultIn(In):
+    result: Literal["no_answer", "callback", "refused", "duplicate"]
+    at: str | None = Field(None, description="Час передзвону (ISO)")
+    reason_id: int | None = None
+    duplicate_of_id: int | None = None
+    note: str | None = Field(None, max_length=2000)
+
+
+class LeadStepOut(Out):
+    order: OrderOut
+    next_id: int | None = None
+
+
+class LeadQueueOut(Out):
+    ids: list[int]
+
+
+class LeadsPreviewOut(Out):
+    enabled: bool
+    open: int
+
+
+class LeadsToggleIn(In):
+    enabled: bool
+    move_open: bool = False
+
+
+class LeadsToggleOut(Out):
+    enabled: bool
+    moved: int = 0

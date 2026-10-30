@@ -10,6 +10,7 @@ import "./theme.css";
 import "./ui.css";
 import "./shell.css";
 import "./list.css";
+import "./leads.css";
 
 initMonitoring();
 

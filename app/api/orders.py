@@ -142,13 +142,29 @@ def _fields(data: dict) -> dict:
 
 # ------------------------------------------------------------------ список
 @router.get("", response_model=OrderListOut)
-def list_orders(request: Request, before: int = 0, after: int = 0, sort: str = "new", limit: int = Query(100, le=500), counts: int = 1,
+def list_orders(request: Request, before: int = 0, after: int = 0, sort: str = "new", tab: str = "", limit: int = Query(100, le=500), counts: int = 1,
                 db: Session = Depends(get_db), user: User = Depends(staff)):
-    """Курсор: sort=new — найновіші вгорі (before=<id>), sort=old — найстаріші вгорі («Несортовані», after=<id>)."""
+    """Курсор: sort=new — найновіші вгорі (before=<id>), sort=old — найстаріші вгорі («Несортовані», after=<id>).
+    Ліди: stage=lead&tab=open|new|no_answer|callback|duplicate|refused|converted|all, sort=wait — хто чекає найдовше (без курсора, до 500)."""
+    from ..services import leads
     f = {k: (request.query_params.get(k) or "").strip() for k in FILTERS}
     base = svc.visible_orders_query(db, user)
-    q = _apply(base, f)
+    lead_tab = tab if f.get("stage") == "lead" and tab in leads.TABS else ""
+    if lead_tab:
+        f_nostage = {**f, "stage": "", "status": ""}
+        q = leads.apply_tab(db, _apply(base, f_nostage), lead_tab)
+    else:
+        q = _apply(base, f)
     old = sort == "old"
+    if sort == "wait":
+        rows = (q.options(selectinload(Order.items), selectinload(Order.status), selectinload(Order.customer).selectinload(Customer.group),
+                          selectinload(Order.payment_method)).order_by(*leads.wait_order(db)).limit(500).all())
+        out = {"items": [j_order_row(o) for o in rows], "next": None, "groups": []}
+        if counts:
+            out["total"] = len(rows)
+            if lead_tab:
+                out["lead_tabs"] = leads.tab_counts(db, _apply(base, {**f, "stage": "", "status": ""}))
+        return out
     if old:
         page_q = q.filter(Order.id > after) if after else q
         order_by = Order.id.asc()
@@ -164,6 +180,8 @@ def list_orders(request: Request, before: int = 0, after: int = 0, sort: str = "
            "groups": _day_groups(db, q, page)}
     if counts:
         out["total"] = q.count()
+        if lead_tab:
+            out["lead_tabs"] = leads.tab_counts(db, _apply(base, {**f, "stage": "", "status": ""}))
         by_status = dict(_apply(base, f, with_status=False).with_entities(Order.status_id, func.count(Order.id))
                          .group_by(Order.status_id).all())
         out["counts"] = {str(k): v for k, v in by_status.items()}

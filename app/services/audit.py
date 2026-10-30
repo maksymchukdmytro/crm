@@ -5,6 +5,10 @@ from sqlalchemy.orm import Session
 from ..models import AuditLog, User
 
 ACTION_NAMES = {
+    "lead_convert": "Створено замовлення з ліда",
+    "lead_result": "Результат дзвінка",
+    "leads_disable": "Розділ «Ліди» вимкнено",
+    "leads_enable": "Розділ «Ліди» увімкнено",
     "create": "Створено",
     "update": "Змінено",
     "status": "Статус",
