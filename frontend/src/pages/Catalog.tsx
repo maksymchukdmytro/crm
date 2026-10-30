@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Boxes, Plus, ShoppingCart, Truck } from "lucide-react";
+import { Check, ChevronRight, CircleAlert, ClipboardList, Lock, PackagePlus, Plus, Search, ShoppingCart, Truck, Wallet, X } from "lucide-react";
 import { api, qs } from "../lib/api";
-import { errText, useMeta, useToast } from "../lib/app";
+import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num } from "../lib/format";
 import type { Move, Product, Purchase, Supplier, Warehouse } from "../lib/types";
-import { Badge, Empty, Field, Kpi, Modal, Spinner } from "../components/ui";
+import { Badge, Button, DenseTable, Empty, Field, Modal, Segmented, Spinner, Window, type DenseCol } from "../components/ui";
 
 
 export function MovesTable({ moves, compact = false }: { moves: Move[]; compact?: boolean }) {
@@ -28,64 +29,126 @@ export function MovesTable({ moves, compact = false }: { moves: Move[]; compact?
   );
 }
 
-// ================================================================ склад
+// ================================================================ склад (UI-DESIGN §8, макет 11)
+type StockRow = { product_id: number; variant_id: number | null; product: string; variant: string; sku: string; stock: number; reserved: number;
+  available: number; min_stock: number; sold_30: number; daily: number; days_left: number | null; dead: boolean; cost: number; photo: string | null };
+type StockData = { rows: StockRow[]; value: number; reserved_units: number; reserved_value: number; low: number; out: number; dead: number; all: number; moves_today: Move[] };
+
+function leftText(r: StockRow) {
+  if (r.available <= 0) return { t: "закінчились", c: "bad" };
+  if (r.days_left == null) return { t: r.dead ? "неліквід" : "не продається", c: "muted" };
+  const d = r.days_left;
+  if (d > 365) return { t: "понад рік", c: "ok" };
+  const word = d === 1 ? "день" : d >= 2 && d <= 4 ? "дні" : "днів";
+  return { t: `через ${d} ${word}`, c: d <= 3 ? "bad" : d <= 10 ? "warn" : "ok" };
+}
+
 export function WarehousePage() {
+  const nav = useNavigate();
+  const [sp, setSp] = useSearchParams();
+  const filter = sp.get("filter") || "all";
+  const [q, setQ] = useState("");
+  const dq = useDebounced(q, 250);
+  const [adjust, setAdjust] = useState<{ product_id: string; variant_id: string } | null>(sp.get("product") ? { product_id: sp.get("product")!, variant_id: "" } : null);
+  const [allMoves, setAllMoves] = useState(false);
+  const { data, isLoading } = useQuery({ queryKey: ["warehouse", "stock", filter, dq], queryFn: () => api.get<StockData>(`/stock${qs({ filter, q: dq || undefined })}`) });
+  const rows = data?.rows ?? [];
+  const toBuy = rows.filter((r) => r.available > 0 && r.days_left != null && r.days_left <= 7);
+  const buyValue = toBuy.reduce((s, r) => s + r.cost * Math.max(0, Math.ceil(r.daily * 30) - r.available), 0);
+  const COLS: DenseCol<StockRow>[] = [
+    { key: "name", label: "Товар · варіант", width: "minmax(200px, 2fr)", title: (r) => `${r.product}${r.variant ? ` · ${r.variant}` : ""}`, render: (r) => (
+      <span className="st-name"><span className="ell">{r.product}</span><small className="ell muted">{[r.variant, r.sku].filter(Boolean).join(" · ") || "—"}</small></span>
+    ) },
+    { key: "stock", label: "Залишок", width: "74px", align: "right", render: (r) => <span className="num">{r.stock}</span> },
+    { key: "res", label: "Резерв", width: "64px", align: "right", render: (r) => <span className="num muted">{r.reserved}</span> },
+    { key: "av", label: "Доступно", width: "76px", align: "right", render: (r) => <b className={`num ${r.available <= 0 ? "t-bad" : ""}`}>{r.available}</b> },
+    { key: "day", label: "Шт/день", width: "66px", align: "right", render: (r) => <span className="num muted">{r.daily ? r.daily.toLocaleString("uk-UA") : "—"}</span> },
+    { key: "fc", label: "Прогноз", width: "minmax(140px, 1fr)", render: (r) => { const l = leftText(r); return <span className={`st-fc ${l.c}`}>{l.c === "ok" ? <Check size={13} /> : l.c === "muted" ? null : <CircleAlert size={13} />}{l.t}</span>; } },
+    { key: "buy", label: "", width: "96px", align: "right", render: (r) => (r.available <= 0 || (r.days_left != null && r.days_left <= 10))
+      ? <Button size={30} onClick={() => nav(`/purchases?new=1&product=${r.product_id}`)}>Закупити</Button> : null },
+  ];
+  return (
+    <div className="page-stock">
+      <div className="list-head st-head">
+        <div><div className="crumbs muted">Склад · Залишки</div><h1>Склад</h1></div>
+        <div className="list-acts">
+          <Button icon={ClipboardList} onClick={() => setAdjust({ product_id: "", variant_id: "" })}>Інвентаризація</Button>
+          <Button icon={PackagePlus} onClick={() => nav("/purchases?new=1")}>Прийняти товар</Button>
+        </div>
+      </div>
+      <div className="st-tiles">
+        <div className="tile"><span className="lbl"><Wallet size={14} />Вартість залишку</span><b className="big-num">{money(data?.value ?? 0)} ₴</b><small>за собівартістю · {rows.reduce((s, r) => s + Math.max(r.stock, 0), 0)} шт</small></div>
+        <div className="tile"><span className="lbl"><Lock size={14} />У резерві</span><b className="big-num">{data?.reserved_units ?? 0} шт</b><small>{money(data?.reserved_value ?? 0)} ₴ у прийнятих замовленнях</small></div>
+        <button type="button" className="tile warn" onClick={() => setSp({ filter: "low" })}><span className="lbl"><CircleAlert size={14} />Закінчуються за тиждень</span><b className="big-num">{data?.low ?? 0}</b><small>варіантів · закупити на ≈ {money(buyValue)} ₴</small></button>
+        <button type="button" className="tile" onClick={() => setSp({ filter: "out" })}><span className="lbl"><X size={14} />Немає в наявності</span><b className="big-num">{data?.out ?? 0}</b><small>товарів з нульовим доступним залишком</small></button>
+      </div>
+      <div className="st-grid">
+        <div className="st-main">
+          <div className="chips-row">
+            <Segmented label="Фільтр складу" value={filter} onChange={(k) => setSp(k === "all" ? {} : { filter: k })}
+              items={[{ key: "all", label: "Усі" }, { key: "low", label: "Закінчуються" }, { key: "out", label: "Немає" }, { key: "dead", label: "Неліквід" }]} />
+            <label className="list-search"><Search size={15} aria-hidden /><input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Товар або артикул" aria-label="Пошук на складі" /></label>
+          </div>
+          <DenseTable<StockRow> label="Залишки" rows={rows} cols={COLS} rowKey={(r) => r.product_id * 100000 + (r.variant_id ?? 0)} isLoading={isLoading}
+            onOpen={(r) => setAdjust({ product_id: String(r.product_id), variant_id: r.variant_id ? String(r.variant_id) : "" })}
+            empty={<div className="empty-state"><p>{filter === "all" ? "Товарів ще немає" : "Тут порожньо — і це добре"}</p></div>} className="st-table" />
+        </div>
+        <aside className="block st-moves">
+          <div className="block-head"><h2>Рухи сьогодні</h2><div className="acts"><button className="link-btn" onClick={() => setAllMoves(true)}>Усі рухи <ChevronRight size={13} /></button></div></div>
+          {(data?.moves_today ?? []).map((m) => (
+            <div key={m.id} className="mv">
+              <b className={`mv-d ${m.stock_delta > 0 ? "plus" : m.stock_delta < 0 && m.kind !== "ship" ? "minus" : ""}`}>
+                {m.stock_delta ? (m.stock_delta > 0 ? `+${m.stock_delta}` : m.stock_delta) : `резерв ${m.reserved_delta > 0 ? m.reserved_delta : m.reserved_delta}`}</b>
+              <div className="mv-t"><span>{m.kind_name}{m.order_id ? ` · №${m.order_id}` : ""}{m.purchase_id ? ` · закупівля №${m.purchase_id}` : ""}</span><small className="muted">{m.product}{m.comment ? ` · ${m.comment}` : ""}</small></div>
+              <span className="muted num mv-at">{m.created_at ? new Date(m.created_at).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }) : ""}</span>
+            </div>
+          ))}
+          {data && !data.moves_today.length && <p className="hint">Сьогодні руху ще не було.</p>}
+        </aside>
+      </div>
+      {adjust && <AdjustWindow initial={adjust} onClose={() => { setAdjust(null); if (sp.get("product")) setSp({}); }} />}
+      {allMoves && <AllMoves onClose={() => setAllMoves(false)} />}
+    </div>
+  );
+}
+
+function AdjustWindow({ initial, onClose }: { initial: { product_id: string; variant_id: string }; onClose: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
-  const [product, setProduct] = useState(0);
-  const [kind, setKind] = useState("");
-  const [lowOnly, setLowOnly] = useState(false);
-  const [adj, setAdj] = useState({ product_id: "", variant_id: "", mode: "set", qty: "", comment: "" });
-  const { data } = useQuery({ queryKey: ["warehouse", product, kind], queryFn: () => api.get<Warehouse>(`/warehouse${qs({ product, kind })}`) });
+  const meta = useMeta();
+  const [adj, setAdj] = useState({ ...initial, mode: "set", qty: "", comment: "" });
   const adjust = useMutation({
     mutationFn: () => api.post<Product>("/warehouse/adjust", { ...adj, variant_id: adj.variant_id ? Number(adj.variant_id) : null }),
-    onSuccess: (p) => { toast(`Залишок «${p.name}»: ${p.stock}`); setAdj({ ...adj, qty: "", comment: "" }); qc.invalidateQueries({ queryKey: ["warehouse"] }); qc.invalidateQueries({ queryKey: ["products"] }); },
+    onSuccess: (p) => { toast(`Залишок «${p.name}»: ${p.stock}`); qc.invalidateQueries({ queryKey: ["warehouse"] }); qc.invalidateQueries({ queryKey: ["products"] }); onClose(); },
     onError: (e) => toast(errText(e), "error"),
   });
-  if (!data) return <Empty><Spinner /></Empty>;
-  const list = lowOnly ? data.products.filter((p) => p.available <= p.min_stock) : data.products;
+  const vs = meta.products.find((p) => String(p.id) === adj.product_id)?.variants?.filter((x) => x.active) ?? [];
   return (
-    <div>
-      <div className="head"><h1><span className="h-ico"><Boxes size={18} /></span>Склад</h1></div>
-      <div className="kpis">
-        <Kpi label="Одиниць на складі" value={data.units} /><Kpi label="У резерві" value={data.reserved} />
-        <Kpi label="Вартість залишків" value={`${money(data.value)} ₴`} sub="за собівартістю" />
-        <Kpi label="Закінчуються" value={<span className={data.low ? "lowstock" : ""}>{data.low}</span>} sub={<a onClick={() => setLowOnly(!lowOnly)}>{lowOnly ? "показати всі" : "показати"}</a>} />
-      </div>
-      <div className="grid two">
-        <div className="card flush tablewrap">
-          <table className="t dense">
-            <thead><tr><th>Товар</th><th className="num">На складі</th><th className="num">Резерв</th><th className="num">Доступно</th><th className="num">Мін.</th><th className="num">Вартість</th></tr></thead>
-            <tbody>{list.map((p) => (
-              <tr key={p.id} className={`clickable ${product === p.id ? "sel-on" : ""}`} onClick={() => { setProduct(product === p.id ? 0 : p.id); setAdj({ ...adj, product_id: String(p.id), variant_id: "" }); }}>
-                <td>{p.name}{p.sku && <span className="sub mono">{p.sku}</span>}</td><td className="num">{p.stock}</td><td className="num">{p.reserved}</td>
-                <td className={`num ${p.available <= p.min_stock ? "lowstock" : ""}`}>{p.available}</td><td className="num muted">{p.min_stock}</td>
-                <td className="num">{money(p.cost * Math.max(p.stock, 0))}</td></tr>
-            ))}</tbody>
-          </table>
+    <Window size="sm" onClose={onClose} title="Прийняти / списати · інвентаризація"
+      footer={<><span className="spacer" /><Button onClick={onClose}>Скасувати</Button><Button variant="primary" disabled={adjust.isPending || !adj.product_id || !adj.qty} onClick={() => adjust.mutate()}>Застосувати</Button></>}>
+      <form className="form" onSubmit={(e) => { e.preventDefault(); adjust.mutate(); }}>
+        <Field label="Товар"><select value={adj.product_id} onChange={(e) => setAdj({ ...adj, product_id: e.target.value, variant_id: "" })} required autoFocus>
+          <option value="">Оберіть товар…</option>{meta.products.map((p) => <option key={p.id} value={p.id}>{p.name} (зараз {p.stock})</option>)}</select></Field>
+        {vs.length > 0 && <Field label="Варіант"><select value={adj.variant_id} onChange={(e) => setAdj({ ...adj, variant_id: e.target.value })} required>
+          <option value="">Оберіть варіант…</option>{vs.map((x) => <option key={x.id} value={x.id}>{x.name} (зараз {x.stock})</option>)}</select></Field>}
+        <div className="cols">
+          <Field label="Режим"><select value={adj.mode} onChange={(e) => setAdj({ ...adj, mode: e.target.value })}><option value="set">Фактичний залишок</option><option value="delta">Додати / відняти (+5, −2)</option></select></Field>
+          <Field label="Кількість"><input value={adj.qty} onChange={(e) => setAdj({ ...adj, qty: e.target.value })} required inputMode="numeric" /></Field>
         </div>
-        <form className="card form" onSubmit={(e) => { e.preventDefault(); adjust.mutate(); }}>
-          <h2>Коригування / інвентаризація</h2>
-          <Field label="Товар"><select value={adj.product_id} onChange={(e) => setAdj({ ...adj, product_id: e.target.value, variant_id: "" })} required>
-            <option value="">Оберіть товар…</option>{data.products.map((p) => <option key={p.id} value={p.id}>{p.name} (зараз {p.stock})</option>)}</select></Field>
-          {(() => {
-            const vs = data.products.find((p) => String(p.id) === adj.product_id)?.variants?.filter((x) => x.active) ?? [];
-            return vs.length > 0 && <Field label="Варіант" hint="У товару є варіанти — залишок ведеться по кожному">
-              <select value={adj.variant_id} onChange={(e) => setAdj({ ...adj, variant_id: e.target.value })} required>
-                <option value="">Оберіть варіант…</option>{vs.map((x) => <option key={x.id} value={x.id}>{x.name} (зараз {x.stock})</option>)}</select></Field>;
-          })()}
-          <div className="cols">
-            <Field label="Режим"><select value={adj.mode} onChange={(e) => setAdj({ ...adj, mode: e.target.value })}><option value="set">Встановити фактичний залишок</option><option value="delta">Додати / відняти (+5, −2)</option></select></Field>
-            <Field label="Кількість"><input value={adj.qty} onChange={(e) => setAdj({ ...adj, qty: e.target.value })} required inputMode="numeric" /></Field>
-          </div>
-          <Field label="Причина"><input value={adj.comment} onChange={(e) => setAdj({ ...adj, comment: e.target.value })} placeholder="Інвентаризація, брак, пересорт…" /></Field>
-          <div className="form-actions"><button className="btn primary" disabled={adjust.isPending}>Застосувати</button></div>
-        </form>
-      </div>
-      <div className="head mt"><h2 style={{ margin: 0 }}>Рух товарів {product ? `· ${data.products.find((p) => p.id === product)?.name ?? ""}` : ""}</h2>
-        <select style={{ width: "auto" }} value={kind} onChange={(e) => setKind(e.target.value)}><option value="">Усі операції</option>{Object.entries(data.kinds).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
-      <MovesTable moves={data.moves} />
-    </div>
+        <Field label="Причина"><input value={adj.comment} onChange={(e) => setAdj({ ...adj, comment: e.target.value })} placeholder="Інвентаризація, брак, пересорт…" /></Field>
+      </form>
+    </Window>
+  );
+}
+
+function AllMoves({ onClose }: { onClose: () => void }) {
+  const [kind, setKind] = useState("");
+  const { data } = useQuery({ queryKey: ["warehouse", "moves", kind], queryFn: () => api.get<Warehouse>(`/warehouse${qs({ kind })}`) });
+  return (
+    <Window size="lg" onClose={onClose} title="Рух товарів"
+      actions={data && <select style={{ width: "auto" }} value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Операція"><option value="">Усі операції</option>{Object.entries(data.kinds).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>}>
+      {data ? <MovesTable moves={data.moves} /> : <Empty><Spinner /></Empty>}
+    </Window>
   );
 }
 
@@ -93,8 +156,10 @@ export function WarehousePage() {
 const PSTATUS: Record<string, [string, "" | "ok" | "bad" | "info"]> = { draft: ["Чернетка", ""], ordered: ["Замовлено", "info"], received: ["Оприбутковано", "ok"], cancelled: ["Скасовано", "bad"] };
 
 export function PurchasesPage() {
+  const [sp, setSp] = useSearchParams();
   const [status, setStatus] = useState("");
-  const [open, setOpen] = useState<number | "new" | null>(null);
+  const [open, setOpen] = useState<number | "new" | null>(sp.get("new") ? "new" : null);
+  const preset = sp.get("product") || "";
   const [suppliers, setSuppliers] = useState(false);
   const { data } = useQuery({ queryKey: ["purchases", status], queryFn: () => api.get<Purchase[]>(`/purchases${qs({ status })}`) });
   return (
@@ -120,13 +185,13 @@ export function PurchasesPage() {
           </tbody>
         </table>
       </div>
-      {open !== null && <PurchaseModal id={open} onClose={() => setOpen(null)} />}
+      {open !== null && <PurchaseModal id={open} product={open === "new" ? preset : ""} onClose={() => { setOpen(null); if (sp.get("new")) setSp({}); }} />}
       {suppliers && <SuppliersModal onClose={() => setSuppliers(false)} />}
     </div>
   );
 }
 
-function PurchaseModal({ id, onClose }: { id: number | "new"; onClose: () => void }) {
+function PurchaseModal({ id, onClose, product = "" }: { id: number | "new"; onClose: () => void; product?: string }) {
   const meta = useMeta();
   const qc = useQueryClient();
   const toast = useToast();
@@ -135,7 +200,7 @@ function PurchaseModal({ id, onClose }: { id: number | "new"; onClose: () => voi
   const { data: sups = [] } = useQuery({ queryKey: ["suppliers"], queryFn: () => api.get<Supplier[]>("/suppliers") });
   const [draft, setDraft] = useState<{ supplier_id: string; comment: string; items: { product_id: string; qty: string; cost: string }[] } | null>(null);
   const cur = draft ?? (data ? { supplier_id: String(data.supplier_id ?? ""), comment: data.comment, items: data.items.map((i) => ({ product_id: String(i.product_id), qty: String(i.qty), cost: String(i.cost) })) }
-    : { supplier_id: "", comment: "", items: [{ product_id: "", qty: "1", cost: "" }] });
+    : { supplier_id: "", comment: "", items: [{ product_id: product, qty: "1", cost: product ? String(meta.products.find((p) => String(p.id) === product)?.cost || "") : "" }] });
   const editable = isNew || (data && (data.status === "draft" || data.status === "ordered"));
   const total = cur.items.reduce((s, i) => s + num(i.qty) * num(i.cost), 0);
   const productsById = useMemo(() => Object.fromEntries(meta.products.map((p) => [String(p.id), p])), [meta.products]);

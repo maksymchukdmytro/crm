@@ -1,16 +1,17 @@
-// Товари: список з фото й фільтрами; картка товару з вкладками (основне, фото й опис, варіанти, доставка, склад);
+// Товари: список з фото й фільтрами; вікно товару в три колонки (UI-DESIGN §7, макет 10): основне й опис · ціни, склад, доставка · варіанти, допродаж, продажі;
 // довідники каталогу — категорії (два рівні), виробники, атрибути для варіантів.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Archive, Boxes, Factory, FolderTree, Globe, GripVertical, ImagePlus, Layers, Package, Plus, Tags, Trash2, Truck, Wand2, X,
+  Archive, BadgeCheck, Boxes, Check, ChevronLeft, ChevronRight, Copy, Factory, FolderTree, Globe, GripVertical, ImagePlus, Package, Plus, Tags, Trash2, Wand2, X,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { AttributeGroup, Category, Manufacturer, Product, ProductDetail } from "../lib/types";
-import { Badge, confirmAction, Empty, Field, Kpi, Modal, Spinner } from "../components/ui";
+type ProductSummary = { days: number; qty: number; sum: number; margin: number; buyout_rate: number | null; upsell_share: number | null; orders: number; sold_total: number };
+import { Badge, Block, Button, confirmAction, Empty, Field, IconButton, Modal, Spinner, Tag, Toggle, Window } from "../components/ui";
 import MultiSelect from "../components/MultiSelect";
 import { MovesTable } from "./Catalog";
 import "./products.css";
@@ -138,7 +139,8 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
   const toast = useToast();
   const meta = useMeta();
   const { data } = useQuery({ queryKey: ["products", "one", id], queryFn: () => api.get<ProductDetail>(`/products/${id}`), enabled: !isNew });
-  const [tab, setTab] = useState("main");
+  const [showMoves, setShowMoves] = useState(false);
+  const [offerWith, setOfferWith] = useState<number[] | null>(null);
   const [f, setF] = useState<Record<string, unknown>>({});
   const [variants, setVariants] = useState<VRow[] | null>(null);
   const [pending, setPending] = useState<File[]>([]);
@@ -183,99 +185,192 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
     onSuccess: (r) => { refresh(); toast(r.message, r.deleted ? "ok" : "warn"); onClose(); },
     onError: (e) => toast(errText(e), "error"),
   });
-  if (!isNew && !data) return <Modal onClose={onClose} size="sm"><Empty><Spinner /></Empty></Modal>;
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setF({ ...f, [k]: e.target instanceof HTMLInputElement && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   const price = num(v("price", 0)), spec = num(v("spec_price", 0)), cost = num(v("cost", 0));
   const sale = spec > 0 ? spec : price;
-  const tabs: [string, string, typeof Package, number?][] = [["main", "Основне", Package], ["media", "Фото й опис", ImagePlus, (data?.photos?.length ?? 0) + pending.length],
-    ["variants", "Варіанти", Layers, curVariants.filter((x) => x.active).length], ["shipping", "Доставка", Truck], ...(data ? [["stock", "Склад", Boxes] as [string, string, typeof Package]] : [])];
+
+  const sold = useQuery({ queryKey: ["products", "summary", id], queryFn: () => api.get<ProductSummary>(`/products/${id}/summary?days=30`), enabled: !isNew });
+  const offerInit = isNew ? [] : meta.products.filter((p) => p.upsell && (p.upsell_for ?? []).includes(id as number)).map((p) => p.id);
+  const offers = offerWith ?? offerInit;
+  const upsellPool = meta.products.filter((p) => p.id !== (isNew ? 0 : id));
+  const saveAll = async () => {
+    const p = await save.mutateAsync();
+    if (offerWith && !isNew) {  // «Пропонувати разом з цим товаром»: оновити список «до яких товарів» у самих допродажів
+      const add = offerWith.filter((x) => !offerInit.includes(x)), rm = offerInit.filter((x) => !offerWith.includes(x));
+      for (const pid of [...add, ...rm]) {
+        const up = meta.products.find((x) => x.id === pid);
+        if (!up) continue;
+        const list = add.includes(pid) ? [...new Set([...(up.upsell_for ?? []), p.id])] : (up.upsell_for ?? []).filter((x) => x !== p.id);
+        await api.patch(`/products/${pid}`, { upsell: true, upsell_for: list });
+      }
+      setOfferWith(null);
+      refresh();
+    }
+  };
+  const duplicate = useMutation({
+    mutationFn: async () => api.post<Product>("/products", { name: `${v("name", "")} (копія)`, sku: "", price: String(v("price", "0")), cost: String(v("cost", "0")),
+      weight: String(v("weight", "0.5")), min_stock: String(v("min_stock", "0")), category_id: v<number | null>("category_id", null) || null,
+      manufacturer_id: v<number | null>("manufacturer_id", null) || null, model: String(v("model", "")), description: String(v("description", "")),
+      countries: v<string[]>("countries", []), spec_price: String(v("spec_price", "0")), wholesale_price: String(v("wholesale_price", "0")),
+      length: num(v("length", 0)), width: num(v("width", 0)), height: num(v("height", 0)), ship_description: String(v("ship_description", "")),
+      warranty_months: Math.round(num(v("warranty_months", 0))), active: false, initial_stock: 0 }),
+    onSuccess: (p) => { refresh(); toast("Копію створено — вимкнена, доки не перевірите"); onCreated(p.id); },
+    onError: (e) => toast(errText(e), "error"),
+  });
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s" && editable) { e.preventDefault(); if (!save.isPending) saveAll(); } };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  });
+  if (!isNew && !data) return <Modal onClose={onClose} size="sm"><Empty><Spinner /></Empty></Modal>;
+  const margin = sale - cost;
+  const head = (
+    <div className="win-head pw-head">
+      <IconButton icon={ChevronLeft} label="Назад (Esc)" quiet onClick={onClose} />
+      <h2 className="ell">{isNew ? "Новий товар" : String(v("name", ""))}</h2>
+      {!isNew && (v("active", true) ? <Tag kind="ok" icon={<BadgeCheck size={12} />}>У продажу</Tag> : <Tag>Не в продажу</Tag>)}
+      <div className="acts">
+        {editable && !isNew && <Button icon={Copy} disabled={duplicate.isPending} onClick={() => duplicate.mutate()}>Дублювати</Button>}
+        {editable && !isNew && <Button variant="danger" icon={data?.sold ? Archive : Trash2} disabled={del.isPending}
+          onClick={() => confirmAction(`${data?.sold ? "Перенести в архів" : "Видалити"} «${data?.name}»? Якщо товар уже був у замовленнях, він перейде в архів.`) && del.mutate()}>
+          {data?.sold ? "В архів" : "Видалити"}</Button>}
+        {editable && <Button variant="primary" icon={Check} kbd="Ctrl S" disabled={save.isPending} onClick={() => saveAll()}>{save.isPending ? "Зберігаю…" : isNew ? "Створити" : "Зберегти"}</Button>}
+        <IconButton icon={X} label="Закрити (Esc)" quiet onClick={onClose} />
+      </div>
+    </div>
+  );
 
   return (
-    <Modal onClose={onClose} size="lg" title={<>{data?.photo && <img className="pm-title-ph" src={`${ROOT}${data.photo}`} alt="" />}{isNew ? "Новий товар" : String(v("name", ""))}</>}>
-      <nav className="subnav pm-tabs">{tabs.map(([k, label, Icon, n]) => <a key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}><Icon size={14} /> {label}{n ? <span className="n">{n}</span> : null}</a>)}</nav>
-      <form className="form pm-form" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
-        <fieldset disabled={!editable}>
-          {tab === "main" && <>
-            <Field label="Назва"><input value={String(v("name", ""))} onChange={set("name")} required autoFocus={isNew} /></Field>
-            <div className="cols c3">
-              <Field label="Категорія"><select value={String(v("category_id", "") ?? "")} onChange={(e) => setF({ ...f, category_id: e.target.value ? Number(e.target.value) : null })}>
-                <option value="">без категорії</option>{categoryOptions(meta.categories).map((c) => <option key={c.id} value={c.id}>{c.depth ? "· " : ""}{c.label}</option>)}</select></Field>
-              <Field label="Виробник"><select value={String(v("manufacturer_id", "") ?? "")} onChange={(e) => setF({ ...f, manufacturer_id: e.target.value ? Number(e.target.value) : null })}>
-                <option value="">не вказано</option>{meta.manufacturers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></Field>
-              <Field label="Модель"><input value={String(v("model", ""))} onChange={set("model")} placeholder="VL49 RGB" /></Field>
-            </div>
-            <div className="cols c3">
-              <Field label="Артикул (SKU)" hint="Для заявок з лендингу й маркетплейсів"><input className="mono" value={String(v("sku", ""))} onChange={set("sku")} /></Field>
-              <Field label="Ціна продажу, ₴"><input value={String(v("price", ""))} onChange={set("price")} inputMode="decimal" required /></Field>
-              <Field label="Акційна ціна, ₴" hint={spec > 0 && price > 0 ? `Знижка ${Math.max(0, Math.round((1 - spec / price) * 100))}% — у замовленні буде акційна` : "Порожньо — без акції"}>
-                <input value={num(v("spec_price", 0)) ? String(v("spec_price", "")) : ""} onChange={set("spec_price")} inputMode="decimal" placeholder="—" /></Field>
-              <Field label="Собівартість, ₴" hint="Середня, оновлюється при оприбуткуванні"><input value={String(v("cost", ""))} onChange={set("cost")} inputMode="decimal" /></Field>
-              <Field label="Оптова ціна, ₴"><input value={num(v("wholesale_price", 0)) ? String(v("wholesale_price", "")) : ""} onChange={set("wholesale_price")} inputMode="decimal" placeholder="—" /></Field>
-              <Field label="Маржа"><div className={`pm-margin ${sale - cost < 0 ? "neg" : ""}`}>{money(sale - cost)} ₴ <small>{sale ? `${Math.round(((sale - cost) / sale) * 100)}%` : ""}</small></div></Field>
-            </div>
-            <div className="cols">
-              {isNew && !curVariants.length && <Field label="Початковий залишок, шт"><input type="number" min={0} value={String(f.initial_stock ?? "0")} onChange={set("initial_stock")} /></Field>}
-              <Field label="Мінімальний залишок" hint="Нижче — підсвічується в списку"><input type="number" value={String(v("min_stock", "0"))} onChange={set("min_stock")} /></Field>
-              <Field label="Країни продажу" hint="Порожньо — товар продається в усіх країнах">
+    <Window size="xl" onClose={onClose} head={head} label={isNew ? "Новий товар" : String(v("name", ""))} bodyClass="pw-body">
+      <fieldset className="pw-grid" disabled={!editable}>
+        <div className="pw-col">
+          <Block title="Основне">
+            <MediaTab productId={isNew ? null : (id as number)} photos={data?.photos ?? []} pending={pending} setPending={setPending} compact
+              description="" onDescription={() => undefined} onChanged={() => { refresh(); qc.invalidateQueries({ queryKey: ["products", "one", id] }); }} />
+            <div className="pw-fields">
+              <Field label="Назва"><input value={String(v("name", ""))} onChange={set("name")} required autoFocus={isNew} /></Field>
+              <div className="pw-2">
+                <Field label="Артикул (SKU)"><input className="mono" value={String(v("sku", ""))} onChange={set("sku")} /></Field>
+                <Field label="Категорія"><select value={String(v("category_id", "") ?? "")} onChange={(e) => setF({ ...f, category_id: e.target.value ? Number(e.target.value) : null })}>
+                  <option value="">без категорії</option>{categoryOptions(meta.categories).map((c) => <option key={c.id} value={c.id}>{c.depth ? "· " : ""}{c.label}</option>)}</select></Field>
+                <Field label="Виробник"><select value={String(v("manufacturer_id", "") ?? "")} onChange={(e) => setF({ ...f, manufacturer_id: e.target.value ? Number(e.target.value) : null })}>
+                  <option value="">не вказано</option>{meta.manufacturers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></Field>
+                <Field label="Модель"><input value={String(v("model", ""))} onChange={set("model")} placeholder="—" /></Field>
+              </div>
+              <Field label="Країни продажу" hint="Порожньо — у всіх країнах">
                 <MultiSelect placeholder="Усі країни" icon={<Globe size={15} />} value={v<string[]>("countries", [])} onChange={(c) => setF({ ...f, countries: c })}
                   options={Object.entries(meta.countries).map(([c, n]) => ({ value: c, label: n }))} /></Field>
+              <label className="check"><input type="checkbox" checked={!!v("active", true)} onChange={set("active")} /> У продажу — показується в замовленнях</label>
             </div>
-            <div className="checks">
-              <label className="check"><input type="checkbox" checked={!!v("upsell", false)} onChange={set("upsell")} /> Допродаж — пропонувати менеджеру до інших товарів</label>
-              {!!v("upsell", false) && (
-                <div className="upsell-box">
-                  <span className="lbl">До яких товарів пропонувати</span>
-                  {mains.length ? <div className="chips">{mains.map((p) => {
-                    const on = curFor.includes(p.id);
-                    return <button type="button" key={p.id} className={`chip ${on ? "on" : ""}`} onClick={() => setUpsellFor(on ? curFor.filter((x) => x !== p.id) : [...curFor, p.id])}>{p.name}</button>;
-                  })}</div> : <span className="hint">Спершу додайте основні товари.</span>}
+          </Block>
+          <Block title="Опис">
+            <textarea className="pw-descr" rows={5} value={String(v("description", ""))} onChange={set("description")} placeholder="Характеристики, комплектація, особливості" aria-label="Опис" />
+          </Block>
+        </div>
+        <div className="pw-col">
+          <Block title="Ціни">
+            <div className="pw-2">
+              <Field label="Ціна продажу, ₴"><input value={String(v("price", ""))} onChange={set("price")} inputMode="decimal" required /></Field>
+              <Field label="Акційна ціна, ₴"><input value={num(v("spec_price", 0)) ? String(v("spec_price", "")) : ""} onChange={set("spec_price")} inputMode="decimal" placeholder="—" /></Field>
+              <Field label="Оптова ціна, ₴"><input value={num(v("wholesale_price", 0)) ? String(v("wholesale_price", "")) : ""} onChange={set("wholesale_price")} inputMode="decimal" placeholder="—" /></Field>
+              <Field label="Собівартість, ₴"><input value={String(v("cost", ""))} onChange={set("cost")} inputMode="decimal" /></Field>
+            </div>
+            <div className="pw-margin"><Tag kind={margin < 0 ? "bad" : "ok"}>Маржа {money(margin)} ₴{sale ? ` · ${Math.round((margin / sale) * 100)}%` : ""}</Tag>
+              <span className="hint">{spec > 0 && price > 0 ? `акція −${Math.max(0, Math.round((1 - spec / price) * 100))}% · ` : ""}рахується сама</span></div>
+          </Block>
+          <Block title="Склад" acts={!isNew && <button type="button" className="link-btn" onClick={() => setShowMoves((x) => !x)}>Рухи <ChevronRight size={13} className={showMoves ? "rot90" : ""} /></button>}>
+            {data && (
+              <div className="tiles4 t3">
+                <div><b>{data.stock}</b><span>На складі</span></div>
+                <div><b>{data.reserved}</b><span>Резерв</span></div>
+                <div className={data.available <= data.min_stock ? "warn" : "ok"}><b>{data.available}</b><span>Доступно</span></div>
+              </div>
+            )}
+            <div className="pw-row">
+              {isNew && !curVariants.length && <Field label="Початковий залишок, шт"><input type="number" min={0} value={String(f.initial_stock ?? "0")} onChange={set("initial_stock")} /></Field>}
+              <Field label="Мінімальний залишок — сповістити"><input type="number" value={String(v("min_stock", "0"))} onChange={set("min_stock")} /></Field>
+              {!isNew && <a className="btn" href={`${ROOT}/warehouse?product=${id}`} onClick={(e) => { e.preventDefault(); onClose(); window.history.pushState({}, "", `${ROOT}/warehouse?product=${id}`); window.dispatchEvent(new PopStateEvent("popstate")); }}>
+                <Boxes size={15} />Прийняти / списати</a>}
+            </div>
+            {showMoves && data && <MovesTable moves={data.moves} compact />}
+          </Block>
+          <Block title="Доставка й гарантія">
+            <div className="pw-3">
+              <Field label="Вага, кг"><input value={String(v("weight", "0.5"))} onChange={set("weight")} inputMode="decimal" /></Field>
+              <Field label="Розміри Д × Ш × В, см"><div className="dims">
+                <input value={String(v("length", "") || "")} onChange={set("length")} inputMode="decimal" placeholder="Д" aria-label="Довжина" />
+                <input value={String(v("width", "") || "")} onChange={set("width")} inputMode="decimal" placeholder="Ш" aria-label="Ширина" />
+                <input value={String(v("height", "") || "")} onChange={set("height")} inputMode="decimal" placeholder="В" aria-label="Висота" /></div></Field>
+              <Field label="Гарантія, міс."><input value={String(v("warranty_months", 0))} onChange={set("warranty_months")} inputMode="numeric" /></Field>
+            </div>
+            <Field label="Опис відправлення для Нової Пошти"><input value={String(v("ship_description", ""))} onChange={set("ship_description")} placeholder="—" /></Field>
+          </Block>
+        </div>
+        <div className="pw-col">
+          <Block title="Варіанти" sub={curVariants.length ? `${curVariants.filter((x) => x.active).length} активних` : undefined}>
+            <VariantsTab rows={curVariants} onChange={setVariants} isNew={isNew} basePrice={sale} />
+          </Block>
+          <Block title="Допродаж">
+            <Toggle checked={!!v("upsell", false)} onChange={(c) => setF({ ...f, upsell: c })} label="Цей товар — допродаж до інших" />
+            {!!v("upsell", false) && (
+              <div className="pw-chips">
+                <span className="lbl">До яких товарів пропонувати (порожньо — до будь-якого)</span>
+                <ChipPicker items={mains} value={curFor} onChange={setUpsellFor} addLabel="Товар" />
+              </div>
+            )}
+            {!isNew && (
+              <div className="pw-chips">
+                <span className="lbl">Пропонувати разом з цим товаром</span>
+                <ChipPicker items={upsellPool} value={offers} onChange={setOfferWith} addLabel="Товар" />
+              </div>
+            )}
+          </Block>
+          {!isNew && (
+            <section className="summary-block pw-sum">
+              <div className="lbl">Продано за 30 днів</div>
+              <div className="big">{sold.data ? `${sold.data.qty} шт · ${money(sold.data.sum)} ₴` : "—"}</div>
+              {sold.data && (
+                <div className="sum-rows">
+                  <div><span>Маржа</span><b>{money(sold.data.margin)} ₴</b></div>
+                  <div><span>Викуп</span><b>{sold.data.buyout_rate != null ? `${sold.data.buyout_rate}%` : "—"}</b></div>
+                  <div><span>З допродажем</span><b>{sold.data.upsell_share != null ? `${sold.data.upsell_share}%` : "—"}</b></div>
+                  <div><span>Продано позицій усього</span><b>{sold.data.sold_total}</b></div>
                 </div>
               )}
-              <label className="check"><input type="checkbox" checked={!!v("active", true)} onChange={set("active")} /> Активний — показується в замовленнях</label>
-            </div>
-          </>}
-          {tab === "media" && <MediaTab productId={isNew ? null : (id as number)} photos={data?.photos ?? []} pending={pending} setPending={setPending}
-            description={String(v("description", ""))} onDescription={(d) => setF({ ...f, description: d })} onChanged={() => { refresh(); qc.invalidateQueries({ queryKey: ["products", "one", id] }); }} />}
-          {tab === "variants" && <VariantsTab rows={curVariants} onChange={setVariants} isNew={isNew} basePrice={sale} />}
-          {tab === "shipping" && <>
-            <Field label="Опис відправлення для Нової Пошти" hint="Наприклад «Аксесуари до фототехніки». Підставляється в ТТН разом із розмірами"><input value={String(v("ship_description", ""))} onChange={set("ship_description")} /></Field>
-            <Field label="Гарантія, міс." hint="Для гарантійного талону; 0 — як у налаштуваннях документів"><input value={String(v("warranty_months", 0))} onChange={set("warranty_months")} inputMode="numeric" /></Field>
-            <div className="cols c3">
-              <Field label="Вага, кг"><input value={String(v("weight", "0.5"))} onChange={set("weight")} inputMode="decimal" /></Field>
-              <Field label="Довжина, см"><input value={String(v("length", "") || "")} onChange={set("length")} inputMode="decimal" placeholder="—" /></Field>
-              <Field label="Ширина, см"><input value={String(v("width", "") || "")} onChange={set("width")} inputMode="decimal" placeholder="—" /></Field>
-              <Field label="Висота, см"><input value={String(v("height", "") || "")} onChange={set("height")} inputMode="decimal" placeholder="—" /></Field>
-            </div>
-          </>}
-          {tab === "stock" && data && <div className="stack">
-            <div className="kpis" style={{ margin: 0 }}>
-              <Kpi label="На складі" value={data.stock} /><Kpi label="Резерв" value={data.reserved} />
-              <Kpi label="Доступно" value={<span className={data.available <= data.min_stock ? "lowstock" : ""}>{data.available}</span>} />
-              <Kpi label="Продано позицій" value={data.sold} />
-            </div>
-            {(data.variants ?? []).length > 0 && <table className="t dense"><thead><tr><th>Варіант</th><th className="num">На складі</th><th className="num">Резерв</th><th className="num">Доступно</th></tr></thead>
-              <tbody>{(data.variants ?? []).map((x) => <tr key={x.id} className={x.active ? "" : "muted"}><td>{x.name}{!x.active && " (вимкнено)"}</td><td className="num">{x.stock}</td><td className="num">{x.reserved}</td><td className="num"><b>{x.available}</b></td></tr>)}</tbody></table>}
-            <p className="hint">Змінити залишок — розділ «Склад» → «Коригування».</p>
-            <MovesTable moves={data.moves} compact />
-          </div>}
-        </fieldset>
-        {editable && <div className="pm-bar">
-          {!isNew && <button type="button" className="btn danger" disabled={del.isPending}
-            onClick={() => confirmAction(`Видалити «${data?.name}»? Якщо товар уже був у замовленнях, він перейде в архів.`) && del.mutate()}>
-            {data?.sold ? <><Archive size={15} /> В архів</> : <><Trash2 size={15} /> Видалити</>}</button>}
-          <span className="spacer" />
-          <button type="button" className="btn" onClick={onClose}>Скасувати</button>
-          <button className="btn primary" disabled={save.isPending}>{save.isPending ? "Збереження…" : isNew ? "Створити товар" : "Зберегти"}</button>
-        </div>}
-      </form>
-    </Modal>
+            </section>
+          )}
+        </div>
+      </fieldset>
+    </Window>
   );
 }
 
-function MediaTab({ productId, photos, pending, setPending, description, onDescription, onChanged }: {
+/** Чипи вибраних товарів з × і «+ Товар» (пошук). */
+function ChipPicker({ items, value, onChange, addLabel }: { items: Product[]; value: number[]; onChange: (v: number[]) => void; addLabel: string }) {
+  const [adding, setAdding] = useState(false);
+  const [q, setQ] = useState("");
+  const byId = Object.fromEntries(items.map((p) => [p.id, p]));
+  const found = items.filter((p) => !value.includes(p.id) && p.name.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 8);
+  return (
+    <div className="chip-picker">
+      {value.map((id) => byId[id] && (
+        <span key={id} className="fchip on">{byId[id].name}<span className="x" role="button" tabIndex={0} aria-label={`Прибрати ${byId[id].name}`} onClick={() => onChange(value.filter((x) => x !== id))}><X size={12} /></span></span>
+      ))}
+      {adding ? (
+        <span className="chip-sel">
+          <input className="chip-add-in" autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Назва товару" onBlur={() => setTimeout(() => { setAdding(false); setQ(""); }, 150)}
+            onKeyDown={(e) => { if (e.key === "Enter" && found[0]) { e.preventDefault(); onChange([...value, found[0].id]); setQ(""); } if (e.key === "Escape") { e.stopPropagation(); setAdding(false); } }} />
+          {found.length > 0 && <div className="pop chip-pop">{found.map((p) => <button key={p.id} type="button" className="pop-item" onMouseDown={(e) => { e.preventDefault(); onChange([...value, p.id]); setQ(""); }}>{p.name}</button>)}</div>}
+        </span>
+      ) : <button type="button" className="fchip" onClick={() => setAdding(true)}><Plus size={13} />{addLabel}</button>}
+    </div>
+  );
+}
+
+function MediaTab({ productId, photos, pending, setPending, description, onDescription, onChanged, compact }: {
   productId: number | null; photos: { id: number; url: string }[]; pending: File[]; setPending: (f: File[]) => void;
-  description: string; onDescription: (d: string) => void; onChanged: () => void;
+  description: string; onDescription: (d: string) => void; onChanged: () => void; compact?: boolean;
 }) {
   const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
@@ -301,7 +396,7 @@ function MediaTab({ productId, photos, pending, setPending, description, onDescr
   };
   return (
     <>
-      <div className={`pm-drop ${drag ? "on" : ""}`} onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
+      <div className={`pm-drop ${drag ? "on" : ""}${compact ? " compact" : ""}`} onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
         onDrop={(e) => { e.preventDefault(); setDrag(false); add(e.dataTransfer.files); }}>
         <div className="pm-photos">
           {shown.map((p, i) => (
@@ -318,12 +413,12 @@ function MediaTab({ productId, photos, pending, setPending, description, onDescr
             <div key={u} className="pm-photo pending"><img src={u} alt="" /><span className="main-tag">збережеться</span>
               <button type="button" className="rm" title="Прибрати" onClick={() => setPending(pending.filter((_, j) => j !== i))}><X size={14} /></button></div>
           ))}
-          <button type="button" className="pm-add" onClick={() => input.current?.click()}><ImagePlus size={22} /><span>Додати фото</span><small>або перетягніть сюди</small></button>
+          <button type="button" className="pm-add" title="Додати фото (або перетягніть сюди)" onClick={() => input.current?.click()}><ImagePlus size={22} />{!compact && <><span>Додати фото</span><small>або перетягніть сюди</small></>}</button>
         </div>
         <input ref={input} type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden onChange={(e) => { add(e.target.files); e.target.value = ""; }} />
       </div>
-      <p className="hint">Перше фото — головне: його видно в списку товарів і в замовленні. Порядок змінюється перетягуванням. До 20 фото, до 10 МБ кожне.</p>
-      <Field label="Опис"><textarea rows={8} value={description} onChange={(e) => onDescription(e.target.value)} placeholder="Характеристики, комплектація, особливості" /></Field>
+      {!compact && <p className="hint">Перше фото — головне: його видно в списку товарів і в замовленні. Порядок змінюється перетягуванням. До 20 фото, до 10 МБ кожне.</p>}
+      {!compact && <Field label="Опис"><textarea rows={8} value={description} onChange={(e) => onDescription(e.target.value)} placeholder="Характеристики, комплектація, особливості" /></Field>}
     </>
   );
 }

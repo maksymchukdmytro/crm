@@ -1520,6 +1520,7 @@ class AttributeIn(In):
 class CustomerOut(Out):
     id: int
     phone: str
+    phone2: str = ""
     name: str
     email: str
     country: str
@@ -1547,12 +1548,37 @@ class CustomerListOut(Out):
     rows: list[CustomerOut]
 
 
+class CustomerComm(Out):
+    kind: Literal["sms", "viber", "call"]
+    text: str
+    order_id: int | None = None
+    state: str = ""
+    at: str | None = None
+
+
+class CustomerAddress(Out):
+    text: str
+    count: int
+
+
+class CustomerMark(Out):
+    id: int
+    name: str
+    icon: str
+    color: str
+
+
 class CustomerDetailOut(CustomerOut):
     history: list[OrderRowOut]
+    communications: list[CustomerComm] = Field(default_factory=list)
+    addresses: list[CustomerAddress] = Field(default_factory=list)
+    sources: list[str] = Field(default_factory=list)
+    marks: list[CustomerMark] = Field(default_factory=list)
 
 
 class CustomerIn(In):
     phone: str | None = Field(None, max_length=32)
+    phone2: str | None = Field(None, max_length=32)
     name: str | None = Field(None, max_length=255)
     email: str | None = Field(None, max_length=255)
     country: str | None = Field(None, max_length=2)
@@ -1890,3 +1916,46 @@ class DocListOut(Out):
     count_active: int
     entities: list[DocEntityCount]
     all: int
+
+
+
+# ---------------------------------------------------------------- склад і підсумок товару
+class StockRow(Out):
+    product_id: int
+    variant_id: int | None = None
+    product: str
+    variant: str = ""
+    sku: str = ""
+    stock: int
+    reserved: int
+    available: int
+    min_stock: int = 0
+    sold_30: int = 0
+    daily: float = 0
+    days_left: int | None = Field(None, description="На скільки днів вистачить за темпом продажів 30 днів; None — не продається")
+    dead: bool = Field(False, description="Неліквід: без продажів 60 днів при залишку")
+    cost: float = 0
+    photo: str | None = None
+
+
+class StockOut(Out):
+    rows: list[StockRow]
+    value: float
+    reserved_units: int
+    reserved_value: float
+    low: int
+    out: int
+    dead: int
+    all: int
+    moves_today: list[MoveOut]
+
+
+class ProductSummaryOut(Out):
+    days: int
+    qty: int
+    sum: float
+    margin: float
+    buyout_rate: float | None = None
+    upsell_share: float | None = None
+    orders: int = 0
+    sold_total: int = 0

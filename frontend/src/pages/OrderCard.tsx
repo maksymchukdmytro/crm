@@ -69,7 +69,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
       const f = source ? toForm({ country: source.country, office_id: source.office_id, source_id: source.source_id, legal_entity_id: source.legal_entity_id,
         customer_name: source.customer_name, phone: source.phone, email: source.email, delivery_method: source.delivery_method, city_name: source.city_name,
         city_ref: source.city_ref, warehouse_name: source.warehouse_name, warehouse_ref: source.warehouse_ref, address: source.address, postcode: source.postcode }, newStatus)
-        : toForm(undefined, newStatus);
+        : toForm(sp.get("phone") ? { phone: sp.get("phone")! } : undefined, newStatus);
       if (!fromId || source) { setForm(f); setBaseline(JSON.stringify(f)); }
       return;
     }

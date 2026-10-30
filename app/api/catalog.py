@@ -15,11 +15,12 @@ from ..db import get_db
 from ..config import config
 from ..models import (
     COUNTRIES, Attribute, AttributeGroup, Category, Manufacturer, OrderItem, Product, ProductPhoto, ProductVariant, Purchase,
-    PurchaseItem, StockMovement, Supplier, User,
+    PurchaseItem, StockMovement, Supplier, User, utcnow,
 )
 from ..services import audit, stock
 from ..services.orders import to_int, to_money
 from .schemas import (
+    StockOut, ProductSummaryOut,
     AdjustIn, AttributeGroupIn, AttributeGroupOut, AttributeIn, CategoryIn, CategoryOut, ManufacturerIn, ManufacturerOut, Ok,
     PhotoOut, ProductDeleteOut, ProductDetailOut, ProductIn, ProductOut, PurchaseIn, PurchaseOut, SupplierIn, SupplierOut, WarehouseOut,
 )
@@ -624,3 +625,61 @@ def attribute_delete(aid: int, db: Session = Depends(get_db), user: User = Depen
         db.delete(a)
     db.commit()
     return _groups(db)
+
+
+
+# ------------------------------------------------------------------ склад з прогнозом (UI-DESIGN §8) і підсумок продажів товару (§7)
+@router.get("/stock", response_model=StockOut)
+def stock_view(filter: str = "all", q: str = "", db: Session = Depends(get_db), user: User = Depends(staff)):
+    from datetime import datetime as _dt, time as _time
+    from zoneinfo import ZoneInfo
+    from ..config import config
+    from ..services import stock as stock_svc
+    rows = stock_svc.stock_rows(db)
+    low = [r for r in rows if r["available"] > 0 and ((r["days_left"] is not None and r["days_left"] <= 7) or (r["min_stock"] and r["available"] <= r["min_stock"]))]
+    out = [r for r in rows if r["available"] <= 0]
+    dead = [r for r in rows if r["dead"]]
+    pick = {"low": low, "out": out, "dead": dead}.get(filter, rows)
+    if q:
+        t = q.strip().lower()
+        pick = [r for r in pick if t in f"{r['product']} {r['variant']} {r['sku']}".lower()]
+    tz = ZoneInfo(config.DISPLAY_TZ)
+    midnight = _dt.combine(_dt.now(tz).date(), _time.min, tz).astimezone(ZoneInfo("UTC")).replace(tzinfo=None)
+    moves = (db.query(StockMovement).options(selectinload(StockMovement.product), selectinload(StockMovement.user))
+             .filter(StockMovement.created_at >= midnight).order_by(StockMovement.id.desc()).limit(200).all())
+    return {
+        "rows": pick,
+        "value": round(sum(r["cost"] * max(r["stock"], 0) for r in rows), 2),
+        "reserved_units": sum(r["reserved"] for r in rows),
+        "reserved_value": round(sum(r["cost"] * r["reserved"] for r in rows), 2),
+        "low": len(low), "out": len(out), "dead": len(dead), "all": len(rows),
+        "moves_today": [j_move(m) for m in moves],
+    }
+
+
+@router.get("/products/{pid}/summary", response_model=ProductSummaryOut)
+def product_summary(pid: int, days: int = 30, db: Session = Depends(get_db), user: User = Depends(staff)):
+    """Підсумок продажів товару за N днів: шт, сума, маржа, викуп, частка замовлень з допродажем, усього продано позицій."""
+    from datetime import timedelta
+    from sqlalchemy import func
+    from ..models import Order, OrderItem, Status
+    from ..services.stock import EXCLUDED
+    p = db.get(Product, pid)
+    if p is None:
+        raise HTTPException(404, "Товар не знайдено")
+    since = utcnow() - timedelta(days=max(1, min(days, 365)))
+    base = (db.query(OrderItem).join(Order, Order.id == OrderItem.order_id).join(Status, Status.id == Order.status_id)
+            .filter(OrderItem.product_id == pid, ~Status.code.in_(EXCLUDED)))
+    recent = base.filter(Order.created_at >= since)
+    qty, total, cost = recent.with_entities(func.coalesce(func.sum(OrderItem.qty), 0), func.coalesce(func.sum(OrderItem.price * OrderItem.qty), 0),
+                                            func.coalesce(func.sum(OrderItem.cost * OrderItem.qty), 0)).one()
+    order_ids = [i for (i,) in recent.with_entities(OrderItem.order_id).distinct()]
+    codes = dict(db.query(Order.id, Status.code).join(Status, Status.id == Order.status_id).filter(Order.id.in_(order_ids)).all()) if order_ids else {}
+    got = sum(1 for c in codes.values() if c == "delivered")
+    back = sum(1 for c in codes.values() if c in ("refused", "returned"))
+    with_up = (db.query(func.count(func.distinct(OrderItem.order_id))).filter(OrderItem.order_id.in_(order_ids), OrderItem.is_upsell.is_(True),
+                                                                             OrderItem.product_id != pid).scalar() or 0) if order_ids else 0
+    sold_total = base.with_entities(func.coalesce(func.sum(OrderItem.qty), 0)).scalar() or 0
+    return {"days": days, "qty": int(qty or 0), "sum": float(total or 0), "margin": float((total or 0) - (cost or 0)),
+            "buyout_rate": round(got * 100 / (got + back), 1) if got + back else None,
+            "upsell_share": round(with_up * 100 / len(order_ids), 1) if order_ids else None, "orders": len(order_ids), "sold_total": int(sold_total)}
