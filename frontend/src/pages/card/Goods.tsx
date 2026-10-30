@@ -27,8 +27,9 @@ export const Goods = forwardRef<GoodsHandle, {
     startUpsell: () => { const m = mainProducts[0]; if (m) setUpFor(m.key ?? null); else search.current?.focus(); },
   }));
 
-  const offers = products.filter((p) => p.upsell && p.active !== false && !inOrder.has(p.id) && (
-    !p.upsell_for?.length || p.upsell_for.some((id) => inOrder.has(id)))).slice(0, 3);
+  // «Часто беруть разом» — лише коли в замовленні вже є основний товар; кожна пропозиція додається окремо своєю кнопкою
+  const offers = mainProducts.length ? products.filter((p) => p.upsell && p.active !== false && !inOrder.has(p.id) && (
+    !p.upsell_for?.length || p.upsell_for.some((id) => inOrder.has(id)))).slice(0, 3) : [];
 
   const line = (x: Pick, upsell: boolean, mainPid: number | null): OrderItem => {
     const { p, v } = x;
@@ -133,9 +134,15 @@ export const Goods = forwardRef<GoodsHandle, {
         {offers.length > 0 && (
           <div className="gi-offers">
             <Sparkles size={15} aria-hidden />
-            <span>Часто беруть разом: {offers.map((p, n) => <span key={p.id}>{n > 0 && ", "}{p.name} · {money(p.sale_price ?? p.price)} ₴</span>)}</span>
-            <button type="button" className="btn soft sm" onClick={() => offers.forEach((p) => addUpsell(mainProducts.find((m) => p.upsell_for?.includes(m.product_id!)) ?? mainProducts[0], { p }))}>
-              <Plus size={13} />Додати</button>
+            <span className="gi-offers-l">Часто беруть разом</span>
+            <span className="gi-offers-list">
+              {offers.map((p) => (
+                <button key={p.id} type="button" className="gi-offer" title={`Додати допродажем: ${p.name}`}
+                  onClick={() => addUpsell(mainProducts.find((m) => p.upsell_for?.includes(m.product_id!)) ?? mainProducts[0], { p })}>
+                  <Plus size={13} /><span className="ell">{p.name}</span><b>{money(p.sale_price ?? p.price)} ₴</b>
+                </button>
+              ))}
+            </span>
           </div>
         )}
       </>)}
