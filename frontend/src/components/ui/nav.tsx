@@ -60,6 +60,15 @@ export function Tabs<K extends string>({ items, value, onChange, className = "",
 
   const mobile = useMobile();
   const activeIdx = items.findIndex((i) => i.key === value);
+  // на телефоні вибрана вкладка завжди видна: рядок гортається до неї
+  useLayoutEffect(() => {
+    if (!mobile) return;
+    const btn = wrap.current?.querySelector<HTMLElement>(".tabs:not(.tabs-measure) > button.on");
+    const row = btn?.parentElement;
+    if (btn && row && (btn.offsetLeft < row.scrollLeft || btn.offsetLeft + btn.offsetWidth > row.scrollLeft + row.clientWidth)) {
+      row.scrollLeft = Math.max(0, btn.offsetLeft - (row.clientWidth - btn.offsetWidth) / 2);
+    }
+  }, [mobile, value, items.length]);
   // на телефоні всі вкладки в один рядок, що гортається пальцем (без «Ще»)
   let shown = mobile ? items : items.slice(0, visible);
   let hidden = mobile ? [] : items.slice(visible);

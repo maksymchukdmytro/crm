@@ -1,6 +1,6 @@
 // Щільна стрічка як у Notion (UI-DESIGN §4.1): рядок 31 px, шапка 32 px, рядки-групи 30 px, віртуалізація,
 // вибір (квадратик, пробіл або X, Shift-клік — діапазон), дії при наведенні, сірі заглушки, порожній стан.
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { SkeletonRows } from "./blocks";
 import { useMobile } from "./hooks";
@@ -123,6 +123,12 @@ export function DenseTable<T>({
     if (i >= 0) v.scrollToIndex(i, { align: "auto" });
   }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // телефон: картки пам'ятають себе (memo), а свіжі обробники й рендер беруть через ref — інакше 1000 карток перемальовуються щоразу
+  const toggleRef = useRef(toggle); toggleRef.current = toggle;
+  const openRef = useRef(onOpen); openRef.current = onOpen;
+  const selectedRef = useRef(selected); selectedRef.current = selected;
+  const renderRef = useRef<(r: T) => ReactNode>(() => null);
+
   // телефон: звичайний список карток без віртуалізації, гортається вся сторінка; підвантаження — коли низ списку видно
   const sentinel = useRef<HTMLDivElement>(null);
   const endRef = useRef(onEndReached);
@@ -136,6 +142,10 @@ export function DenseTable<T>({
 
   if (mobile) {
     const cell = (r: T, c: DenseCol<T>) => <span key={c.key} className={`c-${c.key}`}>{c.render(r)}</span>;
+    renderRef.current = (r: T) => (mobileCard ? mobileCard(r) : (<>
+      <div className="dc-top"><span className="dc-title">{place.title.map((c) => cell(r, c))}</span>{place.end.length > 0 && <span className="dc-end">{place.end.map((c) => cell(r, c))}</span>}</div>
+      {place.sub.length > 0 && <div className="dc-sub">{place.sub.map((c) => cell(r, c))}</div>}
+    </>));
     return (
       <div className={`m-list ${className}`} role="list" aria-label={label}>
         {isLoading && Array.from({ length: 5 }, (_, i) => <div key={i} className="m-card m-skel" aria-hidden><i /><i /><i /></div>)}
@@ -146,26 +156,16 @@ export function DenseTable<T>({
           const id = rowKey(r);
           const on = selectable && selected!.has(id);
           return (
-            // довге натискання — вибрати (знизу панель масових дій), коротке — відкрити
-            <div key={it.key} role="listitem" aria-selected={on || undefined} tabIndex={0}
-              className={`m-card${on ? " sel" : ""}${current === id ? " cur" : ""} ${rowClass?.(r) ?? ""}`}
-              onTouchStart={() => { if (!selectable) return; press.current = window.setTimeout(() => { press.current = -1; toggle(r, false); }, 480); }}
-              onTouchEnd={() => { if (press.current && press.current > 0) clearTimeout(press.current); }}
-              onTouchMove={() => { if (press.current && press.current > 0) clearTimeout(press.current); press.current = null; }}
-              onContextMenu={(e) => { if (selectable) e.preventDefault(); }}
-              onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) onOpen?.(r); }}
-              onClick={(e) => {
-                const t = e.target as HTMLElement;
+            <MobileCard key={it.key} row={r} on={!!on} cur={current === id} cls={rowClass?.(r) ?? ""} render={renderRef}
+              onPress={() => { if (!selectable) return; press.current = window.setTimeout(() => { press.current = -1; toggleRef.current(r, false); }, 480); }}
+              onRelease={(moved) => { if (press.current && press.current > 0) clearTimeout(press.current); if (moved) press.current = null; }}
+              onTap={(t) => {
                 if (press.current === -1) { press.current = null; return; }
                 if (t.closest("input, button, a, .c-sel, .m-stop")) return;
-                if (selectable && selected!.size > 0) { toggle(r, false); return; }
-                onOpen?.(r);
-              }}>
-              {mobileCard ? mobileCard(r) : (<>
-                <div className="dc-top"><span className="dc-title">{place.title.map((c) => cell(r, c))}</span>{place.end.length > 0 && <span className="dc-end">{place.end.map((c) => cell(r, c))}</span>}</div>
-                {place.sub.length > 0 && <div className="dc-sub">{place.sub.map((c) => cell(r, c))}</div>}
-              </>)}
-            </div>
+                if (selectable && selectedRef.current!.size > 0) { toggleRef.current(r, false); return; }
+                openRef.current?.(r);
+              }}
+              selectable={selectable} />
           );
         })}
         <div ref={sentinel} className="m-sentinel" aria-hidden />
@@ -224,3 +224,20 @@ export function DenseTable<T>({
     </div>
   );
 }
+
+/** Картка рядка на телефоні. Перемальовується лише коли змінився сам рядок, вибір або поточний запис. */
+type MCardProps = {
+  row: unknown; on: boolean; cur: boolean; cls: string; selectable: boolean; render: { current: (r: never) => ReactNode };
+  onPress: () => void; onRelease: (moved: boolean) => void; onTap: (t: HTMLElement) => void;
+};
+const MobileCard = memo(function MobileCard({ row, on, cur, cls, selectable, render, onPress, onRelease, onTap }: MCardProps) {
+  return (
+    <div role="listitem" aria-selected={on || undefined} tabIndex={0} className={`m-card${on ? " sel" : ""}${cur ? " cur" : ""} ${cls}`}
+      onTouchStart={onPress} onTouchEnd={() => onRelease(false)} onTouchMove={() => onRelease(true)}
+      onContextMenu={(e) => { if (selectable) e.preventDefault(); }}
+      onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) onTap(e.currentTarget); }}
+      onClick={(e) => onTap(e.target as HTMLElement)}>
+      {render.current(row as never)}
+    </div>
+  );
+}, (a, b) => a.row === b.row && a.on === b.on && a.cur === b.cur && a.cls === b.cls && a.selectable === b.selectable);

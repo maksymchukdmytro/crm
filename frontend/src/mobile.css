@@ -165,7 +165,7 @@
   .ml-t b { display: block; margin: 3px 0 1px; font-size: 17px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ml-t small { display: block; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ml-call { display: grid; place-items: center; width: 52px; height: 52px; flex: none; border-radius: 16px; background: var(--accent-soft); color: var(--accent); text-decoration: none; }
-  .ml-call.p { background: var(--accent); color: #fff; box-shadow: 0 8px 18px -8px rgba(46, 107, 230, .7); }
+  .m-list > .m-card:first-child .ml-call, .ml-call.p { background: var(--accent); color: #fff; box-shadow: 0 8px 18px -8px rgba(46, 107, 230, .7); }
 
   /* накладні */
   .mi-no { font: 600 13px var(--mono); color: #57564F; }
@@ -528,4 +528,32 @@
   .pw-col { display: flex; flex-direction: column; gap: var(--m-gap); }
   .pw-grid .block, .pw-grid .summary-block { border: 0; border-radius: var(--m-r); background: #fff; margin: 0; }
   .oc-mbar .btn.primary:only-child { flex: 1; }
+
+  /* ------------------------------------------------------------ виправлення після тесту й стрес-тесту (30.10) */
+  /* підказки клавіш на телефоні не потрібні */
+  .btn kbd, .kbd { display: none; }
+  /* «Змінити дані покупця»: без дублювання плиток і кнопок зв'язку, які вже є в картці покупця вгорі */
+  .oc-body .oc-cust .tiles4, .oc-body .oc-cust .oc-meta, .oc-body:has(.oc-hero) .oc-cust .oc-phone-row > :not(:first-child) { display: none; }
+  /* меню документа накладної — панеллю над нижньою панеллю, щоб не обрізалось краєм екрана */
+  .mi-docs .menu-pop { position: fixed; left: 14px; right: 14px; top: auto; bottom: calc(92px + env(safe-area-inset-bottom)); max-width: none; z-index: 60; }
+  /* статистика: назви товарів у таблиці не ламаються по слову */
+  .stats .st-pname { min-width: 150px; }
+  .stats .tablewrap, .stats .card.flush { overflow-x: auto; }
+  /* «Новий покупець» та інші старі вікна — білою карткою з відступами */
+  .modal { padding: 12px; align-items: center; background: rgba(24, 24, 22, .38); }
+  .modal-box.sm, .modal-box.md, .modal-box.lg { height: auto; max-height: calc(100dvh - 24px); border-radius: var(--m-r); padding: 4px 2px 6px; }
+  /* широкі таблиці (журнал, статуси, користувачі) гортаються всередині своєї картки, а не всією сторінкою */
+  .work .card:has(table.t), .set-scroll .card:has(table.t), .work .card > div:has(> table.t) { overflow-x: auto; }
+  /* дзвіночок: текст зліва */
+  .m-top .menu-pop { text-align: left; }
+  /* дуже вузькі екрани (320–359 px) */
+  .mh-tile b { font-size: clamp(17px, 5.6vw, 22px); overflow: hidden; text-overflow: ellipsis; }
+  .tabbar .count { max-width: 34px; }
+}
+@media (max-width: 359px) {
+  .mh-pills { overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--m-pad)); padding: 0 var(--m-pad); }
+  .mh-pill { flex: none; }
+  .m-hello-t small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tabbar a, .tabbar button { font-size: 10px; }
+  .m-top h1 { font-size: 26px; }
 }
