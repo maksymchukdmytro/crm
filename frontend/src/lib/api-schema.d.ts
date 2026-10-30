@@ -2625,10 +2625,31 @@ export interface components {
         };
         /** DashCustomers */
         DashCustomers: {
+            /**
+             * Blacklisted
+             * @default 0
+             */
+            blacklisted: number;
             /** New */
             new: number;
             /** New Delta */
             new_delta?: number | null;
+            /**
+             * New Prev
+             * @default 0
+             */
+            new_prev: number;
+            /**
+             * New Today
+             * @default 0
+             */
+            new_today: number;
+            /**
+             * Repeat Share
+             * @description частка покупців з двома й більше замовленнями, %
+             * @default 0
+             */
+            repeat_share: number;
             /** Total */
             total: number;
         };
@@ -2671,8 +2692,39 @@ export interface components {
             /** Upsell Rate */
             upsell_rate: number;
         };
+        /** DashPeriod */
+        DashPeriod: {
+            /** Date From */
+            date_from: string;
+            /** Date To */
+            date_to: string;
+            /** Prev From */
+            prev_from: string;
+            /** Prev To */
+            prev_to: string;
+        };
+        /** DashQuality */
+        DashQuality: {
+            /**
+             * Approve Delta
+             * @description зміна до попереднього періоду, в пунктах
+             */
+            approve_delta?: number | null;
+            /** Approve Rate */
+            approve_rate: number;
+            /** Buyout Delta */
+            buyout_delta?: number | null;
+            /** Buyout Rate */
+            buyout_rate: number;
+            /** Upsell Delta */
+            upsell_delta?: number | null;
+            /** Upsell Rate */
+            upsell_rate: number;
+        };
         /** DashTeam */
         DashTeam: {
+            /** Approve Rate */
+            approve_rate?: number | null;
             /**
              * Confirmed
              * @description підтверджено сьогодні
@@ -2682,6 +2734,12 @@ export interface components {
             id: number;
             /** Last Login */
             last_login?: string | null;
+            /**
+             * Leads
+             * @description лідів сьогодні (оброблених і відкритих)
+             * @default 0
+             */
+            leads: number;
             /** Name */
             name: string;
             /**
@@ -2691,6 +2749,12 @@ export interface components {
             new: number;
             /** Role */
             role: string;
+            /**
+             * Sum
+             * @description сума підтверджених сьогодні
+             * @default 0
+             */
+            sum: number;
         };
         /** DashToday */
         DashToday: {
@@ -2730,6 +2794,10 @@ export interface components {
             /** Days */
             days: components["schemas"]["DashDay"][];
             month: components["schemas"]["DashMonth"];
+            period: components["schemas"]["DashPeriod"];
+            /** Prev Days */
+            prev_days?: components["schemas"]["DashDay"][];
+            quality: components["schemas"]["DashQuality"];
             /** Team */
             team?: components["schemas"]["DashTeam"][];
             today: components["schemas"]["DashToday"];
@@ -7788,7 +7856,10 @@ export interface operations {
     };
     dashboard_api_dashboard_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description YYYY-MM або YYYY-MM-DD..YYYY-MM-DD; порожньо — поточний місяць */
+                period?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -7802,6 +7873,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DashboardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
