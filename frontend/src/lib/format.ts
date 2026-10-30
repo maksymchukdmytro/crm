@@ -1,4 +1,4 @@
-const NBSP = "\u00a0"; // звичайний нерозривний пробіл: вузький U+202F у Commissioner майже непомітний у великих цифрах
+const NBSP = "\u00a0"; // звичайний нерозривний пробіл: вузький U+202F у деяких шрифтах майже непомітний у великих цифрах
 
 export function money(v: number | string | null | undefined, decimals = false): string {
   const n = typeof v === "number" ? v : parseFloat(String(v ?? "0").replace(",", "."));

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { CircleCheck, CircleX, Clock3, X } from "lucide-react";
-import { api, qs } from "../lib/api";
-import type { Status } from "../lib/types";
+import { api, qs } from "../../lib/api";
+import type { Status } from "../../lib/types";
 
 export function Pill({ status, children }: { status?: Status; children?: ReactNode }) {
   if (!status) return null;
