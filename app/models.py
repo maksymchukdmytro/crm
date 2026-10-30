@@ -554,6 +554,7 @@ class Customer(Base):
     __tablename__ = "customers"
     id: Mapped[int] = mapped_column(primary_key=True)
     phone: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    phone2: Mapped[str] = mapped_column(String(20), default="", index=True)  # додатковий телефон (пошук покупця за обома)
     name: Mapped[str] = mapped_column(String(255), default="")
     email: Mapped[str] = mapped_column(String(255), default="")
     country: Mapped[str] = mapped_column(String(2), default="UA")

@@ -2,12 +2,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Ban, Contact, Plus, ShieldCheck } from "lucide-react";
+import { ArrowDown, ArrowUp, Ban, Check, ChevronLeft, Contact, MessageCircle, MessageSquare, Phone, Plus, Send, X } from "lucide-react";
 import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, money, phone } from "../lib/format";
 import type { CustomerDetail, CustomerList } from "../lib/types";
-import { Empty, Field, Modal, Pill, Spinner } from "../components/ui";
+import { Block, Button, Empty, Field, IconButton, Modal, Spinner, StatusPill, Tag, Toggle, Window } from "../components/ui";
+import OrderModal from "./OrderCard";
 import "./customers.css";
 
 const SORTS: [string, string][] = [["last", "Останнє замовлення"], ["orders", "Кількість замовлень"], ["sum", "Сума отриманих"],
@@ -94,6 +95,7 @@ function CustomerCard({ id, onClose }: { id: number; onClose: () => void }) {
   const toast = useToast();
   const { data } = useQuery({ queryKey: ["customer", id], queryFn: () => api.get<CustomerDetail>(`/customers/${id}`) });
   const [f, setF] = useState<Record<string, string | boolean | number | null>>({});
+  const [order, setOrder] = useState<number | null>(null);
   useEffect(() => setF({}), [id]);
   const v = <T,>(k: string, d: T): T => (k in f ? (f[k] as T) : data ? ((data as unknown as Record<string, T>)[k] ?? d) : d);
   const save = useMutation({
@@ -101,52 +103,112 @@ function CustomerCard({ id, onClose }: { id: number; onClose: () => void }) {
     onSuccess: (c) => { qc.setQueryData(["customer", id], c); qc.invalidateQueries({ queryKey: ["customers"] }); setF({}); toast("Збережено"); },
     onError: (e) => toast(errText(e), "error"),
   });
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); if (Object.keys(f).length) save.mutate(f); } };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  });
   const statuses = Object.fromEntries(meta.statuses.map((s) => [s.id, s]));
-  if (!data) return <Modal onClose={onClose} size="sm"><Empty><Spinner /></Empty></Modal>;
+  const pm = Object.fromEntries(meta.payment_methods.map((m) => [m.id, m]));
+  if (!data) return <Window size="sm" onClose={onClose} title="Покупець"><Empty><Spinner /></Empty></Window>;
+  const comms = data.communications ?? [], addrs = data.addresses ?? [], marks = data.marks ?? [], sources = data.sources ?? [];
   const bl = v("blacklisted", false);
   const dirty = Object.keys(f).length > 0;
-  return (
-    <Modal onClose={onClose} size="lg" title={<>{data.blacklisted && <Ban size={18} className="bl-ico" />}{data.name || "Без імені"} <span className="muted cu-phone">{phone(data.phone)}</span></>}>
-      <div className="cu-stats">
-        <div><small>Замовлень</small><b>{data.orders}</b></div>
-        <div><small>Отримано</small><b>{data.delivered}</b></div>
-        <div><small>Відмов</small><b className={data.refused ? "lowstock" : ""}>{data.refused}</b></div>
-        <div><small>Викуп</small><b>{data.buyout_rate == null ? "—" : `${data.buyout_rate}%`}</b></div>
-        <div><small>Сума отриманих</small><b>{money(data.sum_delivered)} ₴</b></div>
-        <div><small>Перше замовлення</small><b>{date(data.first_order_at) || "—"}</b></div>
+  const tel = data.phone.replace(/\D/g, "");
+  const initials = (data.name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const since = data.first_order_at ? new Date(data.first_order_at).toLocaleDateString("uk-UA", { month: "long", year: "numeric" }) : "";
+  const head = (
+    <div className="win-head cw-head">
+      <IconButton icon={ChevronLeft} label="Назад (Esc)" quiet onClick={onClose} />
+      <h2>Покупець</h2>
+      {data.group && <span className="badge" style={{ background: `color-mix(in srgb, ${data.group_color || "#64748b"} 14%, white)`, color: data.group_color || undefined }}>{data.group}</span>}
+      {data.blacklisted && <Tag kind="bad" icon={<Ban size={11} />}>Чорний список</Tag>}
+      <div className="acts">
+        <Button variant="soft" icon={Plus} onClick={() => nav(`/orders/new?phone=${data.phone}`)}>Нове замовлення</Button>
+        <Button variant="danger" icon={Ban} onClick={() => setF({ ...f, blacklisted: !bl })}>{bl ? "Зняти з чорного списку" : "У чорний список"}</Button>
+        <Button variant="primary" icon={Check} disabled={!dirty || save.isPending} onClick={() => save.mutate(f)}>Зберегти</Button>
+        <IconButton icon={X} label="Закрити (Esc)" quiet onClick={onClose} />
       </div>
-      <div className="modal-split">
-        <form className="form" onSubmit={(e) => { e.preventDefault(); save.mutate(f); }}>
-          <div className="cols">
-            <Field label="Ім'я"><input value={v("name", "")} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
-            <Field label="Телефон"><input value={"phone" in f ? String(f.phone) : phone(data.phone)} onChange={(e) => setF({ ...f, phone: e.target.value })} inputMode="tel" /></Field>
-            <Field label="Email"><input type="email" value={v("email", "")} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
-            <Field label="Група"><select value={v<number | null>("group_id", null) ?? ""} onChange={(e) => setF({ ...f, group_id: e.target.value ? Number(e.target.value) : null })}>
-              <option value="">без групи</option>{meta.customer_groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</select></Field>
+    </div>
+  );
+  return (
+    <Window size="xl" onClose={onClose} head={head} label={data.name || "Покупець"} bodyClass="cw-body">
+      <div className="cw-grid">
+        <div className="cw-col">
+          <Block title="Профіль">
+            <div className="cw-hero">
+              <span className="cw-av">{initials}</span>
+              <div><div className="cw-name">{data.name || "Без імені"}</div>
+                <small className="muted">{since ? `покупець з ${since}` : "ще без замовлень"}{sources[0] ? ` · перше замовлення з ${sources[0]}` : ""}</small></div>
+            </div>
+            <div className="oc-phone-row">
+              <span className="phone-pill-in"><Phone size={14} className="muted" />
+                <input value={"phone" in f ? String(f.phone) : phone(data.phone)} onChange={(e) => setF({ ...f, phone: e.target.value })} inputMode="tel" aria-label="Телефон" /></span>
+              <a className="icon-btn" href={`tel:+${tel}`} aria-label="Подзвонити" title="Подзвонити"><Phone size={16} /></a>
+              <a className="icon-btn" href={`viber://chat?number=%2B${tel}`} aria-label="Viber" title="Viber"><MessageCircle size={16} /></a>
+              <a className="icon-btn" href={`https://t.me/+${tel}`} target="_blank" rel="noreferrer" aria-label="Telegram" title="Telegram"><Send size={16} /></a>
+              <a className="icon-btn" href={`sms:+${tel}`} aria-label="SMS" title="SMS"><MessageSquare size={16} /></a>
+            </div>
+            <div className="pw-2">
+              <Field label="Ім'я"><input value={v("name", "")} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
+              <Field label="Email"><input type="email" value={v("email", "")} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
+              <Field label="Група"><select value={v<number | null>("group_id", null) ?? ""} onChange={(e) => setF({ ...f, group_id: e.target.value ? Number(e.target.value) : null })}>
+                <option value="">без групи</option>{meta.customer_groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</select></Field>
+              <Field label="Додатковий телефон"><input value={v("phone2", "") ? ("phone2" in f ? String(f.phone2) : phone(String(v("phone2", "")))) : ""} onChange={(e) => setF({ ...f, phone2: e.target.value })} inputMode="tel" placeholder="—" /></Field>
+            </div>
+            <Field label="Коментар"><textarea rows={2} value={v("comment", "")} onChange={(e) => setF({ ...f, comment: e.target.value })} placeholder="Бачать менеджери в картці замовлення" /></Field>
+            <div className="tiles4">
+              <div><b>{data.orders}</b><span>Замовлень</span></div>
+              <div className={data.buyout_rate != null && data.buyout_rate < 50 ? "warn" : ""}><b>{data.buyout_rate == null ? "—" : `${Math.round(data.buyout_rate)}%`}</b><span>Викуп</span></div>
+              <div><b>{data.refused}</b><span>Відмов</span></div>
+              <div><b>{money(data.sum_delivered)}</b><span>Сума, ₴</span></div>
+            </div>
+          </Block>
+          <Block title="Чорний список">
+            <Toggle checked={bl} onChange={(c) => setF({ ...f, blacklisted: c })} label={bl ? "У чорному списку" : "Не в чорному списку"} />
+            {bl && <input className="cw-reason" value={v("blacklist_reason", "")} onChange={(e) => setF({ ...f, blacklist_reason: e.target.value })} placeholder="Причина, напр. «не забирає посилки»" aria-label="Причина" />}
+            <p className="hint cw-hint">Нові замовлення з цього номера отримають позначку й попередження.</p>
+          </Block>
+        </div>
+        <div className="cw-col cw-right">
+          <Block title="Замовлення" sub={`${data.history.length} · клік відкриває замовлення в цьому ж вікні`}>
+            {data.history.length ? (
+              <div className="cw-orders" role="table">
+                <div className="cw-orow head" role="row"><span>№</span><span>Дата</span><span>Товари</span><span>Статус</span><span>Оплата</span><span>Доставка</span><span className="a-r">Сума</span></div>
+                {data.history.map((o) => (
+                  <button key={o.id} type="button" className="cw-orow" role="row" onClick={() => setOrder(o.id)}>
+                    <span className="mono link">{o.id}</span><span className="muted num">{date(o.created_at).slice(0, 5)}</span>
+                    <span className="ell">{o.items[0]?.name}{o.items.length > 1 ? ` +${o.items.length - 1}` : ""}</span>
+                    <span><StatusPill status={statuses[o.status_id]} /></span>
+                    <span className="ell">{pm[o.payment_method_id ?? 0]?.name ?? "—"}</span>
+                    <span className="ell">{o.city_name ? `${meta.delivery_methods[o.delivery_method] === "Нова Пошта" ? "НП" : meta.delivery_methods[o.delivery_method]} · ${o.city_name}` : "—"}</span>
+                    <b className="num a-r">{money(o.total)} ₴</b>
+                  </button>
+                ))}
+              </div>
+            ) : <p className="hint">Замовлень ще немає.</p>}
+          </Block>
+          <div className="cw-bottom">
+            <Block title="Комунікації">
+              {comms.length ? (
+                <ul className="cw-comms">{comms.map((c, i) => (
+                  <li key={i}>{c.kind === "call" ? <Phone size={14} /> : <MessageSquare size={14} />}<span className="ell">{c.kind === "call" ? c.text : `${c.kind === "viber" ? "Viber" : "SMS"} · ${c.text}`}</span>
+                    <span className="muted num">{c.at ? new Date(c.at).toLocaleString("uk-UA", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : ""}</span>
+                    {c.state && <span className="badge">{c.state}</span>}</li>
+                ))}</ul>
+              ) : <p className="hint">Повідомлень і дзвінків ще не було.</p>}
+            </Block>
+            <Block title="Адреси доставки">
+              {addrs.length ? <ul className="cw-addr">{addrs.map((a) => <li key={a.text}><span>{a.text}</span><span className="muted">{a.count} {a.count === 1 ? "раз" : a.count < 5 ? "рази" : "разів"}</span></li>)}</ul>
+                : <p className="hint">Адрес ще немає.</p>}
+              {marks.length > 0 && <div className="cw-tags"><span className="muted">Позначки</span>{marks.map((m) => <span key={m.id} className="badge" style={{ color: m.color }}>{m.name}</span>)}</div>}
+              {sources.length > 0 && <div className="cw-tags"><span className="muted">Джерела</span>{sources.map((x) => <span key={x} className="o-dot-txt"><i style={{ background: "var(--accent)" }} />{x}</span>)}</div>}
+            </Block>
           </div>
-          <Field label="Коментар" hint="Бачать менеджери в картці замовлення"><textarea rows={3} value={v("comment", "")} onChange={(e) => setF({ ...f, comment: e.target.value })} /></Field>
-          <div className={`cu-bl ${bl ? "on" : ""}`}>
-            <label className="check"><input type="checkbox" checked={bl} onChange={(e) => setF({ ...f, blacklisted: e.target.checked })} /> <Ban size={15} /> Чорний список</label>
-            {bl && <input value={v("blacklist_reason", "")} onChange={(e) => setF({ ...f, blacklist_reason: e.target.value })} placeholder="Причина, наприклад «не забирає посилки»" />}
-            <span className="hint">{bl ? "У нових замовленнях від цього покупця менеджер побачить попередження." : <><ShieldCheck size={13} /> Замовлення від покупця приймаються без попереджень.</>}</span>
-          </div>
-          <div className="form-actions"><button className="btn primary" disabled={!dirty || save.isPending}>Зберегти</button>
-            {dirty && <button type="button" className="btn ghost" onClick={() => setF({})}>Скасувати зміни</button>}</div>
-        </form>
-        <div>
-          <h3>Історія замовлень</h3>
-          {data.history.length ? (
-            <table className="t dense"><tbody>{data.history.map((o) => (
-              <tr key={o.id} className="clickable" onClick={() => nav(`/orders/${o.id}`)}>
-                <td><b>№{o.id}</b><span className="sub">{date(o.created_at)}</span></td>
-                <td className="ell" style={{ maxWidth: 220 }}>{o.items.map((i) => (i.qty > 1 ? `${i.name} ×${i.qty}` : i.name)).join(", ")}</td>
-                <td className="num">{money(o.total)} ₴</td><td><Pill status={statuses[o.status_id]} /></td>
-              </tr>
-            ))}</tbody></table>
-          ) : <p className="hint">Замовлень ще немає.</p>}
         </div>
       </div>
-    </Modal>
+      {order && <OrderModal id={String(order)} onClose={() => { setOrder(null); qc.invalidateQueries({ queryKey: ["customer", id] }); }} onOpen={(oid) => setOrder(oid)} />}
+    </Window>
   );
 }
 

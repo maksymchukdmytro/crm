@@ -23,7 +23,7 @@ SORTS = {"last": "last_at", "orders": "orders", "sum": "sum_delivered", "refused
 def j_customer(c: Customer, s: dict | None = None) -> dict:
     s = s or svc.EMPTY_STATS
     return {
-        "id": c.id, "phone": c.phone, "name": c.name, "email": c.email, "country": c.country,
+        "id": c.id, "phone": c.phone, "phone2": c.phone2 or "", "name": c.name, "email": c.email, "country": c.country,
         "group_id": c.group_id, "group": c.group.name if c.group else "", "group_color": c.group.color if c.group else "",
         "comment": c.comment, "blacklisted": c.is_blacklisted, "blacklist_reason": c.blacklist_reason,
         "created_at": iso(c.created_at),
@@ -44,7 +44,8 @@ def customers(q: str = "", group: str = "", blacklist: str = "", sort: str = "la
         digits = "".join(ch for ch in q if ch.isdigit())
         conds = [Customer.name.ilike(like), Customer.email.ilike(like)]
         if len(digits) >= 3:
-            conds.append(Customer.phone.contains(digits[-9:] if len(digits) > 9 else digits))
+            part = digits[-9:] if len(digits) > 9 else digits
+            conds += [Customer.phone.contains(part), Customer.phone2.contains(part)]
         base = base.filter(or_(*conds))
     if group == "none":
         base = base.filter(Customer.group_id.is_(None))
@@ -86,7 +87,44 @@ def customer(cid: int, db: Session = Depends(get_db), user: User = Depends(sales
               .order_by(Order.id.desc()).limit(200).all())
     d = j_customer(c, svc.stats_for(db, [cid]).get(cid))
     d["history"] = [j_order_row(o) for o in orders]
+    d.update(_extras(db, c, orders))
     return d
+
+
+def _extras(db: Session, c: Customer, orders: list[Order]) -> dict:
+    """Комунікації (SMS / Viber і дзвінки з журналу), адреси доставки з кількістю, джерела й позначки замовлень покупця."""
+    from ..models import AuditLog, DELIVERY_METHODS, OrderMark, OrderSource, SmsMessage
+    ids = [o.id for o in orders]
+    comms = []
+    if ids:
+        for m in db.query(SmsMessage).filter(SmsMessage.order_id.in_(ids)).order_by(SmsMessage.id.desc()).limit(30):
+            comms.append({"kind": m.channel if m.channel in ("viber",) else "sms", "text": (m.text or "")[:120], "order_id": m.order_id,
+                          "state": {"sent": "доставлено", "failed": "помилка", "queued": "в черзі"}.get(m.status, m.status),
+                          "at": iso(m.created_at), "_t": m.created_at})
+        for h in (db.query(AuditLog).options(selectinload(AuditLog.user)).filter(AuditLog.entity == "order", AuditLog.entity_id.in_(ids),
+                                                                                  AuditLog.action == "lead_result").order_by(AuditLog.id.desc()).limit(30)):
+            res = (h.details or {}).get("результат", "")
+            comms.append({"kind": "call", "text": f"Дзвінок · {h.user.display if h.user else 'Система'}", "order_id": h.entity_id,
+                          "state": {"no_answer": "недодзвон", "callback": "передзвонити", "refused": "відмова", "duplicate": "дубль"}.get(res, res),
+                          "at": iso(h.created_at), "_t": h.created_at})
+    comms.sort(key=lambda x: x.pop("_t"), reverse=True)
+    addr: dict[str, int] = {}
+    for o in orders:
+        where = ", ".join(x for x in (o.city_name, o.warehouse_name or o.address or o.postcode) if x)
+        if not where:
+            continue
+        carrier = {"novaposhta": "НП", "ukrposhta": "Укрпошта"}.get(o.delivery_method, DELIVERY_METHODS.get(o.delivery_method, o.delivery_method))
+        key = f"{carrier} · {where}"
+        addr[key] = addr.get(key, 0) + 1
+    srcs = {s.id: s.name for s in db.query(OrderSource)}
+    marks = {m.id: m for m in db.query(OrderMark)}
+    return {
+        "communications": comms[:30],
+        "addresses": [{"text": k, "count": v} for k, v in sorted(addr.items(), key=lambda x: -x[1])],
+        "sources": list(dict.fromkeys(srcs[o.source_id] for o in orders if o.source_id in srcs)),
+        "marks": [{"id": m.id, "name": m.name, "icon": m.icon or "tag", "color": m.color or "#475569"}
+                  for m in {marks[o.mark_id].id: marks[o.mark_id] for o in orders if o.mark_id in marks}.values()],
+    }
 
 
 def _apply(db: Session, c: Customer, data: dict, user: User):
@@ -100,6 +138,11 @@ def _apply(db: Session, c: Customer, data: dict, user: User):
             setattr(c, f, str(data[f]).strip()[:n])
     if "comment" in data and data["comment"] is not None:
         c.comment = str(data["comment"]).strip()
+    if "phone2" in data and data["phone2"] is not None:
+        p2 = normalize_phone(data["phone2"]) if str(data["phone2"]).strip() else ""
+        if p2 and len(p2) < 9:
+            bad("Додатковий телефон: вкажіть коректний номер")
+        c.phone2 = p2[:20]
     if "country" in data and data["country"]:
         if str(data["country"]).upper() not in COUNTRIES:
             bad("Невідома країна")

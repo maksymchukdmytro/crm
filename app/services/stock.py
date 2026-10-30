@@ -168,3 +168,48 @@ def adjust(db: Session, product: Product, new_stock: int, user: User | None, com
     delta = int(new_stock) - current
     move(db, product.id, "adjust", delta, 0, user=user, comment=comment or "інвентаризація",
          variant_id=variant.id if variant is not None else None)
+
+
+# ---------------------------------------------------------------- прогноз залишку (UI-DESIGN §8, UI-TECH §9)
+EXCLUDED = ("cancelled", "duplicate", "lead_refused")
+
+
+def sold_by_variant(db: Session, days: int = 30) -> dict[tuple[int, int | None], int]:
+    """Скільки продано за N днів: (товар, варіант) → шт. Без скасованих, дублів і відмов лідів."""
+    from datetime import timedelta
+    from sqlalchemy import func
+    from ..models import OrderItem, Status
+    since = utcnow() - timedelta(days=days)
+    rows = (db.query(OrderItem.product_id, OrderItem.variant_id, func.sum(OrderItem.qty))
+            .join(Order, Order.id == OrderItem.order_id).join(Status, Status.id == Order.status_id)
+            .filter(Order.created_at >= since, OrderItem.product_id.isnot(None), ~Status.code.in_(EXCLUDED))
+            .group_by(OrderItem.product_id, OrderItem.variant_id).all())
+    return {(p, v): int(n or 0) for p, v, n in rows}
+
+
+def forecast(available: int, sold_30: int) -> tuple[float, int | None]:
+    """daily = продано за 30 днів / 30; days_left = доступно / daily; None — якщо не продається."""
+    daily = sold_30 / 30
+    if daily <= 0:
+        return 0.0, None
+    return round(daily, 2), max(0, int(available / daily))
+
+
+def stock_rows(db: Session) -> list[dict]:
+    """Рядки складу по варіантах (товар без варіантів — один рядок) з прогнозом і продажами за 30 і 60 днів."""
+    from sqlalchemy.orm import selectinload
+    s30, s60 = sold_by_variant(db, 30), sold_by_variant(db, 60)
+    out = []
+    for p in db.query(Product).options(selectinload(Product.variants), selectinload(Product.photos)).filter(Product.is_active.is_(True)).order_by(Product.name):
+        vs = [v for v in p.variants if v.is_active]
+        units = [(v, v.name, v.sku or p.sku or "", v.stock, v.reserved, v.available) for v in vs] or [(None, "", p.sku or "", p.stock, p.reserved, p.available)]
+        for v, vname, sku, stock, reserved, available in units:
+            key = (p.id, v.id if v else None)
+            sold30 = s30.get(key, 0) if v else sum(n for (pid, _), n in s30.items() if pid == p.id)
+            sold60 = s60.get(key, 0) if v else sum(n for (pid, _), n in s60.items() if pid == p.id)
+            daily, left = forecast(available, sold30)
+            out.append({"product_id": p.id, "variant_id": v.id if v else None, "product": p.name, "variant": vname, "sku": sku,
+                        "stock": stock, "reserved": reserved, "available": available, "min_stock": p.min_stock or 0,
+                        "sold_30": sold30, "daily": daily, "days_left": left, "dead": sold60 == 0 and stock > 0,
+                        "cost": float(p.cost or 0), "photo": p.photos[0].file if p.photos else None})
+    return out

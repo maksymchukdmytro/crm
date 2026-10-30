@@ -1213,6 +1213,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/products/{pid}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Product Summary
+         * @description Підсумок продажів товару за N днів: шт, сума, маржа, викуп, частка замовлень з допродажем, усього продано позицій.
+         */
+        get: operations["product_summary_api_products__pid__summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/purchases": {
         parameters: {
             query?: never;
@@ -1805,6 +1825,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stock View */
+        get: operations["stock_view_api_stock_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/suppliers": {
         parameters: {
             query?: never;
@@ -2359,8 +2396,36 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** CustomerAddress */
+        CustomerAddress: {
+            /** Count */
+            count: number;
+            /** Text */
+            text: string;
+        };
+        /** CustomerComm */
+        CustomerComm: {
+            /** At */
+            at?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "sms" | "viber" | "call";
+            /** Order Id */
+            order_id?: number | null;
+            /**
+             * State
+             * @default
+             */
+            state: string;
+            /** Text */
+            text: string;
+        };
         /** CustomerDetailOut */
         CustomerDetailOut: {
+            /** Addresses */
+            addresses?: components["schemas"]["CustomerAddress"][];
             /** Blacklist Reason */
             blacklist_reason: string;
             /** Blacklisted */
@@ -2371,6 +2436,8 @@ export interface components {
             cancelled: number;
             /** Comment */
             comment: string;
+            /** Communications */
+            communications?: components["schemas"]["CustomerComm"][];
             /** Country */
             country: string;
             /** Created At */
@@ -2393,14 +2460,23 @@ export interface components {
             id: number;
             /** Last Order At */
             last_order_at: string | null;
+            /** Marks */
+            marks?: components["schemas"]["CustomerMark"][];
             /** Name */
             name: string;
             /** Orders */
             orders: number;
             /** Phone */
             phone: string;
+            /**
+             * Phone2
+             * @default
+             */
+            phone2: string;
             /** Refused */
             refused: number;
+            /** Sources */
+            sources?: string[];
             /** Sum Delivered */
             sum_delivered: number;
             /** Sum Total */
@@ -2448,6 +2524,8 @@ export interface components {
             name?: string | null;
             /** Phone */
             phone?: string | null;
+            /** Phone2 */
+            phone2?: string | null;
         };
         /** CustomerListOut */
         CustomerListOut: {
@@ -2457,6 +2535,17 @@ export interface components {
             rows: components["schemas"]["CustomerOut"][];
             /** Total */
             total: number;
+        };
+        /** CustomerMark */
+        CustomerMark: {
+            /** Color */
+            color: string;
+            /** Icon */
+            icon: string;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
         };
         /** CustomerOut */
         CustomerOut: {
@@ -2496,6 +2585,11 @@ export interface components {
             orders: number;
             /** Phone */
             phone: string;
+            /**
+             * Phone2
+             * @default
+             */
+            phone2: string;
             /** Refused */
             refused: number;
             /** Sum Delivered */
@@ -4917,6 +5011,31 @@ export interface components {
             /** Upsell Qty */
             upsell_qty: number;
         };
+        /** ProductSummaryOut */
+        ProductSummaryOut: {
+            /** Buyout Rate */
+            buyout_rate?: number | null;
+            /** Days */
+            days: number;
+            /** Margin */
+            margin: number;
+            /**
+             * Orders
+             * @default 0
+             */
+            orders: number;
+            /** Qty */
+            qty: number;
+            /**
+             * Sold Total
+             * @default 0
+             */
+            sold_total: number;
+            /** Sum */
+            sum: number;
+            /** Upsell Share */
+            upsell_share?: number | null;
+        };
         /** PurchaseIn */
         PurchaseIn: {
             /** Comment */
@@ -5981,6 +6100,85 @@ export interface components {
             stock_action: string;
             /** System */
             system: boolean;
+        };
+        /** StockOut */
+        StockOut: {
+            /** All */
+            all: number;
+            /** Dead */
+            dead: number;
+            /** Low */
+            low: number;
+            /** Moves Today */
+            moves_today: components["schemas"]["MoveOut"][];
+            /** Out */
+            out: number;
+            /** Reserved Units */
+            reserved_units: number;
+            /** Reserved Value */
+            reserved_value: number;
+            /** Rows */
+            rows: components["schemas"]["StockRow"][];
+            /** Value */
+            value: number;
+        };
+        /** StockRow */
+        StockRow: {
+            /** Available */
+            available: number;
+            /**
+             * Cost
+             * @default 0
+             */
+            cost: number;
+            /**
+             * Daily
+             * @default 0
+             */
+            daily: number;
+            /**
+             * Days Left
+             * @description На скільки днів вистачить за темпом продажів 30 днів; None — не продається
+             */
+            days_left?: number | null;
+            /**
+             * Dead
+             * @description Неліквід: без продажів 60 днів при залишку
+             * @default false
+             */
+            dead: boolean;
+            /**
+             * Min Stock
+             * @default 0
+             */
+            min_stock: number;
+            /** Photo */
+            photo?: string | null;
+            /** Product */
+            product: string;
+            /** Product Id */
+            product_id: number;
+            /** Reserved */
+            reserved: number;
+            /**
+             * Sku
+             * @default
+             */
+            sku: string;
+            /**
+             * Sold 30
+             * @default 0
+             */
+            sold_30: number;
+            /** Stock */
+            stock: number;
+            /**
+             * Variant
+             * @default
+             */
+            variant: string;
+            /** Variant Id */
+            variant_id?: number | null;
         };
         /** SupplierIn */
         SupplierIn: {
@@ -9443,6 +9641,39 @@ export interface operations {
             };
         };
     };
+    product_summary_api_products__pid__summary_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path: {
+                pid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductSummaryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     purchases_api_purchases_get: {
         parameters: {
             query?: {
@@ -10789,6 +11020,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatsSegmentsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stock_view_api_stock_get: {
+        parameters: {
+            query?: {
+                filter?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockOut"];
                 };
             };
             /** @description Validation Error */

@@ -21,6 +21,8 @@ def attach(db: Session, order: Order) -> Customer | None:
         order.customer_id = None
         return None
     c = db.query(Customer).filter(Customer.phone == phone).one_or_none()
+    if c is None:  # додатковий телефон покупця теж знаходить його
+        c = db.query(Customer).filter(Customer.phone2 == phone).order_by(Customer.id).first()
     if c is None:
         with db.no_autoflush:
             c = Customer(phone=phone, name=order.customer_name or "", email=order.email or "",
@@ -89,4 +91,5 @@ EMPTY_STATS = {"orders": 0, "delivered": 0, "refused": 0, "cancelled": 0, "sum_d
 def blacklisted(db: Session, phone: str) -> Customer | None:
     if not phone:
         return None
-    return db.query(Customer).filter(Customer.phone == phone, Customer.is_blacklisted.is_(True)).one_or_none()
+    return (db.query(Customer).filter((Customer.phone == phone) | (Customer.phone2 == phone), Customer.is_blacklisted.is_(True))
+            .order_by(Customer.id).first())

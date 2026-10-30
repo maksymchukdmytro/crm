@@ -1057,8 +1057,83 @@
     "title": "CountersOut",
     "type": "object"
    },
+   "CustomerAddress": {
+    "properties": {
+     "count": {
+      "title": "Count",
+      "type": "integer"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "text",
+     "count"
+    ],
+    "title": "CustomerAddress",
+    "type": "object"
+   },
+   "CustomerComm": {
+    "properties": {
+     "at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "At"
+     },
+     "kind": {
+      "enum": [
+       "sms",
+       "viber",
+       "call"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "order_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Order Id"
+     },
+     "state": {
+      "default": "",
+      "title": "State",
+      "type": "string"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "kind",
+     "text"
+    ],
+    "title": "CustomerComm",
+    "type": "object"
+   },
    "CustomerDetailOut": {
     "properties": {
+     "addresses": {
+      "items": {
+       "$ref": "#/components/schemas/CustomerAddress"
+      },
+      "title": "Addresses",
+      "type": "array"
+     },
      "blacklist_reason": {
       "title": "Blacklist Reason",
       "type": "string"
@@ -1085,6 +1160,13 @@
      "comment": {
       "title": "Comment",
       "type": "string"
+     },
+     "communications": {
+      "items": {
+       "$ref": "#/components/schemas/CustomerComm"
+      },
+      "title": "Communications",
+      "type": "array"
      },
      "country": {
       "title": "Country",
@@ -1161,6 +1243,13 @@
       ],
       "title": "Last Order At"
      },
+     "marks": {
+      "items": {
+       "$ref": "#/components/schemas/CustomerMark"
+      },
+      "title": "Marks",
+      "type": "array"
+     },
      "name": {
       "title": "Name",
       "type": "string"
@@ -1173,9 +1262,21 @@
       "title": "Phone",
       "type": "string"
      },
+     "phone2": {
+      "default": "",
+      "title": "Phone2",
+      "type": "string"
+     },
      "refused": {
       "title": "Refused",
       "type": "integer"
+     },
+     "sources": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Sources",
+      "type": "array"
      },
      "sum_delivered": {
       "title": "Sum Delivered",
@@ -1390,6 +1491,18 @@
        }
       ],
       "title": "Phone"
+     },
+     "phone2": {
+      "anyOf": [
+       {
+        "maxLength": 32,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Phone2"
      }
     },
     "title": "CustomerIn",
@@ -1419,6 +1532,34 @@
      "rows"
     ],
     "title": "CustomerListOut",
+    "type": "object"
+   },
+   "CustomerMark": {
+    "properties": {
+     "color": {
+      "title": "Color",
+      "type": "string"
+     },
+     "icon": {
+      "title": "Icon",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "icon",
+     "color"
+    ],
+    "title": "CustomerMark",
     "type": "object"
    },
    "CustomerOut": {
@@ -1528,6 +1669,11 @@
      },
      "phone": {
       "title": "Phone",
+      "type": "string"
+     },
+     "phone2": {
+      "default": "",
+      "title": "Phone2",
       "type": "string"
      },
      "refused": {
@@ -7633,6 +7779,66 @@
     "title": "ProductReportRow",
     "type": "object"
    },
+   "ProductSummaryOut": {
+    "properties": {
+     "buyout_rate": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Buyout Rate"
+     },
+     "days": {
+      "title": "Days",
+      "type": "integer"
+     },
+     "margin": {
+      "title": "Margin",
+      "type": "number"
+     },
+     "orders": {
+      "default": 0,
+      "title": "Orders",
+      "type": "integer"
+     },
+     "qty": {
+      "title": "Qty",
+      "type": "integer"
+     },
+     "sold_total": {
+      "default": 0,
+      "title": "Sold Total",
+      "type": "integer"
+     },
+     "sum": {
+      "title": "Sum",
+      "type": "number"
+     },
+     "upsell_share": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Upsell Share"
+     }
+    },
+    "required": [
+     "days",
+     "qty",
+     "sum",
+     "margin"
+    ],
+    "title": "ProductSummaryOut",
+    "type": "object"
+   },
    "PurchaseIn": {
     "additionalProperties": false,
     "properties": {
@@ -10558,6 +10764,168 @@
      "active"
     ],
     "title": "StatusOut",
+    "type": "object"
+   },
+   "StockOut": {
+    "properties": {
+     "all": {
+      "title": "All",
+      "type": "integer"
+     },
+     "dead": {
+      "title": "Dead",
+      "type": "integer"
+     },
+     "low": {
+      "title": "Low",
+      "type": "integer"
+     },
+     "moves_today": {
+      "items": {
+       "$ref": "#/components/schemas/MoveOut"
+      },
+      "title": "Moves Today",
+      "type": "array"
+     },
+     "out": {
+      "title": "Out",
+      "type": "integer"
+     },
+     "reserved_units": {
+      "title": "Reserved Units",
+      "type": "integer"
+     },
+     "reserved_value": {
+      "title": "Reserved Value",
+      "type": "number"
+     },
+     "rows": {
+      "items": {
+       "$ref": "#/components/schemas/StockRow"
+      },
+      "title": "Rows",
+      "type": "array"
+     },
+     "value": {
+      "title": "Value",
+      "type": "number"
+     }
+    },
+    "required": [
+     "rows",
+     "value",
+     "reserved_units",
+     "reserved_value",
+     "low",
+     "out",
+     "dead",
+     "all",
+     "moves_today"
+    ],
+    "title": "StockOut",
+    "type": "object"
+   },
+   "StockRow": {
+    "properties": {
+     "available": {
+      "title": "Available",
+      "type": "integer"
+     },
+     "cost": {
+      "default": 0,
+      "title": "Cost",
+      "type": "number"
+     },
+     "daily": {
+      "default": 0,
+      "title": "Daily",
+      "type": "number"
+     },
+     "days_left": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "На скільки днів вистачить за темпом продажів 30 днів; None — не продається",
+      "title": "Days Left"
+     },
+     "dead": {
+      "default": false,
+      "description": "Неліквід: без продажів 60 днів при залишку",
+      "title": "Dead",
+      "type": "boolean"
+     },
+     "min_stock": {
+      "default": 0,
+      "title": "Min Stock",
+      "type": "integer"
+     },
+     "photo": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Photo"
+     },
+     "product": {
+      "title": "Product",
+      "type": "string"
+     },
+     "product_id": {
+      "title": "Product Id",
+      "type": "integer"
+     },
+     "reserved": {
+      "title": "Reserved",
+      "type": "integer"
+     },
+     "sku": {
+      "default": "",
+      "title": "Sku",
+      "type": "string"
+     },
+     "sold_30": {
+      "default": 0,
+      "title": "Sold 30",
+      "type": "integer"
+     },
+     "stock": {
+      "title": "Stock",
+      "type": "integer"
+     },
+     "variant": {
+      "default": "",
+      "title": "Variant",
+      "type": "string"
+     },
+     "variant_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Variant Id"
+     }
+    },
+    "required": [
+     "product_id",
+     "product",
+     "stock",
+     "reserved",
+     "available"
+    ],
+    "title": "StockRow",
     "type": "object"
    },
    "SupplierIn": {
@@ -16800,6 +17168,59 @@
     ]
    }
   },
+  "/api/products/{pid}/summary": {
+   "get": {
+    "description": "Підсумок продажів товару за N днів: шт, сума, маржа, викуп, частка замовлень з допродажем, усього продано позицій.",
+    "operationId": "product_summary_api_products__pid__summary_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "days",
+      "required": false,
+      "schema": {
+       "default": 30,
+       "title": "Days",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProductSummaryOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Product Summary",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
   "/api/purchases": {
    "get": {
     "operationId": "purchases_api_purchases_get",
@@ -20103,6 +20524,59 @@
     "summary": "Stats Segments",
     "tags": [
      "stats"
+    ]
+   }
+  },
+  "/api/stock": {
+   "get": {
+    "operationId": "stock_view_api_stock_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "filter",
+      "required": false,
+      "schema": {
+       "default": "all",
+       "title": "Filter",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Q",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StockOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Stock View",
+    "tags": [
+     "catalog"
     ]
    }
   },
