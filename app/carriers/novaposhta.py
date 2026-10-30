@@ -86,7 +86,60 @@ class NovaPoshta(Carrier):
         if query:
             props["FindByString"] = query
         data = self.call("Address", "getWarehouses", props)
-        return [{"ref": w.get("Ref"), "name": w.get("Description"), "label": w.get("Description")} for w in data]
+        out = []
+        for w in data:
+            mw = w.get("PlaceMaxWeightAllowed") or w.get("TotalMaxWeightAllowed") or 0
+            try:
+                mw = int(float(mw))
+            except (TypeError, ValueError):
+                mw = 0
+            kind = "postomat" if "поштомат" in (w.get("Description") or "").lower() or w.get("CategoryOfWarehouse") == "Postomat" else "branch"
+            out.append({"ref": w.get("Ref"), "name": w.get("Description"), "label": w.get("Description"), "max_weight": mw or None, "kind": kind})
+        return out
+
+    # --- Вартість, дата доставки, реєстр -----------------------------------
+    def price(self, order: Order, params: dict) -> dict:
+        """Орієнтовна вартість доставки й комісія за контроль оплати (InternetDocument.getDocumentPrice)."""
+        s = self.s
+        if not (s.get("np_city_ref") and order.city_ref):
+            return {}
+        weight = sum(float(x.get("weight") or 0) for x in params.get("seats") or []) or float(params.get("weight") or 0.5)
+        props = {"CitySender": s["np_city_ref"], "CityRecipient": order.city_ref, "Weight": str(weight),
+                 "ServiceType": params.get("service_type") or "WarehouseWarehouse", "Cost": str(max(int(params.get("declared_cost") or 1), 1)),
+                 "CargoType": params.get("cargo_type") or "Parcel", "SeatsAmount": str(len(params.get("seats") or []) or 1)}
+        cod = float(params.get("cod_amount") or 0)
+        if cod > 0 and params.get("cod_mode") == "afterpayment":
+            props["AfterpaymentOnGoodsCost"] = str(cod)
+        elif cod > 0 and params.get("cod_mode") == "backward":
+            props["RedeliveryCalculate"] = {"CargoType": "Money", "Amount": str(cod)}
+        d = (self.call("InternetDocument", "getDocumentPrice", props) or [{}])[0]
+        out = {"price": float(d.get("Cost") or 0)}
+        for key in ("CostAfterpaymentOnGoodsCost", "CostRedelivery"):
+            if d.get(key):
+                out["cod_commission"] = float(d[key])
+        return out
+
+    def delivery_date(self, order: Order, service_type: str = "WarehouseWarehouse") -> str | None:
+        """Очікувана дата доставки, ISO (InternetDocument.getDocumentDeliveryDate)."""
+        s = self.s
+        if not (s.get("np_city_ref") and order.city_ref):
+            return None
+        d = (self.call("InternetDocument", "getDocumentDeliveryDate", {
+            "DateTime": datetime.now().strftime("%d.%m.%Y"), "ServiceType": service_type,
+            "CitySender": s["np_city_ref"], "CityRecipient": order.city_ref}) or [{}])[0]
+        raw = ((d.get("DeliveryDate") or {}).get("date") or "")[:10]
+        return raw or None
+
+    def registry_add(self, refs: list[str], registry_ref: str = "") -> dict:
+        """Додати ТТН у реєстр (ScanSheet.insertDocuments): без registry_ref — створюється новий реєстр на сьогодні.
+        → {"ref", "number", "errors": [...]}"""
+        props: dict = {"DocumentRefs": refs, "Date": datetime.now().strftime("%d.%m.%Y")}
+        if registry_ref:
+            props["Ref"] = registry_ref
+        d = (self.call("ScanSheet", "insertDocuments", props) or [{}])[0]
+        data = d.get("Data") if isinstance(d.get("Data"), dict) else {}
+        errors = [str(e) for e in (d.get("Errors") or data.get("Errors") or [])]
+        return {"ref": d.get("Ref") or data.get("Ref") or registry_ref, "number": str(d.get("Number") or data.get("Number") or ""), "errors": errors}
 
     def load_directory(self) -> dict:
         """Контрагенти-відправники і їхні контактні особи з кабінету НП — для вибору в налаштуваннях ключа."""

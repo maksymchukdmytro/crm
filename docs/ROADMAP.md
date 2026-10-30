@@ -190,7 +190,18 @@ Rozetka (логін + пароль) і Prom (API-токен): перевірка
   Передзвони, «Мої й нічиї», «Почати дзвонити»; `pages/LeadWindow.tsx` — черга 280 px, Контакт / Запит / Дзвінки, F1 / F2 / F3 / Дубль,
   Ctrl ⏎ «Створити замовлення» з «Скасувати»; налаштування → «Загальні» → картка «Розділ «Ліди»». Плашка «+ Створити замовлення»
   поки відкриває повну картку — у кроці 5 розгортатиметься в нові блоки. Тести — `tests/test_leads.py`.
-- [ ] Крок 5. Картка замовлення, рахунки юрособ, «Що лишилось», вікно ТТН, реєстр НП (0019)
+- [x] **Крок 5. Картка замовлення** (`wip/ui-5-card`, міграція 0019): `legal_entity_accounts` (рахунки юрособ для передоплат,
+  CRUD `/api/legal-entities/{id}/accounts`, у meta — `legal_entities[].accounts`), `payments.account_id / confirmed_by_id / confirmed_at`
+  (`POST /api/orders/{id}/prepayment/confirm`), `orders.label_printed_at` (ставить `GET …/label`), `np_registry_ref`, `delivery_eta`
+  (з трекінгу `ScheduledDeliveryDate`). `services/checklist.py` → `OrderOut.todo` («Що лишилось»), `items_cost` лише адміну.
+  Реєстр НП: `carriers/novaposhta.registry_add` (ScanSheet.insertDocuments), `services/np.add_to_registry` (один реєстр на ключ за день),
+  `POST …/registry`, масова дія `registry`. Вікно ТТН: `ttn/preview` + `price`, `cod_commission`, `eta` (getDocumentPrice,
+  getDocumentDeliveryDate), відділення з `max_weight` і `kind` (поштомат); `POST …/ttn` приймає місто/відділення і `after`
+  (наклейка, реєстр, SMS, «Відправлений»). `POST …/sms-ttn`, `GET …/history?kind=`. Фронтенд: `pages/OrderCard.tsx` +
+  `pages/card/*` за макетами 01–02 (доріжка статусів з «⋯» і причиною, Друк ▾ / Чек ▾ / Зберегти / нагадування / історія,
+  автозбереження 0,8 с, J / K / H / Ctrl S / Ctrl ⏎, стани «закрите — Редагувати», чорний список, дубль, номери кроків),
+  `pages/TtnDialog.tsx` за макетом 03; «Налаштування → Юрособи → Рахунки для передоплати». Старі стилі колишньої картки прибрано.
+  Тести — `tests/test_card.py`. Вікно ліда поки відкриває нову картку повністю (ті самі блоки).
 - [ ] Крок 6. Видаткові накладні (0020)
 - [ ] Крок 7. Вікна товару й покупця, склад (0021)
 - [ ] Крок 8. Головна, статистика, налаштування

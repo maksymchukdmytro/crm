@@ -11,6 +11,7 @@ import "./ui.css";
 import "./shell.css";
 import "./list.css";
 import "./leads.css";
+import "./card.css";
 
 initMonitoring();
 

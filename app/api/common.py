@@ -126,7 +126,9 @@ def j_payment(p: Payment) -> dict:
     return {"id": p.id, "order_id": p.order_id, "kind": p.kind, "kind_name": p.kind_name, "amount": money(p.amount),
             "status": p.status, "status_name": p.status_name, "method": p.method, "reference": p.reference,
             "received_amount": money(p.received_amount) if p.received_amount is not None else None,
-            "created_at": iso(p.created_at), "collected_at": iso(p.collected_at), "received_at": iso(p.received_at)}
+            "created_at": iso(p.created_at), "collected_at": iso(p.collected_at), "received_at": iso(p.received_at),
+            "account_id": p.account_id, "account": p.account.name if p.account is not None else "",
+            "confirmed_by": p.confirmed_by.display if p.confirmed_by is not None else "", "confirmed_at": iso(p.confirmed_at)}
 
 
 ORDER_SCALARS = [
@@ -158,6 +160,8 @@ def j_order_row(o: Order) -> dict:
                            if o.customer is not None and o.customer.group is not None else None),
         "no_stock": _no_stock(o),
         "call_attempts": o.call_attempts or 0, "last_call_at": iso(o.last_call_at), "converted_at": iso(o.converted_at),
+        "label_printed_at": iso(o.label_printed_at), "np_registry_ref": o.np_registry_ref or "",
+        "delivery_eta": o.delivery_eta.isoformat() if o.delivery_eta else None,
         "wait_minutes": _lead_wait(o),
     }
 
@@ -190,6 +194,8 @@ def j_order(o: Order) -> dict:
         "total": money(o.total), "cod_amount": money(o.cod_amount),
         "duplicate_of_id": o.duplicate_of_id, "stock_reserved": o.stock_reserved, "stock_shipped": o.stock_shipped,
         "call_attempts": o.call_attempts or 0, "last_call_at": iso(o.last_call_at), "converted_at": iso(o.converted_at),
+        "label_printed_at": iso(o.label_printed_at), "np_registry_ref": o.np_registry_ref or "",
+        "delivery_eta": o.delivery_eta.isoformat() if o.delivery_eta else None,
         "created_at": iso(o.created_at), "updated_at": iso(o.updated_at), "shipped_at": iso(o.shipped_at),
         "delivered_at": iso(o.delivered_at), "delivery_checked_at": iso(o.delivery_checked_at),
         "version": o.updated_at.isoformat() if o.updated_at else "",

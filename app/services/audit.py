@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from ..models import AuditLog, User
 
 ACTION_NAMES = {
+    "registry": "Реєстр НП",
     "lead_convert": "Створено замовлення з ліда",
     "lead_result": "Результат дзвінка",
     "leads_disable": "Розділ «Ліди» вимкнено",

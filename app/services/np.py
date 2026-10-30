@@ -92,3 +92,46 @@ def carrier_settings(db: Session, order: Order | None = None) -> dict[str, str]:
 
 def rules(db: Session) -> list[NpStatusRule]:
     return db.query(NpStatusRule).order_by(NpStatusRule.sort, NpStatusRule.id).all()
+
+
+def add_to_registry(db: Session, orders: list[Order], user=None) -> dict:
+    """Реєстр НП (ScanSheet): ТТН одного ключа за день потрапляють в один реєстр. Номер реєстру — у orders.np_registry_ref.
+    → {"done": n, "errors": [...], "registries": {account_id: number}}"""
+    from datetime import date as _date
+    from . import audit, events
+    from .delivery import carrier_for
+    out = {"done": 0, "errors": [], "registries": {}}
+    by_acc: dict[int, list[Order]] = {}
+    for o in orders:
+        if o.delivery_method != "novaposhta" or not o.ttn:
+            out["errors"].append(f"№{o.id}: немає ТТН Нової Пошти")
+            continue
+        if o.np_registry_ref:
+            continue
+        if not o.carrier_ref:
+            out["errors"].append(f"№{o.id}: ТТН створена не через CRM — додайте в реєстр у кабінеті НП")
+            continue
+        acc = pick_account(db, o)
+        by_acc.setdefault(acc.id if acc else 0, []).append(o)
+    today = _date.today().isoformat()
+    for acc_id, items in by_acc.items():
+        carrier = carrier_for(db, items[0])
+        key = f"np_registry_{acc_id}_{today}"
+        saved = st.get(db, key)  # «ref|number» реєстру цього ключа на сьогодні
+        ref, number = (saved.split("|", 1) + [""])[:2] if saved else ("", "")
+        try:
+            r = carrier.registry_add([o.carrier_ref for o in items], ref)
+        except Exception as e:  # noqa: BLE001 — помилка НП не ламає інші ключі
+            out["errors"].append(f"Реєстр НП: {e}")
+            continue
+        ref, number = r["ref"] or ref, r["number"] or number
+        if ref:
+            st.set_value(db, key, f"{ref}|{number}")
+        out["errors"] += r["errors"]
+        for o in items:
+            o.np_registry_ref = number or ref[:40]
+            audit.log(db, user, "order", o.id, "registry", {"реєстр": o.np_registry_ref})
+            events.order_changed(db, o.id)
+            out["done"] += 1
+        out["registries"][acc_id] = number or ref
+    return out
