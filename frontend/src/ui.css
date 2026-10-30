@@ -252,6 +252,7 @@ button.link { color: var(--accent-ink-2); }
 .win.sm { max-width: 460px; }
 .win.md { max-width: 760px; }
 .win.lg { max-width: 1180px; height: min(780px, calc(100vh - 48px)); }
+.win.lg.win-settings { max-width: min(1360px, calc(100vw - 48px)); height: min(880px, calc(100vh - 48px)); }
 .win.xl { max-width: 1480px; height: calc(100vh - 32px); }
 .win-head { display: flex; align-items: center; gap: 10px; min-height: 60px; padding: 12px 14px 12px 20px; border-bottom: 1px solid var(--line); }
 .win-head h2 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
@@ -331,7 +332,7 @@ button.link { color: var(--accent-ink-2); }
   .icon-btn { width: 40px; height: 40px; }
   .tabs a, .tabs button { height: 36px; }
   .win-backdrop { padding: 0; align-items: stretch; }
-  .win, .win.lg, .win.xl, .win.md { max-width: none; max-height: none; height: 100vh; height: 100dvh; border-radius: 0; }
+  .win, .win.lg, .win.xl, .win.md, .win.lg.win-settings { max-width: none; max-height: none; height: 100vh; height: 100dvh; border-radius: 0; }
   .win.sm { margin: auto 12px; height: auto; border-radius: var(--r-window); }
   .bulkbar { bottom: 76px; left: 12px; right: 12px; transform: none; overflow-x: auto; }
   @keyframes ui-up { from { transform: translateY(10px); opacity: 0; } }

@@ -246,7 +246,12 @@ a[onClick], a:not([href]) { cursor: pointer; }
 .pm-table tr.off td { color: var(--muted); }
 .pm-table input:not([type=checkbox]), .pm-table select { height: 32px; }
 .pm-icon { display: flex; align-items: center; gap: 6px; }
-.pm-icon select { width: 130px; }
+.pm-icon select { width: 112px; }
+/* назва виду оплати не стискається до двох літер: таблиця краще прокрутиться вбік */
+.pm-table { min-width: 960px; }
+.pm-table td:nth-child(3) input { min-width: 190px; width: 100%; }
+.pm-table td:nth-child(4) select { min-width: 170px; }
+.pm-table td:nth-child(5) select, .pm-table td:nth-child(6) select { min-width: 150px; }
 .dir-st-btn { font: inherit; font-size: 12px; color: var(--muted); background: none; border: 0; cursor: pointer; padding: 0 2px; text-align: left; grid-column: 1 / -1; margin-top: -2px; }
 .dir-st-btn:hover { color: var(--accent); }
 .pay-cell { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }

@@ -97,8 +97,12 @@ DEFAULT_TEMPLATES = {
 
 
 def seed(db: Session):
-    if db.query(Status).count() == 0:
+    # нова база: міграція 0017 уже вставила unsorted / arrived / lead_refused, тому дивимось на базовий статус, а не на порожню таблицю
+    if not db.query(Status).filter(Status.code == "confirmed").first():
+        have = {c for (c,) in db.query(Status.code)}
         for code, name, color, sort, action, approved, final in DEFAULT_STATUSES:
+            if code in have:
+                continue
             db.add(Status(code=code, name=name, color=color, sort=sort, stock_action=action,
                           counts_as_approved=approved, is_final=final, is_system=True,
                           is_active=code != "packing",  # «Комплектується» — запасний, у новій доріжці статусів його немає
