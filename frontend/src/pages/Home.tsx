@@ -1,16 +1,17 @@
 // Головна (UI-DESIGN §10, макет 04-holovna): 4 плитки (сьогодні, період, покупці, нові покупці), смуга «Потребує уваги»,
 // продажі по днях з пунктиром попереднього періоду, якість продажів (кільця з дельтою в пунктах), топ товарів і команда сьогодні.
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  AlarmClock, Boxes, CalendarDays, ChevronRight, CircleDot, HandCoins, Inbox, MapPin, PackageCheck, Truck, UserRound, Users, type LucideIcon,
+  AlarmClock, ArrowDownRight, ArrowUpRight, Boxes, CalendarDays, Check, ChevronRight, CircleDot, Clock, HandCoins, Inbox, MapPin, Package, PackageCheck, Truck,
+  UserRound, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 import { api, qs } from "../lib/api";
 import { useMeta } from "../lib/app";
 import { isoDay, money } from "../lib/format";
 import type { Dashboard } from "../lib/types";
-import { MenuButton, Segmented, Spinner } from "../components/ui";
+import { MenuButton, Segmented, Spinner, useMobile } from "../components/ui";
 import "./home.css";
 
 const WEEK = ["неділя", "понеділок", "вівторок", "середа", "четвер", "пʼятниця", "субота"];
@@ -36,6 +37,7 @@ export default function HomePage() {
   const cur = ym(now);
   const prevM = ym(new Date(now.getFullYear(), now.getMonth() - 1, 1));
   const [period, setPeriod] = useState(cur);
+  const mobile = useMobile();
   const [custom, setCustom] = useState({ from: isoDay(new Date(now.getFullYear(), now.getMonth(), 1)), to: isoDay(now) });
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard", period], queryFn: () => api.get<Dashboard>(`/dashboard${qs({ period })}`), refetchInterval: 60_000, placeholderData: (p) => p,
@@ -63,6 +65,8 @@ export default function HomePage() {
     { icon: HandCoins, n: `${money(a.cod_expected)} ₴`, label: "очікуємо післяплату", tone: "", go: meta.nav.includes("payments") ? () => nav("/payments") : undefined },
     { icon: Boxes, n: a.low_stock, label: "товарів закінчуються", tone: "hot", go: meta.nav.includes("warehouse") ? () => nav("/warehouse") : undefined },
   ];
+
+  if (mobile) return <HomeMobile data={data} periodName={periodName} attention={attention} go={(to) => nav(to)} st={st} />;
 
   return (
     <div className="home2">
@@ -225,6 +229,89 @@ function DayChart({ days, prev }: { days: Dashboard["days"]; prev: Dashboard["da
           <b>{Number(hd.day.slice(8))} {MONTHS[Number(hd.day.slice(5, 7)) - 1]} · {money(hd.sum)} ₴</b>
           <span>{hd.orders} {pl(hd.orders, "замовлення", "замовлення", "замовлень")}{hp ? ` · раніше ${money(hp.sum)} ₴` : ""}</span>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- телефон (мобільна v2): лічильники-пігулки, темна картка «Продано сьогодні»
+// зі стовпцями 7 днів, плитки 2×2 (період, середній чек, апрув, викуп), топ товарів і решта «потребує уваги».
+const WD = ["нд", "пн", "вт", "ср", "чт", "пт", "сб"];
+type Attn = { icon: LucideIcon; n: string | number; label: string; tone: "" | "hot" | "warn"; go?: () => void };
+
+function DeltaPill({ v, unit = "%" }: { v: number | null | undefined; unit?: string }) {
+  if (v == null) return null;
+  const up = v >= 0;
+  return <span className={`mh-d ${up ? "up" : "down"}`}>{up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}{up ? "+" : "−"}{Math.abs(v)}{unit === "%" ? "%" : ` ${unit}`}</span>;
+}
+
+function HomeMobile({ data, periodName, attention, go, st }: {
+  data: Dashboard; periodName: string; attention: Attn[]; go: (to: string) => void; st: (code: string) => number | undefined;
+}) {
+  const { today, month, quality: q, attention: a } = data;
+  const byDay = new Map<string, number>();
+  [...(data.prev_days ?? []), ...data.days].forEach((d) => byDay.set(d.day, d.sum));
+  const week = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (6 - i)); const k = isoDay(d); return { k, wd: i === 6 ? "сьогодні" : WD[d.getDay()], sum: byDay.get(k) ?? 0 }; });
+  const max = Math.max(1, ...week.map((w) => w.sum));
+  const pills: { icon: LucideIcon; tone: string; n: number; label: string; to: string }[] = [
+    { icon: Inbox, tone: "red", n: a.leads_new, label: "нові ліди", to: "/leads?tab=new" },
+    { icon: Clock, tone: "orange", n: a.orders_unsorted, label: "несортовані", to: st("unsorted") ? `/orders?status=${st("unsorted")}` : "/orders" },
+    { icon: Package, tone: "blue", n: a.to_ship, label: "відправити", to: st("confirmed") ? `/orders?status=${st("confirmed")}` : "/orders" },
+  ];
+  const rest = attention.filter((x) => !["нові ліди", "новий лід", "нових лідів", "несортованих", "чекають відправки"].includes(x.label) && x.n !== 0 && x.n !== "0 ₴");
+  const tile = (icon: LucideIcon, tone: string, d: ReactNode, v: ReactNode, l: string, to?: string) => {
+    const I = icon;
+    return (
+      <button type="button" className="mh-tile" onClick={() => to && go(to)}>
+        <span className="mh-tile-h"><span className={`sq sm t-${tone}`}><I size={15} /></span>{d}</span>
+        <b>{v}</b><small>{l}</small>
+      </button>
+    );
+  };
+  return (
+    <div className="mh">
+      <div className="mh-pills">
+        {pills.map((p) => (
+          <button key={p.label} type="button" className="mh-pill" onClick={() => go(p.to)}>
+            <span className={`sq sm t-${p.tone}`}><p.icon size={15} /></span><span><b>{p.n}</b><small>{p.label}</small></span>
+          </button>
+        ))}
+      </div>
+      <button type="button" className="mh-dark" onClick={() => go(`/orders?date_from=${today.date}&date_to=${today.date}`)}>
+        <span className="mh-dark-h"><span>Продано сьогодні · {today.orders} {pl(today.orders, "замовлення", "замовлення", "замовлень")}</span><DeltaPill v={today.sum_delta} /></span>
+        <span className="mh-big">{money(today.sum)} <small>₴</small></span>
+        <span className="mh-bars" aria-label="Сума продажів за 7 днів">
+          {week.map((w, i) => (
+            <span key={w.k} className="mh-bar" title={`${w.wd}: ${money(w.sum)} ₴`}>
+              <i className={i === 6 ? "on" : ""} style={{ height: `${Math.max(6, (w.sum / max) * 62)}px` }} /><small>{w.wd}</small>
+            </span>
+          ))}
+        </span>
+      </button>
+      <div className="mh-tiles">
+        {tile(CalendarDays, "blue", <DeltaPill v={month.sum_delta} />, <>{money(month.sum)} ₴</>, `за ${periodName.toLowerCase()}`, "/stats")}
+        {tile(Wallet, "green", null, <>{money(month.avg_check)} ₴</>, "середній чек", "/stats")}
+        {tile(Check, "purple", <DeltaPill v={q.approve_delta} unit="п." />, <>{q.approve_rate}%</>, "апрув", "/stats")}
+        {tile(Truck, "orange", <DeltaPill v={q.buyout_delta} unit="п." />, <>{q.buyout_rate}%</>, "викуп", "/stats")}
+      </div>
+      <section className="mh-card">
+        <h2>Топ товарів<button type="button" className="link-btn" onClick={() => go("/stats")}>Усі<ChevronRight size={14} /></button></h2>
+        {data.top.length === 0 && <p className="hint">Продажів за цей період ще немає.</p>}
+        {data.top.slice(0, 5).map((t, i) => (
+          <div key={`${t.product_id}-${i}`} className="mh-top"><span className="mc-thumb l sm"><Package size={17} /></span>
+            <span className="mh-top-t"><b className="ell">{t.name}</b><small>{t.qty} шт</small></span><b className="num">{money(t.sum)} ₴</b></div>
+        ))}
+      </section>
+      {rest.length > 0 && (
+        <section className="mh-card">
+          <h2>Потребує уваги</h2>
+          {rest.map((x) => (
+            <button key={x.label} type="button" className="mh-attn" onClick={x.go} disabled={!x.go}>
+              <span className={`sq sm t-${x.tone === "hot" ? "red" : x.tone === "warn" ? "orange" : "gray"}`}><x.icon size={15} /></span>
+              <span className="mh-attn-t">{x.label}</span><b>{x.n}</b>{x.go && <ChevronRight size={16} />}
+            </button>
+          ))}
+        </section>
       )}
     </div>
   );
