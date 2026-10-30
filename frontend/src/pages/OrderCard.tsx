@@ -46,6 +46,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   const [sp] = useSearchParams();
   const navigate = useNavigate();
   const isNew = id === "new";
+  const isLeadNew = isNew && window.location.pathname.includes("/leads");
   const oid = isNew ? 0 : Number(id);
   const fromId = isNew ? Number(sp.get("from") || 0) : 0;
   const byCode = useMemo(() => Object.fromEntries(meta.statuses.map((s) => [s.code, s])), [meta.statuses]);
@@ -227,7 +228,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   const head = (
     <div className="oc-head">
       <IconButton icon={ArrowLeft} label="Назад (Esc)" quiet onClick={close} />
-      {isNew ? <h2 className="oc-new-title">Нове замовлення</h2> : <StatusTrack statusId={form.status_id} onPick={changeStatus} disabled={closed} />}
+      {isNew ? <h2 className="oc-new-title">{isLeadNew ? "Новий лід" : "Нове замовлення"}</h2> : <StatusTrack statusId={form.status_id} onPick={changeStatus} disabled={closed} />}
       <div className="oc-head-acts">
         <span className={`oc-save-st ${saveState}`} aria-live="polite">
           {saveState === "saving" ? "Зберігаю…" : saveState === "error" ? "Не збережено" : dirty && !isNew ? "Є зміни" : saveState === "saved" ? "Збережено" : ""}
@@ -243,7 +244,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   );
 
   return (
-    <Window size="xl" onClose={close} head={head} label={isNew ? "Нове замовлення" : `Замовлення №${oid}`} bodyClass="oc-body">
+    <Window size="xl" onClose={close} head={head} label={isNew ? (isLeadNew ? "Новий лід" : "Нове замовлення") : `Замовлення №${oid}`} bodyClass="oc-body">
       {closed && (
         <div className="oc-strip lock"><Lock size={15} /><span>Замовлення закрите — «{status?.name}». Зміни вимкнено, щоб не зачепити склад і оплати.</span>
           <button className="btn sm" onClick={() => setUnlocked(true)}><Pencil size={14} />Редагувати</button></div>
