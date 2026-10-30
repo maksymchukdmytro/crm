@@ -92,6 +92,7 @@
   .hd-tr { padding: 0 14px; gap: 8px; }
   .hd-tr { grid-template-columns: minmax(0, 1fr) 40px 80px; }
   .hd-tr .hd-bar, .hd-tr.h > span:nth-child(2) { display: none; }
-  .hd-tbl.team .hd-tr { grid-template-columns: minmax(0, 1fr) 46px 46px 72px; }
+  .hd-tbl.team .hd-tr { grid-template-columns: minmax(0, 1fr) 40px 56px 70px; font-size: 12.5px; }
   .hd-tbl.team .hd-tr > :nth-child(4) { display: none; }
+  .hd-tbl.team .hd-tr.h > :nth-child(3)::after { content: ""; }
 }

@@ -160,15 +160,15 @@ def dashboard(db: Session, user: User, period: str | None = None) -> dict:
         confirmed = {r[0]: (int(r[1]), _money(r[2])) for r in conf_rows}
         assigned = dict(db.query(Order.manager_id, func.count(Order.id)).filter(
             Order.created_at >= ts, Order.created_at < te, Order.manager_id.isnot(None)).group_by(Order.manager_id).all())
-        leads_today = dict(db.query(Order.manager_id, func.count(Order.id)).join(Status, Status.id == Order.status_id).filter(
-            Order.created_at >= ts, Order.created_at < te, Order.manager_id.isnot(None),
-            (Status.stage == "lead") | Order.confirmed_at.isnot(None)).group_by(Order.manager_id).all())
+        # апрув менеджера — частка підтверджених серед заявок, що надійшли на нього сьогодні (не більше 100%)
+        new_confirmed = dict(db.query(Order.manager_id, func.count(Order.id)).filter(
+            Order.created_at >= ts, Order.created_at < te, Order.manager_id.isnot(None), Order.confirmed_at.isnot(None)).group_by(Order.manager_id).all())
         for u in db.query(User).filter(User.is_active.is_(True), User.role.in_(("admin", "manager"))).order_by(User.id):
             c_n, c_sum = confirmed.get(u.id, (0, 0.0))
             new_n = int(assigned.get(u.id, 0))
             team.append({"id": u.id, "name": u.display, "role": u.role, "confirmed": c_n, "new": new_n,
-                         "leads": int(leads_today.get(u.id, 0)), "sum": c_sum,
-                         "approve_rate": round(c_n * 100 / new_n, 1) if new_n else None,
+                         "leads": new_n, "sum": c_sum,
+                         "approve_rate": round(int(new_confirmed.get(u.id, 0)) * 100 / new_n, 1) if new_n else None,
                          "last_login": u.last_login_at.isoformat() + "Z" if u.last_login_at else None})
 
     return {

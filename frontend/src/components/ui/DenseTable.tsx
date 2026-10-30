@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { SkeletonRows } from "./blocks";
+import { useMobile } from "./hooks";
 
 export type DenseCol<T> = {
   key: string;
@@ -14,6 +15,8 @@ export type DenseCol<T> = {
   /** Повний текст для підказки, коли значення обрізане трикрапкою. */
   title?: (row: T) => string | undefined;
   headTitle?: string;
+  /** Де показувати на телефоні (картка): title — перший рядок, end — праворуч угорі, sub — другий рядок, hide — ні. */
+  mobile?: "title" | "end" | "sub" | "hide";
 };
 
 export type DenseGroup = { key: string; label: ReactNode };
@@ -22,6 +25,19 @@ type Item<T> = { type: "group"; key: string; label: ReactNode } | { type: "row";
 
 const ROW_H = 31;
 const GROUP_H = 30;
+const CARD_H = 74;
+
+/** На телефоні колонки розкладаються в картку: що в заголовку, що праворуч, що другим рядком. */
+function cardPlace<T>(cols: DenseCol<T>[]) {
+  const named = cols.filter((c) => c.mobile !== "hide");
+  const auto = named.filter((c) => !c.mobile);
+  const end = named.filter((c) => c.mobile === "end");
+  if (!end.length) { const last = [...auto].reverse().find((c) => c.align === "right"); if (last) end.push(last); }
+  const title = named.filter((c) => c.mobile === "title");
+  if (!title.length) title.push(...auto.filter((c) => !end.includes(c)).slice(0, 2));
+  const sub = named.filter((c) => !title.includes(c) && !end.includes(c));
+  return { title, end, sub };
+}
 
 export function DenseTable<T>({
   rows, cols, rowKey, groupOf, selected, onSelect, onOpen, actions, isLoading, empty, onEndReached, current, className = "", label, rowClass,
@@ -47,6 +63,9 @@ export function DenseTable<T>({
   const anchor = useRef<number | null>(null);
   const [focus, setFocus] = useState(-1);
   const selectable = !!onSelect && !!selected;
+  const mobile = useMobile();
+  const place = useMemo(() => cardPlace(cols), [cols]);
+  const press = useRef<number | null>(null);
 
   const items = useMemo<Item<T>[]>(() => {
     const out: Item<T>[] = [];
@@ -61,7 +80,7 @@ export function DenseTable<T>({
 
   const v = useVirtualizer({
     count: items.length, getScrollElement: () => scroll.current, overscan: 16,
-    estimateSize: (i) => (items[i]?.type === "group" ? GROUP_H : ROW_H),
+    estimateSize: (i) => (items[i]?.type === "group" ? GROUP_H : mobile ? CARD_H : ROW_H),
     getItemKey: (i) => items[i]?.key ?? i,
   });
   const vItems = v.getVirtualItems();
@@ -103,8 +122,8 @@ export function DenseTable<T>({
   }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className={`dense ${className}`} role="grid" aria-label={label} aria-rowcount={rows.length} aria-multiselectable={selectable || undefined}>
-      <div className="dense-head dense-row" style={{ gridTemplateColumns: grid }} role="row">
+    <div className={`dense ${mobile ? "dense-cards " : ""}${className}`} role="grid" aria-label={label} aria-rowcount={rows.length} aria-multiselectable={selectable || undefined}>
+      {!mobile && <div className="dense-head dense-row" style={{ gridTemplateColumns: grid }} role="row">
         {selectable && (
           <span className="c-sel" role="columnheader">
             <input type="checkbox" aria-label="Вибрати всі" checked={allSel} onChange={() => onSelect!(allSel ? new Set() : new Set(rows.map(rowKey)))} />
@@ -112,7 +131,7 @@ export function DenseTable<T>({
         )}
         {cols.map((c) => <span key={c.key} role="columnheader" className={c.align ? `a-${c.align}` : ""} title={c.headTitle}>{c.label}</span>)}
         {actions && <span aria-hidden />}
-      </div>
+      </div>}
       <div className="dense-body" ref={scroll} tabIndex={0} onKeyDown={onKey} onBlur={() => setFocus(-1)} aria-label={label ? `${label}: стрілки — перехід, пробіл — вибрати, Enter — відкрити` : undefined}>
         {isLoading && <SkeletonRows rows={14} cols={Math.min(cols.length, 8)} />}
         {!isLoading && rows.length === 0 && <div className="dense-empty">{empty}</div>}
@@ -126,6 +145,29 @@ export function DenseTable<T>({
             const r = it.row;
             const id = rowKey(r);
             const on = selectable && selected!.has(id);
+            if (mobile) {
+              // картка: довге натискання — вибрати (тоді знизу панель масових дій), коротке — відкрити
+              const cell = (c: DenseCol<T>) => <span key={c.key} className={`c-${c.key}`}>{c.render(r)}</span>;
+              return (
+                <div key={it.key} role="row" aria-selected={on || undefined} data-index={vi.index} ref={v.measureElement}
+                  className={`dense-card${on ? " sel" : ""}${current === id ? " cur" : ""} ${rowClass?.(r) ?? ""}`}
+                  style={{ transform: `translateY(${vi.start}px)` }}
+                  onTouchStart={() => { if (!selectable) return; press.current = window.setTimeout(() => { press.current = -1; toggle(r, false); }, 480); }}
+                  onTouchEnd={() => { if (press.current && press.current > 0) clearTimeout(press.current); }}
+                  onTouchMove={() => { if (press.current && press.current > 0) clearTimeout(press.current); press.current = null; }}
+                  onContextMenu={(e) => { if (selectable) e.preventDefault(); }}
+                  onClick={(e) => {
+                    const t = e.target as HTMLElement;
+                    if (press.current === -1) { press.current = null; return; }
+                    if (t.closest("input, button, a, .c-sel")) return;
+                    if (selectable && selected!.size > 0) { toggle(r, false); return; }
+                    onOpen?.(r);
+                  }}>
+                  <div className="dc-top"><span className="dc-title">{place.title.map(cell)}</span>{place.end.length > 0 && <span className="dc-end">{place.end.map(cell)}</span>}</div>
+                  {place.sub.length > 0 && <div className="dc-sub">{place.sub.map(cell)}</div>}
+                </div>
+              );
+            }
             return (
               <div key={it.key} role="row" aria-selected={on || undefined}
                 className={`dense-row${on ? " sel" : ""}${current === id ? " cur" : ""}${focus === it.index ? " focus" : ""} ${rowClass?.(r) ?? ""}`}

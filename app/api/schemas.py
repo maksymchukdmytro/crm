@@ -1752,9 +1752,9 @@ class DashTeam(Out):
     role: str
     confirmed: int = Field(description="підтверджено сьогодні")
     new: int = Field(description="нових замовлень на ньому сьогодні")
-    leads: int = Field(0, description="лідів сьогодні (оброблених і відкритих)")
+    leads: int = Field(0, description="заявок (лідів і замовлень), що надійшли на менеджера сьогодні")
     sum: float = Field(0, description="сума підтверджених сьогодні")
-    approve_rate: float | None = None
+    approve_rate: float | None = Field(None, description="частка підтверджених серед сьогоднішніх заявок менеджера, %")
     last_login: str | None = None
 
 

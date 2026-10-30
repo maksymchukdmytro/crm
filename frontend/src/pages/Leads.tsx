@@ -87,16 +87,16 @@ export default function LeadsPage() {
   const COLS: DenseCol<OrderRow>[] = [
     { key: "id", label: "№", width: "70px", render: (o) => <span className="o-id">{leadNo(o.id)}</span> },
     { key: "name", label: "Ім'я", width: "minmax(120px, 1.1fr)", title: (o) => o.customer_name, render: (o) => <span className="ell">{o.customer_name || <span className="muted">без імені</span>}</span> },
-    { key: "phone", label: "Телефон", width: "124px", render: (o) => <span className="num">{phone(o.phone)}</span> },
+    { key: "phone", mobile: "hide", label: "Телефон", width: "124px", render: (o) => <span className="num">{phone(o.phone)}</span> },
     { key: "items", label: "Товар з форми", width: "minmax(120px, 1.3fr)", title: (o) => o.items.map((i) => i.name).join(", "), render: (o) => <span className="ell">{o.items[0]?.name ?? "—"}</span> },
-    { key: "total", label: "Сума", width: "78px", align: "right", render: (o) => <b className="num">{money(o.total)} ₴</b> },
+    { key: "total", mobile: "end", label: "Сума", width: "78px", align: "right", render: (o) => <b className="num">{money(o.total)} ₴</b> },
     { key: "status", label: "Статус", width: "118px", render: (o) => <StatusPill status={statuses[o.status_id]} /> },
     { key: "wait", label: "Чекає · спроба", width: "120px", render: (o) => <WaitBadge row={o} /> },
-    { key: "source", label: "Джерело", width: "minmax(80px, 0.8fr)", render: (o) => {
+    { key: "source", mobile: "hide", label: "Джерело", width: "minmax(80px, 0.8fr)", render: (o) => {
       const s = sources[o.source_id ?? 0];
       return s ? <span className="o-dot-txt"><i style={{ background: s.color }} /><span className="ell">{s.name}</span></span> : <span className="ell muted">{o.utm_source || "—"}</span>;
     } },
-    { key: "manager", label: "Мен.", headTitle: "Менеджер", width: "36px", align: "center", render: (o) => o.manager_id
+    { key: "manager", mobile: "hide", label: "Мен.", headTitle: "Менеджер", width: "36px", align: "center", render: (o) => o.manager_id
       ? <span className="o-av" title={managers[o.manager_id]?.name}>{(managers[o.manager_id]?.name ?? "").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}</span>
       : <span className="muted">—</span> },
   ];

@@ -56,15 +56,15 @@ export function WarehousePage() {
   const toBuy = rows.filter((r) => r.available > 0 && r.days_left != null && r.days_left <= 7);
   const buyValue = toBuy.reduce((s, r) => s + r.cost * Math.max(0, Math.ceil(r.daily * 30) - r.available), 0);
   const COLS: DenseCol<StockRow>[] = [
-    { key: "name", label: "Товар · варіант", width: "minmax(200px, 2fr)", title: (r) => `${r.product}${r.variant ? ` · ${r.variant}` : ""}`, render: (r) => (
+    { key: "name", mobile: "title", label: "Товар · варіант", width: "minmax(200px, 2fr)", title: (r) => `${r.product}${r.variant ? ` · ${r.variant}` : ""}`, render: (r) => (
       <span className="st-name"><span className="ell">{r.product}</span><small className="ell muted">{[r.variant, r.sku].filter(Boolean).join(" · ") || "—"}</small></span>
     ) },
-    { key: "stock", label: "Залишок", width: "74px", align: "right", render: (r) => <span className="num">{r.stock}</span> },
-    { key: "res", label: "Резерв", width: "64px", align: "right", render: (r) => <span className="num muted">{r.reserved}</span> },
-    { key: "av", label: "Доступно", width: "76px", align: "right", render: (r) => <b className={`num ${r.available <= 0 ? "t-bad" : ""}`}>{r.available}</b> },
-    { key: "day", label: "Шт/день", width: "66px", align: "right", render: (r) => <span className="num muted">{r.daily ? r.daily.toLocaleString("uk-UA") : "—"}</span> },
-    { key: "fc", label: "Прогноз", width: "minmax(140px, 1fr)", render: (r) => { const l = leftText(r); return <span className={`st-fc ${l.c}`}>{l.c === "ok" ? <Check size={13} /> : l.c === "muted" ? null : <CircleAlert size={13} />}{l.t}</span>; } },
-    { key: "buy", label: "", width: "96px", align: "right", render: (r) => (r.available <= 0 || (r.days_left != null && r.days_left <= 10))
+    { key: "stock", mobile: "sub", label: "Залишок", width: "74px", align: "right", render: (r) => <span className="num">{r.stock}</span> },
+    { key: "res", mobile: "hide", label: "Резерв", width: "64px", align: "right", render: (r) => <span className="num muted">{r.reserved}</span> },
+    { key: "av", mobile: "end", label: "Доступно", width: "76px", align: "right", render: (r) => <b className={`num ${r.available <= 0 ? "t-bad" : ""}`}>{r.available}</b> },
+    { key: "day", mobile: "hide", label: "Шт/день", width: "66px", align: "right", render: (r) => <span className="num muted">{r.daily ? r.daily.toLocaleString("uk-UA") : "—"}</span> },
+    { key: "fc", mobile: "sub", label: "Прогноз", width: "minmax(140px, 1fr)", render: (r) => { const l = leftText(r); return <span className={`st-fc ${l.c}`}>{l.c === "ok" ? <Check size={13} /> : l.c === "muted" ? null : <CircleAlert size={13} />}{l.t}</span>; } },
+    { key: "buy", mobile: "sub", label: "", width: "96px", align: "right", render: (r) => (r.available <= 0 || (r.days_left != null && r.days_left <= 10))
       ? <Button size={30} onClick={() => nav(`/purchases?new=1&product=${r.product_id}`)}>Закупити</Button> : null },
   ];
   return (

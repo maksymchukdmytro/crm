@@ -217,6 +217,16 @@ export default function Layout() {
           <ErrorBoundary area="page"><Outlet /></ErrorBoundary>
         </main>
       </div>
+      {/* телефон (UI-DESIGN §13): нижні вкладки — Головна · Замовлення · «+» по центру · Ліди (або Накладні) · Ще */}
+      <nav className="tabbar" aria-label="Нижнє меню">
+        <NavLink to="/home"><House size={20} /><span>Головна</span></NavLink>
+        <NavLink to="/orders"><ReceiptText size={20} /><span>Замовлення</span>{counters.orders_unsorted > 0 && <i className="count hot">{counters.orders_unsorted}</i>}</NavLink>
+        <span className="tb-gap" aria-hidden />
+        {leadsOn
+          ? <NavLink to="/leads"><Inbox size={20} /><span>Ліди</span>{counters.leads_new > 0 && <i className="count hot">{counters.leads_new}</i>}</NavLink>
+          : <NavLink to="/invoices"><FileText size={20} /><span>Накладні</span></NavLink>}
+        <button type="button" onClick={() => setDrawer(true)} aria-label="Ще: усе меню"><Menu size={20} /><span>Ще</span></button>
+      </nav>
       <Fab onClick={() => nav("/orders/new")} actions={quick} />
       {palette && <CommandPalette onClose={() => setPalette(null)} placeholder={palette.hint} />}
     </div>
