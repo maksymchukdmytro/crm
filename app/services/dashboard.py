@@ -12,6 +12,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..models import Customer, Order, Payment, Product, Status, User, utcnow
+from . import settings as st
 from . import stats as st_svc
 from .orders import visible_orders_query
 from .reports import period_bounds
@@ -81,11 +82,13 @@ def dashboard(db: Session, user: User) -> dict:
 
     # що потребує уваги зараз
     vis = visible_orders_query(db, user).join(Status, Status.id == Order.status_id)
-    leads_new = vis.filter(Status.code == "new").count()
-    leads_open = vis.filter(Status.stage == "lead", Status.code != "duplicate").count()
+    leads_on = st.get(db, "leads_enabled") != "0"
+    leads_new = vis.filter(Status.code == "new").count() if leads_on else 0
+    leads_open = vis.filter(Status.stage == "lead", ~Status.code.in_(("duplicate", "lead_refused"))).count() if leads_on else 0
+    unsorted = vis.filter(Status.code == "unsorted").count()
     to_ship = vis.filter(Status.code.in_(WAIT_SHIP), Order.ttn == "").count()
     on_way = vis.filter(Order.delivery_state.in_(("created", "in_transit", "arrived"))).count()
-    arrived = vis.filter(Order.delivery_state == "arrived").count()
+    arrived = vis.filter((Order.delivery_state == "arrived") | (Status.code == "arrived")).count()
     reminders = vis.filter(Order.remind_at.isnot(None), Order.remind_at <= utcnow()).count()
     visible_ids = visible_orders_query(db, user).with_entities(Order.id).subquery()
     cod_expected = db.query(func.coalesce(func.sum(Payment.amount), 0)).filter(
@@ -118,7 +121,7 @@ def dashboard(db: Session, user: User) -> dict:
                   "approve_rate": summary["approve_rate"], "buyout_rate": summary["buyout_rate"], "upsell_rate": summary["upsell_rate"],
                   "margin": summary["margin"]},
         "customers": {"total": int(customers), "new": int(new_customers), "new_delta": _delta(new_customers, new_prev)},
-        "attention": {"leads_new": leads_new, "leads_open": leads_open, "to_ship": to_ship, "on_way": on_way, "arrived": arrived,
+        "attention": {"leads_new": leads_new, "leads_open": leads_open, "orders_unsorted": unsorted, "to_ship": to_ship, "on_way": on_way, "arrived": arrived,
                       "reminders": reminders, "low_stock": int(low_stock),
                       "cod_expected": _money(cod_expected), "cod_collected": _money(cod_collected)},
         "days": days,

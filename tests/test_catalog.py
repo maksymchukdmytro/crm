@@ -196,7 +196,7 @@ def test_product_delete_or_archive(api, db, products):
 
 
 def test_leads_and_orders_sections(api, db, products, webhook_key):
-    a = new_order(api, products, phone="0501110010")
+    a = new_order(api, products, phone="0501110010", status_id=sid(db, "new"))  # лід
     b = new_order(api, products, phone="0501110011")
     api.patch(f"/api/orders/{b['id']}", json={"status_id": sid(db, "confirmed")})
     leads = {o["id"] for o in api.get("/api/orders?stage=lead").json()["items"]}

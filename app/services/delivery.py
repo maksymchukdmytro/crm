@@ -14,14 +14,14 @@ FINAL_DELIVERY_STATES = {"delivered", "returned", "deleted"}
 # Який статус замовлення ставити за станом посилки (якщо увімкнено автостатуси)
 STATE_TO_STATUS = {
     "in_transit": "shipped",
-    "arrived": "shipped",
+    "arrived": "arrived",  # «Очікує на отримання»; якщо статус вимкнено — «Відправлений»
     "created": None,
     "delivered": "delivered",
     "refused": "refused",
     "returned": "refused",
 }
 # Статуси, з яких дозволено автоматичний перехід у «Відправлено»
-PRE_SHIP_CODES = {"new", "confirmed", "packing", "no_answer", "callback"}
+PRE_SHIP_CODES = {"new", "unsorted", "confirmed", "packing", "no_answer", "callback"}
 
 
 def carrier_for(db: Session, order: Order):
@@ -102,12 +102,16 @@ def apply_track(db: Session, order: Order, res: TrackResult, auto_status: bool) 
         target_code = STATE_TO_STATUS.get(res.state)
         current = order.status.code if order.status else ""
         allowed = False
+        if target_code == "arrived" and not db.query(Status).filter(Status.code == "arrived", Status.is_active.is_(True)).count():
+            target_code = "shipped"
         if target_code == "shipped":
             allowed = current in PRE_SHIP_CODES
+        elif target_code == "arrived":
+            allowed = current in PRE_SHIP_CODES | {"shipped"}
         elif target_code == "delivered":
-            allowed = current in PRE_SHIP_CODES | {"shipped"}
+            allowed = current in PRE_SHIP_CODES | {"shipped", "arrived"}
         elif target_code == "refused":
-            allowed = current in PRE_SHIP_CODES | {"shipped"}
+            allowed = current in PRE_SHIP_CODES | {"shipped", "arrived"}
         if allowed:
             target = db.query(Status).filter(Status.code == target_code, Status.is_active.is_(True)).one_or_none()
             if target:

@@ -21,7 +21,7 @@ from .schemas import (
 router = APIRouter(prefix="/api", tags=["shell"])
 
 SECTIONS = ("orders", "leads", "products", "customers", "invoices")
-LIST_FILTERS = ("status", "q", "manager", "date_from", "date_to", "delivery", "source", "dup", "pay", "stage")
+LIST_FILTERS = ("status", "q", "manager", "date_from", "date_to", "delivery", "source", "dup", "pay", "stage", "src", "entity", "pm", "mark", "remind", "ttn")
 
 
 # ------------------------------------------------------------------ налаштування користувача

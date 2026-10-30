@@ -27,6 +27,12 @@ DEFAULTS: dict[str, str] = {
     "extra4_name": "Поле 4",
     "duplicate_days": "14",  # вікно пошуку дублів за телефоном, днів (0 — вимкнено)
     "auto_assign": "off",  # off / round_robin
+    # розділ «Ліди» (UI-DESIGN §4.3): вимкнено — заявки з форм ідуть одразу в «Несортовані»
+    "leads_enabled": "1",
+    "lead_wait_warn_min": "5",
+    "lead_wait_bad_min": "15",
+    "lead_noanswer_remind_min": "30",
+    "lead_to_order_status": "confirmed",  # confirmed / unsorted
     "managers_see_own_only": "0",
     "auto_status_from_tracking": "1",  # змінювати статус замовлення за трекінгом
     "tracking_interval_min": "60",

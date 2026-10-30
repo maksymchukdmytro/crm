@@ -521,7 +521,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Orders */
+        /**
+         * List Orders
+         * @description Курсор: sort=new — найновіші вгорі (before=<id>), sort=old — найстаріші вгорі («Несортовані», after=<id>).
+         */
         get: operations["list_orders_api_orders_get"];
         put?: never;
         /** Create Order */
@@ -2177,6 +2180,11 @@ export interface components {
             low_stock: number;
             /** On Way */
             on_way: number;
+            /**
+             * Orders Unsorted
+             * @default 0
+             */
+            orders_unsorted: number;
             /** Reminders */
             reminders: number;
             /** To Ship */
@@ -2294,6 +2302,21 @@ export interface components {
             today: components["schemas"]["DashToday"];
             /** Top */
             top: components["schemas"]["DashTop"][];
+        };
+        /** DayGroup */
+        DayGroup: {
+            /** Count */
+            count: number;
+            /**
+             * Day
+             * @description Дата за місцевим часом, YYYY-MM-DD
+             */
+            day: string;
+            /**
+             * Sum
+             * @description Сума без скасованих і дублів
+             */
+            sum: number;
         };
         /** DayRow */
         DayRow: {
@@ -2493,6 +2516,13 @@ export interface components {
             color: string;
             /** Id */
             id: number;
+            /** Name */
+            name: string;
+        };
+        /** GroupTag */
+        GroupTag: {
+            /** Color */
+            color: string;
             /** Name */
             name: string;
         };
@@ -3344,6 +3374,11 @@ export interface components {
             counts?: {
                 [key: string]: number;
             } | null;
+            /**
+             * Groups
+             * @description Підсумки за днями для дат на цій сторінці
+             */
+            groups?: components["schemas"]["DayGroup"][];
             /** Items */
             items: components["schemas"]["OrderRowOut"][];
             /** Next */
@@ -3568,6 +3603,7 @@ export interface components {
             country: string;
             /** Created At */
             created_at: string | null;
+            customer_group?: components["schemas"]["GroupTag"] | null;
             /** Customer Id */
             customer_id?: number | null;
             /** Customer Name */
@@ -3600,6 +3636,11 @@ export interface components {
             manager_id: number | null;
             /** Mark Id */
             mark_id?: number | null;
+            /**
+             * No Stock
+             * @default false
+             */
+            no_stock: boolean;
             /** Np Account Id */
             np_account_id?: number | null;
             /** Office Id */
@@ -3633,6 +3674,11 @@ export interface components {
             utm_campaign: string;
             /** Utm Source */
             utm_source: string;
+            /**
+             * Warehouse Name
+             * @default
+             */
+            warehouse_name: string;
         };
         /** PayCheckOut */
         PayCheckOut: {
@@ -6706,6 +6752,8 @@ export interface operations {
         parameters: {
             query?: {
                 before?: number;
+                after?: number;
+                sort?: string;
                 limit?: number;
                 counts?: number;
             };

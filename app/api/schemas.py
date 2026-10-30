@@ -285,10 +285,18 @@ class OrderRowItem(Out):
     upsell: bool
 
 
+class GroupTag(Out):
+    name: str
+    color: str
+
+
 class OrderRowOut(Out):
     id: int
     status_id: int
     manager_id: int | None
+    warehouse_name: str = ""
+    customer_group: GroupTag | None = None
+    no_stock: bool = False
     office_id: int | None = None
     np_account_id: int | None = None
     legal_entity_id: int | None = None
@@ -323,12 +331,19 @@ class OrderRowOut(Out):
     pay_check: PayCheckOut | None = None
 
 
+class DayGroup(Out):
+    day: str = Field(description="Дата за місцевим часом, YYYY-MM-DD")
+    count: int
+    sum: Num = Field(description="Сума без скасованих і дублів")
+
+
 class OrderListOut(Out):
     items: list[OrderRowOut]
     next: int | None
     total: int | None = None
     counts: dict[str, int] | None = None
     all: int | None = None
+    groups: list[DayGroup] = Field(default_factory=list, description="Підсумки за днями для дат на цій сторінці")
 
 
 class OrderItemOut(Out):
@@ -1584,6 +1599,7 @@ class DashCustomers(Out):
 class DashAttention(Out):
     leads_new: int
     leads_open: int
+    orders_unsorted: int = 0
     to_ship: int
     on_way: int
     arrived: int

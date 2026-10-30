@@ -7,3 +7,6 @@ export * from "./blocks";
 export * from "./windows";
 export * from "./bars";
 export * from "./hooks";
+export * from "./ChipSelect";
+export * from "./DenseTable";
+export * from "./ColumnsMenu";

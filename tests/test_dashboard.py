@@ -13,7 +13,7 @@ def test_dashboard_numbers(api, admin, db, products):
     assert d["today"]["orders"] == 2 and d["today"]["sum"] == 2 * 897
     assert d["month"]["orders"] >= 2 and d["month"]["sum"] >= 2 * 897
     assert d["customers"]["total"] >= 1 and d["customers"]["new"] >= 1
-    assert d["attention"]["leads_new"] >= 2  # нові — у статусі «Новий»
+    assert d["attention"]["orders_unsorted"] >= 2  # створені вручну — у «Несортованих»
     assert len(d["days"]) >= 1 and d["days"][-1]["orders"] == 2
     assert d["top"] and d["top"][0]["qty"] >= 2
     assert any(u["name"] for u in d["team"])  # адміністратор бачить команду

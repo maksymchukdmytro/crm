@@ -60,7 +60,7 @@ def test_filters(api, db, products):
     assert get("search=акція") == {a["id"]}
     api.patch(f"/api/orders/{b['id']}", json={"status_id": sid(db, "confirmed")})
     assert get(f"status={sid(db, 'confirmed')}") == {b["id"]}
-    assert get(f"status={sid(db, 'confirmed')},{sid(db, 'new')}") == {a["id"], b["id"], c["id"]}
+    assert get(f"status={sid(db, 'confirmed')},{sid(db, 'unsorted')}") == {a["id"], b["id"], c["id"]}
     opts = api.get("/api/stats/options").json()
     assert {x["value"] for x in opts["values"]["utm_source"]} == {"fb", "google"}
     assert opts["date_fields"]["assigned"] == "Закріплене" and "weekday" in opts["dimensions"]
