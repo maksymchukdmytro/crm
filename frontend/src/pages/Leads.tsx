@@ -7,7 +7,7 @@ import { api, qs } from "../lib/api";
 import { useDebounced, useMeta } from "../lib/app";
 import { money, phone } from "../lib/format";
 import type { OrderList, OrderRow } from "../lib/types";
-import { Button, ChipSelect, DenseTable, FilterChip, Segmented, StatusPill, Tabs, type DenseCol, type TabItem } from "../components/ui";
+import { Button, ChipSelect, DenseTable, FilterChip, Ring, Segmented, StatusPill, Tabs, type DenseCol, type TabItem } from "../components/ui";
 import { SOURCE_COLORS } from "./Orders";
 import OrderModal from "./OrderCard";
 import LeadWindow from "./LeadWindow";
@@ -102,6 +102,33 @@ export default function LeadsPage() {
   ];
 
   const open = useCallback((o: { id: number }) => nav(`/leads/${o.id}${window.location.search}`), [nav]);
+
+  // телефон (мобільна v2): кільце часу очікування, статус, ім'я, товар · сума, кнопка дзвінка
+  const waitRing = (o: OrderRow) => {
+    const m = o.wait_minutes;
+    if (m == null) return <Ring value="—" frac={0} color="var(--faint)" />;
+    const color = m >= meta.lead_wait_bad_min ? "#DC2626" : m >= meta.lead_wait_warn_min ? "#D97706" : "#16A34A";
+    const [v, u] = m < 60 ? [Math.max(1, m), "хв"] : m < 1440 ? [Math.floor(m / 60), "год"] : [Math.floor(m / 1440), "дн"];
+    return <Ring value={v} unit={u} frac={Math.min(1, m / Math.max(1, meta.lead_wait_bad_min))} color={color} />;
+  };
+  const mobileCard = (o: OrderRow) => {
+    const code = statuses[o.status_id]?.code ?? "";
+    const callable = ["new", "no_answer", "callback"].includes(code);
+    return (
+      <div className="ml-card">
+        {waitRing(o)}
+        <div className="ml-t">
+          <StatusPill status={statuses[o.status_id]} />
+          <b>{o.customer_name || phone(o.phone) || "без імені"}</b>
+          <small>{o.items[0]?.name ?? "—"} · {money(o.total)} ₴</small>
+        </div>
+        {o.phone && callable && (
+          <a className={`ml-call${rows[0]?.id === o.id ? " p" : ""}`} href={`tel:+${o.phone.replace(/\D/g, "")}`} aria-label={`Подзвонити: ${o.customer_name || phone(o.phone)}`}
+            onClick={(e) => { e.stopPropagation(); open(o); }}><Phone size={20} /></a>
+        )}
+      </div>
+    );
+  };
   const firstInQueue = qQueue.data?.ids[0];
 
   return (
@@ -120,6 +147,11 @@ export default function LeadsPage() {
           <Button variant="primary" icon={Phone} disabled={!firstInQueue} onClick={() => firstInQueue && open({ id: firstInQueue })}
             title={firstInQueue ? "Відкрити чергу дзвінків" : "Черга порожня"}>Почати дзвонити</Button>
         </div>
+      </div>
+
+      <div className="lead-cta m-only">
+        <div><b>{newCount}</b><small>{newCount === 1 ? "чекає дзвінка" : "чекають дзвінка"}{longest > 0 && <><br />найдовше — {waitText(longest)}</>}</small></div>
+        <button type="button" className="go" disabled={!firstInQueue} onClick={() => firstInQueue && open({ id: firstInQueue })}><Phone size={18} />Дзвонити</button>
       </div>
 
       {view === "list" && <Tabs items={tabs} value={tab} onChange={(k) => set({ tab: k === "open" ? "" : k })} label="Вкладки лідів" className="list-tabs" />}
@@ -148,6 +180,7 @@ export default function LeadsPage() {
         <DenseTable<OrderRow> label="Ліди" rows={rows} cols={COLS} rowKey={(o) => o.id} onOpen={open} current={id ? Number(id) : null}
           isLoading={q.isLoading}
           rowClass={(o) => ((o.wait_minutes ?? 0) >= meta.lead_wait_bad_min ? "late" : "")}
+          mobileCard={mobileCard}
           actions={(o) => (statuses[o.status_id]?.code && ["new", "no_answer", "callback"].includes(statuses[o.status_id].code)
             ? <Button size={30} icon={Phone} onClick={() => open(o)}>Дзвонити</Button> : null)}
           empty={<div className="empty-state"><p>{tab === "open" ? "Відкритих лідів немає — заявки з форм з'являться тут" : "Тут порожньо"}</p></div>} />

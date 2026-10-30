@@ -2,7 +2,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Check, ChevronDown, Plus, X } from "lucide-react";
 import type { Status } from "../../lib/types";
-import { useOutside } from "./hooks";
+import { useMobile, useOutside } from "./hooks";
 
 // ---------------------------------------------------------------- статус і позначки
 export function StatusPill({ status, color, name, current = false, size }: {
@@ -58,10 +58,12 @@ export function Tabs<K extends string>({ items, value, onChange, className = "",
     return () => ro.disconnect();
   }, [items]);
 
+  const mobile = useMobile();
   const activeIdx = items.findIndex((i) => i.key === value);
-  let shown = items.slice(0, visible);
-  let hidden = items.slice(visible);
-  if (activeIdx >= visible && visible > 0) {                     // активну вкладку не ховаємо
+  // на телефоні всі вкладки в один рядок, що гортається пальцем (без «Ще»)
+  let shown = mobile ? items : items.slice(0, visible);
+  let hidden = mobile ? [] : items.slice(visible);
+  if (!mobile && activeIdx >= visible && visible > 0) {                     // активну вкладку не ховаємо
     shown = [...items.slice(0, visible - 1), items[activeIdx]];
     hidden = items.filter((_, i) => i >= visible - 1 && i !== activeIdx);
   }

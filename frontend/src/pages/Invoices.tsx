@@ -7,7 +7,7 @@ import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money } from "../lib/format";
 import { DOC_OF, printDocument, printIssued, printMany } from "../lib/docs";
-import { BulkBar, Button, ChipSelect, DenseTable, IconButton, MenuButton, Tabs, Tag, type DenseCol } from "../components/ui";
+import { BulkBar, Button, ChipSelect, DenseTable, IconButton, MenuButton, MobileActs, Tabs, Tag, type DenseCol } from "../components/ui";
 import { SOURCE_COLORS } from "./Orders";
 import OrderModal from "./OrderCard";
 
@@ -88,6 +88,21 @@ export default function InvoicesPage() {
     { key: "docs", mobile: "sub", label: "Документи", width: "356px", align: "right", render: (r) => <span className="doc-pills">{docBtn(r, "waybill")}{docBtn(r, "invoice")}{docBtn(r, "warranty")}</span> },
   ];
 
+  // телефон (мобільна v2): номер і позначки, дата·замовлення; покупець і сума; юрособа; три кнопки документів
+  const mobileCard = (r: Row) => (<>
+    <div className="mc-top">
+      <span className={`mi-no${r.state === "void" ? " doc-num void" : ""}`}>{r.number_text}</span>
+      {r.state === "void" && <Tag>Анульовано</Tag>}
+      {r.changed && <Tag kind="warn" title="Замовлення змінилось після видачі документа">змінилось</Tag>}
+      <span className="mc-meta">{r.issued_at ? new Date(r.issued_at).toLocaleDateString("uk-UA", { day: "2-digit", month: "2-digit" }) : ""}
+        {r.order_id && <> · <button type="button" className="link-btn" onClick={() => setOpen(r.order_id)}>№{r.order_id}</button></>}</span>
+    </div>
+    <div className="mc-name"><b>{r.customer || "—"}</b><span className="sum">{money(r.total)} <small>₴</small></span></div>
+    <div className="mi-ent"><i style={{ background: colors[r.entity_id ?? 0] ?? "var(--faint)" }} />{r.entity || "без юрособи"}
+      {r.changed && r.state === "active" && <button type="button" className="link-btn" style={{ marginLeft: "auto" }} onClick={() => reissue.mutate(r.id)}><RefreshCw size={13} />Перевипустити</button>}</div>
+    <div className="mi-docs m-stop"><span className="doc-pills">{docBtn(r, "waybill")}{docBtn(r, "invoice")}{docBtn(r, "warranty")}</span></div>
+  </>);
+
   const exportUrl = `${ROOT}/api/documents/export${qs(params)}`;
   const selRows = rows.filter((r) => sel.has(r.id) && r.state === "active");
 
@@ -103,6 +118,11 @@ export default function InvoicesPage() {
           <a className="btn" href={exportUrl}><Download size={15} />Експорт реєстру</a>
         </div>
       </div>
+      <MobileActs>
+        <MenuButton button={({ open: o, toggle }) => <button type="button" className="rb" aria-label={`Місяць: ${monthName(period.slice(0, 7))}`} aria-expanded={o} onClick={toggle}><CalendarDays size={20} /></button>}>
+          {(close) => months.map((m) => <button key={m} className={`pop-item${m === period ? " on" : ""}`} onClick={() => { set({ period: m === curMonth() ? "" : m }); close(); }}>{monthName(m)}</button>)}
+        </MenuButton>
+      </MobileActs>
       <Tabs items={tabs} value={entity} onChange={(k) => set({ entity: k })} label="Юрособи" className="list-tabs" />
       <div className="chips-row">
         <ChipSelect label="Статус замовлення" value={status ? status.split(",") : []} onChange={(v) => set({ status: v.join(",") })}
@@ -117,6 +137,7 @@ export default function InvoicesPage() {
       <DenseTable<Row> label="Видаткові накладні" rows={rows} cols={COLS} rowKey={(r) => r.id} isLoading={q.isLoading}
         selected={sel} onSelect={setSel} onOpen={(r) => printIssued(r.id, err)}
         rowClass={(r) => (r.state === "void" ? "void" : "")}
+        mobileCard={mobileCard}
         empty={<div className="empty-state"><p>За {monthName(period.slice(0, 7)).toLowerCase()} накладних ще немає. Вони з'являються, коли замовлення стає «Відправленим» або при першому друці.</p></div>} />
       <p className="hint inv-foot">Юрособа — у кожному рядку й кольоровою міткою; вкладки зверху лише звужують список. Неактивний «Рахунок» — рахунок-фактуру не виставляли.</p>
 

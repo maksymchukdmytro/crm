@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  AlarmClock, Ban, Bookmark, CalendarDays, Check, Copy, Download, Eye, KanbanSquare, List, Phone, Printer, Receipt, RefreshCw, Search, Truck, UserRound, X,
+  AlarmClock, Ban, Bookmark, CalendarDays, Check, CircleAlert, Copy, Download, Eye, KanbanSquare, List, Package, Phone, Printer, Receipt, RefreshCw, Search, Truck, UserRound, X,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
@@ -192,6 +192,35 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
   const cols = colPrefs.visible.map((k) => COLS.find((c) => c.key === k)!).filter(Boolean);
 
 
+  // телефон (мобільна v2): картка — статус і позначки, №·час; покупець і сума; товар і доставка
+  const mobileCard = (o: OrderRow) => {
+    const due = o.remind_at && new Date(o.remind_at) <= new Date();
+    const main = o.items.filter((i) => !i.upsell);
+    const first = main[0] ?? o.items[0];
+    const rest = o.items.length - 1;
+    const day = isoDay(new Date(o.created_at ?? Date.now())) === isoDay(new Date());
+    const warn = o.blacklisted ? "Покупець у чорному списку" : o.no_stock ? "Товару не вистачає на складі" : o.duplicate_of_id ? `Можливий дубль №${o.duplicate_of_id}` : "";
+    const mk = o.mark_id ? marks[o.mark_id] : null;
+    return (<>
+      <div className="mc-top">
+        <StatusPill status={statuses[o.status_id]} />
+        {warn && <span className={`mc-flag ${o.blacklisted || o.no_stock ? "bad" : "warn"}`} title={warn} aria-label={warn}><CircleAlert size={14} /></span>}
+        {due && <span className="mc-flag bad" title="Нагадування настало" aria-label="Нагадування настало"><AlarmClock size={14} /></span>}
+        {mk && <span className="mc-flag" style={{ background: `color-mix(in srgb, ${mk.color} 14%, white)` }} title={mk.name}><MarkIcon icon={mk.icon} color={mk.color} size={13} /></span>}
+        <span className="mc-meta">№{o.id} · {day ? hhmm(o.created_at) : whenLabel(o.created_at)}</span>
+      </div>
+      <div className="mc-name"><b>{o.customer_name || <span className="muted">без імені</span>}</b><span className="sum">{money(o.total)} <small>₴</small></span></div>
+      <div className="mc-sep" />
+      <div className="mc-row">
+        <span className="mc-thumb"><Package size={14} /></span>
+        <span className="mc-goods">{first?.name ?? "—"}{rest > 0 && <span className="more"> +{rest}</span>}</span>
+        {o.delivery_method === "novaposhta" && (o.city_name || o.ttn) ? <span className="np-b" title={o.city_name}>НП</span>
+          : o.city_name || o.ttn ? <span className="mc-muted">{CARRIER_SHORT[o.delivery_method] ?? meta.delivery_methods[o.delivery_method]}</span>
+          : <span className="mc-muted">без доставки</span>}
+      </div>
+    </>);
+  };
+
   const anyFilter = FILTERS.some((k) => k !== "status" && k !== "q" && f[k]);
   const exportUrl = `${ROOT}/classic/orders/export.csv${qs({ status: f.status, q: f.q, manager: f.manager, date_from: f.date_from, date_to: f.date_to, delivery: f.delivery })}`;
   const selectedIds = [...sel];
@@ -248,6 +277,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         onOpen={(o) => nav(`${base}/${o.id}${window.location.search}`)}
         isLoading={query.isLoading} onEndReached={endReached}
         rowClass={(o) => (o.remind_at && new Date(o.remind_at) <= new Date() ? "due" : "")}
+        mobileCard={mobileCard}
         actions={(o) => (<>
           {isUnsorted && <Button size={30} variant="soft" icon={Check} onClick={() => accept([o.id])}>Прийняти</Button>}
           {o.phone && <a className="icon-btn s28 quiet" href={`tel:+${o.phone.replace(/\D/g, "")}`} aria-label="Подзвонити" title="Подзвонити"><Phone size={15} /></a>}
