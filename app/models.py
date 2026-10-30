@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import (
     JSON,
     Boolean,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -375,6 +376,19 @@ class LegalEntity(Base):
     sort: Mapped[int] = mapped_column(Integer, default=100)
 
 
+class LegalEntityAccount(Base):
+    """Рахунок юрособи, куди надходять передоплати: картка, IBAN, готівка, сервіс (Monobank · ФОП Максимчук)."""
+    __tablename__ = "legal_entity_accounts"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    legal_entity_id: Mapped[int] = mapped_column(ForeignKey("legal_entities.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(80))
+    kind: Mapped[str] = mapped_column(String(10), default="card")  # card / iban / cash / service
+    iban: Mapped[str] = mapped_column(String(34), default="")
+    card_mask: Mapped[str] = mapped_column(String(20), default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort: Mapped[int] = mapped_column(Integer, default=100)
+
+
 class NpAccount(Base):
     """Ключ API Нової Пошти (ФОП) з типовими параметрами ТТН. Ключів може бути кілька."""
     __tablename__ = "np_accounts"
@@ -575,6 +589,9 @@ class Order(Base):
     call_attempts: Mapped[int] = mapped_column(Integer, default=0)  # спроби дзвінка ліду (недодзвон, передзвонити)
     last_call_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     converted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)  # коли з ліда створено замовлення
+    label_printed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # «наклейку надруковано» (Що лишилось)
+    np_registry_ref: Mapped[str] = mapped_column(String(40), default="")  # реєстр НП (ScanSheet), номер
+    delivery_eta: Mapped[date | None] = mapped_column(Date, nullable=True)  # очікувана дата доставки
     country: Mapped[str] = mapped_column(String(2), default="UA")
 
     customer_name: Mapped[str] = mapped_column(String(255), default="")  # «Прізвище Ім'я По батькові» — для пошуку й показу
@@ -738,8 +755,14 @@ class Payment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     collected_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     received_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # куди надійшли кошти й хто підтвердив (передоплата)
+    account_id: Mapped[int | None] = mapped_column(ForeignKey("legal_entity_accounts.id", ondelete="SET NULL"), nullable=True)
+    confirmed_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     order: Mapped[Order] = relationship(back_populates="payments")
+    account: Mapped[LegalEntityAccount | None] = relationship()
+    confirmed_by: Mapped[User | None] = relationship()
 
     @property
     def kind_name(self) -> str:

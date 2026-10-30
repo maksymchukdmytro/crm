@@ -123,6 +123,10 @@ def meta(db: Session = Depends(get_db), user: User = Depends(api_user)):
     products = (db.query(Product).options(selectinload(Product.variants), selectinload(Product.photos))
                 .filter(Product.is_active.is_(True)).order_by(Product.is_upsell, Product.name).all())
     from ..models import Category, CheckboxCashier, CustomerGroup, LegalEntity, Manufacturer
+    from ..models import LegalEntityAccount
+    accounts: dict[int, list] = {}
+    for a in db.query(LegalEntityAccount).filter(LegalEntityAccount.is_active.is_(True)).order_by(LegalEntityAccount.sort, LegalEntityAccount.id):
+        accounts.setdefault(a.legal_entity_id, []).append({"id": a.id, "name": a.name, "kind": a.kind})
     with_cashier = {c for (c,) in db.query(CheckboxCashier.legal_entity_id).filter(
         CheckboxCashier.is_active.is_(True), CheckboxCashier.legal_entity_id.isnot(None))}
     return {
@@ -167,7 +171,8 @@ def meta(db: Session = Depends(get_db), user: User = Depends(api_user)):
                           for m in db.query(Manufacturer).filter(Manufacturer.is_active.is_(True)).order_by(Manufacturer.name)],
         "customer_groups": [{"id": g.id, "name": g.name, "color": g.color}
                             for g in db.query(CustomerGroup).order_by(CustomerGroup.sort, CustomerGroup.id)],
-        "legal_entities": [{"id": x.id, "name": x.name, "is_default": x.is_default, "has_cashier": x.id in with_cashier}
+        "legal_entities": [{"id": x.id, "name": x.name, "is_default": x.is_default, "has_cashier": x.id in with_cashier,
+                            "accounts": accounts.get(x.id, [])}
                            for x in db.query(LegalEntity).filter(LegalEntity.is_active.is_(True)).order_by(LegalEntity.sort, LegalEntity.id)],
         "checkbox_ready": bool(with_cashier) or db.query(CheckboxCashier).filter(CheckboxCashier.is_active.is_(True)).count() > 0,
         "office": prefs.current_office(db, user),

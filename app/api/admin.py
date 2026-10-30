@@ -32,7 +32,7 @@ from ..services.audit import ACTION_NAMES
 from ..services.orders import normalize_phone, to_int
 from ..services.reports import period_bounds
 from ..web import f_details, parse_date, today_local
-from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn, NpAccountIn, NpRuleIn, ShopCheckOut, ShopIn, ShopSyncOut, CashierCheckOut, CashierIn, TestDataIn, TestDataOut, LegalEntityIn
+from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn, NpAccountIn, NpRuleIn, ShopCheckOut, ShopIn, ShopSyncOut, CashierCheckOut, CashierIn, TestDataIn, TestDataOut, LegalEntityIn, EntityAccountIn, EntityAccountOut
 from .common import admin, bad, iso, j_payment, j_payment_method, j_source, j_status, j_user, sales
 
 router = APIRouter(prefix="/api", tags=["admin"])
@@ -766,3 +766,73 @@ def settings_save(section: str, request: Request, data: dict[str, str | bool | i
     db.commit()
     return _settings_payload(request, db)
 
+
+
+# ------------------------------------------------------------------ рахунки юрособ (куди надходять передоплати)
+def _j_acc(a) -> dict:
+    return {"id": a.id, "legal_entity_id": a.legal_entity_id, "name": a.name, "kind": a.kind, "iban": a.iban or "",
+            "card_mask": a.card_mask or "", "is_active": a.is_active, "sort": a.sort}
+
+
+def _acc_apply(a, d: dict):
+    if "name" in d:
+        name = str(d["name"] or "").strip()[:80]
+        if not name:
+            bad("Вкажіть назву рахунку, напр. «Monobank»")
+        a.name = name
+    if d.get("kind"):
+        a.kind = d["kind"]
+    if "iban" in d:
+        iban = re.sub(r"\s", "", str(d["iban"] or "")).upper()
+        if iban and not re.fullmatch(r"UA\d{27}", iban):
+            bad("IBAN має бути у форматі UA + 27 цифр")
+        a.iban = iban
+    if "card_mask" in d:
+        a.card_mask = str(d["card_mask"] or "")[:20]
+    if d.get("is_active") is not None:
+        a.is_active = bool(d["is_active"])
+    if d.get("sort") is not None:
+        a.sort = int(d["sort"])
+
+
+@router.get("/legal-entities/{eid}/accounts", response_model=list[EntityAccountOut])
+def entity_accounts(eid: int, db: Session = Depends(get_db), user: User = Depends(sales)):
+    from ..models import LegalEntityAccount
+    return [_j_acc(a) for a in db.query(LegalEntityAccount).filter(LegalEntityAccount.legal_entity_id == eid)
+            .order_by(LegalEntityAccount.sort, LegalEntityAccount.id)]
+
+
+@router.post("/legal-entities/{eid}/accounts", response_model=EntityAccountOut)
+def entity_account_create(eid: int, body: EntityAccountIn, db: Session = Depends(get_db), user: User = Depends(admin)):
+    from ..models import LegalEntity, LegalEntityAccount
+    if db.get(LegalEntity, eid) is None:
+        bad("Юрособу не знайдено", 404)
+    a = LegalEntityAccount(legal_entity_id=eid, name="", kind="card")
+    d = body.model_dump(exclude_unset=True)
+    d.setdefault("name", "")
+    _acc_apply(a, d)
+    db.add(a)
+    db.commit()
+    return _j_acc(a)
+
+
+@router.patch("/legal-entities/{eid}/accounts/{aid}", response_model=EntityAccountOut)
+def entity_account_update(eid: int, aid: int, body: EntityAccountIn, db: Session = Depends(get_db), user: User = Depends(admin)):
+    from ..models import LegalEntityAccount
+    a = db.get(LegalEntityAccount, aid)
+    if a is None or a.legal_entity_id != eid:
+        bad("Рахунок не знайдено", 404)
+    _acc_apply(a, body.model_dump(exclude_unset=True))
+    db.commit()
+    return _j_acc(a)
+
+
+@router.delete("/legal-entities/{eid}/accounts/{aid}", response_model=Ok)
+def entity_account_delete(eid: int, aid: int, db: Session = Depends(get_db), user: User = Depends(admin)):
+    from ..models import LegalEntityAccount
+    a = db.get(LegalEntityAccount, aid)
+    if a is None or a.legal_entity_id != eid:
+        bad("Рахунок не знайдено", 404)
+    db.delete(a)  # оплати лишаються, посилання на рахунок обнуляється (ON DELETE SET NULL)
+    db.commit()
+    return {"ok": True}

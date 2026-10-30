@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Building2, Copy, Plus, RefreshCw, Settings as SettingsIcon, Star, Trash2, Upload, FileText, ShieldCheck } from "lucide-react";
+import { ArrowDown, ArrowUp, Building2, Copy, Plus, RefreshCw, Settings as SettingsIcon, Star, Trash2, Upload, FileText, ShieldCheck, Wallet } from "lucide-react";
 import { api } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, phone } from "../lib/format";
@@ -879,10 +879,56 @@ function LegalEntities({ s }: { s: S }) {
                 <label className="lbl">Хто підписує<input value={r.signer ?? ""} onChange={(e) => upd(r.key, { signer: e.target.value })} placeholder="Прізвище І. П." /></label>
               </div>
             )}
+            {r.id ? <EntityAccounts entityId={r.id} /> : null}
           </div>
         ))}
       </div>
       <div className="form-actions mt"><span className="spacer" /><button type="button" className="btn primary" disabled={save.isPending} onClick={submit}>Зберегти юрособи</button></div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- рахунки юрособи для передоплат («Monobank · ФОП Максимчук»)
+type EntAcc = { id: number; legal_entity_id: number; name: string; kind: string; iban: string; card_mask: string; is_active: boolean; sort: number };
+const ACC_KINDS: Record<string, string> = { card: "Картка", iban: "Рахунок IBAN", cash: "Готівка", service: "Сервіс оплати" };
+
+function EntityAccounts({ entityId }: { entityId: number }) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState({ name: "", kind: "card", iban: "", card_mask: "" });
+  const q = useQuery({ queryKey: ["entity-accounts", entityId], queryFn: () => api.get<EntAcc[]>(`/legal-entities/${entityId}/accounts`), enabled: open });
+  const done = () => { qc.invalidateQueries({ queryKey: ["entity-accounts", entityId] }); qc.invalidateQueries({ queryKey: ["meta"] }); };
+  const add = useMutation({
+    mutationFn: () => api.post(`/legal-entities/${entityId}/accounts`, draft),
+    onSuccess: () => { done(); setDraft({ name: "", kind: "card", iban: "", card_mask: "" }); toast("Рахунок додано"); },
+    onError: (e) => toast(errText(e), "error"),
+  });
+  const del = useMutation({ mutationFn: (aid: number) => api.del(`/legal-entities/${entityId}/accounts/${aid}`), onSuccess: done, onError: (e) => toast(errText(e), "error") });
+  const toggle = useMutation({ mutationFn: (a: EntAcc) => api.patch(`/legal-entities/${entityId}/accounts/${a.id}`, { is_active: !a.is_active }), onSuccess: done });
+  return (
+    <div className="ent-acc">
+      <button type="button" className="ent-req-btn" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <Wallet size={13} /> Рахунки для передоплати{q.data && <span className="muted"> · {q.data.length}</span>}</button>
+      {open && (
+        <div className="ent-req ent-acc-box">
+          {(q.data ?? []).map((a) => (
+            <div key={a.id} className={`ent-acc-row${a.is_active ? "" : " off"}`}>
+              <b>{a.name}</b><span className="muted">{ACC_KINDS[a.kind] ?? a.kind}{a.card_mask && ` · ${a.card_mask}`}{a.iban && ` · ${a.iban}`}</span>
+              <label className="mini-check"><input type="checkbox" checked={a.is_active} onChange={() => toggle.mutate(a)} /> активний</label>
+              <button type="button" className="x" title="Видалити рахунок" onClick={() => { if (window.confirm(`Видалити рахунок «${a.name}»?`)) del.mutate(a.id); }}>×</button>
+            </div>
+          ))}
+          {q.data && !q.data.length && <p className="hint">Рахунків ще немає. Додайте, куди надходять передоплати — у картці замовлення його можна буде вибрати.</p>}
+          <form className="ent-acc-add" onSubmit={(e) => { e.preventDefault(); if (draft.name.trim()) add.mutate(); }}>
+            <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Назва, напр. Monobank" aria-label="Назва рахунку" />
+            <select value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })} aria-label="Тип">{Object.entries(ACC_KINDS).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>
+            {draft.kind === "iban" ? <input value={draft.iban} onChange={(e) => setDraft({ ...draft, iban: e.target.value })} placeholder="UA…" aria-label="IBAN" />
+              : <input value={draft.card_mask} onChange={(e) => setDraft({ ...draft, card_mask: e.target.value })} placeholder="Останні цифри, напр. •• 1234" aria-label="Картка" />}
+            <button className="btn sm" disabled={!draft.name.trim() || add.isPending}><Plus size={14} />Додати</button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

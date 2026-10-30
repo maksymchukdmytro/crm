@@ -374,6 +374,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/legal-entities/{eid}/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Entity Accounts */
+        get: operations["entity_accounts_api_legal_entities__eid__accounts_get"];
+        put?: never;
+        /** Entity Account Create */
+        post: operations["entity_account_create_api_legal_entities__eid__accounts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/legal-entities/{eid}/accounts/{aid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Entity Account Delete */
+        delete: operations["entity_account_delete_api_legal_entities__eid__accounts__aid__delete"];
+        options?: never;
+        head?: never;
+        /** Entity Account Update */
+        patch: operations["entity_account_update_api_legal_entities__eid__accounts__aid__patch"];
+        trace?: never;
+    };
     "/api/me": {
         parameters: {
             query?: never;
@@ -682,6 +718,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{order_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Order History
+         * @description Історія для бічної панелі: журнал дій, коментарі, SMS — нові зверху; kind=all|status|sms|comments.
+         */
+        get: operations["order_history_api_orders__order_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{order_id}/label": {
         parameters: {
             query?: never;
@@ -736,6 +792,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{order_id}/prepayment/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Prepayment
+         * @description Позначка ✓ біля передоплати: кошти надійшли на рахунок юрособи (хто й коли підтвердив).
+         */
+        post: operations["confirm_prepayment_api_orders__order_id__prepayment_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{order_id}/receipts": {
         parameters: {
             query?: never;
@@ -756,6 +832,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{order_id}/registry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Registry
+         * @description Додати ТТН у реєстр НП на сьогодні (один реєстр на ключ НП за день).
+         */
+        post: operations["add_registry_api_orders__order_id__registry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{order_id}/sms": {
         parameters: {
             query?: never;
@@ -767,6 +863,26 @@ export interface paths {
         put?: never;
         /** Send Sms */
         post: operations["send_sms_api_orders__order_id__sms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{order_id}/sms-ttn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Ttn Sms
+         * @description «Що лишилось» → SMS з ТТН: шаблон, у якому є {ttn}.
+         */
+        post: operations["send_ttn_sms_api_orders__order_id__sms_ttn_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1727,6 +1843,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountShort */
+        AccountShort: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+        };
         /** AdjustIn */
         AdjustIn: {
             /**
@@ -1890,7 +2015,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "status" | "assign" | "ttn" | "track" | "fiscalize";
+            action: "status" | "assign" | "ttn" | "track" | "fiscalize" | "registry";
             /** Ids */
             ids: number[];
             /** Value */
@@ -2559,8 +2684,44 @@ export interface components {
             /** Done */
             done: number;
         };
+        /** EntityAccountIn */
+        EntityAccountIn: {
+            /** Card Mask */
+            card_mask?: string | null;
+            /** Iban */
+            iban?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Kind */
+            kind?: ("card" | "iban" | "cash" | "service") | null;
+            /** Name */
+            name?: string | null;
+            /** Sort */
+            sort?: number | null;
+        };
+        /** EntityAccountOut */
+        EntityAccountOut: {
+            /** Card Mask */
+            card_mask: string;
+            /** Iban */
+            iban: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Kind */
+            kind: string;
+            /** Legal Entity Id */
+            legal_entity_id: number;
+            /** Name */
+            name: string;
+            /** Sort */
+            sort: number;
+        };
         /** EntityShort */
         EntityShort: {
+            /** Accounts */
+            accounts?: components["schemas"]["AccountShort"][];
             /** Has Cashier */
             has_cashier: boolean;
             /** Id */
@@ -2620,17 +2781,26 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /** HistoryOut */
-        HistoryOut: {
-            /** Action */
-            action: string;
-            /** Created At */
-            created_at: string | null;
-            /** Details */
+        /** HistoryEvent */
+        HistoryEvent: {
+            /** At */
+            at?: string | null;
+            /**
+             * Details
+             * @default
+             */
             details: string;
-            /** Id */
-            id: number;
-            /** User */
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "status" | "sms" | "comment" | "other";
+            /** Text */
+            text: string;
+            /**
+             * User
+             * @default
+             */
             user: string;
         };
         /** LeadQueueOut */
@@ -3307,6 +3477,18 @@ export interface components {
             /** Office Id */
             office_id?: number | null;
         };
+        /** NpRegistryOut */
+        NpRegistryOut: {
+            /** Done */
+            done: number;
+            /** Errors */
+            errors?: string[];
+            /**
+             * Number
+             * @default
+             */
+            number: string;
+        };
         /** NpRuleIn */
         NpRuleIn: {
             /** Except Ids */
@@ -3621,6 +3803,8 @@ export interface components {
             delivery_checked_at: string | null;
             /** Delivery Cost */
             delivery_cost: number;
+            /** Delivery Eta */
+            delivery_eta?: string | null;
             /** Delivery Method */
             delivery_method: string;
             /** Delivery State */
@@ -3669,7 +3853,7 @@ export interface components {
              */
             first_name: string;
             /** History */
-            history: components["schemas"]["HistoryOut"][];
+            history: components["schemas"]["app__api__schemas__HistoryOut__1"][];
             /** Id */
             id: number;
             /** Ip */
@@ -3677,12 +3861,19 @@ export interface components {
             /** Items */
             items: components["schemas"]["OrderItemOut"][];
             /**
+             * Items Cost
+             * @description Собівартість товарів — лише адміністратору
+             */
+            items_cost?: number | null;
+            /**
              * Label
              * @description що друкувати біля ТТН: маркування Rozetka чи наклейку перевізника
              * @default
              * @enum {string}
              */
             label: "" | "rozetka" | "carrier";
+            /** Label Printed At */
+            label_printed_at?: string | null;
             /** Last Call At */
             last_call_at?: string | null;
             /**
@@ -3704,6 +3895,11 @@ export interface components {
             middle_name: string;
             /** Np Account Id */
             np_account_id?: number | null;
+            /**
+             * Np Registry Ref
+             * @default
+             */
+            np_registry_ref: string;
             /** Office Id */
             office_id?: number | null;
             /** Others */
@@ -3743,6 +3939,11 @@ export interface components {
             stock_reserved: boolean;
             /** Stock Shipped */
             stock_shipped: boolean;
+            /**
+             * Todo
+             * @description «Що лишилось» (UI-DESIGN §5.5)
+             */
+            todo?: components["schemas"]["TodoItem"][];
             /** Total */
             total: number;
             /** Ttn */
@@ -3996,10 +4197,24 @@ export interface components {
         };
         /** PaymentOut */
         PaymentOut: {
+            /**
+             * Account
+             * @default
+             */
+            account: string;
+            /** Account Id */
+            account_id?: number | null;
             /** Amount */
             amount: number;
             /** Collected At */
             collected_at: string | null;
+            /** Confirmed At */
+            confirmed_at?: string | null;
+            /**
+             * Confirmed By
+             * @default
+             */
+            confirmed_by: string;
             /** Created At */
             created_at: string | null;
             /** Customer */
@@ -4056,6 +4271,11 @@ export interface components {
             value?: {
                 [key: string]: unknown;
             } | unknown[] | string | number | boolean | null;
+        };
+        /** PrepayConfirmIn */
+        PrepayConfirmIn: {
+            /** Account Id */
+            account_id?: number | null;
         };
         /** ProductDeleteOut */
         ProductDeleteOut: {
@@ -5496,6 +5716,28 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** TodoItem */
+        TodoItem: {
+            /**
+             * Action
+             * @default
+             */
+            action: string;
+            /**
+             * Hint
+             * @default
+             */
+            hint: string;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "done" | "pending" | "error";
+        };
         /** TrackOut */
         TrackOut: {
             /** Address */
@@ -5545,6 +5787,8 @@ export interface components {
             delivery_checked_at: string | null;
             /** Delivery Cost */
             delivery_cost: number;
+            /** Delivery Eta */
+            delivery_eta?: string | null;
             /** Delivery Method */
             delivery_method: string;
             /** Delivery State */
@@ -5593,7 +5837,7 @@ export interface components {
              */
             first_name: string;
             /** History */
-            history: components["schemas"]["HistoryOut"][];
+            history: components["schemas"]["app__api__schemas__HistoryOut__1"][];
             /** Id */
             id: number;
             /** Ip */
@@ -5601,12 +5845,19 @@ export interface components {
             /** Items */
             items: components["schemas"]["OrderItemOut"][];
             /**
+             * Items Cost
+             * @description Собівартість товарів — лише адміністратору
+             */
+            items_cost?: number | null;
+            /**
              * Label
              * @description що друкувати біля ТТН: маркування Rozetka чи наклейку перевізника
              * @default
              * @enum {string}
              */
             label: "" | "rozetka" | "carrier";
+            /** Label Printed At */
+            label_printed_at?: string | null;
             /** Last Call At */
             last_call_at?: string | null;
             /**
@@ -5628,6 +5879,11 @@ export interface components {
             middle_name: string;
             /** Np Account Id */
             np_account_id?: number | null;
+            /**
+             * Np Registry Ref
+             * @default
+             */
+            np_registry_ref: string;
             /** Office Id */
             office_id?: number | null;
             /** Others */
@@ -5667,6 +5923,259 @@ export interface components {
             stock_reserved: boolean;
             /** Stock Shipped */
             stock_shipped: boolean;
+            /**
+             * Todo
+             * @description «Що лишилось» (UI-DESIGN §5.5)
+             */
+            todo?: components["schemas"]["TodoItem"][];
+            /** Total */
+            total: number;
+            /** Ttn */
+            ttn: string;
+            /**
+             * Ttn Cod Kind
+             * @default
+             */
+            ttn_cod_kind: string;
+            /**
+             * Ttn Cod Sum
+             * @default 0
+             */
+            ttn_cod_sum: number;
+            /** Updated At */
+            updated_at: string | null;
+            /** Utm Campaign */
+            utm_campaign: string;
+            /** Utm Content */
+            utm_content: string;
+            /** Utm Medium */
+            utm_medium: string;
+            /** Utm Source */
+            utm_source: string;
+            /** Utm Term */
+            utm_term: string;
+            /** Version */
+            version: string;
+            /** Warehouse Name */
+            warehouse_name: string;
+            /** Warehouse Ref */
+            warehouse_ref: string;
+        };
+        /** TtnAfter */
+        TtnAfter: {
+            /**
+             * Add Registry
+             * @default false
+             */
+            add_registry: boolean;
+            /**
+             * Print Label
+             * @default false
+             */
+            print_label: boolean;
+            /**
+             * Send Sms
+             * @default false
+             */
+            send_sms: boolean;
+            /**
+             * Set Shipped
+             * @default false
+             */
+            set_shipped: boolean;
+        };
+        /** TtnCreatedOut */
+        TtnCreatedOut: {
+            /** Address */
+            address: string;
+            /** After Errors */
+            after_errors?: string[];
+            /**
+             * Call Attempts
+             * @default 0
+             */
+            call_attempts: number;
+            /** Carrier Ref */
+            carrier_ref: string;
+            /**
+             * Checkbox Ready
+             * @default false
+             */
+            checkbox_ready: boolean;
+            /** City Name */
+            city_name: string;
+            /** City Ref */
+            city_ref: string;
+            /** Cod Amount */
+            cod_amount: number;
+            /** Comment */
+            comment: string;
+            /** Comments */
+            comments: components["schemas"]["CommentOut"][];
+            /** Converted At */
+            converted_at?: string | null;
+            /**
+             * Country
+             * @default UA
+             */
+            country: string;
+            /** Created At */
+            created_at: string | null;
+            customer?: components["schemas"]["OrderCustomer"] | null;
+            /** Customer Name */
+            customer_name: string;
+            /** Delivered At */
+            delivered_at: string | null;
+            /** Delivery Checked At */
+            delivery_checked_at: string | null;
+            /** Delivery Cost */
+            delivery_cost: number;
+            /** Delivery Eta */
+            delivery_eta?: string | null;
+            /** Delivery Method */
+            delivery_method: string;
+            /** Delivery State */
+            delivery_state: string;
+            /** Delivery Status */
+            delivery_status: string;
+            /** Discount */
+            discount: number;
+            /** Duplicate Of Id */
+            duplicate_of_id: number | null;
+            /** Email */
+            email: string;
+            /**
+             * External Id
+             * @default
+             */
+            external_id: string;
+            /**
+             * External Status
+             * @default
+             */
+            external_status: string;
+            /**
+             * Extra1
+             * @default
+             */
+            extra1: string;
+            /**
+             * Extra2
+             * @default
+             */
+            extra2: string;
+            /**
+             * Extra3
+             * @default
+             */
+            extra3: string;
+            /**
+             * Extra4
+             * @default
+             */
+            extra4: string;
+            /**
+             * First Name
+             * @default
+             */
+            first_name: string;
+            /** History */
+            history: components["schemas"]["app__api__schemas__HistoryOut__1"][];
+            /** Id */
+            id: number;
+            /** Ip */
+            ip: string;
+            /** Items */
+            items: components["schemas"]["OrderItemOut"][];
+            /**
+             * Items Cost
+             * @description Собівартість товарів — лише адміністратору
+             */
+            items_cost?: number | null;
+            /**
+             * Label
+             * @description що друкувати біля ТТН: маркування Rozetka чи наклейку перевізника
+             * @default
+             * @enum {string}
+             */
+            label: "" | "rozetka" | "carrier";
+            /** Label Printed At */
+            label_printed_at?: string | null;
+            /**
+             * Label Url
+             * @description Посилання на PDF наклейки, якщо просили «Друкувати наклейку»
+             */
+            label_url?: string | null;
+            /** Last Call At */
+            last_call_at?: string | null;
+            /**
+             * Last Name
+             * @default
+             */
+            last_name: string;
+            /** Legal Entity Id */
+            legal_entity_id?: number | null;
+            manager: components["schemas"]["UserOut"] | null;
+            /** Manager Id */
+            manager_id: number | null;
+            /** Mark Id */
+            mark_id?: number | null;
+            /**
+             * Middle Name
+             * @default
+             */
+            middle_name: string;
+            /** Np Account Id */
+            np_account_id?: number | null;
+            /**
+             * Np Registry Ref
+             * @default
+             */
+            np_registry_ref: string;
+            /** Office Id */
+            office_id?: number | null;
+            /** Others */
+            others: components["schemas"]["OrderRowOut"][];
+            pay_check?: components["schemas"]["PayCheckOut"] | null;
+            /** Payment Method Id */
+            payment_method_id?: number | null;
+            /** Payment Type */
+            payment_type: string;
+            /** Payments */
+            payments: components["schemas"]["PaymentOut"][];
+            /** Phone */
+            phone: string;
+            /** Postcode */
+            postcode: string;
+            /** Prepayment */
+            prepayment: number;
+            /** Reason Id */
+            reason_id?: number | null;
+            /** Receipts */
+            receipts?: components["schemas"]["ReceiptOut"][];
+            /** Remind At */
+            remind_at?: string | null;
+            /** Shipped At */
+            shipped_at: string | null;
+            /** Shop Id */
+            shop_id?: number | null;
+            /** Site */
+            site: string;
+            /** Sms */
+            sms: components["schemas"]["SmsOut"][];
+            /** Source Id */
+            source_id?: number | null;
+            /** Status Id */
+            status_id: number;
+            /** Stock Reserved */
+            stock_reserved: boolean;
+            /** Stock Shipped */
+            stock_shipped: boolean;
+            /**
+             * Todo
+             * @description «Що лишилось» (UI-DESIGN §5.5)
+             */
+            todo?: components["schemas"]["TodoItem"][];
             /** Total */
             total: number;
             /** Ttn */
@@ -5703,12 +6212,18 @@ export interface components {
         /**
          * TtnIn
          * @description Створення ТТН. Без тіла — з параметрами за замовчуванням; передані поля їх замінюють.
+         *     city_* / warehouse_* — місто й відділення з вікна ТТН (зберігаються в замовленні); after — дії одразу після створення.
          */
         TtnIn: {
             /** Additional Info */
             additional_info?: string | null;
+            after?: components["schemas"]["TtnAfter"] | null;
             /** Cargo Type */
             cargo_type?: ("Parcel" | "Cargo" | "Documents" | "TiresWheels" | "Pallet") | null;
+            /** City Name */
+            city_name?: string | null;
+            /** City Ref */
+            city_ref?: string | null;
             /** Cod Amount */
             cod_amount?: number | null;
             /** Cod Mode */
@@ -5727,6 +6242,10 @@ export interface components {
             seats?: components["schemas"]["SeatIn"][] | null;
             /** Service Type */
             service_type?: ("WarehouseWarehouse" | "WarehouseDoors" | "DoorsWarehouse" | "DoorsDoors") | null;
+            /** Warehouse Name */
+            warehouse_name?: string | null;
+            /** Warehouse Ref */
+            warehouse_ref?: string | null;
         };
         /** TtnParams */
         TtnParams: {
@@ -5772,6 +6291,26 @@ export interface components {
         TtnPreviewOut: {
             /** Accounts */
             accounts?: components["schemas"]["NpAccountShort"][];
+            /**
+             * City Name
+             * @default
+             */
+            city_name: string;
+            /**
+             * City Ref
+             * @default
+             */
+            city_ref: string;
+            /**
+             * Cod Commission
+             * @description Комісія за контроль оплати / грошовий переказ
+             */
+            cod_commission?: number | null;
+            /**
+             * Eta
+             * @description Очікувана дата доставки (YYYY-MM-DD)
+             */
+            eta?: string | null;
             /** Np Account Id */
             np_account_id?: number | null;
             params?: components["schemas"]["TtnParams"] | null;
@@ -5782,12 +6321,32 @@ export interface components {
              */
             prepaid: boolean;
             /**
+             * Price
+             * @description Орієнтовна вартість доставки за тарифом НП
+             */
+            price?: number | null;
+            /**
+             * Recipient
+             * @default
+             */
+            recipient: string;
+            /**
              * Sender
              * @default
              */
             sender: string;
             /** Supported */
             supported: boolean;
+            /**
+             * Warehouse Name
+             * @default
+             */
+            warehouse_name: string;
+            /**
+             * Warehouse Ref
+             * @default
+             */
+            warehouse_ref: string;
         };
         /** UserIn */
         UserIn: {
@@ -5913,6 +6472,24 @@ export interface components {
             units: number;
             /** Value */
             value: number;
+        };
+        /** HistoryOut */
+        app__api__schemas__HistoryOut__1: {
+            /** Action */
+            action: string;
+            /** Created At */
+            created_at: string | null;
+            /** Details */
+            details: string;
+            /** Id */
+            id: number;
+            /** User */
+            user: string;
+        };
+        /** HistoryOut */
+        app__api__schemas__HistoryOut__2: {
+            /** Events */
+            events: components["schemas"]["HistoryEvent"][];
         };
     };
     responses: never;
@@ -6725,6 +7302,140 @@ export interface operations {
             };
         };
     };
+    entity_accounts_api_legal_entities__eid__accounts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityAccountOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    entity_account_create_api_legal_entities__eid__accounts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eid: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityAccountIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityAccountOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    entity_account_delete_api_legal_entities__eid__accounts__aid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eid: number;
+                aid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    entity_account_update_api_legal_entities__eid__accounts__aid__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eid: number;
+                aid: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityAccountIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityAccountOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     me_api_me_get: {
         parameters: {
             query?: never;
@@ -7318,6 +8029,39 @@ export interface operations {
             };
         };
     };
+    order_history_api_orders__order_id__history_get: {
+        parameters: {
+            query?: {
+                kind?: string;
+            };
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__api__schemas__HistoryOut__2"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     order_label_api_orders__order_id__label_get: {
         parameters: {
             query?: never;
@@ -7420,6 +8164,41 @@ export interface operations {
             };
         };
     };
+    confirm_prepayment_api_orders__order_id__prepayment_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrepayConfirmIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     receipt_create_api_orders__order_id__receipts_post: {
         parameters: {
             query?: never;
@@ -7455,6 +8234,37 @@ export interface operations {
             };
         };
     };
+    add_registry_api_orders__order_id__registry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpRegistryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     send_sms_api_orders__order_id__sms_post: {
         parameters: {
             query?: never;
@@ -7469,6 +8279,37 @@ export interface operations {
                 "application/json": components["schemas"]["SmsIn"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_ttn_sms_api_orders__order_id__sms_ttn_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -7573,7 +8414,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OrderOut"];
+                    "application/json": components["schemas"]["TtnCreatedOut"];
                 };
             };
             /** @description Validation Error */
@@ -7622,6 +8463,7 @@ export interface operations {
         parameters: {
             query?: {
                 np_account_id?: number;
+                city_ref?: string;
             };
             header?: never;
             path: {

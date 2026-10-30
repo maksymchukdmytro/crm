@@ -239,11 +239,18 @@ class NotificationsOut(Out):
     comments: list[CommentNote] = Field(default_factory=list)
 
 
+class AccountShort(Out):
+    id: int
+    name: str
+    kind: str
+
+
 class EntityShort(Out):
     id: int
     name: str
     is_default: bool
     has_cashier: bool
+    accounts: list[AccountShort] = Field(default_factory=list)
 
 
 class CategoryShort(Out):
@@ -395,6 +402,10 @@ class PaymentOut(Out):
     received_at: str | None
     ttn: str | None = None
     customer: str | None = None
+    account_id: int | None = None
+    account: str = ""
+    confirmed_by: str = ""
+    confirmed_at: str | None = None
 
 
 class CommentOut(Out):
@@ -436,7 +447,20 @@ class OrderCustomer(Out):
     sum_delivered: float
 
 
+class TodoItem(Out):
+    key: str
+    label: str
+    state: Literal["done", "pending", "error"]
+    hint: str = ""
+    action: str = ""
+
+
 class OrderOut(Out):
+    todo: list[TodoItem] = Field(default_factory=list, description="«Що лишилось» (UI-DESIGN §5.5)")
+    items_cost: float | None = Field(None, description="Собівартість товарів — лише адміністратору")
+    label_printed_at: str | None = None
+    np_registry_ref: str = ""
+    delivery_eta: str | None = None
     call_attempts: int = 0
     last_call_at: str | None = None
     converted_at: str | None = None
@@ -576,7 +600,7 @@ class OrderIn(In):
 
 class BulkIn(In):
     ids: list[int]
-    action: Literal["status", "assign", "ttn", "track", "fiscalize"]
+    action: Literal["status", "assign", "ttn", "track", "fiscalize", "registry"]
     value: int | str | None = None
 
 
@@ -984,9 +1008,22 @@ class TtnParams(Out):
     additional_info: str
 
 
+class TtnAfter(In):
+    print_label: bool = False
+    add_registry: bool = False
+    send_sms: bool = False
+    set_shipped: bool = False
+
+
 class TtnIn(In):
-    """Створення ТТН. Без тіла — з параметрами за замовчуванням; передані поля їх замінюють."""
+    """Створення ТТН. Без тіла — з параметрами за замовчуванням; передані поля їх замінюють.
+    city_* / warehouse_* — місто й відділення з вікна ТТН (зберігаються в замовленні); after — дії одразу після створення."""
     np_account_id: int | None = None
+    city_name: str | None = Field(None, max_length=255)
+    city_ref: str | None = Field(None, max_length=64)
+    warehouse_name: str | None = Field(None, max_length=255)
+    warehouse_ref: str | None = Field(None, max_length=64)
+    after: TtnAfter | None = None
     payer: NpPayer | None = None
     cargo_type: NpCargo | None = None
     service_type: NpService | None = None
@@ -1001,6 +1038,14 @@ class TtnIn(In):
 
 class TtnPreviewOut(Out):
     supported: bool
+    price: float | None = Field(None, description="Орієнтовна вартість доставки за тарифом НП")
+    cod_commission: float | None = Field(None, description="Комісія за контроль оплати / грошовий переказ")
+    eta: str | None = Field(None, description="Очікувана дата доставки (YYYY-MM-DD)")
+    recipient: str = ""
+    city_name: str = ""
+    city_ref: str = ""
+    warehouse_name: str = ""
+    warehouse_ref: str = ""
     np_account_id: int | None = None
     accounts: list[NpAccountShort] = Field(default_factory=list)
     sender: str = ""
@@ -1738,3 +1783,50 @@ class LeadsToggleIn(In):
 class LeadsToggleOut(Out):
     enabled: bool
     moved: int = 0
+
+
+class TtnCreatedOut(OrderOut):
+    label_url: str | None = Field(None, description="Посилання на PDF наклейки, якщо просили «Друкувати наклейку»")
+    after_errors: list[str] = Field(default_factory=list)
+
+
+class PrepayConfirmIn(In):
+    account_id: int | None = None
+
+
+class NpRegistryOut(Out):
+    done: int
+    errors: list[str] = Field(default_factory=list)
+    number: str = ""
+
+
+class HistoryEvent(Out):
+    kind: Literal["status", "sms", "comment", "other"]
+    text: str
+    details: str = ""
+    user: str = ""
+    at: str | None = None
+
+
+class HistoryOut(Out):
+    events: list[HistoryEvent]
+
+
+class EntityAccountOut(Out):
+    id: int
+    legal_entity_id: int
+    name: str
+    kind: str
+    iban: str
+    card_mask: str
+    is_active: bool
+    sort: int
+
+
+class EntityAccountIn(In):
+    name: str | None = Field(None, max_length=80)
+    kind: Literal["card", "iban", "cash", "service"] | None = None
+    iban: str | None = Field(None, max_length=34)
+    card_mask: str | None = Field(None, max_length=20)
+    is_active: bool | None = None
+    sort: int | None = None

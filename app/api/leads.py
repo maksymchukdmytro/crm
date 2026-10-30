@@ -40,7 +40,7 @@ def lead_result(order_id: int, body: LeadResultIn, db: Session = Depends(get_db)
         bad(str(e))
     audit.log(db, user, "order", order.id, "lead_result", {"результат": d["result"]})
     db.commit()
-    return {"order": _full(db, order), "next_id": _next(db, user, order.id)}
+    return {"order": _full(db, order, user), "next_id": _next(db, user, order.id)}
 
 
 @router.post("/orders/{order_id}/convert", response_model=LeadStepOut)
@@ -53,7 +53,7 @@ def lead_convert(order_id: int, db: Session = Depends(get_db), user: User = Depe
     except leads.LeadError as e:
         bad(str(e), 422)
     db.commit()
-    return {"order": _full(db, order), "next_id": _next(db, user, order.id)}
+    return {"order": _full(db, order, user), "next_id": _next(db, user, order.id)}
 
 
 @router.get("/settings/leads/preview", response_model=LeadsPreviewOut)

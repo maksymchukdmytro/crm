@@ -69,6 +69,18 @@ def delete_ttn(db: Session, order: Order, user: User | None):
     events.order_changed(db, order.id)
 
 
+def _eta(raw: dict | None):
+    """Очікувана дата доставки з трекінгу НП (ScheduledDeliveryDate: «30.10.2026 13:00:00» або «2026-10-30 …»)."""
+    from datetime import datetime as _dt
+    v = str((raw or {}).get("ScheduledDeliveryDate") or "").strip()
+    for fmt in ("%d.%m.%Y %H:%M:%S", "%d.%m.%Y", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+        try:
+            return _dt.strptime(v[:19] if "%H" in fmt else v[:10], fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
 def apply_track(db: Session, order: Order, res: TrackResult, auto_status: bool) -> bool:
     order.delivery_checked_at = utcnow()
     if order.delivery_method == "novaposhta":
@@ -76,6 +88,9 @@ def apply_track(db: Session, order: Order, res: TrackResult, auto_status: bool) 
         if cod is not None and cod != (order.ttn_cod_kind, Decimal(order.ttn_cod_sum or 0)):
             order.ttn_cod_kind, order.ttn_cod_sum = cod
             events.order_changed(db, order.id)
+    eta = _eta(res.raw)
+    if eta and eta != order.delivery_eta:
+        order.delivery_eta = eta
     if (order.delivery_state, order.delivery_status_code, order.delivery_status) == (
         res.state, res.code, res.status_text
     ):

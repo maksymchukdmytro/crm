@@ -1,6 +1,29 @@
 {
  "components": {
   "schemas": {
+   "AccountShort": {
+    "properties": {
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "kind": {
+      "title": "Kind",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "kind"
+    ],
+    "title": "AccountShort",
+    "type": "object"
+   },
    "AdjustIn": {
     "additionalProperties": false,
     "properties": {
@@ -477,7 +500,8 @@
        "assign",
        "ttn",
        "track",
-       "fiscalize"
+       "fiscalize",
+       "registry"
       ],
       "title": "Action",
       "type": "string"
@@ -2196,8 +2220,145 @@
     "title": "DoneOut",
     "type": "object"
    },
+   "EntityAccountIn": {
+    "additionalProperties": false,
+    "properties": {
+     "card_mask": {
+      "anyOf": [
+       {
+        "maxLength": 20,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Card Mask"
+     },
+     "iban": {
+      "anyOf": [
+       {
+        "maxLength": 34,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Iban"
+     },
+     "is_active": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Active"
+     },
+     "kind": {
+      "anyOf": [
+       {
+        "enum": [
+         "card",
+         "iban",
+         "cash",
+         "service"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Kind"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "maxLength": 80,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "sort": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sort"
+     }
+    },
+    "title": "EntityAccountIn",
+    "type": "object"
+   },
+   "EntityAccountOut": {
+    "properties": {
+     "card_mask": {
+      "title": "Card Mask",
+      "type": "string"
+     },
+     "iban": {
+      "title": "Iban",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "is_active": {
+      "title": "Is Active",
+      "type": "boolean"
+     },
+     "kind": {
+      "title": "Kind",
+      "type": "string"
+     },
+     "legal_entity_id": {
+      "title": "Legal Entity Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "sort": {
+      "title": "Sort",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "legal_entity_id",
+     "name",
+     "kind",
+     "iban",
+     "card_mask",
+     "is_active",
+     "sort"
+    ],
+    "title": "EntityAccountOut",
+    "type": "object"
+   },
    "EntityShort": {
     "properties": {
+     "accounts": {
+      "items": {
+       "$ref": "#/components/schemas/AccountShort"
+      },
+      "title": "Accounts",
+      "type": "array"
+     },
      "has_cashier": {
       "title": "Has Cashier",
       "type": "boolean"
@@ -2351,13 +2512,9 @@
     "title": "HTTPValidationError",
     "type": "object"
    },
-   "HistoryOut": {
+   "HistoryEvent": {
     "properties": {
-     "action": {
-      "title": "Action",
-      "type": "string"
-     },
-     "created_at": {
+     "at": {
       "anyOf": [
        {
         "type": "string"
@@ -2366,29 +2523,38 @@
         "type": "null"
        }
       ],
-      "title": "Created At"
+      "title": "At"
      },
      "details": {
+      "default": "",
       "title": "Details",
       "type": "string"
      },
-     "id": {
-      "title": "Id",
-      "type": "integer"
+     "kind": {
+      "enum": [
+       "status",
+       "sms",
+       "comment",
+       "other"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
      },
      "user": {
+      "default": "",
       "title": "User",
       "type": "string"
      }
     },
     "required": [
-     "id",
-     "user",
-     "action",
-     "details",
-     "created_at"
+     "kind",
+     "text"
     ],
-    "title": "HistoryOut",
+    "title": "HistoryEvent",
     "type": "object"
    },
    "LeadQueueOut": {
@@ -3757,6 +3923,31 @@
     "title": "NpAccountShort",
     "type": "object"
    },
+   "NpRegistryOut": {
+    "properties": {
+     "done": {
+      "title": "Done",
+      "type": "integer"
+     },
+     "errors": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+     },
+     "number": {
+      "default": "",
+      "title": "Number",
+      "type": "string"
+     }
+    },
+    "required": [
+     "done"
+    ],
+    "title": "NpRegistryOut",
+    "type": "object"
+   },
    "NpRuleIn": {
     "additionalProperties": false,
     "properties": {
@@ -4849,6 +5040,17 @@
       "title": "Delivery Cost",
       "type": "number"
      },
+     "delivery_eta": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Delivery Eta"
+     },
      "delivery_method": {
       "title": "Delivery Method",
       "type": "string"
@@ -4917,7 +5119,7 @@
      },
      "history": {
       "items": {
-       "$ref": "#/components/schemas/HistoryOut"
+       "$ref": "#/components/schemas/app__api__schemas__HistoryOut__1"
       },
       "title": "History",
       "type": "array"
@@ -4937,6 +5139,18 @@
       "title": "Items",
       "type": "array"
      },
+     "items_cost": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Собівартість товарів — лише адміністратору",
+      "title": "Items Cost"
+     },
      "label": {
       "default": "",
       "description": "що друкувати біля ТТН: маркування Rozetka чи наклейку перевізника",
@@ -4947,6 +5161,17 @@
       ],
       "title": "Label",
       "type": "string"
+     },
+     "label_printed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Label Printed At"
      },
      "last_call_at": {
       "anyOf": [
@@ -5022,6 +5247,11 @@
        }
       ],
       "title": "Np Account Id"
+     },
+     "np_registry_ref": {
+      "default": "",
+      "title": "Np Registry Ref",
+      "type": "string"
      },
      "office_id": {
       "anyOf": [
@@ -5169,6 +5399,14 @@
      "stock_shipped": {
       "title": "Stock Shipped",
       "type": "boolean"
+     },
+     "todo": {
+      "description": "«Що лишилось» (UI-DESIGN §5.5)",
+      "items": {
+       "$ref": "#/components/schemas/TodoItem"
+      },
+      "title": "Todo",
+      "type": "array"
      },
      "total": {
       "title": "Total",
@@ -5846,6 +6084,22 @@
    },
    "PaymentOut": {
     "properties": {
+     "account": {
+      "default": "",
+      "title": "Account",
+      "type": "string"
+     },
+     "account_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Account Id"
+     },
      "amount": {
       "title": "Amount",
       "type": "number"
@@ -5860,6 +6114,22 @@
        }
       ],
       "title": "Collected At"
+     },
+     "confirmed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Confirmed At"
+     },
+     "confirmed_by": {
+      "default": "",
+      "title": "Confirmed By",
+      "type": "string"
      },
      "created_at": {
       "anyOf": [
@@ -6060,6 +6330,24 @@
      }
     },
     "title": "PrefIn",
+    "type": "object"
+   },
+   "PrepayConfirmIn": {
+    "additionalProperties": false,
+    "properties": {
+     "account_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Account Id"
+     }
+    },
+    "title": "PrepayConfirmIn",
     "type": "object"
    },
    "ProductDeleteOut": {
@@ -9970,6 +10258,44 @@
     "title": "TextIn",
     "type": "object"
    },
+   "TodoItem": {
+    "properties": {
+     "action": {
+      "default": "",
+      "title": "Action",
+      "type": "string"
+     },
+     "hint": {
+      "default": "",
+      "title": "Hint",
+      "type": "string"
+     },
+     "key": {
+      "title": "Key",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "state": {
+      "enum": [
+       "done",
+       "pending",
+       "error"
+      ],
+      "title": "State",
+      "type": "string"
+     }
+    },
+    "required": [
+     "key",
+     "label",
+     "state"
+    ],
+    "title": "TodoItem",
+    "type": "object"
+   },
    "TrackOut": {
     "properties": {
      "address": {
@@ -10085,6 +10411,17 @@
       "title": "Delivery Cost",
       "type": "number"
      },
+     "delivery_eta": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Delivery Eta"
+     },
      "delivery_method": {
       "title": "Delivery Method",
       "type": "string"
@@ -10153,7 +10490,7 @@
      },
      "history": {
       "items": {
-       "$ref": "#/components/schemas/HistoryOut"
+       "$ref": "#/components/schemas/app__api__schemas__HistoryOut__1"
       },
       "title": "History",
       "type": "array"
@@ -10173,6 +10510,18 @@
       "title": "Items",
       "type": "array"
      },
+     "items_cost": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Собівартість товарів — лише адміністратору",
+      "title": "Items Cost"
+     },
      "label": {
       "default": "",
       "description": "що друкувати біля ТТН: маркування Rozetka чи наклейку перевізника",
@@ -10183,6 +10532,17 @@
       ],
       "title": "Label",
       "type": "string"
+     },
+     "label_printed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Label Printed At"
      },
      "last_call_at": {
       "anyOf": [
@@ -10258,6 +10618,11 @@
        }
       ],
       "title": "Np Account Id"
+     },
+     "np_registry_ref": {
+      "default": "",
+      "title": "Np Registry Ref",
+      "type": "string"
      },
      "office_id": {
       "anyOf": [
@@ -10406,6 +10771,14 @@
       "title": "Stock Shipped",
       "type": "boolean"
      },
+     "todo": {
+      "description": "«Що лишилось» (UI-DESIGN §5.5)",
+      "items": {
+       "$ref": "#/components/schemas/TodoItem"
+      },
+      "title": "Todo",
+      "type": "array"
+     },
      "total": {
       "title": "Total",
       "type": "number"
@@ -10520,9 +10893,647 @@
     "title": "TrackOut",
     "type": "object"
    },
+   "TtnAfter": {
+    "additionalProperties": false,
+    "properties": {
+     "add_registry": {
+      "default": false,
+      "title": "Add Registry",
+      "type": "boolean"
+     },
+     "print_label": {
+      "default": false,
+      "title": "Print Label",
+      "type": "boolean"
+     },
+     "send_sms": {
+      "default": false,
+      "title": "Send Sms",
+      "type": "boolean"
+     },
+     "set_shipped": {
+      "default": false,
+      "title": "Set Shipped",
+      "type": "boolean"
+     }
+    },
+    "title": "TtnAfter",
+    "type": "object"
+   },
+   "TtnCreatedOut": {
+    "properties": {
+     "address": {
+      "title": "Address",
+      "type": "string"
+     },
+     "after_errors": {
+      "items": {
+       "type": "string"
+      },
+      "title": "After Errors",
+      "type": "array"
+     },
+     "call_attempts": {
+      "default": 0,
+      "title": "Call Attempts",
+      "type": "integer"
+     },
+     "carrier_ref": {
+      "title": "Carrier Ref",
+      "type": "string"
+     },
+     "checkbox_ready": {
+      "default": false,
+      "title": "Checkbox Ready",
+      "type": "boolean"
+     },
+     "city_name": {
+      "title": "City Name",
+      "type": "string"
+     },
+     "city_ref": {
+      "title": "City Ref",
+      "type": "string"
+     },
+     "cod_amount": {
+      "title": "Cod Amount",
+      "type": "number"
+     },
+     "comment": {
+      "title": "Comment",
+      "type": "string"
+     },
+     "comments": {
+      "items": {
+       "$ref": "#/components/schemas/CommentOut"
+      },
+      "title": "Comments",
+      "type": "array"
+     },
+     "converted_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Converted At"
+     },
+     "country": {
+      "default": "UA",
+      "title": "Country",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "customer": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/OrderCustomer"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "customer_name": {
+      "title": "Customer Name",
+      "type": "string"
+     },
+     "delivered_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Delivered At"
+     },
+     "delivery_checked_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Delivery Checked At"
+     },
+     "delivery_cost": {
+      "title": "Delivery Cost",
+      "type": "number"
+     },
+     "delivery_eta": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Delivery Eta"
+     },
+     "delivery_method": {
+      "title": "Delivery Method",
+      "type": "string"
+     },
+     "delivery_state": {
+      "title": "Delivery State",
+      "type": "string"
+     },
+     "delivery_status": {
+      "title": "Delivery Status",
+      "type": "string"
+     },
+     "discount": {
+      "title": "Discount",
+      "type": "number"
+     },
+     "duplicate_of_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Duplicate Of Id"
+     },
+     "email": {
+      "title": "Email",
+      "type": "string"
+     },
+     "external_id": {
+      "default": "",
+      "title": "External Id",
+      "type": "string"
+     },
+     "external_status": {
+      "default": "",
+      "title": "External Status",
+      "type": "string"
+     },
+     "extra1": {
+      "default": "",
+      "title": "Extra1",
+      "type": "string"
+     },
+     "extra2": {
+      "default": "",
+      "title": "Extra2",
+      "type": "string"
+     },
+     "extra3": {
+      "default": "",
+      "title": "Extra3",
+      "type": "string"
+     },
+     "extra4": {
+      "default": "",
+      "title": "Extra4",
+      "type": "string"
+     },
+     "first_name": {
+      "default": "",
+      "title": "First Name",
+      "type": "string"
+     },
+     "history": {
+      "items": {
+       "$ref": "#/components/schemas/app__api__schemas__HistoryOut__1"
+      },
+      "title": "History",
+      "type": "array"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "ip": {
+      "title": "Ip",
+      "type": "string"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/OrderItemOut"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "items_cost": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Собівартість товарів — лише адміністратору",
+      "title": "Items Cost"
+     },
+     "label": {
+      "default": "",
+      "description": "що друкувати біля ТТН: маркування Rozetka чи наклейку перевізника",
+      "enum": [
+       "",
+       "rozetka",
+       "carrier"
+      ],
+      "title": "Label",
+      "type": "string"
+     },
+     "label_printed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Label Printed At"
+     },
+     "label_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Посилання на PDF наклейки, якщо просили «Друкувати наклейку»",
+      "title": "Label Url"
+     },
+     "last_call_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Call At"
+     },
+     "last_name": {
+      "default": "",
+      "title": "Last Name",
+      "type": "string"
+     },
+     "legal_entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Legal Entity Id"
+     },
+     "manager": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/UserOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "manager_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Manager Id"
+     },
+     "mark_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mark Id"
+     },
+     "middle_name": {
+      "default": "",
+      "title": "Middle Name",
+      "type": "string"
+     },
+     "np_account_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Np Account Id"
+     },
+     "np_registry_ref": {
+      "default": "",
+      "title": "Np Registry Ref",
+      "type": "string"
+     },
+     "office_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Office Id"
+     },
+     "others": {
+      "items": {
+       "$ref": "#/components/schemas/OrderRowOut"
+      },
+      "title": "Others",
+      "type": "array"
+     },
+     "pay_check": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/PayCheckOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "payment_method_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payment Method Id"
+     },
+     "payment_type": {
+      "title": "Payment Type",
+      "type": "string"
+     },
+     "payments": {
+      "items": {
+       "$ref": "#/components/schemas/PaymentOut"
+      },
+      "title": "Payments",
+      "type": "array"
+     },
+     "phone": {
+      "title": "Phone",
+      "type": "string"
+     },
+     "postcode": {
+      "title": "Postcode",
+      "type": "string"
+     },
+     "prepayment": {
+      "title": "Prepayment",
+      "type": "number"
+     },
+     "reason_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason Id"
+     },
+     "receipts": {
+      "items": {
+       "$ref": "#/components/schemas/ReceiptOut"
+      },
+      "title": "Receipts",
+      "type": "array"
+     },
+     "remind_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Remind At"
+     },
+     "shipped_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shipped At"
+     },
+     "shop_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shop Id"
+     },
+     "site": {
+      "title": "Site",
+      "type": "string"
+     },
+     "sms": {
+      "items": {
+       "$ref": "#/components/schemas/SmsOut"
+      },
+      "title": "Sms",
+      "type": "array"
+     },
+     "source_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Id"
+     },
+     "status_id": {
+      "title": "Status Id",
+      "type": "integer"
+     },
+     "stock_reserved": {
+      "title": "Stock Reserved",
+      "type": "boolean"
+     },
+     "stock_shipped": {
+      "title": "Stock Shipped",
+      "type": "boolean"
+     },
+     "todo": {
+      "description": "«Що лишилось» (UI-DESIGN §5.5)",
+      "items": {
+       "$ref": "#/components/schemas/TodoItem"
+      },
+      "title": "Todo",
+      "type": "array"
+     },
+     "total": {
+      "title": "Total",
+      "type": "number"
+     },
+     "ttn": {
+      "title": "Ttn",
+      "type": "string"
+     },
+     "ttn_cod_kind": {
+      "default": "",
+      "title": "Ttn Cod Kind",
+      "type": "string"
+     },
+     "ttn_cod_sum": {
+      "default": 0,
+      "title": "Ttn Cod Sum",
+      "type": "number"
+     },
+     "updated_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated At"
+     },
+     "utm_campaign": {
+      "title": "Utm Campaign",
+      "type": "string"
+     },
+     "utm_content": {
+      "title": "Utm Content",
+      "type": "string"
+     },
+     "utm_medium": {
+      "title": "Utm Medium",
+      "type": "string"
+     },
+     "utm_source": {
+      "title": "Utm Source",
+      "type": "string"
+     },
+     "utm_term": {
+      "title": "Utm Term",
+      "type": "string"
+     },
+     "version": {
+      "title": "Version",
+      "type": "string"
+     },
+     "warehouse_name": {
+      "title": "Warehouse Name",
+      "type": "string"
+     },
+     "warehouse_ref": {
+      "title": "Warehouse Ref",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "status_id",
+     "manager_id",
+     "manager",
+     "customer_name",
+     "phone",
+     "email",
+     "comment",
+     "delivery_method",
+     "city_name",
+     "city_ref",
+     "warehouse_name",
+     "warehouse_ref",
+     "address",
+     "postcode",
+     "ttn",
+     "carrier_ref",
+     "delivery_state",
+     "delivery_status",
+     "payment_type",
+     "site",
+     "utm_source",
+     "utm_medium",
+     "utm_campaign",
+     "utm_content",
+     "utm_term",
+     "ip",
+     "delivery_cost",
+     "prepayment",
+     "discount",
+     "total",
+     "cod_amount",
+     "duplicate_of_id",
+     "stock_reserved",
+     "stock_shipped",
+     "created_at",
+     "updated_at",
+     "shipped_at",
+     "delivered_at",
+     "delivery_checked_at",
+     "version",
+     "items",
+     "payments",
+     "comments",
+     "history",
+     "sms",
+     "others"
+    ],
+    "title": "TtnCreatedOut",
+    "type": "object"
+   },
    "TtnIn": {
     "additionalProperties": false,
-    "description": "Створення ТТН. Без тіла — з параметрами за замовчуванням; передані поля їх замінюють.",
+    "description": "Створення ТТН. Без тіла — з параметрами за замовчуванням; передані поля їх замінюють.\ncity_* / warehouse_* — місто й відділення з вікна ТТН (зберігаються в замовленні); after — дії одразу після створення.",
     "properties": {
      "additional_info": {
       "anyOf": [
@@ -10535,6 +11546,16 @@
        }
       ],
       "title": "Additional Info"
+     },
+     "after": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/TtnAfter"
+       },
+       {
+        "type": "null"
+       }
+      ]
      },
      "cargo_type": {
       "anyOf": [
@@ -10553,6 +11574,30 @@
        }
       ],
       "title": "Cargo Type"
+     },
+     "city_name": {
+      "anyOf": [
+       {
+        "maxLength": 255,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "City Name"
+     },
+     "city_ref": {
+      "anyOf": [
+       {
+        "maxLength": 64,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "City Ref"
      },
      "cod_amount": {
       "anyOf": [
@@ -10681,6 +11726,30 @@
        }
       ],
       "title": "Service Type"
+     },
+     "warehouse_name": {
+      "anyOf": [
+       {
+        "maxLength": 255,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Warehouse Name"
+     },
+     "warehouse_ref": {
+      "anyOf": [
+       {
+        "maxLength": 64,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Warehouse Ref"
      }
     },
     "title": "TtnIn",
@@ -10789,6 +11858,40 @@
       "title": "Accounts",
       "type": "array"
      },
+     "city_name": {
+      "default": "",
+      "title": "City Name",
+      "type": "string"
+     },
+     "city_ref": {
+      "default": "",
+      "title": "City Ref",
+      "type": "string"
+     },
+     "cod_commission": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Комісія за контроль оплати / грошовий переказ",
+      "title": "Cod Commission"
+     },
+     "eta": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Очікувана дата доставки (YYYY-MM-DD)",
+      "title": "Eta"
+     },
      "np_account_id": {
       "anyOf": [
        {
@@ -10816,6 +11919,23 @@
       "title": "Prepaid",
       "type": "boolean"
      },
+     "price": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Орієнтовна вартість доставки за тарифом НП",
+      "title": "Price"
+     },
+     "recipient": {
+      "default": "",
+      "title": "Recipient",
+      "type": "string"
+     },
      "sender": {
       "default": "",
       "title": "Sender",
@@ -10824,6 +11944,16 @@
      "supported": {
       "title": "Supported",
       "type": "boolean"
+     },
+     "warehouse_name": {
+      "default": "",
+      "title": "Warehouse Name",
+      "type": "string"
+     },
+     "warehouse_ref": {
+      "default": "",
+      "title": "Warehouse Ref",
+      "type": "string"
      }
     },
     "required": [
@@ -11199,6 +12329,62 @@
      "kinds"
     ],
     "title": "WarehouseOut",
+    "type": "object"
+   },
+   "app__api__schemas__HistoryOut__1": {
+    "properties": {
+     "action": {
+      "title": "Action",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "details": {
+      "title": "Details",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "user": {
+      "title": "User",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "user",
+     "action",
+     "details",
+     "created_at"
+    ],
+    "title": "HistoryOut",
+    "type": "object"
+   },
+   "app__api__schemas__HistoryOut__2": {
+    "properties": {
+     "events": {
+      "items": {
+       "$ref": "#/components/schemas/HistoryEvent"
+      },
+      "title": "Events",
+      "type": "array"
+     }
+    },
+    "required": [
+     "events"
+    ],
+    "title": "HistoryOut",
     "type": "object"
    }
   }
@@ -12387,6 +13573,212 @@
     ]
    }
   },
+  "/api/legal-entities/{eid}/accounts": {
+   "get": {
+    "operationId": "entity_accounts_api_legal_entities__eid__accounts_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "eid",
+      "required": true,
+      "schema": {
+       "title": "Eid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/EntityAccountOut"
+         },
+         "title": "Response Entity Accounts Api Legal Entities  Eid  Accounts Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Entity Accounts",
+    "tags": [
+     "admin"
+    ]
+   },
+   "post": {
+    "operationId": "entity_account_create_api_legal_entities__eid__accounts_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "eid",
+      "required": true,
+      "schema": {
+       "title": "Eid",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EntityAccountIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EntityAccountOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Entity Account Create",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/legal-entities/{eid}/accounts/{aid}": {
+   "delete": {
+    "operationId": "entity_account_delete_api_legal_entities__eid__accounts__aid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "eid",
+      "required": true,
+      "schema": {
+       "title": "Eid",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "path",
+      "name": "aid",
+      "required": true,
+      "schema": {
+       "title": "Aid",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Entity Account Delete",
+    "tags": [
+     "admin"
+    ]
+   },
+   "patch": {
+    "operationId": "entity_account_update_api_legal_entities__eid__accounts__aid__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "eid",
+      "required": true,
+      "schema": {
+       "title": "Eid",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "path",
+      "name": "aid",
+      "required": true,
+      "schema": {
+       "title": "Aid",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EntityAccountIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EntityAccountOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Entity Account Update",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
   "/api/me": {
    "get": {
     "operationId": "me_api_me_get",
@@ -13207,6 +14599,59 @@
     ]
    }
   },
+  "/api/orders/{order_id}/history": {
+   "get": {
+    "description": "Історія для бічної панелі: журнал дій, коментарі, SMS — нові зверху; kind=all|status|sms|comments.",
+    "operationId": "order_history_api_orders__order_id__history_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "kind",
+      "required": false,
+      "schema": {
+       "default": "all",
+       "title": "Kind",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/app__api__schemas__HistoryOut__2"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Order History",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
   "/api/orders/{order_id}/label": {
    "get": {
     "description": "Наклейка для друку: маркування ROZETKA Delivery (ТТН RMP-…) з API Rozetka або наклейка перевізника (НП 100×100).",
@@ -13353,6 +14798,59 @@
     ]
    }
   },
+  "/api/orders/{order_id}/prepayment/confirm": {
+   "post": {
+    "description": "Позначка ✓ біля передоплати: кошти надійшли на рахунок юрособи (хто й коли підтвердив).",
+    "operationId": "confirm_prepayment_api_orders__order_id__prepayment_confirm_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PrepayConfirmIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Confirm Prepayment",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
   "/api/orders/{order_id}/receipts": {
    "post": {
     "description": "Створити чек Checkbox вручну (продажу, повернення, передоплати, післяплати).",
@@ -13406,6 +14904,49 @@
     ]
    }
   },
+  "/api/orders/{order_id}/registry": {
+   "post": {
+    "description": "Додати ТТН у реєстр НП на сьогодні (один реєстр на ключ НП за день).",
+    "operationId": "add_registry_api_orders__order_id__registry_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NpRegistryOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Add Registry",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
   "/api/orders/{order_id}/sms": {
    "post": {
     "operationId": "send_sms_api_orders__order_id__sms_post",
@@ -13453,6 +14994,49 @@
      }
     },
     "summary": "Send Sms",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/sms-ttn": {
+   "post": {
+    "description": "«Що лишилось» → SMS з ТТН: шаблон, у якому є {ttn}.",
+    "operationId": "send_ttn_sms_api_orders__order_id__sms_ttn_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OrderOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Send Ttn Sms",
     "tags": [
      "orders"
     ]
@@ -13618,7 +15202,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/OrderOut"
+         "$ref": "#/components/schemas/TtnCreatedOut"
         }
        }
       },
@@ -13663,6 +15247,16 @@
        "default": 0,
        "title": "Np Account Id",
        "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "city_ref",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "City Ref",
+       "type": "string"
       }
      }
     ],

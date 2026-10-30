@@ -270,8 +270,7 @@ code { font-family: var(--mono); font-size: 12.5px; background: rgba(135, 131, 1
 details.box { border: 1px solid var(--line); border-radius: var(--r-field); padding: 8px 12px; background: #fff; }
 details.box summary { cursor: pointer; font-weight: 500; font-size: 13.5px; }
 
-/* ============ Картка замовлення (як у LP-CRM: Контакт · Доставка · Товари) ============ */
-.oc-col { min-width: 0; }
+
 .sec { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12.5px; font-weight: 500; margin: 2px 0 8px; }
 .sec::before, .sec::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .sec .sec-act { order: 3; margin-left: -4px; }
@@ -290,22 +289,22 @@ details.box summary { cursor: pointer; font-weight: 500; font-size: 13.5px; }
 .prop.top > svg.i { margin-top: 9px; }
 .prop .ac { flex: 1; min-width: 0; }
 .prop .status-sel { font-weight: 600; color: color-mix(in srgb, var(--c) 72%, black); background-color: color-mix(in srgb, var(--c) 14%, white) !important; border-radius: var(--r-field); width: auto; padding: 3px 26px 3px 9px; }
-.goods-add { position: relative; margin: 8px 0 0; }
-.goods-add input { padding-left: 32px; border-style: dashed; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238f8e8a' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E") no-repeat 10px center / 15px; }
-.oc-tabs { margin-top: 26px; }
-.oc-tabs .subnav { margin-bottom: 14px; }
-.oc-tabs .subnav a { cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
-.oc-tabs .subnav a .n { font-size: 11.5px; color: var(--muted); }
-.oc-pane { display: none; }
-.oc-pane.on { display: block; }
-.oc-pane .t td { font-size: 13.5px; }
+
+
+
+
+
+
+
+
+
 .prop .unit { color: var(--muted); font-size: 12.5px; padding-right: 6px; }
 .dstate { display: inline-block; width: 8px; height: 8px; border-radius: var(--r-pill); background: var(--accent); vertical-align: 1px; margin-left: 2px; }
 .dstate.delivered { background: #2f9e5b; } .dstate.refused, .dstate.returned { background: #d9483f; }
 .dstate.arrived { background: #d9a23f; } .dstate.created { background: #b9b8b4; }
 .utm-k { width: 70px; flex: none; color: var(--muted); font-size: 12.5px; font-family: var(--mono); padding-left: 2px; }
-.ship-card {border: 1px solid var(--line); border-radius: var(--r-field); padding: 10px 12px; margin-top: 6px; background: #fbfbfa; }
-.ship-card .row { align-items: center; }
+
+
 
 /* Модальне вікно (картка поверх списку) */
 .modal { position: fixed; inset: 0; z-index: 100; background: rgba(15, 15, 15, .32); display: flex; align-items: flex-start; justify-content: center; padding: 3vh 24px; animation: fade .15s ease-out; }
@@ -318,11 +317,9 @@ details.box summary { cursor: pointer; font-weight: 500; font-size: 13.5px; }
 @keyframes pop { from { transform: translateY(10px) scale(.99); opacity: 0; } }
 body.embed { background: #fff; }
 body.embed .main { padding: 22px 30px 0; }
-body.embed .oc-head { padding-right: 40px; }
+
 @media (max-width: 1760px) { .w-s { display: none; } }
 @media (max-width: 1640px) { .w-m { display: none; } }
-@media (max-width: 1180px) {
-}
 @media (max-width: 1100px) {
   .grid.two, .grid.half, .grid.wide-left { grid-template-columns: 1fr; }
 }

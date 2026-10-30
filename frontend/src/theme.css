@@ -86,25 +86,23 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
   .shell { grid-template-columns: 1fr; }
 }
 
-/* ---------------------------------------------------------------- картка замовлення: нові елементи */
-.oc-alert { display: flex; align-items: center; gap: 10px; border-radius: var(--r-field); padding: 9px 14px; margin: 0 0 12px; font-size: 13.5px; }
-.oc-alert.bad { background: var(--bad-soft); color: #7a1f17; border: 1px solid #f4c7c0; }
-.oc-alert a { margin-left: auto; font-weight: 600; color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+
+
 .name-parts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 2px 0 6px 122px; }
 .name-parts span { background: var(--bg); border-radius: var(--r-field); padding: 3px 8px; font-size: 12.5px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .name-parts small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; line-height: 1.2; }
-.cust-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; padding: 7px 10px; border-radius: var(--r-field);
-  background: var(--bg); font-size: 12.5px; color: var(--ink-2); }
-.cust-line:hover { background: var(--accent-soft); color: var(--ink); }
-.oc-controls .ctl > span { display: inline-flex; align-items: center; gap: 4px; }
+
+
+
 .goods-opt { display: flex !important; align-items: center; gap: 10px; }
 .goods-opt img, .goods-opt .ph { width: 30px; height: 30px; border-radius: var(--r-field); object-fit: cover; flex: none; background: var(--bg); display: grid; place-items: center; color: var(--faint); }
 .goods-opt .nm { flex: 1; min-width: 0; }
 .goods-opt .badge { margin-left: 6px; }
-.item-cell { display: flex; gap: 10px; align-items: flex-start; }
-.item-ph { width: 38px; height: 38px; border-radius: var(--r-field); object-fit: cover; flex: none; margin-top: 2px; }
-.item-ph.empty { display: grid; place-items: center; background: var(--bg); color: var(--faint); }
-.item-main { flex: 1; min-width: 0; }
+
+
+
+
 .bl-mark { display: inline-flex; color: var(--bad); margin-right: 5px; vertical-align: -2px; }
 .page-hint { margin: -10px 0 14px; }
 .side-actions .new svg, .side-actions .new-product svg { flex: none; }
@@ -154,8 +152,8 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .ms-foot { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding: 4px 6px 4px 12px; font-size: 12px; color: var(--muted); }
 
 
-.t.items td.item-cell { display: flex; }
-.item-ph, .item-ph.empty { width: 38px; height: 38px; min-height: 0; align-self: flex-start; }
+
+
 
 /* ---------------------------------------------------------------- шліфування (UI/UX Pro Max: контраст, обрізання, порожні стани) */
 :root { --faint: #7d8697; }            /* ≥3:1 на білому — іконки й підписи другого плану */
@@ -163,13 +161,13 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .st-cell { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .st-cell .pill { display: inline-flex; min-width: 0; max-width: 100%; overflow: hidden; }
 .kpi .v { font-variant-numeric: lining-nums; letter-spacing: -0.01em; }
-.oc-main .goods-add.first input { height: 46px; border-style: solid; border-color: #cfd4dd; background-color: #fff; font-size: 14px; }
-.goods-add.first input::placeholder { color: var(--muted); }
+
+
 .board-empty { color: var(--faint); font-size: 12.5px; text-align: center; padding: 18px 8px; border: 1px dashed var(--line); border-radius: var(--r-field); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 @media (max-width: 760px) {
-  .oc-actions { flex-wrap: wrap; }
-  .oc-actions > button { min-height: 40px; }
+  
+  
   .st-cell .pill { max-width: 118px; }
 }
 /* рядки довідників: різна кількість полів (джерело + відділ, група + колір, IP) — гнучкий рядок замість сітки на 3 колонки */
@@ -194,60 +192,29 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .pc-line.pc-bad { background: var(--bad-soft); font-weight: 550; }
 .pc-line.pc-wait { background: var(--line-2); color: var(--muted); }
 
-/* Позиції замовлення: допродаж — вкладений рядок одразу під своїм товаром */
-.items tr.is-upsell td:first-child { box-shadow: none; }
-.oc-main .items tr.is-upsell td { background: #F5F8FE; border-bottom-color: var(--accent-line); }
-.oc-main .items tr.is-upsell td.item-cell { padding-left: 10px; }
-.oc-main .items tr.is-main + tr.is-upsell td { border-top: 0; }
-.up-arrow { flex: none; color: var(--accent); margin: 10px -2px 0 0; }
-.up-tag { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--accent); }
-.up-tag .mini-sel { font-weight: 500; color: var(--ink-2); max-width: 220px; }
-.add-up { display: inline-flex; align-items: center; gap: 3px; font: inherit; font-size: 12px; font-weight: 600; color: var(--accent);
-  background: var(--accent-soft); border: 0; border-radius: var(--r-pill); padding: 2px 9px 2px 7px; cursor: pointer; min-height: 22px; }
-.add-up:hover { background: var(--accent-soft); }
+
+
+
+
+
+
+
+
+
 .link-btn { font: inherit; font-size: 12px; color: var(--muted); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .link-btn:hover { color: var(--ink); }
-.oc-main .items tr.up-add-row td, .oc-main .items tr.up-offer-row td { background: #F5F8FE; padding: 4px 8px 10px 40px; border-bottom: 1px solid var(--line-2); }
-.oc-main .up-search { margin: 0; }
-.oc-main .up-search input { height: 34px; border-style: solid; border-color: var(--accent-line); }
-.up-offers { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.up-offers .offers-l { font-size: 12px; color: var(--accent); }
-.up-offers .offer { font-size: 12.5px; padding: 3px 9px; }
-.up-total { margin: 8px 2px 0; font-size: 12.5px; color: var(--muted); text-align: right; }
-.up-total b { color: var(--accent); font-weight: 600; }
-@media (max-width: 760px) {
-  .oc-main .items tr.up-add-row td, .oc-main .items tr.up-offer-row td { padding-left: 10px; }
-  .add-up { min-height: 32px; padding: 4px 12px 4px 10px; }
-}
-.oc-main .items .item-ph { flex: none; width: 40px; height: 40px; align-self: flex-start; }
-@media (max-width: 760px) {
-  .oc-main .items .item-ph { display: none; }
-  .oc-main .items td.item-cell { gap: 4px; }
-  .oc-main .items .mini-sel { max-width: 150px; }
-  .oc-main .items .up-tag { flex-wrap: wrap; }
-}
-.item-ph.empty { padding: 0; }
-.oc-main .items .item-main { flex: 1; min-width: 0; }
-.oc-main .items input.name { width: 100%; min-width: 0; }
-@media (max-width: 760px) {
-  /* телефон: рядок позиції — назва на всю ширину, під нею кількість · ціна · прибрати */
-  .oc-main .items, .oc-main .items tbody { display: block; width: 100%; }
-  .oc-main .items thead { display: none; }
-  .oc-main .items tr.is-main, .oc-main .items tr.is-upsell { display: grid; grid-template-columns: minmax(0, 1fr) 60px 92px 32px;
-    grid-template-areas: "item item item item" "meta qty price x"; align-items: center; border-bottom: 1px solid var(--line-2); padding: 6px 0; }
-  .oc-main .items tr.is-main td, .oc-main .items tr.is-upsell td { display: block; border: 0; padding: 2px 4px; background: transparent; }
-  .oc-main .items tr.is-upsell { background: #F5F8FE; box-shadow: inset 3px 0 0 var(--accent); padding-left: 6px; }
-  .oc-main .items td.item-cell { grid-area: item; display: flex !important; }
-  .oc-main .items td.qty { grid-area: qty; }
-  .oc-main .items td.price { grid-area: price; }
-  .oc-main .items td.sum { display: block !important; grid-area: meta; text-align: left; padding-top: 2px !important; color: var(--ink); }
-  .oc-main .items tr > td:last-child { grid-area: x; text-align: center; }
-  .oc-main .items td.qty input { width: 56px; }
-  .oc-main .items td.price input { width: 88px; }
-  .oc-main .items td.item-cell .up-arrow { display: none; }
-  .oc-main .items tr.up-add-row, .oc-main .items tr.up-offer-row { display: block; }
-  .oc-main .items tr.up-add-row td, .oc-main .items tr.up-offer-row td { display: block; padding: 6px 6px 10px 12px; }
-}
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* ---------------------------------------------------------------- значки оплат (як у LP-CRM: картинка без плитки) */
 .pay-ic { position: relative; }
@@ -283,29 +250,25 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .pay-col .pay-label { max-width: 100%; }
 .st-cell .mark-badge { flex: 0 1 auto; max-width: 112px; }
 
-/* картка замовлення: компактніше */
-.phone-in { gap: 6px; }
-.phone-in .country-sel { flex: none; width: 58px; padding-left: 6px; padding-right: 18px; background-position: right 4px center; font-size: 15px; }
+
+
 .add-field { display: inline-flex; align-items: center; gap: 4px; margin: 6px 0 2px; padding: 4px 8px; font: inherit; font-size: 12.5px; font-weight: 550;
   color: var(--accent); background: none; border: 1px dashed var(--accent-line); border-radius: var(--r-field); cursor: pointer; }
 .add-field:hover { background: var(--accent-soft); }
-.mark-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: stretch; }
-.mark-row .mark-pick { flex: 1 1 220px; }
-.remind-wrap { position: relative; }
-.remind-btn { display: inline-flex; align-items: center; gap: 6px; height: 100%; min-height: 36px; padding: 0 12px; font: inherit; font-size: 13.5px; font-weight: 550;
-  color: var(--ink-2); background: #fff; border: 1px solid var(--line); border-radius: var(--r-field); cursor: pointer; white-space: nowrap; }
-.remind-btn:hover { border-color: #cfd4dd; }
-.remind-btn.on { color: var(--warn); background: var(--warn-soft); border-color: #f2d48d; }
-.remind-btn.due { color: #fff; background: var(--bad); border-color: var(--bad); }
-.remind-pop { position: absolute; z-index: 30; right: 0; top: calc(100% + 4px); width: 280px; display: flex; flex-direction: column; gap: 10px; padding: 12px;
-  background: #fff; border: 1px solid var(--line); border-radius: var(--r-field); box-shadow: var(--shadow-lg); }
-.remind-pop b { font-size: 13.5px; }
-.remind-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.remind-pop .lbl { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
-@media (max-width: 760px) { .remind-pop { right: auto; left: 0; width: min(300px, calc(100vw - 40px)); } }
+
+
+
+
+
+
+
+
+
+
+
 .ipick-list.up { top: auto; bottom: calc(100% + 4px); }
-.phone-in .country-sel { width: 76px; font-size: 13.5px; }
-.remind-pop.up { top: auto; bottom: calc(100% + 4px); }
+
+
 /* налаштування: значок позначки, поля 1–4 */
 .mlook { position: relative; flex: none; }
 .mlook-btn { width: 34px; height: 34px; display: grid; place-items: center; background: #fff; border: 1px solid var(--line); border-radius: var(--r-field); cursor: pointer; }
@@ -332,7 +295,6 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
 .st-cell .mark-badge { padding: 0 4px; background: color-mix(in srgb, var(--mc) 12%, white); }
 .st-cell .mark-badge:has(> span) { padding: 0 7px 0 5px; }
-@media (max-width: 760px) { .fl.phone-row { grid-template-columns: minmax(0, 1fr); } .fl.phone-row > span:first-child { display: none; } .phone-in .country-sel { width: 70px; } }
 .pay-ic.img { background: none; border-radius: var(--r-mark); }
 .pay-ic.img img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .pm-own { font-size: 12px; color: var(--muted); padding: 0 4px; }
@@ -340,16 +302,14 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .pm-up:hover { background: var(--accent-soft); }
 .pm-up input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
-/* меню «Друк» у картці замовлення */
-.print-menu { position: relative; display: flex; }
-.print-pop { position: absolute; z-index: 40; right: 0; top: calc(100% + 4px); width: min(290px, calc(100vw - 32px)); padding: 4px; background: #fff; border: 1px solid var(--line);
-  border-radius: var(--r-field); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; }
-.print-pop button { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; font: inherit; text-align: left; background: none; border: 0; border-radius: var(--r-field); cursor: pointer; color: var(--ink); }
-.print-pop button:hover, .print-pop button:focus-visible { background: var(--hover); }
-.print-pop button svg { flex: none; color: var(--muted); margin-top: 1px; }
-.print-pop span { display: flex; flex-direction: column; gap: 1px; }
-.print-pop b { font-weight: 600; font-size: 13.5px; }
-.print-pop small { font-size: 12px; color: var(--muted); }
+
+
+
+
+
+
+
+
 .ent-req-btn { grid-column: 1 / -1; justify-self: start; display: inline-flex; align-items: center; gap: 5px; margin: -2px 0 2px 34px; padding: 2px 6px;
   font: inherit; font-size: 12.5px; color: var(--accent); background: none; border: 0; border-radius: var(--r-field); cursor: pointer; }
 .ent-req-btn:hover { background: var(--accent-soft); }

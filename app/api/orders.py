@@ -18,7 +18,7 @@ from ..services import settings as st
 from ..services import sms as sms_svc
 from ..services.audit import ACTION_NAMES
 from ..web import f_details
-from .schemas import BulkIn, BulkOut, DocumentsOut, OrderIn, OrderListOut, OrderOut, PaymentIn, SmsIn, TextIn, TrackOut, TtnIn, TtnPreviewOut, ReceiptIn
+from .schemas import BulkIn, BulkOut, DocumentsOut, HistoryOut, OrderIn, OrderListOut, OrderOut, PaymentIn, PrepayConfirmIn, ReceiptIn, NpRegistryOut, SmsIn, TextIn, TrackOut, TtnCreatedOut, TtnIn, TtnPreviewOut
 from .common import bad, iso, j_order, j_order_row, staff
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
@@ -58,6 +58,11 @@ def order_label(order_id: int, db: Session = Depends(get_db), user: User = Depen
     except (mp.MarketplaceError, CarrierError) as e:
         bad(str(e), 422)
     name = f"{'rozetka' if kind == 'rozetka' else 'label'}-{order.ttn}.pdf"
+    if order.label_printed_at is None:
+        order.label_printed_at = utcnow()
+        from ..services import events as ev
+        ev.order_changed(db, order.id)
+        db.commit()
     return Response(pdf, media_type="application/pdf", headers={"Content-Disposition": f'inline; filename="{name}"'})
 
 
@@ -91,9 +96,13 @@ def order_documents(order_id: int, db: Session = Depends(get_db), user: User = D
     }
 
 
-def _full(db: Session, order: Order) -> dict:
+def _full(db: Session, order: Order, user: User | None = None) -> dict:
+    from ..services import checklist
     db.refresh(order)
     d = j_order(order)
+    d["todo"] = checklist.build(db, order)
+    # собівартість і прибуток — лише адміністратору
+    d["items_cost"] = float(order.items_cost) if user is not None and user.role == "admin" else None
     history = (db.query(AuditLog).options(selectinload(AuditLog.user))
                .filter(AuditLog.entity == "order", AuditLog.entity_id == order.id)
                .order_by(AuditLog.id.desc()).limit(200).all())
@@ -218,7 +227,7 @@ def sources(db: Session = Depends(get_db), user: User = Depends(staff)):
 # ------------------------------------------------------------------ картка
 @router.get("/{order_id}", response_model=OrderOut)
 def get_order(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
-    return _full(db, _get(db, order_id, user))
+    return _full(db, _get(db, order_id, user), user)
 
 
 @router.post("", response_model=OrderOut)
@@ -237,7 +246,7 @@ def create_order(body: OrderIn, db: Session = Depends(get_db), user: User = Depe
             svc.change_status(db, order, status, user)
     svc.add_comment(db, order, data.get("note", ""), user)
     db.commit()
-    return _full(db, order)
+    return _full(db, order, user)
 
 
 @router.patch("/{order_id}", response_model=OrderOut)
@@ -265,7 +274,7 @@ def update_order(order_id: int, body: OrderIn, db: Session = Depends(get_db), us
     # оновити час зміни навіть якщо змінився лише статус — для перевірки версії
     order.updated_at = utcnow()
     db.commit()
-    return _full(db, order)
+    return _full(db, order, user)
 
 
 @router.post("/bulk", response_model=BulkOut)
@@ -318,6 +327,11 @@ def bulk(body: BulkIn, db: Session = Depends(get_db), user: User = Depends(staff
             except cb.CheckboxError as e:
                 db.rollback()
                 errors.append(f"№{o.id}: {e}")
+    elif action == "registry":
+        from ..services import np as np_svc
+        res = np_svc.add_to_registry(db, orders, user)
+        done = res["done"]
+        errors.extend(res["errors"])
     elif action == "track":
         res = delivery.sync_tracking(db, [o.id for o in orders], force=True)
         done = res["checked"]
@@ -337,7 +351,7 @@ def take(order_id: int, db: Session = Depends(get_db), user: User = Depends(staf
         bad("Замовлення вже взяв інший менеджер", 409)
     svc.assign(db, order, user, user)
     db.commit()
-    return _full(db, order)
+    return _full(db, order, user)
 
 
 @router.post("/{order_id}/comments", response_model=OrderOut)
@@ -347,11 +361,11 @@ def comment(order_id: int, body: TextIn, db: Session = Depends(get_db), user: Us
     if not svc.add_comment(db, order, data.get("text", ""), user):
         bad("Порожній коментар")
     db.commit()
-    return _full(db, order)
+    return _full(db, order, user)
 
 
 @router.get("/{order_id}/ttn/preview", response_model=TtnPreviewOut)
-def ttn_preview(order_id: int, np_account_id: int = 0, db: Session = Depends(get_db), user: User = Depends(staff)):
+def ttn_preview(order_id: int, np_account_id: int = 0, city_ref: str = "", db: Session = Depends(get_db), user: User = Depends(staff)):
     """Параметри ТТН за замовчуванням для вікна «Створення накладної» (лише Нова Пошта)."""
     from ..services import np as np_svc
     order = _get(db, order_id, user)
@@ -366,25 +380,151 @@ def ttn_preview(order_id: int, np_account_id: int = 0, db: Session = Depends(get
     prepaid = bool(order.payment_method and order.payment_method.kind == "prepaid")
     if prepaid:
         params.update(cod_mode="none", cod_amount=0)
-    return {"supported": True, "np_account_id": acc.id if acc else None, "params": params, "prepaid": prepaid,
+    extra = {}
+    if city_ref:  # місто, вибране у вікні ТТН, — лише для розрахунку
+        order.city_ref = city_ref
+    try:  # вартість і дата — орієнтовні: помилка НП не заважає створити ТТН
+        extra.update(carrier.price(order, params))
+        extra["eta"] = carrier.delivery_date(order, params.get("service_type") or "WarehouseWarehouse")
+    except Exception:  # noqa: BLE001
+        pass
+    db.rollback()
+    return {"supported": True, "np_account_id": acc.id if acc else None, "params": params, "prepaid": prepaid, **extra,
+            "recipient": " · ".join(x for x in (order.customer_name, order.phone and f"+{order.phone}") if x),
+            "city_name": order.city_name or "", "city_ref": order.city_ref or "", "warehouse_name": order.warehouse_name or "",
+            "warehouse_ref": order.warehouse_ref or "",
             "sender": " · ".join(x for x in (acc.sender_name, acc.contact_name, acc.city_name, acc.warehouse_name) if x) if acc else "",
             "accounts": [{"id": a.id, "name": a.name or f"Ключ {a.id}", "office_id": a.office_id, "is_default": a.is_default}
                          for a in np_svc.accounts(db)]}
 
 
-@router.post("/{order_id}/ttn", response_model=OrderOut)
+@router.post("/{order_id}/ttn", response_model=TtnCreatedOut)
 def ttn_create(order_id: int, body: TtnIn | None = None, db: Session = Depends(get_db), user: User = Depends(staff)):
     order = _get(db, order_id, user)
-    opts = body.model_dump(exclude_none=True) if body else None
-    if opts and "seats" in opts:
+    opts = body.model_dump(exclude_none=True) if body else {}
+    after = opts.pop("after", None) or {}
+    for k in ("city_name", "city_ref", "warehouse_name", "warehouse_ref"):  # місто й відділення з вікна ТТН
+        if k in opts:
+            setattr(order, k, str(opts.pop(k))[:255])
+    if "seats" in opts:
         opts["seats"] = [dict(x) for x in opts["seats"]]
     try:
-        delivery.create_ttn(db, order, user, opts)
+        delivery.create_ttn(db, order, user, opts or None)
         db.commit()
     except CarrierError as e:
         db.rollback()
         bad(str(e), 422)
-    return _full(db, order)
+    errors: list[str] = []
+    if after.get("add_registry") and order.delivery_method == "novaposhta":
+        from ..services import np as np_svc
+        errors += np_svc.add_to_registry(db, [order], user)["errors"]
+    if after.get("send_sms"):
+        try:
+            _send_ttn_sms(db, order, user)
+        except HTTPException as e:
+            errors.append(str(e.detail))
+    if after.get("set_shipped"):
+        shipped = svc.status_by_code(db, "shipped")
+        if shipped is not None and shipped.id != order.status_id:
+            svc.change_status(db, order, shipped, user)
+    db.commit()
+    out = _full(db, order, user)
+    out["label_url"] = f"/api/orders/{order.id}/label" if after.get("print_label") else None
+    out["after_errors"] = errors
+    return out
+
+
+def _send_ttn_sms(db: Session, order: Order, user: User):
+    from ..services import checklist
+    tpl, channel = checklist.sms_ttn_text(db)
+    if not tpl:
+        bad("Немає шаблону SMS з {ttn} або не підключено SMS")
+    text = sms_svc.render(tpl, order, st.get(db, "company_name"))
+    if not text or not order.phone:
+        bad("Порожній текст або немає телефону")
+    sms_svc.queue(db, order, order.phone, text, channel if channel in ("sms", "viber", "hybrid") else "sms")
+    audit.log(db, user, "order", order.id, "sms", {"текст": text, "канал": channel})
+
+
+@router.post("/{order_id}/sms-ttn", response_model=OrderOut)
+def send_ttn_sms(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
+    """«Що лишилось» → SMS з ТТН: шаблон, у якому є {ttn}."""
+    order = _get(db, order_id, user)
+    if not order.ttn:
+        bad("Спершу створіть ТТН")
+    _send_ttn_sms(db, order, user)
+    db.commit()
+    return _full(db, order, user)
+
+
+@router.post("/{order_id}/registry", response_model=NpRegistryOut)
+def add_registry(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
+    """Додати ТТН у реєстр НП на сьогодні (один реєстр на ключ НП за день)."""
+    from ..services import np as np_svc
+    order = _get(db, order_id, user)
+    res = np_svc.add_to_registry(db, [order], user)
+    db.commit()
+    if not res["done"] and res["errors"]:
+        bad(res["errors"][0], 422)
+    return {"done": res["done"], "errors": res["errors"], "number": order.np_registry_ref}
+
+
+@router.post("/{order_id}/prepayment/confirm", response_model=OrderOut)
+def confirm_prepayment(order_id: int, body: PrepayConfirmIn, db: Session = Depends(get_db), user: User = Depends(staff)):
+    """Позначка ✓ біля передоплати: кошти надійшли на рахунок юрособи (хто й коли підтвердив)."""
+    from ..models import LegalEntityAccount
+    order = _get(db, order_id, user)
+    need = Decimal(order.prepayment or 0) if order.payment_type == "partial" else Decimal(order.total or 0)
+    if need <= 0:
+        bad("Вкажіть суму передоплати")
+    got = sum((p.amount for p in order.payments if p.kind == "prepayment" and p.status == "received"), Decimal(0))
+    acc = db.get(LegalEntityAccount, body.account_id) if body.account_id else None
+    now = utcnow()
+    expected = [p for p in order.payments if p.kind == "prepayment" and p.status == "expected"]
+    if expected:
+        p = expected[0]
+        p.status, p.received_amount, p.received_at = "received", p.amount, now
+    elif got < need:
+        p = Payment(kind="prepayment", amount=need - got, status="received", method=(acc.kind if acc else "card"),
+                    received_amount=need - got, received_at=now)
+        order.payments.append(p)
+    else:
+        p = next(x for x in order.payments if x.kind == "prepayment" and x.status == "received")
+    p.account_id = acc.id if acc else p.account_id
+    p.confirmed_by_id, p.confirmed_at = user.id, now
+    audit.log(db, user, "order", order.id, "payment", {"передоплата надійшла": need, "рахунок": acc.name if acc else ""})
+    from ..services import events
+    events.order_changed(db, order.id)
+    db.commit()
+    return _full(db, order, user)
+
+
+@router.get("/{order_id}/history", response_model=HistoryOut)
+def order_history(order_id: int, kind: str = "all", db: Session = Depends(get_db), user: User = Depends(staff)):
+    """Історія для бічної панелі: журнал дій, коментарі, SMS — нові зверху; kind=all|status|sms|comments."""
+    from ..models import OrderComment
+    order = _get(db, order_id, user)
+    ev = []
+    if kind in ("all", "status"):
+        for h in (db.query(AuditLog).options(selectinload(AuditLog.user))
+                  .filter(AuditLog.entity == "order", AuditLog.entity_id == order.id).order_by(AuditLog.id.desc()).limit(300)):
+            if kind == "status" and h.action != "status":
+                continue
+            if h.action in ("sms", "comment"):
+                continue
+            ev.append({"kind": "status" if h.action == "status" else "other", "text": ACTION_NAMES.get(h.action, h.action),
+                       "details": f_details(h.details) if h.details else "", "user": h.user.display if h.user else "Система",
+                       "at": iso(h.created_at), "_t": h.created_at})
+    if kind in ("all", "sms"):
+        for m in db.query(SmsMessage).filter(SmsMessage.order_id == order.id).order_by(SmsMessage.id.desc()).limit(100):
+            ev.append({"kind": "sms", "text": f"{m.channel.upper()} · {({'sent': 'відправлено', 'failed': 'помилка', 'queued': 'в черзі'}).get(m.status, m.status)}",
+                       "details": m.text + (f" — {m.error}" if m.error else ""), "user": "", "at": iso(m.created_at), "_t": m.created_at})
+    if kind in ("all", "comments"):
+        for c in db.query(OrderComment).options(selectinload(OrderComment.user)).filter(OrderComment.order_id == order.id).order_by(OrderComment.id.desc()):
+            ev.append({"kind": "comment", "text": "Коментар", "details": c.text, "user": c.user.display if c.user else "Система",
+                       "at": iso(c.created_at), "_t": c.created_at})
+    ev.sort(key=lambda x: x.pop("_t") or utcnow(), reverse=True)
+    return {"events": ev}
 
 
 @router.post("/{order_id}/receipts", response_model=OrderOut)
@@ -400,7 +540,7 @@ def receipt_create(order_id: int, body: ReceiptIn, db: Session = Depends(get_db)
         bad(str(e), 422)
     if rec.status == "error":
         bad(rec.error, 422)
-    return _full(db, order)
+    return _full(db, order, user)
 
 
 @router.post("/{order_id}/fiscalize", response_model=OrderOut)
@@ -416,7 +556,7 @@ def fiscalize(order_id: int, db: Session = Depends(get_db), user: User = Depends
         bad(str(e), 422)
     if rec.status == "error":
         bad(rec.error, 422)
-    return _full(db, order)
+    return _full(db, order, user)
 
 
 @router.delete("/{order_id}/ttn", response_model=OrderOut)
@@ -428,7 +568,7 @@ def ttn_delete(order_id: int, db: Session = Depends(get_db), user: User = Depend
     except CarrierError as e:
         db.rollback()
         bad(str(e), 422)
-    return _full(db, order)
+    return _full(db, order, user)
 
 
 @router.post("/{order_id}/track", response_model=TrackOut)
@@ -437,7 +577,7 @@ def track(order_id: int, db: Session = Depends(get_db), user: User = Depends(sta
     res = delivery.sync_tracking(db, [order.id], force=True)
     if res["errors"]:
         bad("; ".join(res["errors"]), 422)
-    out = _full(db, order)
+    out = _full(db, order, user)
     out["changed"] = bool(res["changed"])
     return out
 
@@ -453,7 +593,7 @@ def send_sms(order_id: int, body: SmsIn, db: Session = Depends(get_db), user: Us
     sms_svc.queue(db, order, order.phone, text, channel)
     audit.log(db, user, "order", order.id, "sms", {"текст": text, "канал": channel})
     db.commit()
-    return _full(db, order)
+    return _full(db, order, user)
 
 
 @router.post("/{order_id}/payments", response_model=OrderOut)
@@ -479,4 +619,4 @@ def add_payment(order_id: int, body: PaymentIn, db: Session = Depends(get_db), u
     from ..services import events
     events.order_changed(db, order.id)
     db.commit()
-    return _full(db, order)
+    return _full(db, order, user)
