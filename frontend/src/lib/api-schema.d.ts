@@ -2723,7 +2723,10 @@ export interface components {
         };
         /** DashTeam */
         DashTeam: {
-            /** Approve Rate */
+            /**
+             * Approve Rate
+             * @description частка підтверджених серед сьогоднішніх заявок менеджера, %
+             */
             approve_rate?: number | null;
             /**
              * Confirmed
@@ -2736,7 +2739,7 @@ export interface components {
             last_login?: string | null;
             /**
              * Leads
-             * @description лідів сьогодні (оброблених і відкритих)
+             * @description заявок (лідів і замовлень), що надійшли на менеджера сьогодні
              * @default 0
              */
             leads: number;
