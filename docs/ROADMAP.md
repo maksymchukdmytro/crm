@@ -202,7 +202,16 @@ Rozetka (логін + пароль) і Prom (API-токен): перевірка
   автозбереження 0,8 с, J / K / H / Ctrl S / Ctrl ⏎, стани «закрите — Редагувати», чорний список, дубль, номери кроків),
   `pages/TtnDialog.tsx` за макетом 03; «Налаштування → Юрособи → Рахунки для передоплати». Старі стилі колишньої картки прибрано.
   Тести — `tests/test_card.py`. Вікно ліда поки відкриває нову картку повністю (ті самі блоки).
-- [ ] Крок 6. Видаткові накладні (0020)
+- [x] **Крок 6. Видаткові накладні** (`wip/ui-6-invoices`, міграція 0020): `issued_documents` (тип, юрособа, замовлення, номер і
+  `number_text`, знімок даних для PDF, `payload_hash`, стан active / void, `replaced_by_id`, хто видав, скільки друкували),
+  `document_counters` (номер окремий для юрособи й типу, `SELECT … FOR UPDATE`, не повторюється), префікси юрособи
+  `waybill_prefix / invoice_prefix / warranty_prefix`. `services/documents.py`: `build_data` (знімок), `issue / reissue / void / printed`,
+  `is_changed`, автовидача видаткової й гарантійного при «Відправленому» (`doc_auto_issue` = shipped / print / off), `doc_in_parcel`
+  у «Що лишилось». API: `GET /api/documents` (період, юрособа, пошук, «є рахунок», статус замовлення; підсумок і вкладки юросіб),
+  `GET /api/documents/export` (CSV для Excel), `POST /api/orders/{id}/documents/{kind}`, `GET /api/documents/{id}` (знімок),
+  `POST …/printed | reissue | void`; у картці — `documents` (видані, з галочкою в «Друк ▾»). Фронтенд: `pages/Invoices.tsx` за
+  макетом 08 (три кнопки-пігулки, «змінилось» з перевипуском, «Анульовано», масовий друк одним PDF), `lib/docs.ts` друкує зі знімка
+  виданого документа. Тести — `tests/test_issued_documents.py`.
 - [ ] Крок 7. Вікна товару й покупця, склад (0021)
 - [ ] Крок 8. Головна, статистика, налаштування
 - [ ] Крок 9. Мобільна версія

@@ -257,6 +257,7 @@ def _legal_entities(db: Session) -> list[dict]:
     return [{"id": x.id, "name": x.name, "code": x.code, "iban": x.iban, "is_default": x.is_default,
              "code_label": x.code_label or "РНОКПП", "address": x.address or "", "bank": x.bank or "", "phone": x.phone or "",
              "vat_note": x.vat_note or "", "signer": x.signer or "",
+             "waybill_prefix": x.waybill_prefix or "", "invoice_prefix": x.invoice_prefix or "", "warranty_prefix": x.warranty_prefix or "",
              "is_active": x.is_active, "sort": x.sort, "orders": counts.get(x.id, 0), "cashier": cashiers.get(x.id, "")}
             for x in db.query(LegalEntity).order_by(LegalEntity.sort, LegalEntity.id)]
 
@@ -721,6 +722,9 @@ def legal_entities_save(request: Request, body: list[LegalEntityIn], db: Session
         x.code_label = b.code_label if b.code_label in ("РНОКПП", "ІПН", "ЄДРПОУ") else "РНОКПП"
         x.address, x.bank, x.phone = b.address.strip()[:255], b.bank.strip()[:160], b.phone.strip()[:40]
         x.vat_note, x.signer = (b.vat_note.strip() or "Без ПДВ")[:80], b.signer.strip()[:120]
+        x.waybill_prefix = (b.waybill_prefix or "").strip()[:10] or None
+        x.invoice_prefix = (b.invoice_prefix or "").strip()[:10] or None
+        x.warranty_prefix = (b.warranty_prefix or "").strip()[:10] or None
         x.is_default, x.is_active, x.sort = b.is_default and b.is_active, b.is_active, (i + 1) * 10
     db.flush()
     rows = db.query(LegalEntity).order_by(LegalEntity.sort, LegalEntity.id).all()
@@ -756,6 +760,8 @@ def settings_save(section: str, request: Request, data: dict[str, str | bool | i
             bad("Колір документів: формат #RRGGBB")
         if k in ("invoice_days", "warranty_months", "lead_wait_warn_min", "lead_wait_bad_min", "lead_noanswer_remind_min") and val and not val.isdigit():
             bad("Вкажіть ціле число")
+        if k == "doc_auto_issue" and val not in ("shipped", "print", "off"):
+            bad("Коли видавати документи: shipped, print або off")
         if k == "lead_to_order_status" and val not in ("confirmed", "unsorted"):
             bad("Статус замовлення з ліда: confirmed або unsorted")
         if st.get(db, k) != val:

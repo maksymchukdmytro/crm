@@ -68,32 +68,9 @@ def order_label(order_id: int, db: Session = Depends(get_db), user: User = Depen
 
 @router.get("/{order_id}/documents", response_model=DocumentsOut)
 def order_documents(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
-    """Дані для друку: видаткова накладна, рахунок-фактура, гарантійний талон (PDF збирає браузер)."""
-    from ..models import DELIVERY_METHODS, LegalEntity
-    from ..web import today_local
-    order = _get(db, order_id, user)
-    s = st.get_all(db)
-    le = order.legal_entity or db.query(LegalEntity).filter(LegalEntity.is_default.is_(True)).first()
-    seller = {"name": (le.name if le else "") or s.get("company_name", ""), "code": le.code if le else "",
-              "code_label": (le.code_label if le else "") or "РНОКПП", "iban": le.iban if le else "",
-              "address": le.address if le else "", "bank": le.bank if le else "", "phone": le.phone if le else "",
-              "vat_note": (le.vat_note if le else "") or "Без ПДВ", "signer": le.signer if le else ""}
-    where = ", ".join(x for x in (order.city_name, order.warehouse_name) if x)
-    delivery_name = DELIVERY_METHODS.get(order.delivery_method, order.delivery_method or "")
-    items = [{"name": i.name, "sku": (i.product.sku if i.product else "") or "", "qty": i.qty, "price": float(i.price or 0),
-              "warranty_months": (i.product.warranty_months if i.product else 0) or 0, "upsell": i.is_upsell} for i in order.items]
-    return {
-        "order": {"id": order.id, "date": today_local().isoformat(), "created": iso(order.created_at),
-                  "buyer": order.customer_name or "", "phone": order.phone or "", "email": order.email or "",
-                  "delivery": delivery_name + (f" · {where}" if where else ""), "address": order.address or "",
-                  "ttn": order.ttn or "", "items": items, "discount": float(order.discount or 0),
-                  "total": float(order.total or 0), "prepayment": float(order.prepayment or 0),
-                  "cod_amount": float(order.cod_amount or 0),
-                  "payment": order.payment_method.name if order.payment_method else ""},
-        "seller": seller,
-        "docs": {k: s.get(k, "") for k in ("doc_prefix", "invoice_prefix", "warranty_prefix", "doc_unit", "doc_accent",
-                                            "doc_site", "doc_note", "doc_logo", "invoice_days", "warranty_months", "warranty_terms")},
-    }
+    """Дані для друку з поточного замовлення (без видачі документа). Видача з номером — POST /api/orders/{id}/documents/{kind}."""
+    from ..services import documents
+    return documents.build_data(db, _get(db, order_id, user))
 
 
 def _full(db: Session, order: Order, user: User | None = None) -> dict:
@@ -101,6 +78,10 @@ def _full(db: Session, order: Order, user: User | None = None) -> dict:
     db.refresh(order)
     d = j_order(order)
     d["todo"] = checklist.build(db, order)
+    from ..models import IssuedDocument
+    d["documents"] = [{"id": x.id, "kind": x.kind, "number_text": x.number_text, "print_count": x.print_count or 0}
+                      for x in db.query(IssuedDocument).filter(IssuedDocument.order_id == order.id, IssuedDocument.state == "active")
+                      .order_by(IssuedDocument.id)]
     # собівартість і прибуток — лише адміністратору
     d["items_cost"] = float(order.items_cost) if user is not None and user.role == "admin" else None
     history = (db.query(AuditLog).options(selectinload(AuditLog.user))

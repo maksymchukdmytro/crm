@@ -1999,6 +1999,29 @@
     "title": "DayRow",
     "type": "object"
    },
+   "DocEntityCount": {
+    "properties": {
+     "count": {
+      "title": "Count",
+      "type": "integer"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "count"
+    ],
+    "title": "DocEntityCount",
+    "type": "object"
+   },
    "DocItem": {
     "properties": {
      "name": {
@@ -2035,6 +2058,89 @@
      "price"
     ],
     "title": "DocItem",
+    "type": "object"
+   },
+   "DocLinks": {
+    "properties": {
+     "invoice": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Invoice"
+     },
+     "warranty": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Warranty"
+     },
+     "waybill": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Waybill"
+     }
+    },
+    "title": "DocLinks",
+    "type": "object"
+   },
+   "DocListOut": {
+    "properties": {
+     "all": {
+      "title": "All",
+      "type": "integer"
+     },
+     "count_active": {
+      "title": "Count Active",
+      "type": "integer"
+     },
+     "entities": {
+      "items": {
+       "$ref": "#/components/schemas/DocEntityCount"
+      },
+      "title": "Entities",
+      "type": "array"
+     },
+     "rows": {
+      "items": {
+       "$ref": "#/components/schemas/DocRowOut"
+      },
+      "title": "Rows",
+      "type": "array"
+     },
+     "sum": {
+      "title": "Sum",
+      "type": "number"
+     },
+     "total": {
+      "title": "Total",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "rows",
+     "total",
+     "sum",
+     "count_active",
+     "entities",
+     "all"
+    ],
+    "title": "DocListOut",
     "type": "object"
    },
    "DocOrder": {
@@ -2128,6 +2234,118 @@
      "total"
     ],
     "title": "DocOrder",
+    "type": "object"
+   },
+   "DocRowOut": {
+    "properties": {
+     "changed": {
+      "default": false,
+      "title": "Changed",
+      "type": "boolean"
+     },
+     "customer": {
+      "default": "",
+      "title": "Customer",
+      "type": "string"
+     },
+     "docs": {
+      "$ref": "#/components/schemas/DocLinks"
+     },
+     "entity": {
+      "default": "",
+      "title": "Entity",
+      "type": "string"
+     },
+     "entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Entity Id"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "issued_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Issued At"
+     },
+     "kind": {
+      "enum": [
+       "waybill",
+       "invoice",
+       "warranty"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "number_text": {
+      "title": "Number Text",
+      "type": "string"
+     },
+     "order_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Order Id"
+     },
+     "print_count": {
+      "default": 0,
+      "title": "Print Count",
+      "type": "integer"
+     },
+     "replaced_by_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Replaced By Id"
+     },
+     "state": {
+      "enum": [
+       "active",
+       "void"
+      ],
+      "title": "State",
+      "type": "string"
+     },
+     "total": {
+      "title": "Total",
+      "type": "number"
+     }
+    },
+    "required": [
+     "id",
+     "kind",
+     "number_text",
+     "issued_at",
+     "order_id",
+     "total",
+     "state",
+     "docs"
+    ],
+    "title": "DocRowOut",
     "type": "object"
    },
    "DocSeller": {
@@ -2557,6 +2775,229 @@
     "title": "HistoryEvent",
     "type": "object"
    },
+   "IssuedDocOut": {
+    "properties": {
+     "changed": {
+      "default": false,
+      "title": "Changed",
+      "type": "boolean"
+     },
+     "customer": {
+      "default": "",
+      "title": "Customer",
+      "type": "string"
+     },
+     "entity": {
+      "default": "",
+      "title": "Entity",
+      "type": "string"
+     },
+     "entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Entity Id"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "issued_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Issued At"
+     },
+     "kind": {
+      "enum": [
+       "waybill",
+       "invoice",
+       "warranty"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "number_text": {
+      "title": "Number Text",
+      "type": "string"
+     },
+     "order_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Order Id"
+     },
+     "print_count": {
+      "default": 0,
+      "title": "Print Count",
+      "type": "integer"
+     },
+     "replaced_by_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Replaced By Id"
+     },
+     "state": {
+      "enum": [
+       "active",
+       "void"
+      ],
+      "title": "State",
+      "type": "string"
+     },
+     "total": {
+      "title": "Total",
+      "type": "number"
+     }
+    },
+    "required": [
+     "id",
+     "kind",
+     "number_text",
+     "issued_at",
+     "order_id",
+     "total",
+     "state"
+    ],
+    "title": "IssuedDocOut",
+    "type": "object"
+   },
+   "IssuedDocWithSnapOut": {
+    "properties": {
+     "changed": {
+      "default": false,
+      "title": "Changed",
+      "type": "boolean"
+     },
+     "customer": {
+      "default": "",
+      "title": "Customer",
+      "type": "string"
+     },
+     "entity": {
+      "default": "",
+      "title": "Entity",
+      "type": "string"
+     },
+     "entity_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Entity Id"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "issued_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Issued At"
+     },
+     "kind": {
+      "enum": [
+       "waybill",
+       "invoice",
+       "warranty"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "number_text": {
+      "title": "Number Text",
+      "type": "string"
+     },
+     "order_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Order Id"
+     },
+     "print_count": {
+      "default": 0,
+      "title": "Print Count",
+      "type": "integer"
+     },
+     "replaced_by_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Replaced By Id"
+     },
+     "snapshot": {
+      "additionalProperties": true,
+      "description": "Дані документа на момент видачі: order, seller, docs, number_text",
+      "title": "Snapshot",
+      "type": "object"
+     },
+     "state": {
+      "enum": [
+       "active",
+       "void"
+      ],
+      "title": "State",
+      "type": "string"
+     },
+     "total": {
+      "title": "Total",
+      "type": "number"
+     }
+    },
+    "required": [
+     "id",
+     "kind",
+     "number_text",
+     "issued_at",
+     "order_id",
+     "total",
+     "state",
+     "snapshot"
+    ],
+    "title": "IssuedDocWithSnapOut",
+    "type": "object"
+   },
    "LeadQueueOut": {
     "properties": {
      "ids": {
@@ -2811,6 +3252,18 @@
       ],
       "title": "Id"
      },
+     "invoice_prefix": {
+      "anyOf": [
+       {
+        "maxLength": 10,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Invoice Prefix"
+     },
      "is_active": {
       "default": true,
       "title": "Is Active",
@@ -2843,6 +3296,30 @@
       "maxLength": 80,
       "title": "Vat Note",
       "type": "string"
+     },
+     "warranty_prefix": {
+      "anyOf": [
+       {
+        "maxLength": 10,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Warranty Prefix"
+     },
+     "waybill_prefix": {
+      "anyOf": [
+       {
+        "maxLength": 10,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Waybill Prefix"
      }
     },
     "required": [
@@ -2886,6 +3363,11 @@
       "title": "Id",
       "type": "integer"
      },
+     "invoice_prefix": {
+      "default": "",
+      "title": "Invoice Prefix",
+      "type": "string"
+     },
      "is_active": {
       "title": "Is Active",
       "type": "boolean"
@@ -2920,6 +3402,16 @@
      "vat_note": {
       "default": "Без ПДВ",
       "title": "Vat Note",
+      "type": "string"
+     },
+     "warranty_prefix": {
+      "default": "",
+      "title": "Warranty Prefix",
+      "type": "string"
+     },
+     "waybill_prefix": {
+      "default": "",
+      "title": "Waybill Prefix",
       "type": "string"
      }
     },
@@ -4121,6 +4613,34 @@
     "title": "OrderCustomer",
     "type": "object"
    },
+   "OrderDocShort": {
+    "properties": {
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "kind": {
+      "title": "Kind",
+      "type": "string"
+     },
+     "number_text": {
+      "title": "Number Text",
+      "type": "string"
+     },
+     "print_count": {
+      "default": 0,
+      "title": "Print Count",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "kind",
+     "number_text"
+    ],
+    "title": "OrderDocShort",
+    "type": "object"
+   },
    "OrderIn": {
     "additionalProperties": false,
     "description": "Створення або зміна замовлення. У PATCH змінюються лише передані поля.\nПІБ — окремими полями last_name / first_name / middle_name; customer_name (одним рядком) CRM розбере сама.",
@@ -5066,6 +5586,14 @@
      "discount": {
       "title": "Discount",
       "type": "number"
+     },
+     "documents": {
+      "description": "Видані документи (чинні)",
+      "items": {
+       "$ref": "#/components/schemas/OrderDocShort"
+      },
+      "title": "Documents",
+      "type": "array"
      },
      "duplicate_of_id": {
       "anyOf": [
@@ -10438,6 +10966,14 @@
       "title": "Discount",
       "type": "number"
      },
+     "documents": {
+      "description": "Видані документи (чинні)",
+      "items": {
+       "$ref": "#/components/schemas/OrderDocShort"
+      },
+      "title": "Documents",
+      "type": "array"
+     },
      "duplicate_of_id": {
       "anyOf": [
        {
@@ -11063,6 +11599,14 @@
      "discount": {
       "title": "Discount",
       "type": "number"
+     },
+     "documents": {
+      "description": "Видані документи (чинні)",
+      "items": {
+       "$ref": "#/components/schemas/OrderDocShort"
+      },
+      "title": "Documents",
+      "type": "array"
      },
      "duplicate_of_id": {
       "anyOf": [
@@ -13509,6 +14053,359 @@
     ]
    }
   },
+  "/api/documents": {
+   "get": {
+    "operationId": "list_documents_api_documents_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "entity",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Entity",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "period",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Period",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Q",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "has_invoice",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Has Invoice",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Offset",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 200,
+       "title": "Limit",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DocListOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Documents",
+    "tags": [
+     "documents"
+    ]
+   }
+  },
+  "/api/documents/export": {
+   "get": {
+    "description": "Реєстр видаткових для бухгалтера: CSV з «;» і BOM — відкривається в Excel без налаштувань.",
+    "operationId": "export_documents_api_documents_export_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "entity",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Entity",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "period",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Period",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Q",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "has_invoice",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Has Invoice",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Status",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Export Documents",
+    "tags": [
+     "documents"
+    ]
+   }
+  },
+  "/api/documents/{doc_id}": {
+   "get": {
+    "operationId": "get_document_api_documents__doc_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "doc_id",
+      "required": true,
+      "schema": {
+       "title": "Doc Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IssuedDocWithSnapOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Document",
+    "tags": [
+     "documents"
+    ]
+   }
+  },
+  "/api/documents/{doc_id}/printed": {
+   "post": {
+    "operationId": "document_printed_api_documents__doc_id__printed_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "doc_id",
+      "required": true,
+      "schema": {
+       "title": "Doc Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IssuedDocOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Document Printed",
+    "tags": [
+     "documents"
+    ]
+   }
+  },
+  "/api/documents/{doc_id}/reissue": {
+   "post": {
+    "operationId": "document_reissue_api_documents__doc_id__reissue_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "doc_id",
+      "required": true,
+      "schema": {
+       "title": "Doc Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IssuedDocWithSnapOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Document Reissue",
+    "tags": [
+     "documents"
+    ]
+   }
+  },
+  "/api/documents/{doc_id}/void": {
+   "post": {
+    "operationId": "document_void_api_documents__doc_id__void_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "doc_id",
+      "required": true,
+      "schema": {
+       "title": "Doc Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IssuedDocOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Document Void",
+    "tags": [
+     "documents"
+    ]
+   }
+  },
   "/api/events": {
    "get": {
     "description": "Server-Sent Events: зміни замовлень і товарів. Без Redis — 204 (інтерфейс перейде на опитування).",
@@ -14515,7 +15412,7 @@
   },
   "/api/orders/{order_id}/documents": {
    "get": {
-    "description": "Дані для друку: видаткова накладна, рахунок-фактура, гарантійний талон (PDF збирає браузер).",
+    "description": "Дані для друку з поточного замовлення (без видачі документа). Видача з номером — POST /api/orders/{id}/documents/{kind}.",
     "operationId": "order_documents_api_orders__order_id__documents_get",
     "parameters": [
      {
@@ -14553,6 +15450,58 @@
     "summary": "Order Documents",
     "tags": [
      "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/documents/{kind}": {
+   "post": {
+    "description": "Видати документ (або повернути чинний) — кнопки «Друк ▾» у картці.",
+    "operationId": "issue_document_api_orders__order_id__documents__kind__post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "path",
+      "name": "kind",
+      "required": true,
+      "schema": {
+       "title": "Kind",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IssuedDocWithSnapOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Issue Document",
+    "tags": [
+     "documents"
     ]
    }
   },

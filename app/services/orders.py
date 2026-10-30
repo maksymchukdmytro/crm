@@ -343,6 +343,9 @@ def change_status(db: Session, order: Order, new_status: Status, user: User | No
         on_status(db, order)
     except CheckboxError:
         pass
+    if new_status.code == "shipped":  # видаткова й гарантійний талон — самі, коли замовлення стає «Відправленим»
+        from . import documents
+        documents.auto_issue(db, order, user)
     return True
 
 

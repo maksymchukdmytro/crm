@@ -334,6 +334,111 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Documents */
+        get: operations["list_documents_api_documents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Documents
+         * @description Реєстр видаткових для бухгалтера: CSV з «;» і BOM — відкривається в Excel без налаштувань.
+         */
+        get: operations["export_documents_api_documents_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{doc_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Document */
+        get: operations["get_document_api_documents__doc_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{doc_id}/printed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Document Printed */
+        post: operations["document_printed_api_documents__doc_id__printed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{doc_id}/reissue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Document Reissue */
+        post: operations["document_reissue_api_documents__doc_id__reissue_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{doc_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Document Void */
+        post: operations["document_void_api_documents__doc_id__void_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events": {
         parameters: {
             query?: never;
@@ -687,11 +792,31 @@ export interface paths {
         };
         /**
          * Order Documents
-         * @description Дані для друку: видаткова накладна, рахунок-фактура, гарантійний талон (PDF збирає браузер).
+         * @description Дані для друку з поточного замовлення (без видачі документа). Видача з номером — POST /api/orders/{id}/documents/{kind}.
          */
         get: operations["order_documents_api_orders__order_id__documents_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{order_id}/documents/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue Document
+         * @description Видати документ (або повернути чинний) — кнопки «Друк ▾» у картці.
+         */
+        post: operations["issue_document_api_orders__order_id__documents__kind__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2541,6 +2666,15 @@ export interface components {
             /** Leads */
             leads: number;
         };
+        /** DocEntityCount */
+        DocEntityCount: {
+            /** Count */
+            count: number;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
         /** DocItem */
         DocItem: {
             /** Name */
@@ -2564,6 +2698,30 @@ export interface components {
              * @default 0
              */
             warranty_months: number;
+        };
+        /** DocLinks */
+        DocLinks: {
+            /** Invoice */
+            invoice?: number | null;
+            /** Warranty */
+            warranty?: number | null;
+            /** Waybill */
+            waybill?: number | null;
+        };
+        /** DocListOut */
+        DocListOut: {
+            /** All */
+            all: number;
+            /** Count Active */
+            count_active: number;
+            /** Entities */
+            entities: components["schemas"]["DocEntityCount"][];
+            /** Rows */
+            rows: components["schemas"]["DocRowOut"][];
+            /** Sum */
+            sum: number;
+            /** Total */
+            total: number;
         };
         /** DocOrder */
         DocOrder: {
@@ -2624,6 +2782,54 @@ export interface components {
              * @default
              */
             ttn: string;
+        };
+        /** DocRowOut */
+        DocRowOut: {
+            /**
+             * Changed
+             * @default false
+             */
+            changed: boolean;
+            /**
+             * Customer
+             * @default
+             */
+            customer: string;
+            docs: components["schemas"]["DocLinks"];
+            /**
+             * Entity
+             * @default
+             */
+            entity: string;
+            /** Entity Id */
+            entity_id?: number | null;
+            /** Id */
+            id: number;
+            /** Issued At */
+            issued_at: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "waybill" | "invoice" | "warranty";
+            /** Number Text */
+            number_text: string;
+            /** Order Id */
+            order_id: number | null;
+            /**
+             * Print Count
+             * @default 0
+             */
+            print_count: number;
+            /** Replaced By Id */
+            replaced_by_id?: number | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "active" | "void";
+            /** Total */
+            total: number;
         };
         /** DocSeller */
         DocSeller: {
@@ -2803,6 +3009,107 @@ export interface components {
              */
             user: string;
         };
+        /** IssuedDocOut */
+        IssuedDocOut: {
+            /**
+             * Changed
+             * @default false
+             */
+            changed: boolean;
+            /**
+             * Customer
+             * @default
+             */
+            customer: string;
+            /**
+             * Entity
+             * @default
+             */
+            entity: string;
+            /** Entity Id */
+            entity_id?: number | null;
+            /** Id */
+            id: number;
+            /** Issued At */
+            issued_at: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "waybill" | "invoice" | "warranty";
+            /** Number Text */
+            number_text: string;
+            /** Order Id */
+            order_id: number | null;
+            /**
+             * Print Count
+             * @default 0
+             */
+            print_count: number;
+            /** Replaced By Id */
+            replaced_by_id?: number | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "active" | "void";
+            /** Total */
+            total: number;
+        };
+        /** IssuedDocWithSnapOut */
+        IssuedDocWithSnapOut: {
+            /**
+             * Changed
+             * @default false
+             */
+            changed: boolean;
+            /**
+             * Customer
+             * @default
+             */
+            customer: string;
+            /**
+             * Entity
+             * @default
+             */
+            entity: string;
+            /** Entity Id */
+            entity_id?: number | null;
+            /** Id */
+            id: number;
+            /** Issued At */
+            issued_at: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "waybill" | "invoice" | "warranty";
+            /** Number Text */
+            number_text: string;
+            /** Order Id */
+            order_id: number | null;
+            /**
+             * Print Count
+             * @default 0
+             */
+            print_count: number;
+            /** Replaced By Id */
+            replaced_by_id?: number | null;
+            /**
+             * Snapshot
+             * @description Дані документа на момент видачі: order, seller, docs, number_text
+             */
+            snapshot: {
+                [key: string]: unknown;
+            };
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "active" | "void";
+            /** Total */
+            total: number;
+        };
         /** LeadQueueOut */
         LeadQueueOut: {
             /** Ids */
@@ -2937,6 +3244,8 @@ export interface components {
             iban: string;
             /** Id */
             id?: number | null;
+            /** Invoice Prefix */
+            invoice_prefix?: string | null;
             /**
              * Is Active
              * @default true
@@ -2964,6 +3273,10 @@ export interface components {
              * @default Без ПДВ
              */
             vat_note: string;
+            /** Warranty Prefix */
+            warranty_prefix?: string | null;
+            /** Waybill Prefix */
+            waybill_prefix?: string | null;
         };
         /** LegalEntityOut */
         LegalEntityOut: {
@@ -2994,6 +3307,11 @@ export interface components {
             iban: string;
             /** Id */
             id: number;
+            /**
+             * Invoice Prefix
+             * @default
+             */
+            invoice_prefix: string;
             /** Is Active */
             is_active: boolean;
             /** Is Default */
@@ -3022,6 +3340,16 @@ export interface components {
              * @default Без ПДВ
              */
             vat_note: string;
+            /**
+             * Warranty Prefix
+             * @default
+             */
+            warranty_prefix: string;
+            /**
+             * Waybill Prefix
+             * @default
+             */
+            waybill_prefix: string;
         };
         /** LoginIn */
         LoginIn: {
@@ -3551,6 +3879,20 @@ export interface components {
             /** Sum Delivered */
             sum_delivered: number;
         };
+        /** OrderDocShort */
+        OrderDocShort: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Number Text */
+            number_text: string;
+            /**
+             * Print Count
+             * @default 0
+             */
+            print_count: number;
+        };
         /**
          * OrderIn
          * @description Створення або зміна замовлення. У PATCH змінюються лише передані поля.
@@ -3813,6 +4155,11 @@ export interface components {
             delivery_status: string;
             /** Discount */
             discount: number;
+            /**
+             * Documents
+             * @description Видані документи (чинні)
+             */
+            documents?: components["schemas"]["OrderDocShort"][];
             /** Duplicate Of Id */
             duplicate_of_id: number | null;
             /** Email */
@@ -5797,6 +6144,11 @@ export interface components {
             delivery_status: string;
             /** Discount */
             discount: number;
+            /**
+             * Documents
+             * @description Видані документи (чинні)
+             */
+            documents?: components["schemas"]["OrderDocShort"][];
             /** Duplicate Of Id */
             duplicate_of_id: number | null;
             /** Email */
@@ -6040,6 +6392,11 @@ export interface components {
             delivery_status: string;
             /** Discount */
             discount: number;
+            /**
+             * Documents
+             * @description Видані документи (чинні)
+             */
+            documents?: components["schemas"]["OrderDocShort"][];
             /** Duplicate Of Id */
             duplicate_of_id: number | null;
             /** Email */
@@ -7251,6 +7608,202 @@ export interface operations {
             };
         };
     };
+    list_documents_api_documents_get: {
+        parameters: {
+            query?: {
+                entity?: number;
+                period?: string;
+                q?: string;
+                has_invoice?: string;
+                status?: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_documents_api_documents_export_get: {
+        parameters: {
+            query?: {
+                entity?: number;
+                period?: string;
+                q?: string;
+                has_invoice?: string;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_document_api_documents__doc_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedDocWithSnapOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    document_printed_api_documents__doc_id__printed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedDocOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    document_reissue_api_documents__doc_id__reissue_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedDocWithSnapOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    document_void_api_documents__doc_id__void_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedDocOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     events_stream_api_events_get: {
         parameters: {
             query?: never;
@@ -7985,6 +8538,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocumentsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    issue_document_api_orders__order_id__documents__kind__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedDocWithSnapOut"];
                 };
             };
             /** @description Validation Error */

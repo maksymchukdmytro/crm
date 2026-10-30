@@ -846,12 +846,13 @@ function LegalEntities({ s }: { s: S }) {
   const submit = () => save.mutate({ path: "/settings/legal-entities", body: rows.filter((r) => r.name.trim() || r.delete).map((r) => ({
     id: r.id || undefined, name: r.name, code: r.code, iban: r.iban, code_label: r.code_label ?? "РНОКПП", address: r.address ?? "",
     bank: r.bank ?? "", phone: r.phone ?? "", vat_note: r.vat_note ?? "Без ПДВ", signer: r.signer ?? "",
+    waybill_prefix: r.waybill_prefix ?? "", invoice_prefix: r.invoice_prefix ?? "", warranty_prefix: r.warranty_prefix ?? "",
     is_default: r.is_default, is_active: r.is_active, delete: !!r.delete })) },
     { onSuccess: (x) => setRows((x as S).legal_entities.map((y) => ({ ...y, key: rk() }))) });
   return (
     <div className="card">
       <div className="card-head"><h2><Building2 size={16} /> Юридичні особи <span className="muted">{visible.length}</span></h2>
-        <button type="button" className="btn sm" onClick={() => setRows([...rows, { id: 0, name: "", code: "", iban: "", code_label: "РНОКПП", address: "", bank: "", phone: "", vat_note: "Без ПДВ", signer: "", is_default: rows.length === 0, is_active: true, sort: 0, orders: 0, cashier: "", key: rk() }])}><Plus size={14} /> Додати</button></div>
+        <button type="button" className="btn sm" onClick={() => setRows([...rows, { id: 0, name: "", code: "", iban: "", code_label: "РНОКПП", address: "", bank: "", phone: "", vat_note: "Без ПДВ", signer: "", waybill_prefix: "", invoice_prefix: "", warranty_prefix: "", is_default: rows.length === 0, is_active: true, sort: 0, orders: 0, cashier: "", key: rk() }])}><Plus size={14} /> Додати</button></div>
       <p className="hint">ФОП або ТОВ, від імені якого продається замовлення. У кожному замовленні юрособу можна змінити; нові замовлення отримують юрособу за замовчуванням.
         За юрособою обирається каса Checkbox (вкладка «Checkbox») і ключ Нової Пошти (вкладка «Доставка»).</p>
       {visible.length === 0 && <Empty><Building2 size={22} className="e-ico" />Юросіб ще немає. Додайте, наприклад, «ФОП Максимчук О. В.».</Empty>}
@@ -877,6 +878,9 @@ function LegalEntities({ s }: { s: S }) {
                 <label className="lbl">Телефон<input value={r.phone ?? ""} onChange={(e) => upd(r.key, { phone: e.target.value })} placeholder="+380…" /></label>
                 <label className="lbl">ПДВ<input value={r.vat_note ?? ""} onChange={(e) => upd(r.key, { vat_note: e.target.value })} placeholder="Без ПДВ" /></label>
                 <label className="lbl">Хто підписує<input value={r.signer ?? ""} onChange={(e) => upd(r.key, { signer: e.target.value })} placeholder="Прізвище І. П." /></label>
+                <label className="lbl">Префікс видаткової<input value={r.waybill_prefix ?? ""} maxLength={10} onChange={(e) => upd(r.key, { waybill_prefix: e.target.value })} placeholder="як у «Документах»" /></label>
+                <label className="lbl">Префікс рахунку<input value={r.invoice_prefix ?? ""} maxLength={10} onChange={(e) => upd(r.key, { invoice_prefix: e.target.value })} placeholder="як у «Документах»" /></label>
+                <label className="lbl">Префікс гарантійного<input value={r.warranty_prefix ?? ""} maxLength={10} onChange={(e) => upd(r.key, { warranty_prefix: e.target.value })} placeholder="як у «Документах»" /></label>
               </div>
             )}
             {r.id ? <EntityAccounts entityId={r.id} /> : null}
@@ -952,8 +956,8 @@ function toPng(file: File): Promise<string> {
 function DocsSettings({ s }: { s: S }) {
   const save = useSave();
   const toast = useToast();
-  const { v, setV, bind } = useForm(s, ["doc_prefix", "invoice_prefix", "warranty_prefix", "doc_unit", "doc_accent", "doc_site", "doc_note",
-    "doc_logo", "invoice_days", "warranty_months", "warranty_terms"]);
+  const { v, setV, bind, check } = useForm(s, ["doc_prefix", "invoice_prefix", "warranty_prefix", "doc_unit", "doc_accent", "doc_site", "doc_note",
+    "doc_logo", "invoice_days", "warranty_months", "warranty_terms", "doc_auto_issue", "doc_in_parcel"]);
   const terms = (v.warranty_terms || "").split("\n").filter((t) => t.trim()).length;
   return (
     <form className="form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/docs", body: v }); }}>
@@ -966,7 +970,13 @@ function DocsSettings({ s }: { s: S }) {
           <Field label="Префікс рахунку-фактури"><input {...bind("invoice_prefix")} placeholder="СФ-" /></Field>
           <Field label="Префікс гарантійного талону"><input {...bind("warranty_prefix")} placeholder="ГТ-" /></Field>
         </div>
-        <p className="hint">Номер документа = префікс + номер замовлення (наприклад, РН-1024).</p>
+        <p className="hint">Нумерація окрема для кожної юрособи й типу документа: префікс + порядковий номер (РН-0168). Номер не використовується повторно;
+          свій префікс для юрособи можна задати у вкладці «Юрособи».</p>
+        <div className="cols">
+          <Field label="Коли видавати видаткову й гарантійний талон"><select {...bind("doc_auto_issue")}>
+            <option value="shipped">Самі, коли замовлення стає «Відправленим»</option><option value="print">При першому друці</option><option value="off">Лише вручну</option></select></Field>
+          <label className="check" style={{ alignSelf: "end" }}><input type="checkbox" {...check("doc_in_parcel")} /> Класти видаткову в посилку («Що лишилось» нагадає надрукувати)</label>
+        </div>
         <div className="cols c3">
           <Field label="Одиниця"><input {...bind("doc_unit")} placeholder="шт." /></Field>
           <Field label="Рахунок дійсний, банківських днів"><input {...bind("invoice_days")} inputMode="numeric" placeholder="3" /></Field>

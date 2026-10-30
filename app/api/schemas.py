@@ -447,6 +447,13 @@ class OrderCustomer(Out):
     sum_delivered: float
 
 
+class OrderDocShort(Out):
+    id: int
+    kind: str
+    number_text: str
+    print_count: int = 0
+
+
 class TodoItem(Out):
     key: str
     label: str
@@ -456,6 +463,7 @@ class TodoItem(Out):
 
 
 class OrderOut(Out):
+    documents: list[OrderDocShort] = Field(default_factory=list, description="Видані документи (чинні)")
     todo: list[TodoItem] = Field(default_factory=list, description="«Що лишилось» (UI-DESIGN §5.5)")
     items_cost: float | None = Field(None, description="Собівартість товарів — лише адміністратору")
     label_printed_at: str | None = None
@@ -1593,6 +1601,9 @@ class LegalEntityOut(Out):
     phone: str = ""
     vat_note: str = "Без ПДВ"
     signer: str = ""
+    waybill_prefix: str = ""
+    invoice_prefix: str = ""
+    warranty_prefix: str = ""
     is_default: bool
     is_active: bool
     sort: int
@@ -1611,6 +1622,9 @@ class LegalEntityIn(In):
     phone: str = Field("", max_length=40)
     vat_note: str = Field("Без ПДВ", max_length=80)
     signer: str = Field("", max_length=120)
+    waybill_prefix: str | None = Field(None, max_length=10)
+    invoice_prefix: str | None = Field(None, max_length=10)
+    warranty_prefix: str | None = Field(None, max_length=10)
     is_default: bool = False
     is_active: bool = True
     delete: bool = False
@@ -1830,3 +1844,49 @@ class EntityAccountIn(In):
     card_mask: str | None = Field(None, max_length=20)
     is_active: bool | None = None
     sort: int | None = None
+
+
+# ---------------------------------------------------------------- видаткові накладні
+class IssuedDocOut(Out):
+    id: int
+    kind: Literal["waybill", "invoice", "warranty"]
+    number_text: str
+    issued_at: str | None
+    order_id: int | None
+    customer: str = ""
+    total: float
+    state: Literal["active", "void"]
+    entity_id: int | None = None
+    entity: str = ""
+    changed: bool = False
+    print_count: int = 0
+    replaced_by_id: int | None = None
+
+
+class DocLinks(Out):
+    waybill: int | None = None
+    invoice: int | None = None
+    warranty: int | None = None
+
+
+class DocRowOut(IssuedDocOut):
+    docs: DocLinks
+
+
+class IssuedDocWithSnapOut(IssuedDocOut):
+    snapshot: dict = Field(description="Дані документа на момент видачі: order, seller, docs, number_text")
+
+
+class DocEntityCount(Out):
+    id: int
+    name: str
+    count: int
+
+
+class DocListOut(Out):
+    rows: list[DocRowOut]
+    total: int
+    sum: float
+    count_active: int
+    entities: list[DocEntityCount]
+    all: int

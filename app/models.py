@@ -371,6 +371,10 @@ class LegalEntity(Base):
     phone: Mapped[str] = mapped_column(String(40), default="")
     vat_note: Mapped[str] = mapped_column(String(80), default="Без ПДВ")
     signer: Mapped[str] = mapped_column(String(120), default="")  # хто підписує документи: «Прізвище І.П.»
+    # префікси нумерації документів цієї юрособи; порожньо — загальні з «Налаштування → Документи»
+    waybill_prefix: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    invoice_prefix: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    warranty_prefix: Mapped[str | None] = mapped_column(String(10), nullable=True)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort: Mapped[int] = mapped_column(Integer, default=100)
@@ -813,6 +817,45 @@ class AuditLog(Base):
 
 
 Index("ix_audit_entity", AuditLog.entity, AuditLog.entity_id)
+
+
+DOC_KINDS = {"waybill": "Видаткова накладна", "invoice": "Рахунок-фактура", "warranty": "Гарантійний талон"}
+
+
+class IssuedDocument(Base):
+    """Виданий документ (UI-DESIGN §6.1): номер окремий для юрособи й типу й не повторюється; знімок даних на момент видачі —
+    документ через рік виглядає так само; перевипуск не стирає старий (state=void + посилання на нову версію)."""
+    __tablename__ = "issued_documents"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(10))  # waybill / invoice / warranty
+    legal_entity_id: Mapped[int | None] = mapped_column(ForeignKey("legal_entities.id", ondelete="SET NULL"), nullable=True, index=True)
+    order_id: Mapped[int | None] = mapped_column(ForeignKey("orders.id", ondelete="SET NULL"), nullable=True, index=True)
+    customer_id: Mapped[int | None] = mapped_column(ForeignKey("customers.id", ondelete="SET NULL"), nullable=True)
+    number: Mapped[int] = mapped_column(Integer)
+    number_text: Mapped[str] = mapped_column(String(30))
+    issued_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    total: Mapped[Decimal] = mapped_column(Money, default=0)
+    snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    payload_hash: Mapped[str] = mapped_column(String(64), default="")
+    state: Mapped[str] = mapped_column(String(10), default="active")  # active / void
+    replaced_by_id: Mapped[int | None] = mapped_column(ForeignKey("issued_documents.id", ondelete="SET NULL"), nullable=True)
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    print_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_printed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    legal_entity: Mapped[LegalEntity | None] = relationship()
+    created_by: Mapped[User | None] = relationship()
+
+
+Index("ux_issued_documents_number", IssuedDocument.legal_entity_id, IssuedDocument.kind, IssuedDocument.number, unique=True)
+
+
+class DocumentCounter(Base):
+    """Наступний номер документа для юрособи й типу. legal_entity_id = 0 — документи без юрособи."""
+    __tablename__ = "document_counters"
+    legal_entity_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    kind: Mapped[str] = mapped_column(String(10), primary_key=True)
+    next_number: Mapped[int] = mapped_column(Integer, default=1)
 
 
 class SavedFilter(Base):

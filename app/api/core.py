@@ -47,6 +47,7 @@ NAV = [  # розділ, ролі
     ("home", ("admin", "manager")),
     ("leads", ("admin", "manager")),
     ("orders", ("admin", "manager", "warehouse")),
+    ("invoices", ("admin", "manager", "warehouse")),
     ("board", ("admin", "manager", "warehouse")),
     ("customers", ("admin", "manager")),
     ("products", ("admin", "manager", "warehouse")),
