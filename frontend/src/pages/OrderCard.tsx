@@ -19,7 +19,7 @@ import {
 import { flag, PayLabel } from "../components/payicons";
 import { IconPick, MarkIcon } from "../components/marks";
 import TtnDialog from "./TtnDialog";
-import { DOC_KINDS, printDocument, type DocKind } from "../lib/docs";
+import { DOC_KINDS, KIND_OF, printDocument, type DocKind } from "../lib/docs";
 import { EXTRA, UTM, payload, toForm, type Form } from "./card/state";
 import { Goods, type GoodsHandle } from "./card/Goods";
 import { dateTime, digits, plural, printLabel, shortDate } from "./card/util";
@@ -267,6 +267,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
       {ttnOpen && order && (
         <TtnDialog order={order} accountId={form.np_account_id} onClose={() => setTtnOpen(false)}
           onCreated={(o, labelUrl) => {
+            qc.invalidateQueries({ queryKey: ["documents"] });
             qc.setQueryData(["order", o.id], o);
             const f = toForm(o, newStatus);
             setForm(f); setBaseline(JSON.stringify(f)); setVersion(o.version);
@@ -372,10 +373,15 @@ function PrintMenu({ order, onBefore, onError }: { order: Order; onBefore: () =>
       <button className="btn" aria-haspopup="menu" aria-expanded={open} disabled={busy} onClick={toggle}><Printer size={15} />{busy ? "Готую…" : "Друк"}<ChevronDown size={14} /></button>
     )}>
       {(close) => (<>
-        {docs.map(([k, Icon]) => (
-          <button key={k} className="pop-item" onClick={async () => { close(); setBusy(true); await onBefore(); await printDocument(k, order.id, onError); setBusy(false); }}>
-            <Icon size={16} />{DOC_KINDS[k].title}</button>
-        ))}
+        {docs.map(([k, Icon]) => {
+          const issued = (order.documents ?? []).find((x) => x.kind === KIND_OF[k]);
+          return (
+            <button key={k} className="pop-item" onClick={async () => { close(); setBusy(true); await onBefore(); await printDocument(k, order.id, onError); setBusy(false); }}>
+              <Icon size={16} /><span style={{ flex: 1 }}>{DOC_KINDS[k].title}</span>
+              {issued && <span className="doc-issued" title="Документ видано"><Check size={13} />{issued.number_text}</span>}
+            </button>
+          );
+        })}
         {order.label && (
           <button className="pop-item" onClick={() => { close(); printLabel(order.id, toast); }}>
             <TagIcon size={16} />{order.label === "rozetka" ? "Маркування Rozetka" : "Наклейка (PDF)"}</button>

@@ -33,6 +33,8 @@ DEFAULTS: dict[str, str] = {
     "lead_wait_bad_min": "15",
     "lead_noanswer_remind_min": "30",
     "lead_to_order_status": "confirmed",  # confirmed / unsorted
+    "doc_auto_issue": "shipped",  # коли видавати видаткову й гарантійний: shipped / print / off
+    "doc_in_parcel": "0",  # «Накладну в посилку надруковано» в «Що лишилось»
     "managers_see_own_only": "0",
     "auto_status_from_tracking": "1",  # змінювати статус замовлення за трекінгом
     "tracking_interval_min": "60",

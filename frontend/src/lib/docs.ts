@@ -5,7 +5,7 @@
 import { ROOT } from "./api";
 import type { Documents } from "./types";
 
-type Doc = Documents;
+type Doc = Documents & { number_text?: string };
 type Item = Doc["order"]["items"][number];
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Node = any;
@@ -196,7 +196,7 @@ function page(d: Doc, title: string, content: Node[]): Node {
 
 // ---------------------------------------------------------------- 1. Видаткова накладна (як у mdmy)
 export function nakladna(d: Doc): Node {
-  const number = (d.docs.doc_prefix || "") + d.order.id;
+  const number = d.number_text || (d.docs.doc_prefix || "") + d.order.id;
   return page(d, `Видаткова накладна ${number}`, [
     header(d, "Видаткова накладна", number, [dateLong(d.order.date), `замовлення № ${d.order.id}`].join("  ·  ")),
     parties(d, ["Постачальник", d.seller.name, sellerRows(d)], ["Одержувач", d.order.buyer, buyerRows(d)]),
@@ -210,7 +210,7 @@ export function nakladna(d: Doc): Node {
 // ---------------------------------------------------------------- 2. Рахунок-фактура: документ на оплату з реквізитами
 export function rahunok(d: Doc): Node {
   const { SOFT } = theme(d);
-  const number = (d.docs.invoice_prefix || "") + d.order.id;
+  const number = d.number_text || (d.docs.invoice_prefix || "") + d.order.id;
   const days = Number(d.docs.invoice_days || 0);
   const vat = (d.seller.vat_note || "Без ПДВ").trim();
   const sum = round2(d.order.items.reduce((s, it) => s + lineSum(it), 0) - (d.order.discount || 0));
@@ -235,7 +235,7 @@ export function rahunok(d: Doc): Node {
 // ---------------------------------------------------------------- 3. Гарантійний талон
 export function garantiya(d: Doc): Node {
   const { SOFT, ACCENT, ON } = theme(d);
-  const number = (d.docs.warranty_prefix || "") + d.order.id;
+  const number = d.number_text || (d.docs.warranty_prefix || "") + d.order.id;
   const def = Number(d.docs.warranty_months || 12);
   const unit = d.docs.doc_unit || "шт.";
   const months = (it: Item) => it.warranty_months || def;
@@ -288,8 +288,81 @@ function loadPdf() {
   return pdfLib;
 }
 
-/** Зібрати документ замовлення й відкрити PDF у новій вкладці. */
+export const KIND_OF: Record<DocKind, "waybill" | "invoice" | "warranty"> = { nakladna: "waybill", rahunok: "invoice", garantiya: "warranty" };
+export const DOC_OF: Record<string, DocKind> = { waybill: "nakladna", invoice: "rahunok", warranty: "garantiya" };
+
+async function postJson(url: string) {
+  const r = await fetch(`${ROOT}${url}`, { method: "POST", credentials: "same-origin", headers: { "X-CRM": "1", "Content-Type": "application/json" } });
+  if (!r.ok) {
+    let msg = `Помилка ${r.status}`;
+    try { const j = await r.json(); msg = j.error || j.detail || msg; } catch { /* */ }
+    throw new Error(msg);
+  }
+  return r.json();
+}
+
+async function render(kind: DocKind, snap: Doc, w: Window | null) {
+  if (!snap.order.items.length) throw new Error("У документі немає товарів");
+  const pdfMake = await loadPdf();
+  const blob = await new Promise<Blob>((res) => pdfMake.createPdf(DOC_KINDS[kind].build(snap)).getBlob(res));
+  const url = URL.createObjectURL(blob);
+  if (w) w.location.href = url; else window.location.href = url;
+}
+
+/** Видати документ замовлення (або взяти чинний) з номером і знімком даних, зібрати PDF і відкрити в новій вкладці. */
 export async function printDocument(kind: DocKind, orderId: number, onError: (msg: string) => void) {
+  const w = window.open("", "_blank");  // одразу — інакше браузер заблокує вікно після очікування
+  try {
+    const d = await postJson(`/api/orders/${orderId}/documents/${KIND_OF[kind]}`) as { id: number; snapshot: Doc };
+    await render(kind, d.snapshot, w);
+    postJson(`/api/documents/${d.id}/printed`).catch(() => undefined);
+  } catch (e) {
+    w?.close();
+    onError((e as Error).message);
+  }
+}
+
+/** Друк виданого документа з реєстру (за його знімком). */
+export async function printIssued(docId: number, onError: (msg: string) => void, download = false) {
+  const w = download ? null : window.open("", "_blank");
+  try {
+    const r = await fetch(`${ROOT}/api/documents/${docId}`, { credentials: "same-origin" });
+    if (!r.ok) throw new Error(`Документ недоступний (${r.status})`);
+    const d = await r.json() as { id: number; kind: string; number_text: string; snapshot: Doc };
+    const kind = DOC_OF[d.kind];
+    if (download) {
+      const pdfMake = await loadPdf();
+      const blob = await new Promise<Blob>((res) => pdfMake.createPdf(DOC_KINDS[kind].build(d.snapshot)).getBlob(res));
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = `${d.number_text}.pdf`; a.click();
+    } else await render(kind, d.snapshot, w);
+    postJson(`/api/documents/${d.id}/printed`).catch(() => undefined);
+  } catch (e) {
+    w?.close();
+    onError((e as Error).message);
+  }
+}
+
+/** Кілька документів одним PDF (масовий друк накладних). */
+export async function printMany(docIds: number[], onError: (msg: string) => void) {
+  const w = window.open("", "_blank");
+  try {
+    const docs = await Promise.all(docIds.map((id) => fetch(`${ROOT}/api/documents/${id}`, { credentials: "same-origin" }).then((r) => r.json() as Promise<{ id: number; kind: string; snapshot: Doc }>)));
+    const pdfMake = await loadPdf();
+    const defs = docs.map((d) => DOC_KINDS[DOC_OF[d.kind]].build(d.snapshot));
+    const merged = { ...defs[0], content: defs.flatMap((x, i) => (i ? [{ text: "", pageBreak: "before" }, ...x.content] : x.content)) };
+    const blob = await new Promise<Blob>((res) => pdfMake.createPdf(merged).getBlob(res));
+    const url = URL.createObjectURL(blob);
+    if (w) w.location.href = url; else window.location.href = url;
+    docs.forEach((d) => postJson(`/api/documents/${d.id}/printed`).catch(() => undefined));
+  } catch (e) {
+    w?.close();
+    onError((e as Error).message);
+  }
+}
+
+/** Старий друк без видачі номера (дані з поточного замовлення) — запасний. */
+export async function printPreview(kind: DocKind, orderId: number, onError: (msg: string) => void) {
   const w = window.open("", "_blank");  // одразу — інакше браузер заблокує вікно після очікування
   try {
     const r = await fetch(`${ROOT}/api/orders/${orderId}/documents`, { credentials: "same-origin" });

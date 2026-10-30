@@ -9,6 +9,7 @@ import Layout from "./components/Layout";
 import { Spinner } from "./components/ui";
 import OrdersPage from "./pages/Orders";
 import LeadsPage from "./pages/Leads";
+import InvoicesPage from "./pages/Invoices";
 import BoardPage from "./pages/Board";
 import { PurchasesPage, WarehousePage } from "./pages/Catalog";
 import ProductsPage from "./pages/Products";
@@ -53,6 +54,7 @@ function Gate() {
           {can("leads") && data.leads_enabled && <Route path="leads/:id" element={<LeadsPage />} />}
           <Route path="orders" element={<OrdersPage key="order" />} />
           <Route path="orders/:id" element={<OrdersPage key="order" />} />
+          {can("invoices") && <Route path="invoices" element={<InvoicesPage />} />}
           {can("customers") && <Route path="customers" element={<CustomersPage />} />}
           {can("customers") && <Route path="customers/:id" element={<CustomersPage />} />}
           <Route path="board" element={<BoardPage />} />

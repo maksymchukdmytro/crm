@@ -18,6 +18,7 @@ from .api import stats as api_stats
 from .api import dashboard as api_dashboard
 from .api import shell as api_shell
 from .api import leads as api_leads
+from .api import documents as api_documents
 from .config import config
 from .deps import Forbidden, NotAuthenticated, current_user
 from .routers import api, audit_log, auth, orders, payments, products, purchases, reports, settings, warehouse
@@ -79,7 +80,7 @@ def create_app(database_url: str | None = None, run_seed: bool = True) -> FastAP
                 monitoring.observe(request.method, path, status, monitoring.timed() - t)
 
     # JSON API для нового інтерфейсу
-    for r in (api_core, api_orders, api_catalog, api_admin, api_stats, api_customers, api_dashboard, api_shell, api_leads):
+    for r in (api_core, api_orders, api_catalog, api_admin, api_stats, api_customers, api_dashboard, api_shell, api_leads, api_documents):
         app.include_router(r.router)
     # Прийом заявок (webhook) і довідники Нової Пошти
     app.include_router(api.router)
