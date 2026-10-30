@@ -1,9 +1,9 @@
 /* Щільна стрічка (UI-DESIGN §4.1, макет 05-zamovlennia.png). */
 .page-list { display: flex; flex-direction: column; min-height: 0; height: calc(100vh - 60px - 12px - 52px); height: calc(100dvh - 60px - 12px - 52px); }
 .list-head { display: flex; align-items: center; gap: 16px; min-height: 40px; margin: 0 0 14px; flex-wrap: wrap; }
-.list-head h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.015em; }
+.list-head h1 { margin: 0; font-size: 22px; font-weight: 560; letter-spacing: -0.015em; }
 .list-sum { font-size: 13px; color: var(--muted); }
-.list-sum b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.list-sum b { color: var(--ink); font-weight: 560; font-variant-numeric: tabular-nums; }
 .list-acts { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .list-tabs { margin: 0 0 12px; }
 .chips-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
@@ -14,7 +14,7 @@
 .chip-pop { position: absolute; z-index: 45; top: calc(100% + 6px); left: 0; width: 260px; max-width: calc(100vw - 24px); display: flex; flex-direction: column; }
 .chip-search { margin: 4px 4px 6px; height: 32px; }
 .chip-list { max-height: 300px; overflow-y: auto; }
-.chip-pop .pop-item.on { font-weight: 500; }
+.chip-pop .pop-item.on { font-weight: 450; }
 .chip-box { display: grid; place-items: center; width: 15px; height: 15px; border-radius: var(--r-mark); border: 1.5px solid #CFCFCA; color: #fff; flex: none; }
 .chip-box.on { background: var(--accent); border-color: var(--accent); }
 .chip-dot { width: 8px; height: 8px; border-radius: var(--r-pill); flex: none; }
@@ -53,7 +53,7 @@ div.dense { flex: 1; min-height: 0; display: flex; flex-direction: column; borde
 .dense-row > span:has(.menu-pop) { overflow: visible; }
 .dense-group { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 4px; padding: 0 14px; font-size: 12.5px; color: var(--muted);
   background: var(--bg); border-bottom: 1px solid var(--line); white-space: nowrap; }
-.dense-group b { color: var(--ink); font-weight: 600; }
+.dense-group b { color: var(--ink); font-weight: 560; }
 .dense .c-sel { display: flex; align-items: center; justify-content: center; height: 100%; cursor: pointer; overflow: visible !important; }
 .dense .c-sel input { width: 15px; height: 15px; margin: 0; cursor: pointer; }
 .dense-acts { position: absolute; right: 8px; top: 0; bottom: 0; display: none; align-items: center; gap: 2px; padding: 0 4px 0 18px; overflow: visible !important;
@@ -68,7 +68,7 @@ div.dense { flex: 1; min-height: 0; display: flex; flex-direction: column; borde
 /* клітинки списку замовлень */
 .o-id { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
 .o-bell { color: var(--bad); }
-.dense-row.due .o-id { color: var(--bad-ink); font-weight: 600; }
+.dense-row.due .o-id { color: var(--bad-ink); font-weight: 560; }
 .o-cust, .o-items, .o-st, .o-dlv { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .o-cust .badge { height: 18px; padding: 0 6px; font-size: 10.5px; flex: none; }
 .o-cust > .ell, .o-items > .ell, .o-dlv > .ell { min-width: 0; }
@@ -77,7 +77,7 @@ div.dense { flex: 1; min-height: 0; display: flex; flex-direction: column; borde
 .o-dot-txt { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .o-dot-txt > i { width: 7px; height: 7px; border-radius: var(--r-pill); flex: none; }
 .o-ds { width: 7px; height: 7px; border-radius: var(--r-pill); flex: none; }
-.o-av { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent-ink-2); font-size: 9.5px; font-weight: 600; }
+.o-av { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent-ink-2); font-size: 9.5px; font-weight: 560; }
 .o-ttn { font-size: 11.5px; }
 .bulk-menu .menu-pop { bottom: calc(100% + 8px); top: auto; max-height: 360px; overflow-y: auto; }
 
@@ -103,7 +103,7 @@ div.dense { flex: 1; min-height: 0; display: flex; flex-direction: column; borde
 .doc-pills { display: inline-flex; gap: 6px; justify-content: flex-end; overflow: visible !important; }
 .page-invoices .c-docs { overflow: visible !important; }
 .doc-pill-wrap { position: relative; display: inline-flex; }
-.doc-pill { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; font: inherit; font-size: 12px; font-weight: 500; color: var(--ink);
+.doc-pill { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; font: inherit; font-size: 12px; font-weight: 450; color: var(--ink);
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pill); cursor: pointer; white-space: nowrap; }
 .doc-pill-wrap .doc-pill { border-top-right-radius: 0; border-bottom-right-radius: 0; padding-right: 8px; }
 .doc-pill:hover:not(:disabled) { border-color: var(--accent-line); background: var(--accent-soft); }

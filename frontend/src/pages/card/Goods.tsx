@@ -101,7 +101,7 @@ export const Goods = forwardRef<GoodsHandle, {
           )}
         </div>
         {readOnly ? <span className="gi-qty-ro">{i.qty} шт</span> : <QtyStepper value={i.qty} onChange={(q) => upd(i.key, { qty: q })} />}
-        <label className="gi-price" title="Ціну можна змінити лише для цього замовлення">
+        <label className={`gi-price${i.qty > 1 ? " show" : ""}`} title="Ціна за одиницю — можна змінити лише для цього замовлення">
           <input value={i.price} inputMode="decimal" disabled={readOnly} aria-label="Ціна за одиницю" onChange={(e) => upd(i.key, { price: e.target.value.replace(",", ".") })} />
           <span className="gi-sum num">{money(num(i.price) * i.qty)} ₴</span>
         </label>

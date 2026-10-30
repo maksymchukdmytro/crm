@@ -204,3 +204,14 @@ def test_csv_export(admin, products, webhook_key):
     admin.post(f"http://testserver/api/v1/orders?key={webhook_key}", data={"name": "Експорт Тест", "phone": "0671112233", "sku": "CREAM-1"})
     r = admin.get("/orders/export.csv")
     assert r.status_code == 200 and "Експорт Тест" in r.text
+
+
+def test_duplicate_only_when_items_and_total_match(anon, db, products, webhook_key):
+    """Той самий телефон з іншим товаром — повторний покупець, а не дубль."""
+    url = f"http://testserver/api/v1/orders?key={webhook_key}"
+    r1 = anon.post(url, json={"name": "Олег", "phone": "0679998877", "products": [{"sku": "CREAM-1", "qty": 1}]}).json()
+    r2 = anon.post(url, json={"name": "Олег", "phone": "0679998877", "products": [{"sku": "SOAP-1", "qty": 1}]}).json()
+    r3 = anon.post(url, json={"name": "Олег", "phone": "0679998877", "products": [{"sku": "CREAM-1", "qty": 2}]}).json()
+    r4 = anon.post(url, json={"name": "Олег", "phone": "0679998877", "products": [{"sku": "CREAM-1", "qty": 1}]}).json()
+    assert not r2["duplicate"] and not r3["duplicate"]
+    assert r4["duplicate"] and db.get(Order, r4["order_id"]).duplicate_of_id == r1["order_id"]

@@ -7,8 +7,8 @@
 .sb-top { display: flex; align-items: center; gap: 8px; padding: 2px 6px; min-height: 32px; }
 .sb-logo { display: flex; align-items: center; gap: 9px; color: var(--ink); text-decoration: none; }
 .sb-mark { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--r-field); background: var(--accent); color: #fff;
-  font-weight: 700; font-size: 15px; letter-spacing: -0.02em; flex: none; }
-.sb-word { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+  font-weight: 600; font-size: 15px; letter-spacing: -0.02em; flex: none; }
+.sb-word { font-weight: 560; font-size: 15px; letter-spacing: -0.01em; }
 .sb .live-dot { margin-left: auto; width: 7px; height: 7px; border-radius: var(--r-pill); background: var(--faint); flex: none; }
 .sb .live-dot.on { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
 .sb-office { width: 100%; }
@@ -21,7 +21,7 @@
 .sb-nav { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 10px; margin: 0 -4px; padding: 0 4px; scrollbar-width: thin; }
 .sb-group { display: flex; flex-direction: column; gap: 1px; }
 .sb-title { font-size: 11.5px; color: var(--muted); padding: 4px 10px 3px; white-space: nowrap; }
-.sb-item { position: relative; display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; font-size: 13.5px; font-weight: 500;
+.sb-item { position: relative; display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; font-size: 13.5px; font-weight: 450;
   color: var(--ink-2); text-decoration: none; border: 1px solid transparent; border-radius: var(--r-pill); transition: background var(--t-fast), color var(--t-fast); }
 .sb-item > svg { flex: none; color: var(--muted); }
 .sb-item .sb-txt { flex: 1; }
@@ -37,9 +37,9 @@
   border: 1px solid var(--line); border-radius: var(--r-block); cursor: pointer; text-align: left; }
 .sb-me:hover { border-color: #DCDCD8; }
 .sb-me .av, .av { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent-ink-2);
-  font-size: 11.5px; font-weight: 600; flex: none; }
+  font-size: 11.5px; font-weight: 560; flex: none; }
 .sb-me-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
-.sb-me-txt b { font-weight: 500; font-size: 13.5px; }
+.sb-me-txt b { font-weight: 450; font-size: 13.5px; }
 .sb-me-txt small { font-size: 12px; color: var(--muted); }
 .sb-me-wrap .menu-pop { bottom: calc(100% + 6px); top: auto; left: 0; width: 100%; min-width: 212px; }
 
@@ -80,14 +80,14 @@
 .pop-item.note > svg { margin-top: 2px; }
 .pop-item.note > svg.due { color: var(--bad); }
 .note-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-.note-txt b { font-weight: 500; }
+.note-txt b { font-weight: 450; }
 .note-txt small { font-size: 11.5px; color: var(--muted); }
 .note-body { color: var(--ink-2); font-size: 12.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .work { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-window); padding: 22px 24px 28px; }
 
 /* шапки сторінок (поки сторінки не переведено): заголовок 22 px без значка */
 .work .head { margin-bottom: 16px; }
-.work .head h1 { font-size: 22px; font-weight: 600; }
+.work .head h1 { font-size: 22px; font-weight: 560; }
 .work .h-ico { display: none; }
 .work .head h1 small { font-size: 13px; color: var(--muted); font-weight: 400; }
 

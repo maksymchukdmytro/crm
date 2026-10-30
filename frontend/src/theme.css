@@ -2,8 +2,8 @@
    Підключається останньою й перевизначає токени base.css / app.css. */
 /* токени — у ui.css */
 body { background: var(--bg); font-size: 14px; font-feature-settings: "tnum" 0, "lnum" 1; letter-spacing: -0.003em; }
-h1 { font-size: 23px; font-weight: 650; letter-spacing: -0.015em; }
-h2 { font-weight: 650; }
+h1 { font-size: 23px; font-weight: 600; letter-spacing: -0.015em; }
+h2 { font-weight: 600; }
 h3 { text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--ink-2); }
 .num, td.num, th.num { font-feature-settings: "tnum" 1; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -11,27 +11,27 @@ h3 { text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--ink-
 /* ---------------------------------------------------------------- бічне меню */
 .shell { grid-template-columns: 228px 1fr; }
 .side { background: var(--side); border-right: 1px solid var(--line); padding: 14px 10px 10px; gap: 2px; }
-.brand { padding: 4px 8px 14px; font-size: 15px; font-weight: 650; }
+.brand { padding: 4px 8px 14px; font-size: 15px; font-weight: 600; }
 .brand-mark { background: var(--brand); border-radius: var(--r-field); width: 26px; height: 26px; }
 .side-actions { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin: 0 2px 10px; }
 .side-actions .new { margin: 0; justify-content: center; background: var(--brand); border-radius: var(--r-field); padding: 8px 10px; font-size: 13.5px; }
 .side-actions .new:hover { background: var(--brand-hover); }
 .side-actions .new-product { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #fff; border-radius: var(--r-field);
-  padding: 0 10px; font: inherit; font-size: 13px; font-weight: 550; color: var(--ink-2); cursor: pointer; }
+  padding: 0 10px; font: inherit; font-size: 13px; font-weight: 500; color: var(--ink-2); cursor: pointer; }
 .side-actions .new-product:hover { border-color: #cfd4dd; color: var(--ink); }
 .search-btn { border: 1px solid var(--line); background: var(--bg); margin: 0 2px 12px; border-radius: var(--r-field); padding: 7px 10px; }
 .search-btn:hover { background: #fff; border-color: #cfd4dd; }
 .nav-group { margin-top: 10px; }
 .nav-group:first-of-type { margin-top: 0; }
-.nav-title { font-size: 12px; font-weight: 600; color: var(--faint); padding: 4px 10px 4px; }
-.side nav a { position: relative; padding: 6px 10px; border-radius: var(--r-field); font-size: 13.5px; font-weight: 500; color: var(--ink-2); }
+.nav-title { font-size: 12px; font-weight: 560; color: var(--faint); padding: 4px 10px 4px; }
+.side nav a { position: relative; padding: 6px 10px; border-radius: var(--r-field); font-size: 13.5px; font-weight: 450; color: var(--ink-2); }
 .side nav a svg { color: var(--faint); }
 .side nav a:hover { background: var(--hover); }
 .side nav a:hover svg { color: var(--muted); }
-.side nav a.on { background: var(--brand-soft); color: var(--ink); font-weight: 600; }
+.side nav a.on { background: var(--brand-soft); color: var(--ink); font-weight: 560; }
 .side nav a.on svg { color: var(--brand); }
 .side nav a.on::before { content: ""; position: absolute; left: -10px; top: 7px; bottom: 7px; width: 3px; border-radius: 0 var(--r-mark) var(--r-mark) 0; background: var(--brand); }
-.side nav a .count { margin-left: auto; font-size: 11.5px; font-weight: 650; min-width: 20px; height: 18px; padding: 0 6px; border-radius: var(--r-field);
+.side nav a .count { margin-left: auto; font-size: 11.5px; font-weight: 600; min-width: 20px; height: 18px; padding: 0 6px; border-radius: var(--r-field);
   display: inline-grid; place-items: center; background: var(--line-2); color: var(--ink-2); }
 .side nav a .count.hot { background: var(--brand); color: #fff; }
 .side-foot { border-top: 1px solid var(--line-2); }
@@ -40,7 +40,7 @@ h3 { text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--ink-
 /* ---------------------------------------------------------------- картки, таблиці, вкладки */
 .card { border-color: var(--line); border-radius: var(--r-block); box-shadow: var(--shadow); }
 .card.flush { border-radius: var(--r-block); }
-.t th { background: #fafbfc; color: var(--muted); font-weight: 550; font-size: 12px; border-bottom-color: var(--line); }
+.t th { background: #fafbfc; color: var(--muted); font-weight: 500; font-size: 12px; border-bottom-color: var(--line); }
 .t td { border-bottom-color: var(--line-2); }
 .t tbody tr:hover td { background: #f8f9fb; }
 .t tr.sel-on td { background: var(--accent-soft) !important; }
@@ -54,7 +54,7 @@ input, select, textarea { border-color: #d7dbe3; border-radius: var(--r-field); 
 input:hover, select:hover, textarea:hover { border-color: #c4cad5; }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47, 84, 212, .14); }
 input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
-.btn { border-color: #d7dbe3; border-radius: var(--r-field); font-weight: 550; color: var(--ink); background: #fff; }
+.btn { border-color: #d7dbe3; border-radius: var(--r-field); font-weight: 500; color: var(--ink); background: #fff; }
 .btn:hover { background: #f6f7f9; border-color: #c4cad5; }
 .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
 .btn.primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); color: #fff; }
@@ -65,7 +65,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .btn.danger:hover { background: var(--bad-soft); border-color: #f2c4bd; }
 .btn.accent { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn.accent:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
-.pill { border-radius: var(--r-field); font-weight: 600; }
+.pill { border-radius: var(--r-field); font-weight: 560; }
 .badge { border-radius: var(--r-field); }
 .filters input, .filters select { height: 34px; }
 .empty { color: var(--muted); }
@@ -73,7 +73,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 /* ---------------------------------------------------------------- вікна */
 .modal { background: rgba(16, 24, 40, .38); backdrop-filter: blur(1.5px); }
 .modal-box { border-radius: var(--r-block); }
-.modal-title { font-weight: 650; }
+.modal-title { font-weight: 600; }
 
 /* ---------------------------------------------------------------- іконки в заголовках і порожніх станах */
 .head h1 { display: flex; align-items: center; gap: 10px; }
@@ -90,7 +90,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 
 
 .name-parts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 2px 0 6px 122px; }
-.name-parts span { background: var(--bg); border-radius: var(--r-field); padding: 3px 8px; font-size: 12.5px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.name-parts span { background: var(--bg); border-radius: var(--r-field); padding: 3px 8px; font-size: 12.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .name-parts small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; line-height: 1.2; }
 
 
@@ -189,7 +189,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .pc-line .pc { align-items: flex-start; }
 .pc-line .pc svg { flex: none; margin-top: 1px; }
 .pc-line.pc-ok { background: var(--ok-soft); }
-.pc-line.pc-bad { background: var(--bad-soft); font-weight: 550; }
+.pc-line.pc-bad { background: var(--bad-soft); font-weight: 500; }
 .pc-line.pc-wait { background: var(--line-2); color: var(--muted); }
 
 
@@ -219,13 +219,13 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 /* ---------------------------------------------------------------- значки оплат (як у LP-CRM: картинка без плитки) */
 .pay-ic { position: relative; }
 .pay-ic.glyph { background: transparent; color: var(--pc); border-radius: 0; }
-.pay-ic.brand { background: var(--pc); color: #fff; border-radius: var(--r-pill); font-weight: 800; letter-spacing: -.03em; }
+.pay-ic.brand { background: var(--pc); color: #fff; border-radius: var(--r-pill); font-weight: 650; letter-spacing: -.03em; }
 .pay-cod { position: absolute; right: -3px; top: -3px; width: 8px; height: 8px; border-radius: var(--r-pill); background: #2a9df4; box-shadow: 0 0 0 2px #fff; }
 .pay-label { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
 .pay-label > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* позначки: значок + підпис */
-.mark-badge { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; font-size: 12px; font-weight: 550; line-height: 1.5;
+.mark-badge { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; font-size: 12px; font-weight: 500; line-height: 1.5;
   padding: 0 7px 0 5px; border-radius: var(--r-field); color: var(--ink-2); background: color-mix(in srgb, var(--mc) 10%, white); white-space: nowrap; }
 .mark-badge > span { overflow: hidden; text-overflow: ellipsis; }
 .mark-ic { flex: none; }
@@ -243,7 +243,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .ipick-list > button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 4px 8px; font: inherit; font-size: 13.5px;
   color: var(--ink); background: none; border: 0; border-radius: var(--r-field); cursor: pointer; text-align: left; }
 .ipick-list > button:hover { background: var(--hover); }
-.ipick-list > button.on { background: var(--accent-soft); font-weight: 600; }
+.ipick-list > button.on { background: var(--accent-soft); font-weight: 560; }
 .ipick .mark-line { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .ipick .mark-line > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pay-col { min-width: 0; font-size: 13px; color: var(--ink-2); }
@@ -252,7 +252,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 
 
 
-.add-field { display: inline-flex; align-items: center; gap: 4px; margin: 6px 0 2px; padding: 4px 8px; font: inherit; font-size: 12.5px; font-weight: 550;
+.add-field { display: inline-flex; align-items: center; gap: 4px; margin: 6px 0 2px; padding: 4px 8px; font: inherit; font-size: 12.5px; font-weight: 500;
   color: var(--accent); background: none; border: 1px dashed var(--accent-line); border-radius: var(--r-field); cursor: pointer; }
 .add-field:hover { background: var(--accent-soft); }
 

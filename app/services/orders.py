@@ -62,14 +62,34 @@ def recalc(order: Order):
         order.cod_amount = max(order.total - Decimal(order.prepayment or 0), Decimal(0))
 
 
-def find_duplicate(db: Session, phone: str, exclude_id: int | None = None) -> Order | None:
+def items_signature(items) -> tuple:
+    """Що замовили: товар (або назва позиції без товару), варіант і кількість — без урахування порядку."""
+    return tuple(sorted((i.product_id or 0, i.variant_id or 0, "" if i.product_id else (i.name or "").strip().lower(), int(i.qty or 0))
+                        for i in items))
+
+
+def find_duplicate(db: Session, order: Order) -> Order | None:
+    """Можливий дубль — лише коли збігаються телефон, товари (з кількістю) і сума замовлення
+    за останні `duplicate_days` днів. Просто той самий телефон — це повторний покупець, а не дубль."""
     days = st.get_int(db, "duplicate_days", 14)
-    if not phone or days <= 0:
+    if not order.phone or days <= 0 or not order.items:
         return None
-    q = db.query(Order).filter(Order.phone == phone, Order.created_at >= utcnow() - timedelta(days=days))
-    if exclude_id:
-        q = q.filter(Order.id != exclude_id)
-    return q.order_by(Order.id.desc()).first()
+    q = db.query(Order).filter(Order.phone == order.phone, Order.created_at >= utcnow() - timedelta(days=days))
+    if order.id:
+        q = q.filter(Order.id < order.id)
+    sig, total = items_signature(order.items), Decimal(order.total or 0)
+    for cand in q.order_by(Order.id.desc()).limit(30):
+        if Decimal(cand.total or 0) == total and items_signature(cand.items) == sig:
+            return cand
+    return None
+
+
+def refresh_duplicate(db: Session, order: Order) -> None:
+    """Перерахувати позначку «можливий дубль» (крім лідів, яких менеджер сам позначив дублем)."""
+    if order.status and order.status.code == "duplicate":
+        return
+    dup = find_duplicate(db, order)
+    order.duplicate_of_id = dup.id if dup else None
 
 
 def customer_orders(db: Session, phone: str, exclude_id: int | None = None, limit: int = 20) -> list[Order]:
@@ -256,10 +276,6 @@ def create_order(db: Session, data: dict, items_data: list[dict], user: User | N
     order.delivery_method = order.delivery_method or "novaposhta"
     order.payment_type = order.payment_type or "cod"
 
-    dup = find_duplicate(db, order.phone)
-    if dup:
-        order.duplicate_of_id = dup.id
-
     if user and user.role == "manager":
         order.manager = user
     elif st.get(db, "auto_assign") == "round_robin":
@@ -269,6 +285,9 @@ def create_order(db: Session, data: dict, items_data: list[dict], user: User | N
 
     order.items = build_items(db, items_data)
     recalc(order)
+    dup = find_duplicate(db, order)
+    if dup:
+        order.duplicate_of_id = dup.id
     db.add(order)
     customers.attach(db, order)
     db.flush()
@@ -287,12 +306,11 @@ def update_order(db: Session, order: Order, data: dict, user: User | None) -> di
     changes = audit.diff(order, fields, list(fields))
     if "ttn" in changes:  # іншу ТТН вставили вручну — що в ній, дізнаємось із трекінгу
         order.ttn_cod_kind, order.ttn_cod_sum = "", Decimal(0)
-    if "phone" in changes:
-        dup = find_duplicate(db, order.phone, exclude_id=order.id)
-        order.duplicate_of_id = dup.id if dup and dup.id < order.id else None
     if changes.keys() & {"phone", "customer_name", "last_name", "first_name", "middle_name", "email"}:
         customers.attach(db, order)
     recalc(order)
+    if "phone" in changes:
+        refresh_duplicate(db, order)
     if order.stock_shipped:
         payments.ensure_cod_payment(db, order)
     if changes:
@@ -308,6 +326,7 @@ def set_items(db: Session, order: Order, items_data: list[dict], user: User | No
     db.flush()
     order.items.extend(build_items(db, items_data))
     recalc(order)
+    refresh_duplicate(db, order)
     stock.on_items_changed(db, order, old_items, user)
     if order.stock_shipped:
         payments.ensure_cod_payment(db, order)

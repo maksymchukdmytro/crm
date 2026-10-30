@@ -31,8 +31,8 @@
 /* ---------- вікно покупця ---------- */
 .cw-grid { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 12px; align-items: start; }
 .cw-hero { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.cw-av { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-ink-2, var(--accent)); font-weight: 600; font-size: 15px; }
-.cw-name { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+.cw-av { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-ink-2, var(--accent)); font-weight: 560; font-size: 15px; }
+.cw-name { font-size: 17px; font-weight: 560; letter-spacing: -0.01em; }
 .cw-body .oc-phone-row { margin-bottom: 12px; }
 .cw-body .pw-2 { margin-bottom: 10px; }
 .cw-body .tiles4 { margin-top: 12px; }
@@ -74,11 +74,11 @@
 .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; align-items: start; }
 .st-main { min-width: 0; }
 .st-name { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-.st-name > .ell:first-child { font-weight: 500; flex: 0 1 auto; }
+.st-name > .ell:first-child { font-weight: 450; flex: 0 1 auto; }
 .st-name small { flex: 1 1 0; min-width: 40px; font-size: 12px; }
 .st-fc { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; white-space: nowrap; }
-.st-fc.bad { color: var(--bad-ink); font-weight: 500; }
-.st-fc.warn { color: var(--warn-ink); font-weight: 500; }
+.st-fc.bad { color: var(--bad-ink); font-weight: 450; }
+.st-fc.warn { color: var(--warn-ink); font-weight: 450; }
 .st-fc.ok { color: var(--ok-ink); }
 .st-fc.muted { color: var(--muted); }
 .t-bad { color: var(--bad-ink); }
