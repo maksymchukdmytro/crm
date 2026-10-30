@@ -17,7 +17,7 @@ import {
   Block, Button, Checklist, IconButton, MenuButton, PayCheck, Segmented, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useOutside, type CheckItem,
 } from "../components/ui";
 import { flag, PayLabel } from "../components/payicons";
-import { IconPick, MarkIcon } from "../components/marks";
+import { IconPick, MarkIcon, SelectPick } from "../components/marks";
 import TtnDialog from "./TtnDialog";
 import { DOC_KINDS, KIND_OF, printDocument, type DocKind } from "../lib/docs";
 import { EXTRA, UTM, payload, toForm, type Form } from "./card/state";
@@ -46,6 +46,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   const [sp] = useSearchParams();
   const navigate = useNavigate();
   const isNew = id === "new";
+  const isLeadNew = isNew && window.location.pathname.includes("/leads");
   const oid = isNew ? 0 : Number(id);
   const fromId = isNew ? Number(sp.get("from") || 0) : 0;
   const byCode = useMemo(() => Object.fromEntries(meta.statuses.map((s) => [s.code, s])), [meta.statuses]);
@@ -227,7 +228,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   const head = (
     <div className="oc-head">
       <IconButton icon={ArrowLeft} label="Назад (Esc)" quiet onClick={close} />
-      {isNew ? <h2 className="oc-new-title">Нове замовлення</h2> : <StatusTrack statusId={form.status_id} onPick={changeStatus} disabled={closed} />}
+      {isNew ? <h2 className="oc-new-title">{isLeadNew ? "Новий лід" : "Нове замовлення"}</h2> : <StatusTrack statusId={form.status_id} onPick={changeStatus} disabled={closed} />}
       <div className="oc-head-acts">
         <span className={`oc-save-st ${saveState}`} aria-live="polite">
           {saveState === "saving" ? "Зберігаю…" : saveState === "error" ? "Не збережено" : dirty && !isNew ? "Є зміни" : saveState === "saved" ? "Збережено" : ""}
@@ -243,7 +244,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   );
 
   return (
-    <Window size="xl" onClose={close} head={head} label={isNew ? "Нове замовлення" : `Замовлення №${oid}`} bodyClass="oc-body">
+    <Window size="xl" onClose={close} head={head} label={isNew ? (isLeadNew ? "Новий лід" : "Нове замовлення") : `Замовлення №${oid}`} bodyClass="oc-body">
       {closed && (
         <div className="oc-strip lock"><Lock size={15} /><span>Замовлення закрите — «{status?.name}». Зміни вимкнено, щоб не зачепити склад і оплати.</span>
           <button className="btn sm" onClick={() => setUnlocked(true)}><Pencil size={14} />Редагувати</button></div>
@@ -513,14 +514,13 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
         </>}
       </div>
       {meta.legal_entities.length > 0 && (
-        <label className="oc-entity" title="Від чийого імені продаж: за юрособою обирається каса Checkbox, ключ НП і реквізити документів">
-          <Landmark size={14} aria-hidden />
-          <span className="ell">{entity?.name ?? "Юрособа"}{entity?.has_cashier ? " · каса" : ""}{meta.np_accounts.length ? " і ключ НП" : ""}</span>
-          <select value={form.legal_entity_id} disabled={readOnly} onChange={(e) => set({ legal_entity_id: e.target.value ? Number(e.target.value) : "" })} aria-label="Юрособа">
-            <option value="">{meta.legal_entities.find((x) => x.is_default)?.name ?? "за замовчуванням"} (за замовч.)</option>
-            {meta.legal_entities.map((x) => <option key={x.id} value={x.id}>{x.name}{x.has_cashier ? "" : " · без каси"}</option>)}
-          </select>
-        </label>
+        <div className="oc-entity" title="Від чийого імені продаж: за юрособою обирається каса Checkbox, ключ НП і реквізити документів">
+          <SelectPick<number | ""> ariaLabel="Юрособа" disabled={readOnly} value={form.legal_entity_id} className="oc-entity-pick"
+            onChange={(v) => set({ legal_entity_id: v })}
+            button={<><Landmark size={14} aria-hidden /><span className="ell">{entity?.name ?? "Юрособа"}{entity?.has_cashier ? " · каса" : ""}{meta.np_accounts.length ? " і ключ НП" : ""}</span></>}
+            options={[{ value: "", label: meta.legal_entities.find((x) => x.is_default)?.name ?? "За замовчуванням", hint: "за замовчуванням" },
+              ...meta.legal_entities.map((x) => ({ value: x.id as number | "", label: x.name, hint: x.has_cashier ? "каса Checkbox" : "без каси" }))]} />
+        </div>
       )}
       {c && (
         <div className="tiles4">
@@ -618,14 +618,9 @@ function PaymentBlock({ order, form, set, total, cod, prepay, step, readOnly, bu
               onChange={(e) => set({ prepayment: e.target.value.replace(",", ".").replace(/[^\d.]/g, "") })} placeholder="0" />
             <span className="unit">₴</span>
           </span>
-          <label className="oc-acc">
-            <Building2 size={14} aria-hidden />
-            <select value={acc} disabled={readOnly} onChange={(e) => setAcc(e.target.value ? Number(e.target.value) : "")} aria-label="Рахунок, куди надійшли кошти">
-              {!accounts.length && <option value="">Рахунок не вказано</option>}
-              {accounts.map((a) => <option key={a.id} value={a.id}>{a.name} · {entity?.name}</option>)}
-            </select>
-            <ChevronDown size={14} aria-hidden />
-          </label>
+          <SelectPick<number | ""> ariaLabel="Рахунок, куди надійшли кошти" disabled={readOnly} value={acc} className="oc-acc-pick" onChange={setAcc}
+            button={<><Building2 size={14} aria-hidden className="muted" /><span className="ell">{accounts.find((a) => a.id === acc) ? `${accounts.find((a) => a.id === acc)!.name} · ${entity?.name ?? ""}` : "Рахунок не вказано"}</span></>}
+            options={accounts.length ? accounts.map((a) => ({ value: a.id as number | "", label: a.name, hint: entity?.name })) : [{ value: "", label: "Рахунок не вказано", hint: "додаються в «Налаштування → Юрособи»" }]} />
           <button type="button" className={`oc-ok${confirmed ? " on" : ""}`} disabled={busy || readOnly || !order || prepay <= 0}
             aria-label={confirmed ? "Передоплата надійшла" : "Позначити: передоплата надійшла"} title={confirmed ? "Надійшла" : "Позначити: кошти надійшли"}
             onClick={() => onConfirm(acc || null)}><CircleCheck size={20} /></button>
@@ -684,14 +679,10 @@ function DeliveryBlock({ order, form, set, cod, codKind, step, readOnly, locked,
       acts={hasTtn && stateName ? <Tag kind={order?.delivery_state === "delivered" ? "ok" : order?.delivery_state === "refused" || order?.delivery_state === "returned" ? "bad" : "warn"}>{stateName}</Tag> : undefined}>
       <div className="oc-row">
         <Truck size={16} className="oc-row-ic" aria-hidden />
-        <label className="oc-select">
-          {dm === "novaposhta" && <span className="np-badge">НП</span>}
-          <select value={value} disabled={dis || hasTtn} aria-label="Перевізник"
-            onChange={(e) => { const [m, acc] = e.target.value.split(":"); set({ delivery_method: m, np_account_id: acc ? Number(acc) : "", ...(m !== dm ? { city_ref: "", warehouse_ref: "", warehouse_name: "" } : {}) }); }}>
-            {opts.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
-          </select>
-          <ChevronDown size={14} aria-hidden />
-        </label>
+        <SelectPick<string> ariaLabel="Перевізник" disabled={dis || hasTtn} value={value} className="oc-select-pick"
+          onChange={(v) => { const [m, acc] = v.split(":"); set({ delivery_method: m, np_account_id: acc ? Number(acc) : "", ...(m !== dm ? { city_ref: "", warehouse_ref: "", warehouse_name: "" } : {}) }); }}
+          button={<>{dm === "novaposhta" && <span className="np-badge">НП</span>}<span className="ell">{opts.find(([k]) => k === value)?.[1] ?? "—"}</span></>}
+          options={opts.map(([k, n]) => ({ value: k, label: <>{k.startsWith("novaposhta") && <span className="np-badge">НП</span>}{n}</> }))} />
       </div>
       {dm !== "pickup" && (
         <div className="oc-row">
@@ -766,9 +757,8 @@ function DetailsBlock({ order, form, set, readOnly, onTake }: { order?: Order; f
   const office = meta.offices.find((o) => o.id === (srcOffice ?? form.office_id))?.name;
   const canTake = order && meta.user.role !== "warehouse" && order.manager_id !== meta.user.id && (!order.manager_id || meta.user.role === "admin");
   const sel = (v: number | "", on: (v: number | "") => void, items: { id: number; name: string }[], empty: string, label: string) => (
-    <select className="prop-sel" value={v} disabled={readOnly} aria-label={label} onChange={(e) => on(e.target.value ? Number(e.target.value) : "")}>
-      <option value="">{empty}</option>{items.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-    </select>
+    <SelectPick<number | ""> ariaLabel={label} disabled={readOnly} value={v} onChange={on} className="prop-ipick"
+      options={[{ value: "", label: <span className="muted">{empty}</span> }, ...items.map((x) => ({ value: x.id as number | "", label: x.name }))]} />
   );
   const mgr = meta.user.role === "admin"
     ? sel(form.manager_id, (v) => set({ manager_id: v }), meta.managers, "не призначений", "Менеджер")

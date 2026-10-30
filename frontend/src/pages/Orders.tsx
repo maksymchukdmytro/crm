@@ -122,8 +122,8 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
   const stageStatuses = meta.statuses.filter((s) => s.active && (s.stage ?? "order") === stage);
   const counts = head?.counts ?? {};
   const tabs: TabItem<string>[] = [
-    ...(stage === "order" && unsorted && unsorted.active ? [{ key: String(unsorted.id), label: "Несортовані", count: counts[String(unsorted.id)] ?? 0, hot: true }] : []),
-    ...stageStatuses.filter((s) => s.code !== "unsorted").map((s) => ({ key: String(s.id), label: s.name, count: counts[String(s.id)] ?? 0 })),
+    ...(stage === "order" && unsorted && unsorted.active ? [{ key: String(unsorted.id), label: "Несортовані", count: counts[String(unsorted.id)] ?? 0, hot: true, color: unsorted.color }] : []),
+    ...stageStatuses.filter((s) => s.code !== "unsorted").map((s) => ({ key: String(s.id), label: s.name, count: counts[String(s.id)] ?? 0, color: s.color })),
     { key: "", label: "Усі", count: head?.all ?? null },
   ];
   const cnt = (code: string) => (byCode[code] ? counts[String(byCode[code].id)] ?? 0 : 0);

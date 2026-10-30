@@ -1,6 +1,6 @@
 /* Картка замовлення (UI-DESIGN §5, макети 01–03). */
 .oc-head { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 12px 14px; border-bottom: 1px solid var(--line); flex: none; }
-.oc-new-title { margin: 0; font-size: 19px; font-weight: 600; }
+.oc-new-title { margin: 0; font-size: 19px; font-weight: 560; }
 .oc-head-acts { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .oc-save-st { font-size: 12px; color: var(--faint); min-width: 70px; text-align: right; white-space: nowrap; }
 .oc-save-st.saving { color: var(--muted); }
@@ -20,7 +20,7 @@
 .track-step { display: inline-flex; align-items: center; }
 .track-sep { display: inline-block; width: 14px; height: 1px; background: var(--line); margin: 0 4px; flex: none; }
 .track-sep.bad { background: var(--bad); }
-.track-pill { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap;
+.track-pill { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; font: inherit; font-size: 13px; font-weight: 450; white-space: nowrap;
   border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface); color: var(--ink); cursor: pointer; transition: background var(--t-fast), border-color var(--t-fast); }
 .track-pill:hover:not(:disabled) { border-color: var(--accent-line); }
 .track-pill.past { background: var(--soft); border-color: var(--soft); color: var(--muted); }
@@ -39,7 +39,7 @@
 .oc-strip.lock .btn { margin-left: auto; }
 .oc-strip.bad { background: var(--bad-soft); color: var(--bad-ink); margin: -2px 0 12px; }
 .oc-strip.warn { background: var(--warn-soft); color: var(--warn-ink); margin: -2px 0 12px; }
-.oc-strip .link-btn { margin-left: auto; color: inherit; font-weight: 600; }
+.oc-strip .link-btn { margin-left: auto; color: inherit; font-weight: 560; }
 .oc-grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 12px; align-items: start; }
 .oc-grid.ro input, .oc-grid.ro select, .oc-grid.ro textarea { background: transparent; }
 .oc-left, .oc-right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
@@ -50,13 +50,13 @@
 
 /* покупець */
 .oc-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--faint); margin-bottom: 6px; }
-.oc-meta .step { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: var(--r-pill); font-size: 11px; font-weight: 600; background: var(--soft); color: var(--muted); }
+.oc-meta .step { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: var(--r-pill); font-size: 11px; font-weight: 560; background: var(--soft); color: var(--muted); }
 .oc-meta .step.done { background: var(--ok-soft); color: var(--ok-ink); }
-.oc-name { display: block; width: 100%; padding: 0; margin: 0 0 10px; font: inherit; font-size: 23px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; text-align: left;
+.oc-name { display: block; width: 100%; padding: 0; margin: 0 0 10px; font: inherit; font-size: 23px; font-weight: 560; letter-spacing: -0.015em; line-height: 1.2; text-align: left;
   color: var(--ink); background: none; border: 0; cursor: text; border-radius: var(--r-field); }
 .oc-name:hover { background: var(--hover); }
 .oc-name-edit { margin: 0 0 10px; }
-.oc-name-edit input { width: 100%; height: 40px; font-size: 16px; font-weight: 500; }
+.oc-name-edit input { width: 100%; height: 40px; font-size: 16px; font-weight: 450; }
 .oc-name-edit .name-parts { margin: 6px 0 0; grid-template-columns: repeat(3, minmax(0, 1fr)); display: grid; gap: 6px; }
 .oc-phone-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 .phone-pill-in { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 6px 0 12px; flex: 1 1 190px; max-width: 240px;
@@ -65,13 +65,13 @@
 .ph-flag { font-size: 16px; line-height: 1; pointer-events: none; }
 .ph-country { position: absolute; left: 0; top: 0; width: 34px; height: 100%; opacity: 0; cursor: pointer; }
 .phone-pill-in input { flex: 1; min-width: 0; height: 34px; min-height: 0 !important; border: 0; padding: 0 4px; background: none; box-shadow: none !important;
-  font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  font-size: 14px; font-weight: 450; font-variant-numeric: tabular-nums; }
 .oc-entity { position: relative; display: flex; align-items: center; gap: 7px; margin: 0 0 12px; font-size: 12.5px; color: var(--muted); cursor: pointer; }
 .oc-entity select { position: absolute; inset: 0; opacity: 0; cursor: pointer; min-height: 0; }
 .oc-entity:hover { color: var(--ink); }
 .oc-cust .tiles4 { margin-bottom: 10px; }
 .oc-email { width: 100%; margin-bottom: 8px; }
-.add-chip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 11px; font: inherit; font-size: 12.5px; font-weight: 500; color: var(--accent-ink-2);
+.add-chip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 11px; font: inherit; font-size: 12.5px; font-weight: 450; color: var(--accent-ink-2);
   background: none; border: 1px dashed var(--accent-line); border-radius: var(--r-pill); cursor: pointer; }
 .add-chip:hover { background: var(--accent-soft); }
 .oc-others { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; }
@@ -93,11 +93,11 @@
 .oc-prepay input { text-align: left; padding-left: 10px; }
 .oc-acc, .oc-select { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px;
   border: 1px solid var(--line); border-radius: var(--r-field); background: var(--surface); font-size: 13px; }
-.oc-select select { position: static; opacity: 1; flex: 1; border: 0; padding: 0; height: 34px; min-height: 0; background: none; box-shadow: none !important; appearance: none; font-weight: 500; }
+.oc-select select { position: static; opacity: 1; flex: 1; border: 0; padding: 0; height: 34px; min-height: 0; background: none; box-shadow: none !important; appearance: none; font-weight: 450; }
 .oc-acc > svg, .oc-select > svg { color: var(--muted); flex: none; pointer-events: none; }
 .oc-acc { overflow: hidden; }
 .oc-acc select { opacity: 1; position: static; color: var(--ink); border: 0; padding: 0; height: 34px; background: none; box-shadow: none !important; appearance: none; flex: 1; min-width: 0; }
-.np-badge { display: inline-grid; place-items: center; height: 18px; padding: 0 5px; border-radius: var(--r-mark); background: #E53935; color: #fff; font-size: 10px; font-weight: 700; flex: none; }
+.np-badge { display: inline-grid; place-items: center; height: 18px; padding: 0 5px; border-radius: var(--r-mark); background: #E53935; color: #fff; font-size: 10px; font-weight: 600; flex: none; }
 .oc-ok { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border: 0; background: none; color: var(--faint); border-radius: var(--r-pill); cursor: pointer; }
 .oc-ok:hover:not(:disabled) { background: var(--ok-soft); color: var(--ok); }
 .oc-ok.on { color: var(--ok); }
@@ -125,18 +125,21 @@
 
 /* товари */
 .goods { display: flex; flex-direction: column; gap: 6px; }
-.gi { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto 92px 24px; align-items: center; gap: 10px; min-height: 46px; padding: 6px 8px;
+.gi { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto 24px; align-items: center; gap: 10px; min-height: 46px; padding: 5px 8px;
   border: 1px solid var(--line); border-radius: var(--r-field); background: var(--surface); }
 .gi.up { margin-left: 28px; min-height: 40px; background: var(--bg); border-color: var(--bg); }
 .gi-ph { display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--r-field); background: var(--soft); color: var(--muted); overflow: hidden; }
 .gi-ph img { width: 100%; height: 100%; object-fit: cover; }
 .gi.up .gi-ph { background: transparent; }
-.gi-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.gi-main { min-width: 0; display: flex; flex-direction: row; align-items: center; gap: 10px; }
+.gi-main > .gi-l1 { flex: 1 1 auto; min-width: 0; }
+.gi-main .gi-mini { width: auto; max-width: 170px; }
+.gi-main > .gi-l2 { flex: none; }
 .gi-l1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.gi-name { font-weight: 500; font-size: 13px; min-width: 0; }
-.gi-name-in { flex: 1; min-width: 0; height: 28px !important; min-height: 0 !important; border-color: transparent; padding: 0 6px; font-weight: 500; }
+.gi-name { font-weight: 450; font-size: 13px; min-width: 0; }
+.gi-name-in { flex: 1; min-width: 0; height: 28px !important; min-height: 0 !important; border-color: transparent; padding: 0 6px; font-weight: 450; }
 .gi-name-in:hover { border-color: var(--line); }
-.gi-var { position: relative; display: inline-flex; align-items: center; gap: 4px; height: 22px; max-width: 150px; padding: 0 8px; font-size: 12px; font-weight: 500;
+.gi-var { position: relative; display: inline-flex; align-items: center; gap: 4px; height: 22px; max-width: 150px; padding: 0 8px; font-size: 12px; font-weight: 450;
   color: var(--accent-ink-2); background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: var(--r-pill); flex: none; cursor: pointer; }
 .gi-var select { position: absolute; inset: 0; opacity: 0; cursor: pointer; min-height: 0; }
 .gi-meta { display: inline-flex; gap: 8px; font-size: 11.5px; color: var(--faint); white-space: nowrap; flex: none; }
@@ -147,10 +150,14 @@
 .gi:hover .gi-link, .gi-link:focus-visible { opacity: 1; }
 .gi-mini { height: 20px !important; min-height: 0 !important; font-size: 11.5px; padding: 0 4px; border-color: transparent; color: var(--muted); }
 .gi-was { font-size: 11.5px; color: var(--muted); }
-.gi-price { position: relative; display: flex; flex-direction: column; align-items: flex-end; cursor: text; }
-.gi-price input { width: 92px; height: 22px !important; min-height: 0 !important; padding: 0 2px; text-align: right; font-size: 11.5px; color: var(--muted); border-color: transparent; background: none; }
+/* ціна й сума в один рядок: ціна за одиницю — лише коли кількість > 1 або при наведенні (щоб не дублювати суму) */
+.gi-price { position: relative; display: flex; flex-direction: row; align-items: center; gap: 6px; cursor: text; font-weight: 400; }
+.gi-price input { opacity: 0; transition: opacity var(--t-fast); }
+.gi:hover .gi-price input, .gi-price input:focus, .gi-price.show input { opacity: 1; }
+.gi-sum { min-width: 74px; text-align: right; }
+.gi-price input { width: 70px; height: 26px !important; min-height: 0 !important; padding: 0 2px; text-align: right; font-size: 11.5px; color: var(--muted); border-color: transparent; background: none; }
 .gi-price input:hover, .gi-price input:focus { border-color: var(--line); background: var(--surface); }
-.gi-sum { font-weight: 600; font-size: 13px; }
+.gi-sum { font-weight: 560; font-size: 13px; }
 .gi-qty-ro { font-size: 12.5px; color: var(--muted); }
 .gi-x { display: grid; place-items: center; width: 24px; height: 24px; border: 0; background: none; color: var(--faint); border-radius: var(--r-pill); cursor: pointer; }
 .gi-x:hover { background: var(--bad-soft); color: var(--bad); }
@@ -192,10 +199,10 @@
 .oc-sum .big { font-size: 38px; margin: 2px 0 2px; }
 .oc-sum .big .cur { font-size: 24px; }
 .oc-sum .sum-rows { flex: 1; }
-.oc-sum .sum-rows b { font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
-.sum-warn { padding: 0; font: inherit; font-weight: 500; color: var(--warn-ink); background: none; border: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.oc-sum .sum-rows b { font-weight: 450; display: inline-flex; align-items: center; gap: 4px; }
+.sum-warn { padding: 0; font: inherit; font-weight: 450; color: var(--warn-ink); background: none; border: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .oc-sum .sum-foot { position: relative; display: flex; align-items: center; gap: 8px; color: var(--muted); }
-.oc-sum .sum-foot b { color: var(--ink); font-weight: 500; }
+.oc-sum .sum-foot b { color: var(--ink); font-weight: 450; }
 .oc-sum .sum-foot .ell { flex: 1; }
 .todo-pop { position: absolute; bottom: calc(100% + 8px); right: 0; width: 300px; z-index: 50; }
 
@@ -251,8 +258,9 @@
   .oc-bottom > .block, .oc-bottom > .oc-sum { height: 100%; }
   .oc-grid { align-items: stretch; }
   /* товари ростуть, але не витісняють деталі й підсумок за межі екрана; решту висоти забирає нижній ряд */
-  .oc-right .oc-goods { flex: 1 1 auto; min-height: 240px; max-height: max(300px, calc(100vh - 430px)); overflow: auto; display: flex; flex-direction: column; }
-  .oc-right > .oc-bottom { flex: 1 0 auto; }
+  /* товари забирають усю вільну висоту, деталі й підсумок — за вмістом */
+  .oc-right .oc-goods { flex: 1 1 auto; min-height: 300px; display: flex; flex-direction: column; }
+  .oc-right > .oc-bottom { flex: 0 0 auto; }
   .oc-goods .oc-totals { margin-top: auto; }
   .oc-bottom { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
   .oc-details .props { grid-template-columns: 74px minmax(0, 1fr) 74px minmax(0, 1fr); column-gap: 12px; }
@@ -286,7 +294,7 @@
 label.oc-entity, label.oc-select, label.oc-acc, label.gi-var { flex-direction: row; align-items: center; font-weight: 400; }
 label.oc-select, label.oc-acc { font-size: 13px; color: var(--ink); gap: 8px; }
 label.oc-entity { font-size: 12.5px; color: var(--muted); }
-label.gi-var { font-size: 12px; color: var(--accent-ink-2); font-weight: 500; gap: 4px; }
+label.gi-var { font-size: 12px; color: var(--accent-ink-2); font-weight: 450; gap: 4px; }
 label.gi-price { gap: 0; font-weight: 400; }
 .oc-head .track { flex: 1 1 auto; }
 .oc-head-acts { flex: none; }
@@ -305,3 +313,18 @@ label.gi-price { gap: 0; font-weight: 400; }
   .oc-head-acts { margin-left: auto; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
   .oc-head-acts .menu-btn .btn { padding: 0 10px; }
 }
+
+/* списки вибору в картці — своя панель замість системного <select> */
+.spick-val { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; overflow: hidden; }
+.spick-opt { display: flex; align-items: baseline; gap: 8px; min-width: 0; flex: 1; }
+.spick-opt small { margin-left: auto; padding-left: 12px; font-size: 11.5px; color: var(--muted); font-weight: 400; white-space: nowrap; }
+.spick-check { flex: none; color: var(--accent); }
+.ipick-list > button.on { background: var(--accent-soft); font-weight: 450; }
+.spick .ipick-btn:disabled { cursor: default; background: var(--bg); }
+.oc-entity-pick .ipick-btn { min-height: 26px; padding: 0 6px; margin-left: -6px; border-color: transparent; background: none; font-size: 12.5px; color: var(--muted); width: auto; max-width: 100%; }
+.oc-entity-pick .ipick-btn:hover { color: var(--ink); background: var(--hover); }
+.oc-entity-pick .ipick-btn:disabled { background: none; }
+.oc-entity-pick .ipick-list { min-width: 300px; }
+.oc-acc-pick, .oc-select-pick { flex: 1; min-width: 0; }
+.oc-acc-pick .ipick-btn, .oc-select-pick .ipick-btn { min-height: 36px; font-size: 13px; }
+.prop-ipick.spick .ipick-btn { justify-content: flex-start; }

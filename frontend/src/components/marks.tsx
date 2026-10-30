@@ -81,6 +81,50 @@ export function IconPick<T extends { id: number; name: string }>({ items, value,
   );
 }
 
+/** Список вибору замість системного <select>: та сама панель, що й у позначок і видів оплат
+ *  (системний список у Windows виглядає «дешево» і не тримає наш стиль). */
+export function SelectPick<K extends string | number>({ value, options, onChange, button, ariaLabel, disabled, className = "" }: {
+  value: K; options: { value: K; label: ReactNode; hint?: ReactNode }[]; onChange: (v: K) => void;
+  button?: ReactNode; ariaLabel: string; disabled?: boolean; className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [up, setUp] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const cur = options.find((o) => o.value === value);
+  const toggle = () => {
+    if (disabled) return;
+    const r = ref.current?.getBoundingClientRect();
+    setUp(!!r && window.innerHeight - r.bottom < 300 && r.top > 300);
+    setOpen(!open);
+  };
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); setOpen(false); } };
+    document.addEventListener("mousedown", h);
+    document.addEventListener("keydown", k, true);
+    return () => { document.removeEventListener("mousedown", h); document.removeEventListener("keydown", k, true); };
+  }, [open]);
+  return (
+    <div className={`ipick spick ${className}`} ref={ref}>
+      <button type="button" className={`ipick-btn${cur ? "" : " empty"}`} aria-haspopup="listbox" aria-expanded={open} aria-label={ariaLabel}
+        disabled={disabled} onClick={toggle}>
+        <span className="spick-val">{button ?? cur?.label ?? "—"}</span>{!disabled && <ChevronDown size={14} className="ipick-ch" />}
+      </button>
+      {open && (
+        <div className={`ipick-list ${up ? "up" : ""}`} role="listbox" aria-label={ariaLabel}>
+          {options.map((o) => (
+            <button type="button" role="option" key={String(o.value)} aria-selected={o.value === value} className={o.value === value ? "on" : ""}
+              onClick={() => { onChange(o.value); setOpen(false); }}>
+              <span className="spick-opt">{o.label}{o.hint && <small>{o.hint}</small>}</span>{o.value === value && <Check size={14} className="spick-check" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Налаштування позначки: значок і колір (кнопка-значок → сітка значків і кольорів). */
 export function MarkLookPick({ icon, color, onChange }: { icon?: string | null; color?: string | null; onChange: (icon: string, color: string) => void }) {
   const [open, setOpen] = useState(false);
