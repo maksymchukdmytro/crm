@@ -27,14 +27,18 @@ const DSTATE: Record<string, string> = { created: "var(--muted)", in_transit: "#
 const initials = (n?: string) => (n || "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 const hhmm = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }) : "");
 
-function dayLabel(day: string) {
-  const d = new Date(`${day}T12:00:00`);
+// дата прямо в рядку замість рядків-груп за днями: «сьогодні 15:50», «учора 20:38», «29.10 20:38», «29.10.25 20:38»
+function whenLabel(iso?: string | null) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  const t = hhmm(iso);
   const today = isoDay(new Date());
   const y = new Date(); y.setDate(y.getDate() - 1);
-  const dm = d.toLocaleDateString("uk-UA", { day: "numeric", month: "long" });
-  if (day === today) return `Сьогодні, ${dm}`;
-  if (day === isoDay(y)) return `Учора, ${dm}`;
-  return d.toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long" }).replace(/^./, (c) => c.toUpperCase());
+  const day = isoDay(d);
+  if (day === today) return `сьогодні ${t}`;
+  if (day === isoDay(y)) return `учора ${t}`;
+  const dd = String(d.getDate()).padStart(2, "0"), mm = String(d.getMonth() + 1).padStart(2, "0");
+  return d.getFullYear() === new Date().getFullYear() ? `${dd}.${mm} ${t}` : `${dd}.${mm}.${String(d.getFullYear()).slice(2)} ${t}`;
 }
 const plural = (n: number, a: string, b: string, c: string) => (n % 10 === 1 && n % 100 !== 11 ? a : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? b : c);
 
@@ -83,11 +87,6 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
   });
   const rows: OrderRow[] = useMemo(() => query.data?.pages.flatMap((p) => p.items) ?? [], [query.data]);
   const head = query.data?.pages[0];
-  const groups = useMemo(() => {
-    const m: Record<string, { count: number; sum: number }> = {};
-    query.data?.pages.forEach((p) => (p.groups ?? []).forEach((g) => { if (!m[g.day]) m[g.day] = { count: g.count, sum: Number(g.sum) }; }));
-    return m;
-  }, [query.data]);
   const endReached = useCallback(() => { if (query.hasNextPage && !query.isFetchingNextPage) query.fetchNextPage(); }, [query]);
 
   // ---------------- вибір і масові дії
@@ -180,7 +179,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     { key: "manager", label: "Мен.", headTitle: "Менеджер", width: "36px", align: "center", title: (o) => managers[o.manager_id ?? 0]?.name ?? "Не призначено", render: (o) => (
       o.manager_id ? <span className="o-av">{initials(managers[o.manager_id]?.name)}</span> : <span className="muted">—</span>
     ) },
-    { key: "time", label: "Час", width: "40px", render: (o) => <span className="muted num">{hhmm(o.created_at)}</span> },
+    { key: "time", label: "Дата", headTitle: "Коли додано", width: "104px", render: (o) => <span className="muted num nowrap">{whenLabel(o.created_at)}</span> },
     { key: "total", label: "Сума", width: "78px", align: "right", render: (o) => <b className="num">{money(o.total)} ₴</b> },
     { key: "pay_check", label: "Опл.", headTitle: "Перевірка оплати: чи ТТН відповідає виду оплати", width: "34px", align: "center", render: (o) => <PayCheck check={o.pay_check} /> },
     { key: "ttn", label: "ТТН", width: "128px", render: (o) => (o.ttn ? <span className="mono o-ttn">{o.ttn}</span> : <span className="muted">—</span>) },
@@ -192,14 +191,6 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
   const colPrefs = useColumns(`${stage}s.columns`, ALL, DEFAULT);
   const cols = colPrefs.visible.map((k) => COLS.find((c) => c.key === k)!).filter(Boolean);
 
-  const groupOf = useCallback((o: OrderRow) => {
-    const day = isoDay(new Date(o.created_at ?? Date.now()));
-    const g = groups[day];
-    return {
-      key: day,
-      label: <><b>{dayLabel(day)}</b>{g && <span> · {g.count} {plural(g.count, "замовлення", "замовлення", "замовлень")} · {money(g.sum)} ₴</span>}</>,
-    };
-  }, [groups]);
 
   const anyFilter = FILTERS.some((k) => k !== "status" && k !== "q" && f[k]);
   const exportUrl = `${ROOT}/classic/orders/export.csv${qs({ status: f.status, q: f.q, manager: f.manager, date_from: f.date_from, date_to: f.date_to, delivery: f.delivery })}`;
@@ -252,7 +243,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
 
       <DenseTable<OrderRow>
         label={stage === "lead" ? "Ліди" : "Замовлення"}
-        rows={rows} cols={cols} rowKey={(o) => o.id} groupOf={isUnsorted ? undefined : groupOf}
+        rows={rows} cols={cols} rowKey={(o) => o.id}
         selected={sel} onSelect={setSel} current={id ? Number(id) : null}
         onOpen={(o) => nav(`${base}/${o.id}${window.location.search}`)}
         isLoading={query.isLoading} onEndReached={endReached}
