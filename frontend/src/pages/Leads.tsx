@@ -1,15 +1,14 @@
 // Ліди (UI-DESIGN §4.3, макети 06 і 07): вигляди Стрічка, Дошка, Передзвони; «Почати дзвонити» відкриває чергу.
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Clock3, KanbanSquare, List, Phone, PhoneCall, Plus, Search, X } from "lucide-react";
 import { api, qs } from "../lib/api";
-import { useDebounced, useMeta } from "../lib/app";
+import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, phone } from "../lib/format";
-import type { OrderList, OrderRow } from "../lib/types";
-import { Button, ChipSelect, DenseTable, FilterChip, Ring, Segmented, StatusPill, Tabs, type DenseCol, type TabItem } from "../components/ui";
+import type { Order, OrderList, OrderRow } from "../lib/types";
+import { Button, ChipSelect, DenseTable, FilterChip, MobileActs, Ring, RoundButton, Segmented, StatusPill, Tabs, UaPhone, Window, type DenseCol, type TabItem } from "../components/ui";
 import { SOURCE_COLORS } from "./Orders";
-import OrderModal from "./OrderCard";
 import LeadWindow from "./LeadWindow";
 
 const TABS: [string, string][] = [["open", "Відкриті"], ["new", "Нові"], ["no_answer", "Недодзвон"], ["callback", "Передзвонити"],
@@ -152,6 +151,7 @@ export default function LeadsPage() {
         </div>
       </div>
 
+      <MobileActs><RoundButton icon={Plus} label="Новий лід" onClick={() => nav(`/leads/new${window.location.search}`)} /></MobileActs>
       <div className="lead-cta m-only">
         <div><b>{newCount}</b><small>{newCount === 1 ? "чекає дзвінка" : "чекають дзвінка"}{longest > 0 && <><br />найдовше — {waitText(longest)}</>}</small></div>
         <button type="button" className="go" disabled={!firstInQueue} onClick={() => firstInQueue && open({ id: firstInQueue })}><Phone size={18} />Дзвонити</button>
@@ -192,8 +192,45 @@ export default function LeadsPage() {
       {view === "calls" && <Callbacks rows={rows} onOpen={open} />}
 
       {id && id !== "new" && <LeadWindow id={Number(id)} onClose={() => nav(`/leads${window.location.search}`)} onOpen={(oid) => nav(`/leads/${oid}${window.location.search}`)} />}
-      {id === "new" && <OrderModal id="new" onClose={() => nav(`/leads${window.location.search}`)} onOpen={(oid) => nav(`/leads/${oid}${window.location.search}`)} />}
+      {id === "new" && <NewLeadDialog onClose={() => nav(`/leads${window.location.search}`)} onOpen={(oid) => nav(`/leads/${oid}${window.location.search}`)} />}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------- новий лід вручну: лише ім'я й телефон
+// Лід з'являється в стовпці «Новий»; товари, оплату й доставку додають уже у вікні ліда («Створити замовлення»).
+function NewLeadDialog({ onClose, onOpen }: { onClose: () => void; onOpen: (id: number) => void }) {
+  const meta = useMeta();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [name, setName] = useState("");
+  const [tel, setTel] = useState("");
+  const newSt = meta.statuses.find((s) => s.code === "new");
+  const ok = tel.replace(/\D/g, "").length >= 12;
+  const add = useMutation({
+    mutationFn: () => api.post<Order>("/orders", { customer_name: name.trim(), phone: tel, country: "UA", status_id: newSt?.id }),
+    onSuccess: (o) => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
+      qc.invalidateQueries({ queryKey: ["counters"] });
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      toast(`Лід ${leadNo(o.id)} додано`, "ok", { action: { label: "Відкрити", onClick: () => onOpen(o.id) } });
+      onClose();
+    },
+    onError: (e) => toast(errText(e), "error"),
+  });
+  return (
+    <Window size="sm" onClose={onClose} title="Новий лід" label="Новий лід"
+      footer={<><span className="spacer" /><Button onClick={onClose}>Скасувати</Button>
+        <Button variant="primary" icon={Plus} disabled={!ok || add.isPending} onClick={() => add.mutate()}>{add.isPending ? "Додаю…" : "Додати лід"}</Button></>}>
+      <form className="form new-lead" onSubmit={(e) => { e.preventDefault(); if (ok && !add.isPending) add.mutate(); }}>
+        <label className="fbox"><span className="lbl">Ім'я</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Як звати покупця" autoFocus /></label>
+        <label className="fbox"><span className="lbl">Телефон</span>
+          <UaPhone value={tel} country="UA" onChange={setTel} aria-label="Телефон" /></label>
+        <p className="hint">Лід з'явиться в стовпці «Новий». Товари, оплату й доставку додасте, відкривши його.</p>
+        <button type="submit" hidden aria-hidden tabIndex={-1} />
+      </form>
+    </Window>
   );
 }
 
