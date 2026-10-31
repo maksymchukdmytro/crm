@@ -13,7 +13,7 @@
   /* ------------------------------------------------------------ шапка: назва 29 px і круглі кнопки */
   .topbar { display: none; }
   .m-top { display: flex; align-items: center; gap: 10px; padding: calc(16px + env(safe-area-inset-top)) 18px 10px; position: relative; z-index: 30; }
-  .m-top h1 { flex: 1; min-width: 0; margin: 0; font-size: 29px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
+  .m-top h1 { flex: 1; min-width: 0; max-width: none; margin: 0; font-size: 29px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
   .m-acts { display: contents; }
   .m-acts:empty { display: none; }
   .rb { position: relative; display: grid; place-items: center; width: 44px; height: 44px; flex: none; padding: 0; border: 0; border-radius: 50%;
@@ -29,7 +29,7 @@
   .m-av.lg { width: 50px; height: 50px; font-size: 17px; }
   .m-hello-t { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
   .m-hello-t small { font-size: 12.5px; color: var(--muted); }
-  .m-hello-t b { font-size: 17px; font-weight: 600; }
+  .m-hello-t b { font-size: 17px; font-weight: 600; max-width: none; }
 
   /* ------------------------------------------------------------ робоча область без білої рамки */
   .work { background: transparent; border: 0; border-radius: 0; padding: 0 0 calc(100px + env(safe-area-inset-bottom)) !important; }
