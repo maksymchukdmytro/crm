@@ -622,7 +622,7 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
   const src = meta.order_sources.find((s) => s.id === form.source_id)?.name;
   const entity = meta.legal_entities.find((e) => e.id === form.legal_entity_id) ?? meta.legal_entities.find((e) => e.is_default);
   return (
-    <Block title="Покупець" step={step} className="oc-cust" sub={!isNew && c ? `${c.orders} ${plural(c.orders, "замовлення", "замовлення", "замовлень")}` : undefined}>
+    <Block title="Покупець" step={step} className="oc-cust" sub={!isNew && c ? [`${c.orders} ${plural(c.orders, "замовлення", "замовлення", "замовлень")}`, c.buyout_rate != null && c.delivered + c.refused > 0 ? `викуп ${Math.round(c.buyout_rate)}%` : "", c.refused ? `відмов ${c.refused}` : ""].filter(Boolean).join(" · ") : undefined}>
       {c?.blacklisted && <div className="oc-strip bad"><Ban size={15} /><span><b>Чорний список.</b> {c.blacklist_reason || "Причину не вказано"}</span>
         <button className="link-btn" onClick={() => navigate(`/customers/${c.id}`)}>Картка</button></div>}
       {order?.duplicate_of_id && <div className="oc-strip warn"><Copy size={15} /><span>Можливий дубль замовлення №{order.duplicate_of_id}</span>

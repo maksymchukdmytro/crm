@@ -234,6 +234,9 @@
   .oc-goods .oc-totals { margin-top: auto; }
   .oc-pd { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: stretch; }
   .oc-c .oc-right > .oc-hist { flex: 1 1 auto; }
+  /* покупець — коротко: лічильники вже в підзаголовку блока */
+  .oc-c .oc-cust .tiles4 { display: none; }
+  .oc-c .oc-cust .oc-name { font-size: 22px; }
   .oc-details .props { grid-template-columns: 74px minmax(0, 1fr); column-gap: 10px; }
   .oc-details .props > dt, .oc-details .props > dd { min-height: 28px; padding: 1px 0; }
   .oc-details .props > dt { font-size: 12.5px; }
