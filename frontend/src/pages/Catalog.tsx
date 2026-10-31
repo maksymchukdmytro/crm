@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronRight, CircleAlert, Clock, ClipboardList, Lock, PackagePlus, Plus, Search, ShoppingCart, Truck, Wallet, X } from "lucide-react";
+import { Boxes, Check, ChevronRight, CircleAlert, Clock, ClipboardList, Lock, PackagePlus, Plus, Search, ShoppingCart, Truck, Wallet, X } from "lucide-react";
 import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num } from "../lib/format";
 import type { Move, Product, Purchase, Supplier, Warehouse } from "../lib/types";
-import { Badge, Button, DenseTable, Empty, Field, MobileActs, Modal, RoundButton, Segmented, Spinner, Tabs, Window, type DenseCol , Select } from "../components/ui";
+import { Badge, Button, DenseTable, Empty, Field, MobileActs, Modal, RoundButton, Segmented, Spinner, Tabs, Window, type DenseCol , Select, EmptyState } from "../components/ui";
 
 
 export function MovesTable({ moves, compact = false }: { moves: Move[]; compact?: boolean }) {
@@ -116,7 +116,8 @@ export function WarehousePage() {
           <DenseTable<StockRow> label="Залишки" rows={rows} cols={COLS} rowKey={(r) => r.product_id * 100000 + (r.variant_id ?? 0)} isLoading={isLoading}
             onOpen={(r) => setAdjust({ product_id: String(r.product_id), variant_id: r.variant_id ? String(r.variant_id) : "" })}
             mobileCard={mobileCard}
-            empty={<div className="empty-state"><p>{filter === "all" ? "Товарів ще немає" : "Тут порожньо — і це добре"}</p></div>} className="st-table" />
+            empty={filter === "all" ? <EmptyState icon={Boxes} title="Товарів на складі ще немає" text="Спершу додайте товари, потім — закупівлю, щоб з'явились залишки"
+              action={{ label: "Додати товар", icon: Plus, onClick: () => nav("/products?new=1") }} /> : <div className="empty-state"><p>Тут порожньо — і це добре</p></div>} className="st-table" />
         </div>
         <aside className="block st-moves">
           <div className="block-head"><h2>Рухи сьогодні</h2><div className="acts"><button className="link-btn" onClick={() => setAllMoves(true)}>Усі рухи <ChevronRight size={13} /></button></div></div>
@@ -206,7 +207,9 @@ export function PurchasesPage() {
                 <td>{p.supplier || "—"}</td><td className="ell">{p.items.map((i) => `${i.name} ×${i.qty}`).join(", ")}</td>
                 <td className="num">{money(p.total)}</td><td><Badge kind={PSTATUS[p.status]?.[1]}>{PSTATUS[p.status]?.[0]}</Badge></td></tr>
             ))}
-            {data && !data.length && <tr><td colSpan={6}><Empty>Закупівель ще немає</Empty></td></tr>}
+            {data && !data.length && <tr><td colSpan={6}><EmptyState icon={ShoppingCart} title="Створіть першу закупівлю"
+              text="Закупівля — це прихід товару від постачальника: після оприбуткування залишки й собівартість оновляться самі"
+              action={{ label: "Закупівля", icon: Plus, onClick: () => setOpen("new") }} /></td></tr>}
           </tbody>
         </table>
       </div>

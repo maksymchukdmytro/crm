@@ -2,12 +2,12 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock3, KanbanSquare, List, Phone, PhoneCall, Plus, Search, X } from "lucide-react";
+import { Clock3, Inbox, KanbanSquare, List, Phone, PhoneCall, Plus, Search, X } from "lucide-react";
 import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, phone } from "../lib/format";
 import type { Order, OrderList, OrderRow } from "../lib/types";
-import { Button, ChipSelect, DenseTable, FilterChip, MobileActs, Ring, RoundButton, Segmented, StatusPill, Tabs, UaPhone, Window, type DenseCol, type TabItem } from "../components/ui";
+import { Button, ChipSelect, DenseTable, FilterChip, MobileActs, Ring, RoundButton, Segmented, StatusPill, Tabs, UaPhone, Window, type DenseCol, type TabItem, EmptyState } from "../components/ui";
 import { SOURCE_COLORS } from "./Orders";
 import LeadWindow from "./LeadWindow";
 import { SourceChips } from "./NewOrder";
@@ -187,7 +187,8 @@ export default function LeadsPage() {
           mobileCard={mobileCard}
           actions={(o) => (statuses[o.status_id]?.code && ["new", "no_answer", "callback"].includes(statuses[o.status_id].code)
             ? <Button size={30} icon={Phone} onClick={() => open(o)}>Дзвонити</Button> : null)}
-          empty={<div className="empty-state"><p>{tab === "open" ? "Відкритих лідів немає — заявки з форм з'являться тут" : "Тут порожньо"}</p></div>} />
+          empty={tab === "open" ? <EmptyState icon={Inbox} title="Відкритих лідів немає" text="Заявки з форм на сайті з'являться тут самі. Дзвінок чи повідомлення — додайте лід вручну"
+            action={{ label: "Новий лід", icon: Plus, onClick: () => nav(`/leads/new${window.location.search}`) }} /> : <div className="empty-state"><p>Тут порожньо</p></div>} />
       )}
       {view === "board" && <LeadBoard rows={rows} onOpen={open} sources={sources} />}
       {view === "calls" && <Callbacks rows={rows} onOpen={open} />}

@@ -11,7 +11,7 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { AttributeGroup, Category, Manufacturer, Product, ProductDetail } from "../lib/types";
 type ProductSummary = { days: number; qty: number; sum: number; margin: number; buyout_rate: number | null; upsell_share: number | null; orders: number; sold_total: number };
-import { Badge, Block, Button, confirmAction, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, Tag, Toggle, Window, useMobile , Select } from "../components/ui";
+import { Badge, Block, Button, confirmAction, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, Tag, Toggle, Window, useMobile , Select, EmptyState } from "../components/ui";
 import MultiSelect from "../components/MultiSelect";
 import { MovesTable } from "./Catalog";
 import "./products.css";
@@ -116,7 +116,8 @@ function ProductList({ editable }: { editable: boolean }) {
               </button>
             );
           })}
-          {data && !data.length && <Empty><Package size={22} className="e-ico" />{dq || category || manufacturer || stockState ? "За цими фільтрами товарів немає" : "Додайте перший товар"}</Empty>}
+          {data && !data.length && (dq || category || manufacturer || stockState ? <Empty><Package size={22} className="e-ico" />За цими фільтрами товарів немає</Empty>
+            : <EmptyState icon={Package} title="Додайте перший товар" text="Назва, ціна й залишок — і товар можна додавати в замовлення та продавати" action={{ label: "Додати товар", icon: Plus, onClick: () => setEdit("new") }} />)}
         </div>
       )}
       {!mobile && <div className="card flush tablewrap">
@@ -146,7 +147,8 @@ function ProductList({ editable }: { editable: boolean }) {
                 </tr>
               );
             })}
-            {data && !data.length && <tr><td colSpan={8}><Empty><Package size={22} className="e-ico" />{dq || category || manufacturer || stockState ? "За цими фільтрами товарів немає" : "Додайте перший товар — кнопка «Товар» праворуч угорі"}</Empty></td></tr>}
+            {data && !data.length && <tr><td colSpan={8}>{dq || category || manufacturer || stockState ? <Empty><Package size={22} className="e-ico" />За цими фільтрами товарів немає</Empty>
+              : <EmptyState icon={Package} title="Додайте перший товар" text="Назва, ціна й залишок — і товар можна додавати в замовлення та продавати" action={{ label: "Додати товар", icon: Plus, onClick: () => setEdit("new") }} />}</td></tr>}
           </tbody>
         </table>
       </div>}

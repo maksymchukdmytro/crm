@@ -79,3 +79,22 @@ export function SkeletonRows({ rows = 8, cols = 6 }: { rows?: number; cols?: num
     </div>
   );
 }
+
+/** Порожній стан: що тут буде і що зробити зараз — з однією кнопкою дії (а не лише «нічого немає»). */
+export function EmptyState({ icon: Icon, title, text, action, secondary }: {
+  icon?: React.ComponentType<{ size?: number }>; title: React.ReactNode; text?: React.ReactNode;
+  action?: { label: string; onClick: () => void; icon?: React.ComponentType<{ size?: number }> }; secondary?: React.ReactNode;
+}) {
+  const A = action?.icon;
+  return (
+    <div className="empty-cta">
+      {Icon && <span className="empty-cta-ic"><Icon size={22} /></span>}
+      <b>{title}</b>
+      {text && <p>{text}</p>}
+      {(action || secondary) && <div className="empty-cta-acts">
+        {action && <button type="button" className="btn primary" onClick={action.onClick}>{A && <A size={16} />}{action.label}</button>}
+        {secondary}
+      </div>}
+    </div>
+  );
+}

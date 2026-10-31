@@ -7,7 +7,7 @@ import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, money, phone } from "../lib/format";
 import type { CustomerDetail, CustomerList } from "../lib/types";
-import { Block, Button, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, StatusPill, Tag, Toggle, UaPhone, Window, useMobile , Select } from "../components/ui";
+import { Block, Button, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, StatusPill, Tag, Toggle, UaPhone, Window, useMobile , Select, EmptyState } from "../components/ui";
 import OrderModal from "./OrderCard";
 import "./customers.css";
 
@@ -78,7 +78,7 @@ export default function CustomersPage() {
               </div>
             );
           })}
-          {data && !data.rows.length && <div className="m-card m-empty"><Empty>{dq ? "Нікого не знайдено" : "Покупці з'являться із першими замовленнями"}</Empty></div>}
+          {data && !data.rows.length && <div className="m-card m-empty">{dq ? <Empty>Нікого не знайдено</Empty> : <EmptyState icon={Contact} title="Покупців ще немає" text="Покупець з'являється сам із першим замовленням на його телефон" action={{ label: "Нове замовлення", icon: Plus, onClick: () => nav("/orders/new") }} />}</div>}
         </div>
       )}
       {!mobile && <div className="card flush tablewrap">

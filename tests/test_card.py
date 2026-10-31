@@ -183,3 +183,33 @@ def test_manager_sees_own_order_from_other_office(api_manager, db, products):
     assert api_manager.get(f"/api/orders/{o['id']}/ttn/preview").status_code == 200
     ids = [r["id"] for r in api_manager.get("/api/orders").json()["items"]]
     assert o["id"] in ids
+
+
+def test_delete_order(api, api_manager, db, products):
+    """Видалення: резерв повертається на склад, журнал пам'ятає; не можна з ТТН у перевізника, чужому менеджеру — заборонено."""
+    from app.models import AuditLog, Product
+    cream, _ = products
+    o = new_order(api, products)
+    api.patch(f"/api/orders/{o['id']}", json={"status_id": _sid(db, "confirmed")})
+    db.expire_all()
+    assert db.get(Product, cream.id).reserved == 2
+    # менеджер не може видалити чуже замовлення
+    other = new_order(api, products, phone="0501110000")
+    db.get(Order, other["id"]).manager_id = db.query(AuditLog).first().user_id  # адміністратор
+    db.commit()
+    assert api_manager.delete(f"/api/orders/{other['id']}").status_code in (403, 404)
+    r = api.delete(f"/api/orders/{o['id']}")
+    assert r.status_code == 200, r.text
+    db.expire_all()
+    assert db.get(Order, o["id"]) is None and db.get(Product, cream.id).reserved == 0
+    assert db.query(AuditLog).filter(AuditLog.entity == "order", AuditLog.entity_id == o["id"], AuditLog.action == "delete").count() == 1
+    # з ТТН у перевізника — ні
+    t = new_order(api, products, phone="0501110001")
+    db.get(Order, t["id"]).carrier_ref, db.get(Order, t["id"]).ttn = "DOC", "20450000000123"
+    db.commit()
+    r = api.delete(f"/api/orders/{t['id']}")
+    assert r.status_code == 409 and "ТТН" in r.text
+    # масово
+    a, b = new_order(api, products, phone="0501110002"), new_order(api, products, phone="0501110003")
+    r = api.post("/api/orders/bulk", json={"ids": [a["id"], b["id"], t["id"]], "action": "delete"}).json()
+    assert r["done"] == 2 and len(r["errors"]) == 1
