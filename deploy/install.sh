@@ -118,7 +118,7 @@ if [ "$(cat "$APP/.venv/.req" 2>/dev/null)" != "$REQ_HASH" ]; then
   echo "$REQ_HASH" > "$APP/.venv/.req"; chown "$APP_USER:$APP_USER" "$APP/.venv/.req"
 fi
 
-# Інтерфейс (React): збирається лише коли змінився його код. Без Node.js лишається класичний інтерфейс.
+# Інтерфейс (React): збирається лише коли змінився його код. Без Node.js лишається попередня збірка.
 FE="$APP/frontend"
 NODE_MAJOR=0; command -v node >/dev/null && NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 if [ -f "$FE/package.json" ] && [ "$NODE_MAJOR" -ge 18 ]; then
@@ -134,12 +134,12 @@ if [ -f "$FE/package.json" ] && [ "$NODE_MAJOR" -ge 18 ]; then
     if npm_as run build --silent; then
       echo "$FE_HASH" > "$FE/dist/.build"
     else
-      warn "Інтерфейс не зібрався — працює попередня версія (або класичний інтерфейс)"
+      warn "Інтерфейс не зібрався — працює попередня збірка"
     fi
     chown -R "$APP_USER:$APP_USER" "$FE"
   fi
 else
-  warn "Node.js 18+ не знайдено — новий інтерфейс не зібрано, відкриватиметься класичний (/classic)"
+  warn "Node.js 18+ не знайдено — інтерфейс не зібрано, працює попередня збірка"
 fi
 
 say "3/5 Міграції бази і служби"

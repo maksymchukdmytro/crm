@@ -294,7 +294,13 @@ Rozetka (логін + пароль) і Prom (API-токен): перевірка
   `service_type` у `/orders/{id}/ttn/preview`, поля `street_ref / street_name / house / flat` у `POST /orders/{id}/ttn`.
 - Тести: `test_ttn_courier_to_address`, `test_np_ttn_lookup`. Скриншоти ПК 1440 і телефона 390 перевірено (НП підмінено).
 
-## ⬜ Етап 7. Зручність і розсилки (M) — відкладено власником, поки не робити
+### Видалено класичний інтерфейс `/classic` (31.10, рішення власника)
+- Видалено `app/routers/*`, `app/templates`, `app/static`, `app/web.py`. Webhook і довідник НП — `app/api/intake.py`;
+  фільтри списку — `services/order_filters.py`; реєстр виплат CSV — `services/registry_csv.py`; ключі налаштувань — `services/settings_sections.py`;
+  форматування — `app/formatting.py`.
+- Нові адреси замість класичних: експорт CSV — `GET /api/orders/export.csv`, бланк замовлення — `GET /api/orders/{id}/print`.
+- Тести, що ходили в класичні сторінки, переписано на JSON API (`tests/test_access.py` замість `test_pages.py`).
+ (M) — відкладено власником, поки не робити
 
 **Що треба:**
 - Фільтр під кожною колонкою списку, вибір колонок.

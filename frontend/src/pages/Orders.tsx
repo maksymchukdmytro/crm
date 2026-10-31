@@ -222,7 +222,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
   };
 
   const anyFilter = FILTERS.some((k) => k !== "status" && k !== "q" && f[k]);
-  const exportUrl = `${ROOT}/classic/orders/export.csv${qs({ status: f.status, q: f.q, manager: f.manager, date_from: f.date_from, date_to: f.date_to, delivery: f.delivery })}`;
+  const exportUrl = `${ROOT}/api/orders/export.csv${qs({ status: f.status, q: f.q, manager: f.manager, date_from: f.date_from, date_to: f.date_to, delivery: f.delivery })}`;
   const selectedIds = [...sel];
   const [sheet, setSheet] = useState(false);
 

@@ -16083,6 +16083,24 @@
     ]
    }
   },
+  "/api/orders/export.csv": {
+   "get": {
+    "description": "Експорт поточної вибірки списку в CSV (Excel відкриває з «;» і BOM): ті самі фільтри, що й у списку.",
+    "operationId": "export_csv_api_orders_export_csv_get",
+    "responses": {
+     "200": {
+      "content": {
+       "text/csv": {}
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Export Csv",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
   "/api/orders/sources": {
    "get": {
     "operationId": "sources_api_orders_sources_get",
@@ -16679,6 +16697,49 @@
      }
     },
     "summary": "Confirm Prepayment",
+    "tags": [
+     "orders"
+    ]
+   }
+  },
+  "/api/orders/{order_id}/print": {
+   "get": {
+    "description": "Бланк замовлення для друку (простий аркуш: покупець, доставка, товари, суми, коментар).",
+    "operationId": "order_print_api_orders__order_id__print_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "text/html": {
+        "schema": {
+         "type": "string"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Order Print",
     "tags": [
      "orders"
     ]

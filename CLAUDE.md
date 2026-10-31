@@ -74,10 +74,11 @@ client_python, annotated-doc) і підключити через `.pth`-файл
 ```
 app/models.py        усі таблиці
 app/services/        бізнес-логіка (orders, stock, payments, delivery, np, marketplaces, checkbox, sms, reports, monitoring)
-app/api/             JSON API для React: core, orders, catalog, admin, schemas (Pydantic → OpenAPI)
+app/api/             JSON API для React: core, orders, catalog, admin, schemas (Pydantic → OpenAPI); бланк замовлення — /api/orders/{id}/print, експорт — /api/orders/export.csv
+app/formatting.py    форматування дат, грошей, телефону, опису змін для API й документів
 app/carriers/        перевізники: novaposhta, ukrposhta, meest (спільний інтерфейс base.py)
 app/tasks.py         задачі воркера arq: SMS, ТТН, трекінг, маркетплейси, чеки, сповіщення
-app/routers/, templates/  класичний інтерфейс /classic (запасний) і webhook прийому заявок
+app/api/intake.py    webhook прийому заявок і довідник НП (міста, відділення); класичного інтерфейсу /classic більше немає (видалено 31.10)
 frontend/src/pages/  React-сторінки: Home (головна), Orders (замовлення), Leads + LeadWindow (ліди), Invoices (видаткові накладні), OrderCard, TtnDialog, Board, Products, Customers,
                      Catalog (склад), Stats, Finance, Settings, System
 migrations/versions/ 0001…0021

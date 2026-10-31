@@ -264,7 +264,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
             <button className="pop-item" onClick={() => { closeMenu(); setHistory(true); }}><History size={16} />Історія й коментарі</button>
             <button className="pop-item" onClick={() => { closeMenu(); setEditCust((x) => !x); }}><Pencil size={16} />{editCust ? "Сховати дані покупця" : "Змінити дані покупця"}</button>
             <button className="pop-item" onClick={() => { closeMenu(); navigate(`/orders/new?from=${oid}`); }}><Plus size={16} />Нове замовлення цьому покупцю</button>
-            <a className="pop-item" href={`${ROOT}/classic/orders/${oid}/print`} target="_blank" rel="noreferrer" onClick={closeMenu}><Printer size={16} />Бланк замовлення</a>
+            <a className="pop-item" href={`${ROOT}/api/orders/${oid}/print`} target="_blank" rel="noreferrer" onClick={closeMenu}><Printer size={16} />Бланк замовлення</a>
           </>)}
         </MenuButton>
       ) : <span className="rb-gap" aria-hidden />}
@@ -532,7 +532,7 @@ function PrintMenu({ order, onBefore, onError }: { order: Order; onBefore: () =>
           <button className="pop-item" onClick={() => { close(); printLabel(order.id, toast); }}>
             <TagIcon size={16} />{order.label === "rozetka" ? "Маркування Rozetka" : "Наклейка (PDF)"}</button>
         )}
-        <a className="pop-item" href={`${ROOT}/classic/orders/${order.id}/print`} target="_blank" rel="noreferrer" onClick={close}><Printer size={16} />Бланк замовлення</a>
+        <a className="pop-item" href={`${ROOT}/api/orders/${order.id}/print`} target="_blank" rel="noreferrer" onClick={close}><Printer size={16} />Бланк замовлення</a>
       </>)}
     </MenuButton>
   );

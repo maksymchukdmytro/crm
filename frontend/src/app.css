@@ -7,8 +7,6 @@ button.new, .search-btn { border: 0; font: inherit; cursor: pointer; width: calc
 .side nav a svg { color: var(--muted); }
 .live-dot { width: 7px; height: 7px; border-radius: var(--r-pill); background: var(--faint); margin-left: auto; }
 .live-dot.on { background: #2f9e5b; box-shadow: 0 0 0 3px rgba(47,158,91,.15); }
-.classic-link { display: block; font-size: 11.5px; color: var(--faint); padding: 8px 10px 0; }
-.classic-link:hover { color: var(--muted); }
 .side-backdrop { display: none; }
 a[onClick], a:not([href]) { cursor: pointer; }
 .tabs a { cursor: pointer; user-select: none; }

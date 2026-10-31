@@ -40,8 +40,8 @@ def test_np_create_ttn(admin, db, products, mock_api):
     configure_np(db)
     np_mock(mock_api)
     oid = create_via_ui(admin, products)
-    r = admin.post(f"/orders/{oid}/ttn", follow_redirects=False)
-    assert r.status_code == 303
+    r = admin.post(f"/api/orders/{oid}/ttn")
+    assert r.status_code == 200, r.text
     o = fresh(db, db.get(Order, oid))
     assert o.ttn == "20450000000001" and o.carrier_ref == "DOCREF" and o.delivery_cost == Decimal("85")
     doc = next(c["json"] for c in mock_api.calls if c["json"].get("modelName") == "InternetDocument")
@@ -64,7 +64,7 @@ def test_np_afterpayment_mode(admin, db, products, mock_api):
     db.commit()
     np_mock(mock_api)
     oid = create_via_ui(admin, products)
-    admin.post(f"/orders/{oid}/ttn")
+    admin.post(f"/api/orders/{oid}/ttn")
     props = next(c["json"] for c in mock_api.calls if c["json"].get("modelName") == "InternetDocument")["methodProperties"]
     assert props["AfterpaymentOnGoodsCost"] == "897.00" and "BackwardDeliveryData" not in props
 
@@ -73,8 +73,8 @@ def test_np_error_is_shown(admin, db, products, mock_api):
     configure_np(db)
     mock_api.on(lambda c: True, {"success": False, "errors": ["RecipientsPhone is invalid"]})
     oid = create_via_ui(admin, products)
-    r = admin.post(f"/orders/{oid}/ttn")
-    assert "RecipientsPhone is invalid" in r.text
+    r = admin.post(f"/api/orders/{oid}/ttn")
+    assert r.status_code == 422 and "RecipientsPhone is invalid" in r.text
     assert fresh(db, db.get(Order, oid)).ttn == ""
 
 
@@ -82,7 +82,7 @@ def test_missing_sender_settings(admin, db, products, mock_api):
     st.set_value(db, "np_api_key", "KEY")
     db.commit()
     oid = create_via_ui(admin, products)
-    r = admin.post(f"/orders/{oid}/ttn")
+    r = admin.post(f"/api/orders/{oid}/ttn")
     assert "Не заповнені дані відправника" in r.text
 
 
@@ -135,8 +135,8 @@ def test_delete_ttn(admin, db, products, mock_api):
     np_mock(mock_api)
     mock_api.on(lambda c: c["json"].get("calledMethod") == "delete", {"success": True, "data": [{"Ref": "DOCREF"}]})
     oid = create_via_ui(admin, products)
-    admin.post(f"/orders/{oid}/ttn")
-    admin.post(f"/orders/{oid}/ttn/delete")
+    admin.post(f"/api/orders/{oid}/ttn")
+    admin.delete(f"/api/orders/{oid}/ttn")
     o = fresh(db, db.get(Order, oid))
     assert o.ttn == "" and o.carrier_ref == ""
 
@@ -146,8 +146,8 @@ def test_label_proxy(admin, db, products, mock_api):
     np_mock(mock_api)
     mock_api.on("printMarking", httpx.Response(200, content=b"%PDF-1.4 label"))
     oid = create_via_ui(admin, products)
-    admin.post(f"/orders/{oid}/ttn")
-    r = admin.get(f"/orders/{oid}/label")
+    admin.post(f"/api/orders/{oid}/ttn")
+    r = admin.get(f"/api/orders/{oid}/label")
     assert r.status_code == 200 and r.headers["content-type"] == "application/pdf"
 
 
@@ -156,7 +156,7 @@ def test_np_city_autocomplete(admin, db, mock_api):
     mock_api.on(lambda c: c["json"].get("calledMethod") == "getCities",
                 {"success": True, "data": [{"Ref": "R1", "Description": "Київ", "AreaDescription": "Київська",
                                             "SettlementTypeDescription": "місто"}]})
-    data = admin.get("http://testserver/api/np/cities?q=Ки").json()
+    data = admin.get("/api/np/cities?q=Ки").json()
     assert data["ok"] and data["items"][0]["ref"] == "R1" and "Київська" in data["items"][0]["label"]
 
 
@@ -169,23 +169,24 @@ def test_registry_import(admin, db, products):
     o1 = shipped_order(admin, db, products, "20450000000101")
     o2 = shipped_order(admin, db, products, "20450000000102")
     csv_text = "Номер ЕН;Сума переказу\n20450000000101;897,00\n20450000000102;800\n20450000009999;100\n"
-    r = admin.post("/payments/import", files={"file": ("reg.csv", csv_text.encode("cp1251"), "text/csv")})
-    assert r.status_code == 200
-    assert "Розбіжність суми" in r.text and "20450000009999" in r.text
+    r = admin.post("/api/payments/import", files={"file": ("reg.csv", csv_text.encode("cp1251"), "text/csv")})
+    assert r.status_code == 200, r.text
+    rep = r.json()
+    assert [x["ttn"] for x in rep["not_found"]] == ["20450000009999"] and len(rep["mismatch"]) == 1
     db.expire_all()
     p1 = db.query(Payment).filter(Payment.order_id == o1).one()
     p2 = db.query(Payment).filter(Payment.order_id == o2).one()
     assert p1.status == "received" and p1.received_amount == Decimal("897")
     assert p2.status == "received" and p2.received_amount == Decimal("800")
     # повторний імпорт не дублює
-    r = admin.post("/payments/import", files={"file": ("reg.csv", csv_text.encode(), "text/csv")})
-    assert "вже були зараховані: 2" in r.text
+    r = admin.post("/api/payments/import", files={"file": ("reg.csv", csv_text.encode(), "text/csv")})
+    assert len(r.json()["already"]) == 2
 
 
 def test_manual_mark_received(admin, db, products):
     oid = shipped_order(admin, db, products, "20450000000201")
     pid = db.query(Payment).filter(Payment.order_id == oid).one().id
-    admin.post("/payments/receive", data={"ids": [str(pid)], "reference": "виписка 12"})
+    admin.post("/api/payments/receive", json={"ids": [pid], "reference": "виписка 12"})
     db.expire_all()
     p = db.get(Payment, pid)
     assert p.status == "received" and p.reference == "виписка 12"
@@ -237,32 +238,31 @@ def test_sms_disabled_by_default(admin, db, products):
 # ---------------------------------------------------------- закупівлі/склад
 def test_purchase_receive_updates_stock_and_cost(warehouse, db, products):
     cream, _ = products
-    r = warehouse.post("/purchases/new", data={"supplier_id": "", "comment": "партія 1",
-                                                "item_product_id": [str(cream.id)], "item_qty": ["10"],
-                                                "item_cost": ["150"], "then": "receive"}, follow_redirects=False)
-    assert r.status_code == 303
+    r = warehouse.post("/api/purchases", json={"supplier_id": "", "comment": "партія 1",
+                                                "items": [{"product_id": cream.id, "qty": 10, "cost": "150"}], "then": "receive"})
+    assert r.status_code == 200, r.text
     cream = fresh(db, cream)
     assert cream.stock == 20
     assert cream.cost == Decimal("135.00")  # (10×120 + 10×150) / 20
     p = db.query(Purchase).one()
     assert p.status == "received"
     # повторне оприбуткування неможливе
-    warehouse.post(f"/purchases/{p.id}", data={"then": "receive", "item_product_id": [str(cream.id)],
-                                                "item_qty": ["10"], "item_cost": ["150"]})
+    warehouse.patch(f"/api/purchases/{p.id}", json={"then": "receive", "items": [{"product_id": cream.id, "qty": 10, "cost": "150"}]})
     assert fresh(db, cream).stock == 20
 
 
 def test_inventory_adjust(warehouse, db, products):
     cream, _ = products
-    warehouse.post("/warehouse/adjust", data={"product_id": cream.id, "mode": "set", "qty": "7", "comment": "інвент"})
+    warehouse.post("/api/warehouse/adjust", json={"product_id": cream.id, "mode": "set", "qty": "7", "comment": "інвент"})
     assert fresh(db, cream).stock == 7
-    warehouse.post("/warehouse/adjust", data={"product_id": cream.id, "mode": "delta", "qty": "-2"})
+    warehouse.post("/api/warehouse/adjust", json={"product_id": cream.id, "mode": "delta", "qty": "-2"})
     assert fresh(db, cream).stock == 5
 
 
 def test_product_create(warehouse, db):
-    warehouse.post("/products/new", data={"name": "Новий товар", "sku": "NEW-1", "price": "250", "cost": "100",
-                                          "weight": "1", "initial_stock": "5", "is_active": "1", "is_upsell": "0"})
+    r = warehouse.post("/api/products", json={"name": "Новий товар", "sku": "NEW-1", "price": "250", "cost": "100",
+                                              "weight": "1", "initial_stock": 5})
+    assert r.status_code == 200, r.text
     p = db.query(Product).filter(Product.sku == "NEW-1").one()
     assert p.stock == 5 and p.price == Decimal("250")
 
@@ -270,12 +270,11 @@ def test_product_create(warehouse, db):
 # ------------------------------------------------------------------ звіти
 def test_reports_numbers(admin, db, products, webhook_key):
     for i, src in enumerate(["facebook", "facebook", "google", "facebook"]):
-        admin.post(f"http://testserver/api/v1/orders?key={webhook_key}", data={"phone": f"06700000{i:02d}", "sku": "CREAM-1",
+        admin.post(f"/api/v1/orders?key={webhook_key}", data={"phone": f"06700000{i:02d}", "sku": "CREAM-1",
                                                               "utm_source": src})
     orders = db.query(Order).order_by(Order.id).all()
-    admin.post("/orders/bulk", data={"ids": [str(orders[0].id), str(orders[2].id)],
-                                     "action": f"status:{status_id(db, 'delivered')}"})
-    admin.post("/orders/bulk", data={"ids": [str(orders[1].id)], "action": f"status:{status_id(db, 'refused')}"})
+    admin.post("/api/orders/bulk", json={"ids": [orders[0].id, orders[2].id], "action": "status", "value": status_id(db, "delivered")})
+    admin.post("/api/orders/bulk", json={"ids": [orders[1].id], "action": "status", "value": status_id(db, "refused")})
     from datetime import date
     from app.services.reports import build
     db.expire_all()
@@ -284,8 +283,8 @@ def test_reports_numbers(admin, db, products, webhook_key):
     assert fb.leads == 3 and fb.approved == 2 and fb.delivered == 1 and fb.refused == 1
     assert round(fb.buyout_rate) == 50
     assert r["total"].revenue == Decimal("798") and r["total"].profit == Decimal("558")
-    page = admin.get("/reports?dim=utm_source").text
-    assert "facebook" in page and "google" in page
+    groups = [g["key"] if isinstance(g, dict) and "key" in g else g for g in admin.get("/api/reports?dim=utm_source").json()["groups"]]
+    assert "facebook" in str(groups) and "google" in str(groups)
 
 
 def test_np_seat_size_setting():

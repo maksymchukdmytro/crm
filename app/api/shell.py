@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from ..db import get_db
 from ..models import Order, OrderComment, SavedFilter, Status, User, utcnow
-from ..routers.orders import _apply
+from ..services.order_filters import apply as _apply
 from ..services import orders as svc
 from ..services import prefs
 from ..services import settings as st

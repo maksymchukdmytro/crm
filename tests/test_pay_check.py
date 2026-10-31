@@ -37,7 +37,7 @@ def test_novapay_ttn_with_payment_control_is_ok(admin, db, products, mock_api):
     np_mock(mock_api)
     o = _with_method(db, create_via_ui(admin, products), NOVAPAY)
     assert pay_check.check(o)["state"] == "wait"  # ТТН ще немає
-    admin.post(f"/orders/{o.id}/ttn")
+    admin.post(f"/api/orders/{o.id}/ttn")
     o = fresh(db, o)
     assert (o.ttn_cod_kind, o.ttn_cod_sum) == ("control", Decimal("897.00"))
     assert pay_check.check(o) == {"state": "ok", "text": "Контроль оплати 897 ₴ — збігається"}
@@ -47,7 +47,7 @@ def test_novapay_ttn_with_money_transfer_is_wrong(admin, db, products, mock_api)
     configure_np(db)  # за замовчуванням — грошовий переказ
     np_mock(mock_api)
     o = _with_method(db, create_via_ui(admin, products), NOVAPAY)
-    admin.post(f"/orders/{o.id}/ttn")
+    admin.post(f"/api/orders/{o.id}/ttn")
     c = pay_check.check(fresh(db, o))
     assert c["state"] == "bad" and "грошовий переказ" in c["text"]
 
@@ -56,7 +56,7 @@ def test_paid_order_ttn_without_cod_is_ok(admin, db, products, mock_api):
     configure_np(db)
     np_mock(mock_api)
     o = _with_method(db, create_via_ui(admin, products), PAID)
-    admin.post(f"/orders/{o.id}/ttn")
+    admin.post(f"/api/orders/{o.id}/ttn")
     o = fresh(db, o)
     assert o.ttn_cod_kind == "none" and pay_check.check(o)["state"] == "ok"
 
