@@ -37,7 +37,7 @@ from ..services import audit, prefs
 from ..services import np as np_svc
 from ..services import settings as st
 from ..services.events import CHANNEL
-from .schemas import LoginIn, LoginOut, MeIn, MetaOut, NameSplitOut, Ok, UserOut
+from .schemas import LoginIn, LoginOut, MeIn, MetaOut, NameSplitOut, NpPlacesOut, Ok, TtnLookupOut, UserOut
 from .shell import counters as shell_counters
 from .common import api_user, bad, j_payment_method, j_product, j_source, j_status, j_user
 
@@ -238,3 +238,40 @@ def names_split(q: str = "", user: User = Depends(api_user)):
     from ..services.names import join_name, split_full_name
     last, first, middle = split_full_name(q[:255])
     return {"last_name": last, "first_name": first, "middle_name": middle, "full": join_name(last, first, middle)}
+
+
+# ---------------------------------------------------------------- Нова Пошта: вулиці й готова ТТН
+def _np_carrier(db: Session, account_id: int = 0):
+    from ..carriers.novaposhta import NovaPoshta
+    from ..models import NpAccount
+    acc = db.get(NpAccount, account_id) if account_id else None
+    return NovaPoshta(np_svc.account_settings(st.get_all(db), acc or np_svc.pick_account(db)))
+
+
+@router.get("/np/streets", response_model=NpPlacesOut)
+def np_streets(city_ref: str, q: str = "", np_account_id: int = 0, db: Session = Depends(get_db), user: User = Depends(api_user)):
+    """Вулиці міста з довідника НП — для ТТН «Кур'єр на адресу»."""
+    from ..carriers import CarrierError
+    if len(q.strip()) < 2:
+        return {"ok": True, "items": []}
+    try:
+        return {"ok": True, "items": _np_carrier(db, np_account_id).search_streets(city_ref, q.strip())}
+    except CarrierError as e:
+        return {"ok": False, "error": str(e)}
+
+
+@router.get("/np/ttn-lookup", response_model=TtnLookupOut)
+def np_ttn_lookup(number: str, phone: str = "", np_account_id: int = 0, db: Session = Depends(get_db), user: User = Depends(api_user)):
+    """«Ввести готову ТТН»: знайти накладну, оформлену в кабінеті НП, — куди їде, вартість, післяплата, чи збігається телефон."""
+    from ..carriers import CarrierError
+    from ..services.orders import normalize_phone
+    num = "".join(ch for ch in number if ch.isdigit())
+    if len(num) != 14:
+        return {"found": False, "error": "Номер ТТН Нової Пошти — 14 цифр"}
+    try:
+        res = _np_carrier(db, np_account_id).lookup(num, normalize_phone(phone) if phone else "")
+    except CarrierError as e:
+        return {"found": False, "number": num, "error": str(e)}
+    if res is None:
+        return {"found": False, "number": num, "error": "Нова Пошта не знайшла таку ТТН"}
+    return {"found": True, **res}

@@ -218,36 +218,12 @@
 .hp-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .hp-row select { width: auto; }
 
-/* вікно ТТН */
-.ttn-win.win.lg { max-width: 1000px; height: min(760px, calc(100vh - 48px)); }
-.ttn-head { gap: 12px; }
-.ttn-head h2 { font-size: 19px; }
-.ttn-ic { display: grid; place-items: center; width: 38px; height: 38px; border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent); flex: none; }
-.ttn-body { background: var(--bg); }
-.ttn-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; align-items: start; }
-.ttn-form { display: flex; flex-direction: column; gap: 12px; }
-.ttn-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.ttn-4 { display: grid; grid-template-columns: 1.1fr 0.7fr 1.3fr 0.6fr; gap: 10px; }
+/* вікно ТТН — у wizard.css; спільне для пошуку в довіднику НП */
 .sel-ic { position: relative; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-field); background: var(--surface); }
 .sel-ic select { flex: 1; border: 0; padding: 0; min-height: 0; height: 34px; background: none; box-shadow: none !important; }
 .ro-field { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; background: var(--soft); border-radius: var(--r-field); color: var(--muted); font-size: 13px; overflow: hidden; white-space: nowrap; }
-.dims { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
-.dims input { min-width: 0; text-align: center; padding: 0 4px; }
-.np-search { position: relative; }
-.np-in { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-field); background: var(--surface); color: var(--muted); }
-.np-in:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
-.np-in.ok { border-color: var(--accent-line); }
-.np-in input { flex: 1; min-width: 0; border: 0; padding: 0; height: 34px; min-height: 0 !important; background: none; box-shadow: none !important; color: var(--ink); }
 .np-pop { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60; max-height: 280px; overflow-y: auto; min-width: 280px; }
 .np-opt { min-height: 36px; border-radius: var(--r-field); }
-.ttn-side { display: flex; flex-direction: column; gap: 12px; }
-.ttn-side .big { font-size: 32px; }
-.ttn-side .big .cur { font-size: 20px; }
-.ttn-after { display: flex; flex-direction: column; gap: 10px; }
-.ttn-after h2 { margin: 0 0 2px; font-size: 15px; }
-.ttn-after .check { display: flex; align-items: center; gap: 10px; font-size: 13.5px; cursor: pointer; }
-.ttn-after .hint { display: flex; align-items: center; gap: 5px; margin: 2px 0 0; }
-.ttn-foot-hint { display: inline-flex; align-items: center; gap: 6px; }
 
 /* товари — головне праворуч: блок розтягується на всю висоту, деталі й підсумок під ним — компактні (як на макеті) */
 @media (min-width: 1101px) {
@@ -282,7 +258,6 @@
   .oc-dlv { order: 4 !important; }
   .oc-bottom { order: 5 !important; }
   .oc-bottom { grid-template-columns: minmax(0, 1fr); }
-  .ttn-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 768px) {
   .oc-head { flex-wrap: wrap; padding: 8px 10px; gap: 6px; }
@@ -298,7 +273,6 @@
   .gi.up { margin-left: 14px; }
   .gi-link { opacity: 1; }
   .gi-meta { display: none; }
-  .ttn-2, .ttn-4 { grid-template-columns: 1fr 1fr; }
   .oc-addr { grid-template-columns: 1fr; margin-left: 0; }
 }
 /* загальне правило для label (колонка, дрібний сірий текст) тут не потрібне */

@@ -1032,6 +1032,10 @@ class TtnIn(In):
     warehouse_name: str | None = Field(None, max_length=255)
     warehouse_ref: str | None = Field(None, max_length=64)
     after: TtnAfter | None = None
+    street_ref: str | None = Field(None, max_length=64, description="Кур'єр на адресу (service_type=WarehouseDoors): вулиця з довідника НП")
+    street_name: str | None = Field(None, max_length=200)
+    house: str | None = Field(None, max_length=10)
+    flat: str | None = Field(None, max_length=10)
     payer: NpPayer | None = None
     cargo_type: NpCargo | None = None
     service_type: NpService | None = None
@@ -1042,6 +1046,39 @@ class TtnIn(In):
     cod_amount: float | None = Field(None, ge=0)
     cod_payer: NpPayer | None = None
     additional_info: str | None = Field(None, max_length=100)
+
+
+class TtnLookupOut(Out):
+    """Готова ТТН Нової Пошти за номером: для кроку «Ввести готову ТТН» нового замовлення."""
+    found: bool
+    error: str = ""
+    number: str = ""
+    status: str = ""
+    state: str = ""
+    city_name: str = ""
+    city_ref: str = ""
+    warehouse_name: str = ""
+    warehouse_ref: str = ""
+    cost: float = 0
+    cod_amount: float = 0
+    cod_kind: Literal["control", "backward", "none"] = "none"
+    recipient: str = ""
+    phone_match: bool | None = Field(None, description="Телефон отримувача в ТТН збігається з телефоном замовлення; None — не перевірено")
+    eta: str | None = None
+
+
+class NpPlace(Out):
+    ref: str
+    name: str
+    label: str = ""
+    max_weight: int | None = None
+    kind: str = ""
+
+
+class NpPlacesOut(Out):
+    ok: bool
+    items: list[NpPlace] = Field(default_factory=list)
+    error: str = ""
 
 
 class TtnPreviewOut(Out):
