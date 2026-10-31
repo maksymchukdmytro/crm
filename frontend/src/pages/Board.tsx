@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
-import { DndContext, DragOverlay, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { DndContext, DragOverlay, MouseSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { Eye, EyeOff, KanbanSquare, List } from "lucide-react";
 import { Segmented } from "../components/ui";
 import { api, qs } from "../lib/api";
@@ -29,8 +29,9 @@ export default function BoardPage() {
   const data = useMemo(() => Object.fromEntries(columns.map((s, i) => [s.id, results[i]?.data])), [columns, results]);
 
   const [dragging, setDragging] = useState<OrderRow | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 6 } }));
+  // миша — з місця (6 px), палець — довгим натиском (PointerSensor на телефоні перебивав прокрутку й не давав перетягувати)
+  const sensors = useSensors(useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }));
 
   const move = useMutation({
     mutationFn: ({ order, to }: { order: OrderRow; to: Status }) => api.patch(`/orders/${order.id}`, { status_id: to.id }),
@@ -71,7 +72,8 @@ export default function BoardPage() {
           </button>
         </div>
       </div>
-      <DndContext sensors={sensors} onDragStart={(e) => setDragging(e.active.data.current?.order ?? null)} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)}>
+      <DndContext sensors={sensors} onDragStart={(e) => { setDragging(e.active.data.current?.order ?? null); navigator.vibrate?.(12); }} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)}>
+        <p className="board-hint m-only">Щоб перенести замовлення в інший статус, утримуйте картку й перетягніть</p>
         <div className="board">
           {columns.map((s) => (
             <Column key={s.id} status={s} list={data[s.id]} onOpen={(oid) => nav(`/board/${oid}`)} />

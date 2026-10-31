@@ -164,3 +164,22 @@ def test_np_ttn_lookup(api, db, mock_api):
     assert sent == {"DocumentNumber": "20450000000099", "Phone": "380671112233"}
     r = api.get("/api/np/ttn-lookup", params={"number": "20450000000000"}).json()
     assert not r["found"] and "не знайшла" in r["error"]
+
+
+def test_manager_sees_own_order_from_other_office(api_manager, db, products):
+    """Менеджер створив замовлення з джерелом чужого відділу — замовлення його, тож картка й ТТН відкриваються (не «Недостатньо прав»)."""
+    from app.models import Office, OrderSource, User
+    a, b = Office(name="Роздріб"), Office(name="Опт")
+    db.add_all([a, b])
+    db.commit()
+    src = OrderSource(name="Опт-сайт", office_id=b.id)
+    db.add(src)
+    m = db.query(User).filter(User.username == "manager1").one()
+    m.offices = [a.id]
+    db.commit()
+    o = new_order(api_manager, products, source_id=src.id)
+    assert o["office_id"] == b.id and o["manager_id"] == m.id
+    assert api_manager.get(f"/api/orders/{o['id']}").status_code == 200
+    assert api_manager.get(f"/api/orders/{o['id']}/ttn/preview").status_code == 200
+    ids = [r["id"] for r in api_manager.get("/api/orders").json()["items"]]
+    assert o["id"] in ids

@@ -405,7 +405,7 @@ def visible_orders_query(db: Session, user: User):
     if user.role == "manager" and st.get_bool(db, "managers_see_own_only"):
         q = q.filter((Order.manager_id == user.id) | (Order.manager_id.is_(None)))
     if user.role != "admin" and user.offices:  # доступ лише до своїх відділів (замовлення без відділу — усім)
-        q = q.filter(Order.office_id.is_(None) | Order.office_id.in_([int(x) for x in user.offices]))
+        q = q.filter(Order.office_id.is_(None) | Order.office_id.in_([int(x) for x in user.offices]) | (Order.manager_id == user.id))
     from . import prefs
     office = prefs.current_office(db, user)  # відділ, вибраний у боковій панелі
     if office is not None:
@@ -417,5 +417,6 @@ def can_view(db: Session, user: User, order: Order) -> bool:
     if user.role == "manager" and st.get_bool(db, "managers_see_own_only") and order.manager_id not in (None, user.id):
         return False
     if user.role != "admin" and user.offices and order.office_id is not None:
-        return order.office_id in [int(x) for x in user.offices]
+        # своє замовлення менеджер бачить завжди — навіть якщо джерело належить іншому відділу
+        return order.office_id in [int(x) for x in user.offices] or order.manager_id == user.id
     return True

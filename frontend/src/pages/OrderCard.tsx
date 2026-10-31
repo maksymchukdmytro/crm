@@ -344,7 +344,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
       <div className={`oc-grid${closed ? " ro" : ""}`}>
         {/* ======== ліва колонка ======== */}
         <div className="oc-left">
-          <CustomerBlock order={order} form={form} set={set} isNew={isNew} step={steps ? { n: 1, done: custDone } : undefined}
+          <CustomerBlock order={order} form={form} set={set} isNew={isNew} step={steps ? { n: 1, done: custDone } : undefined} forceEdit={mobile && editCust}
             onNewForClient={() => navigate(`/orders/new?from=${oid}`)} onOpen={onOpen} readOnly={closed} />
           <PaymentBlock order={order} form={form} set={set} total={total} cod={cod} prepay={prepay} step={steps ? { n: 3, done: !!form.payment_method_id } : undefined}
             readOnly={closed} busy={action.isPending}
@@ -589,13 +589,24 @@ function RemindButton({ value, onChange }: { value: string; onChange: (v: string
 }
 
 // ======================================================================== Покупець
-function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, readOnly }: {
+function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, readOnly, forceEdit }: {
   order?: Order; form: Form; set: (p: Partial<Form>) => void; isNew: boolean; step?: { n: number; done: boolean };
-  onNewForClient: () => void; onOpen: (id: number) => void; readOnly: boolean;
+  onNewForClient: () => void; onOpen: (id: number) => void; readOnly: boolean; forceEdit?: boolean;
 }) {
   const meta = useMeta();
   const navigate = useNavigate();
   const [editName, setEditName] = useState(isNew || !form.customer_name);
+  // телефон, «⋯ → Змінити дані покупця»: одразу поле ПІБ з курсором, і блок прокручується в поле зору
+  useEffect(() => {
+    if (!forceEdit || readOnly) return;
+    setEditName(true);
+    const t = setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>(".oc-cust .oc-name-edit input");
+      input?.scrollIntoView({ block: "center", behavior: "smooth" });
+      input?.focus({ preventScroll: true });
+    }, 60);
+    return () => clearTimeout(t);
+  }, [forceEdit]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showEmail, setShowEmail] = useState(false);
   const [others, setOthers] = useState(false);
   const c = order?.customer;
@@ -617,7 +628,7 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
       )}
       {editName && !readOnly ? (
         <NameField value={form.customer_name} onChange={(v) => set({ customer_name: v })} saved={order?.customer_name ?? ""} autoFocus={!isNew && !form.customer_name}
-          onDone={() => form.customer_name.trim() && setEditName(false)} />
+          onDone={() => form.customer_name.trim() && !forceEdit && setEditName(false)} />
       ) : (
         <button type="button" className="oc-name" onClick={() => !readOnly && setEditName(true)} title="Змінити ПІБ">{form.customer_name || "Без імені"}</button>
       )}

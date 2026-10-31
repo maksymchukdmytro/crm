@@ -13,7 +13,7 @@
   /* ------------------------------------------------------------ шапка: назва 29 px і круглі кнопки */
   .topbar { display: none; }
   .m-top { display: flex; align-items: center; gap: 10px; padding: calc(16px + env(safe-area-inset-top)) 18px 10px; position: relative; z-index: 30; }
-  .m-top h1 { flex: 1; min-width: 0; margin: 0; font-size: 29px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
+  .m-top h1 { flex: 1; min-width: 0; max-width: none; margin: 0; font-size: 29px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
   .m-acts { display: contents; }
   .m-acts:empty { display: none; }
   .rb { position: relative; display: grid; place-items: center; width: 44px; height: 44px; flex: none; padding: 0; border: 0; border-radius: 50%;
@@ -29,7 +29,7 @@
   .m-av.lg { width: 50px; height: 50px; font-size: 17px; }
   .m-hello-t { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
   .m-hello-t small { font-size: 12.5px; color: var(--muted); }
-  .m-hello-t b { font-size: 17px; font-weight: 600; }
+  .m-hello-t b { font-size: 17px; font-weight: 600; max-width: none; }
 
   /* ------------------------------------------------------------ робоча область без білої рамки */
   .work { background: transparent; border: 0; border-radius: 0; padding: 0 0 calc(100px + env(safe-area-inset-bottom)) !important; }
@@ -310,6 +310,8 @@
   .rb-gap { width: 44px; flex: none; }
   .oc-body { padding: 4px var(--m-pad) calc(96px + env(safe-area-inset-bottom)) !important; background: var(--m-bg); }
   .oc-body.m-no-cust .oc-cust { display: none; }
+  .oc-body:not(.m-no-cust):has(.oc-hero) .oc-cust::before { content: "Дані покупця — редагування"; display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--accent); }
+  .board-hint { margin: 0 18px 10px; font-size: 13px; color: var(--muted); }
   .oc-grid { display: flex !important; flex-direction: column; align-items: stretch !important; gap: var(--m-gap); }
   .oc-grid > *, .oc-bottom > * { width: auto !important; max-width: none !important; }
   .oc-grid > *, .oc-grid .block, .oc-bottom > * { margin: 0 !important; }
@@ -522,7 +524,11 @@
   /* «Змінити дані покупця»: без дублювання плиток і кнопок зв'язку, які вже є в картці покупця вгорі */
   .oc-body .oc-cust .tiles4, .oc-body .oc-cust .oc-meta, .oc-body:has(.oc-hero) .oc-cust .oc-phone-row > :not(:first-child) { display: none; }
   /* меню документа накладної — панеллю над нижньою панеллю, щоб не обрізалось краєм екрана */
-  .mi-docs .menu-pop { position: fixed; left: 14px; right: 14px; top: auto; bottom: calc(92px + env(safe-area-inset-bottom)); max-width: none; z-index: 60; }
+  .mi-docs .menu-pop, .mi-docs .menu-pop.up { position: fixed; left: 14px; right: 14px; top: auto !important; bottom: calc(92px + env(safe-area-inset-bottom)) !important; max-width: none; z-index: 60;
+    padding: 6px; border-radius: 18px !important; box-shadow: 0 -8px 40px rgba(31, 31, 28, .22), 0 0 0 1px rgba(31, 31, 28, .06) !important; }
+  .mi-docs .menu-pop .pop-item { min-height: 48px; font-size: 15px; }
+  /* картка з відкритим меню не має бути трансформованою — інакше «fixed» рахується від картки, а не від екрана */
+  .m-card:has(.menu-pop), .m-card:has(.m-stop:active) { transform: none !important; animation: none !important; }
   /* статистика: назви товарів у таблиці не ламаються по слову */
   .stats .st-pname { min-width: 150px; }
   .stats .tablewrap, .stats .card.flush { overflow-x: auto; }

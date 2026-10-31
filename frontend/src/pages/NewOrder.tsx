@@ -20,8 +20,9 @@ import { EXTRA, UTM, payload, toForm, type Form } from "./card/state";
 import { Goods } from "./card/Goods";
 import { digits, plural, shortDate } from "./card/util";
 
-const STEPS = ["Покупець", "Товар", "Оплата", "Доставка", "Джерело"] as const;
-const DRAFT = "crm-new-order-draft";
+// доставка — останній крок: «Створити й оформити ТТН» одразу веде у вікно ТТН (рішення власника 31.10)
+const STEPS = ["Покупець", "Товар", "Оплата", "Джерело", "Доставка"] as const;
+const DRAFT = "crm-new-order-draft-2";
 const USAGE = "crm-pay-usage";
 const KIND_TEXT: Record<string, string> = { cod: "післяплата", partial: "передоплата + решта", prepaid: "повна оплата" };
 const COD_TEXT: Record<string, string> = { control: "контроль оплати", backward: "грошовий переказ", none: "без післяплати" };
@@ -197,8 +198,8 @@ export default function NewOrder({ onClose, onCreated }: { onClose: () => void; 
         {step === 0 && <StepCustomer form={form} set={set} />}
         {step === 1 && <StepGoods form={form} set={set} subtotal={subtotal} total={total} />}
         {step === 2 && <StepPayment form={form} set={set} total={total} cod={cod} isNp={isNp} />}
-        {step === 3 && <StepDelivery form={form} set={set} mode={npReady ? mode : "ready"} setMode={setMode} npReady={npReady} cod={cod} codKind={method?.np_cod ?? ""} />}
-        {step === 4 && <StepDetails form={form} set={set} />}
+        {step === 4 && <StepDelivery form={form} set={set} mode={npReady ? mode : "ready"} setMode={setMode} npReady={npReady} cod={cod} codKind={method?.np_cod ?? ""} />}
+        {step === 3 && <StepDetails form={form} set={set} />}
       </div>
     </Window>
   );
@@ -339,7 +340,7 @@ function StepDelivery({ form, set, mode, setMode, npReady, cod, codKind }: {
   const icon = (m: string) => m === "novaposhta" ? <span className="np-badge lg">НП</span>
     : <span className={`sq ${m === "pickup" ? "t-gray" : m === "ukrposhta" ? "t-orange" : m === "meest" ? "t-purple" : "t-blue"}`}>{m === "pickup" ? <Store size={16} /> : m === "meest" ? <Package size={16} /> : <Truck size={16} />}</span>;
   return (<>
-    <Q title="Як доставити?" sub="Оберіть перевізника" />
+    <Q title="Як доставити?" sub="Останній крок — далі створюємо замовлення й одразу ТТН" />
     <div className="wz-carriers" role="radiogroup" aria-label="Перевізник">
       {opts.map((o) => (
         <button key={o.key} type="button" role="radio" aria-checked={o.key === cur} className={`wz-cr${o.key === cur ? " on" : ""}`} onClick={() => pick(o)}>
@@ -425,7 +426,7 @@ function StepDetails({ form, set }: { form: Form; set: (p: Partial<Form>) => voi
         <option value="">{empty}</option>{items.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select><ChevronDown size={16} aria-hidden /></span></div>
   );
   return (<>
-    <Q title="Звідки замовлення?" sub="Останній крок — далі створюємо замовлення або одразу ТТН" />
+    <Q title="Звідки замовлення?" sub="Джерело, менеджер і коментар — далі доставка" />
     {sources.length > 0 && (<>
       <div className="wz-lb">Джерело</div>
       <div className="wz-chips" role="radiogroup" aria-label="Джерело">

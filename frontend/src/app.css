@@ -74,7 +74,7 @@ a[onClick], a:not([href]) { cursor: pointer; }
 .col.over { background: color-mix(in srgb, var(--c) 10%, #f7f7f5); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c) 45%, white); }
 .col-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; font-size: 13px; }
 .col-body { flex: 1; overflow-y: auto; padding: 0 8px 10px; display: flex; flex-direction: column; gap: 6px; }
-.kcard { background: #fff; border-radius: var(--r-field); padding: 9px 11px; box-shadow: 0 1px 2px rgba(15,15,15,.06), 0 0 0 1px rgba(15,15,15,.05); cursor: grab; font-size: 13px; touch-action: manipulation; user-select: none; }
+.kcard { background: #fff; border-radius: var(--r-field); padding: 9px 11px; box-shadow: 0 1px 2px rgba(15,15,15,.06), 0 0 0 1px rgba(15,15,15,.05); cursor: grab; font-size: 13px; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .kcard:hover { box-shadow: 0 2px 8px rgba(15,15,15,.08), 0 0 0 1px rgba(15,15,15,.07); }
 .kcard.overlay { cursor: grabbing; box-shadow: var(--shadow-lg); transform: rotate(1.5deg); }
 .kcard-top { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 2px; }
