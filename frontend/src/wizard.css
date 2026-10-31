@@ -2,6 +2,8 @@
    ПК: біла картка по центру 26 px, великі поля 56 px, плитки вибору з синім кільцем, одна синя дія.
    Телефон: на весь екран, сірий фон #F1F2F4, білі плитки, смуга прогресу, кнопки під пальцем. */
 
+/* глобальне label { flex-direction: column } тут не потрібне */
+.wz-lb, .wz-disc, label.wz-big, .tt-key, .tt-mkey { flex-direction: row; }
 .wz, .tt2 { --wz-tile: #F6F7F8; --wz-ring: 0 0 0 4px var(--accent-soft); }
 .wz .sq, .tt2 .sq { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border-radius: 11px; background: var(--s, #EAF1FD); color: var(--i, #2E6BE6); }
 .wz .t-blue, .tt2 .t-blue { --s: #EAF1FD; --i: #2E6BE6; } .wz .t-green, .tt2 .t-green { --s: #E9F6EE; --i: #16A34A; }
@@ -42,7 +44,7 @@
 .wz-q { margin: 18px 0 18px; }
 .wz-q h2 { margin: 0 0 4px; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
 .wz-q p { margin: 0; color: var(--muted); font-size: 14px; }
-.wz-lb { display: flex; align-items: center; gap: 6px; margin: 16px 0 6px 4px; font-size: 13px; color: var(--muted); }
+.wz-lb { display: flex; align-items: center; justify-content: flex-start; gap: 6px; font-weight: 450; margin: 16px 0 6px 4px; font-size: 13px; color: var(--muted); }
 .wz-lb:first-child, .wz-q + .wz-lb { margin-top: 0; }
 .wz-from { color: var(--ok-ink); font-size: 12px; }
 .wz-big { display: flex; align-items: center; gap: 10px; width: 100%; height: 56px; padding: 0 18px; border: 2px solid transparent; border-radius: 16px;
@@ -58,7 +60,7 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
 .wz-phone .ph-country { width: 40px; }
 .wz-phone .ua-phone { flex: 1; height: 100%; padding: 0; border: 0 !important; background: none; box-shadow: none !important; font-size: inherit; }
 .wz-phone .ua-phone .ua-pre { color: var(--muted); }
-.wz-phone .ua-phone input { height: 100%; font-size: inherit; font-weight: 500; }
+.wz-phone .ua-phone input { height: 100%; padding-left: 8px; font-size: inherit; font-weight: 500; }
 .wz-money span { color: var(--muted); }
 .wz-sel { position: relative; display: flex; align-items: center; }
 .wz-sel select { width: 100%; height: 48px; padding: 0 38px 0 14px; border: 2px solid transparent; border-radius: 14px; background: var(--wz-tile); font: inherit; font-size: 15px;

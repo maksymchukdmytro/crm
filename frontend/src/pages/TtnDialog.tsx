@@ -31,6 +31,7 @@ function loadAfter(): After {
   try { return { ...AFTER0, ...JSON.parse(localStorage.getItem(PREF) || "{}") }; } catch { return AFTER0; }
 }
 const kg = (v: number) => v.toLocaleString("uk-UA", { maximumFractionDigits: 2 });
+const noKg = (s: string) => s.replace(/\s*\(до [\d.,]+ кг\)/i, "");
 const ttnFmt = (v: string) => v.replace(/^(\d{2})(\d{4})(\d{4})(\d{4})$/, "$1 $2 $3 $4");
 const dayText = (iso?: string | null) => {
   if (!iso) return "";
@@ -126,7 +127,7 @@ export default function TtnDialog({ order, accountId, onClose, onCreated }: {
         <label className="tt-key d-only" title={data?.sender || undefined}>
           <KeyRound size={15} aria-hidden /><span className="muted">Відправник:</span>
           <select value={acc} onChange={(e) => setAcc(e.target.value ? Number(e.target.value) : "")} aria-label="Відправник — ключ НП">
-            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}{a.is_default ? " · основний ключ" : ""}</option>)}
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}{a.is_default && !/основн/i.test(a.name) ? " · основний ключ" : ""}</option>)}
           </select><ChevronDown size={15} aria-hidden /></label>
       )}
       <button type="button" className="wz-x d-only" aria-label="Закрити (Esc)" onClick={onClose}><X size={17} /></button>
@@ -147,9 +148,9 @@ export default function TtnDialog({ order, accountId, onClose, onCreated }: {
     <section className="tt-sec">
       {mobile && accounts.length > 0 && (
         <label className="tt-mkey"><span className="np-badge lg">НП</span>
-          <span className="tt-mkey-t"><b>{accounts.find((a) => a.id === acc)?.name ?? "Ключ НП"}</b><small>{acc === accounts.find((a) => a.is_default)?.id ? "основний ключ · " : ""}відправник</small></span>
+          <span className="tt-mkey-t"><b>{accounts.find((a) => a.id === acc)?.name ?? "Ключ НП"}</b><small>{acc === accounts.find((a) => a.is_default)?.id && !/основн/i.test(accounts.find((a) => a.id === acc)?.name ?? "") ? "основний ключ · " : ""}відправник</small></span>
           <select value={acc} onChange={(e) => setAcc(e.target.value ? Number(e.target.value) : "")} aria-label="Відправник — ключ НП">
-            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}{a.is_default ? " · основний ключ" : ""}</option>)}
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}{a.is_default && !/основн/i.test(a.name) ? " · основний ключ" : ""}</option>)}
           </select><ChevronDown size={16} aria-hidden /></label>
       )}
       <h3 className="tt-h d-only">Куди</h3>
@@ -325,7 +326,7 @@ function Done({ o, after, eta, onClose }: { o: Created; after: After; eta?: stri
   });
   const ok = useRef<HTMLButtonElement>(null);
   useEffect(() => { ok.current?.focus(); }, []);
-  const where = [o.city_name, o.warehouse_name === "Адресна доставка" ? o.address : o.warehouse_name].filter(Boolean).join(", ");
+  const where = [o.city_name, o.warehouse_name === "Адресна доставка" ? o.address : noKg(o.warehouse_name || "")].filter(Boolean).join(", ");
   return (
     <div className="tt-ok">
       <span className="tt-ok-ic"><Check size={40} strokeWidth={2.6} /></span>
@@ -418,7 +419,7 @@ function WarehouseList({ cityRef, way, value, onPick }: { cityRef: string; way: 
       <span className="wz-lb">{word}</span>
       <span className={`wz-big tt-in${value.ref ? " ok" : ""}`}>
         <Search size={18} />
-        <input value={q} disabled={!cityRef} placeholder={!cityRef ? "Спершу оберіть місто" : value.ref ? value.name.split(":")[0] : "Номер або вулиця"} onChange={(e) => setQ(e.target.value)}
+        <input value={q} disabled={!cityRef} placeholder={!cityRef ? "Спершу оберіть місто" : value.ref ? noKg(value.name.split(":")[0]) : "Номер або вулиця"} onChange={(e) => setQ(e.target.value)}
           aria-label={`Пошук: ${word.toLowerCase()}`} autoComplete="off"
           onKeyDown={(e) => { if (e.key === "Enter" && items[0]) { e.preventDefault(); onPick(items[0]); setQ(""); } }} />
         {cityRef && res.data?.ok && <small className="muted tt-cnt">{items.length} у місті</small>}
@@ -432,7 +433,7 @@ function WarehouseList({ cityRef, way, value, onPick }: { cityRef: string; way: 
             const [n, ...rest] = (o.label || o.name).split(":");
             return (
               <button key={o.ref} type="button" role="option" aria-selected={o.ref === value.ref} className={`tt-wh${o.ref === value.ref ? " on" : ""}`} onClick={() => { onPick(o); setQ(""); }}>
-                <span className="tt-wh-t"><b>{n}</b>{o.max_weight ? <span className="tt-tag">до {o.max_weight} кг</span> : null}{rest.length > 0 && <small>{rest.join(":").trim()}</small>}</span>
+                <span className="tt-wh-t"><b>{noKg(n)}</b>{o.max_weight ? <span className="tt-tag">до {o.max_weight} кг</span> : null}{rest.length > 0 && <small>{rest.join(":").trim()}</small>}</span>
                 <i className="rd" aria-hidden />
               </button>
             );
