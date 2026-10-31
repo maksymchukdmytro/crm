@@ -137,7 +137,7 @@ function ProductList({ editable }: { editable: boolean }) {
                         {p.upsell && <Badge kind="info">допродаж</Badge>}{!p.active && <Badge>архів</Badge>}</div></div>
                   </div></td>
                   <td className="muted">{p.category_id ? cats[p.category_id] ?? "" : ""}</td>
-                  <td className="mono">{p.sku}</td>
+                  <td className="mono nowrap">{p.sku}</td>
                   <td className="num">{p.discount_percent > 0 ? <><span className="pr-old">{money(p.price)}</span> <b className="pr-sale">{money(p.sale_price)}</b></> : money(p.price)}</td>
                   <td className="num muted">{money(p.cost)}</td>
                   <td className="num">{money(p.sale_price - p.cost)}</td>
