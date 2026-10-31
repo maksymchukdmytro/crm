@@ -550,3 +550,4 @@
   .tabbar a, .tabbar button { font-size: 10px; }
   .m-top h1 { font-size: 26px; }
 }
+@media (max-width: 768px) { .oc-goods .block-head .sub { display: none; } }
