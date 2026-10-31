@@ -754,6 +754,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Csv
+         * @description Експорт поточної вибірки списку в CSV (Excel відкриває з «;» і BOM): ті самі фільтри, що й у списку.
+         */
+        get: operations["export_csv_api_orders_export_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/sources": {
         parameters: {
             query?: never;
@@ -971,6 +991,26 @@ export interface paths {
          * @description Позначка ✓ біля передоплати: кошти надійшли на рахунок юрособи (хто й коли підтвердив).
          */
         post: operations["confirm_prepayment_api_orders__order_id__prepayment_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{order_id}/print": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Order Print
+         * @description Бланк замовлення для друку (простий аркуш: покупець, доставка, товари, суми, коментар).
+         */
+        get: operations["order_print_api_orders__order_id__print_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8873,6 +8913,26 @@ export interface operations {
             };
         };
     };
+    export_csv_api_orders_export_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+        };
+    };
     sources_api_orders_sources_get: {
         parameters: {
             query?: never;
@@ -9276,6 +9336,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    order_print_api_orders__order_id__print_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
                 };
             };
             /** @description Validation Error */
