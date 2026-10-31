@@ -51,7 +51,7 @@ a[onClick], a:not([href]) { cursor: pointer; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .toast-wrap { z-index: 300; }
 .form.tpl { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; gap: 8px; }
-.form.tpl input, .form.tpl select { height: 34px; }
+.form.tpl input, .form.tpl select, .form.tpl .xsel { height: 34px; }
 
 /* Ctrl+K */
 .palette-wrap { align-items: flex-start; padding-top: 12vh; }
@@ -242,14 +242,14 @@ a[onClick], a:not([href]) { cursor: pointer; }
 .dir-statuses .chip { font-size: 12px; padding: 2px 9px; }
 .pm-table td { vertical-align: middle; }
 .pm-table tr.off td { color: var(--muted); }
-.pm-table input:not([type=checkbox]), .pm-table select { height: 32px; }
+.pm-table input:not([type=checkbox]), .pm-table select, .pm-table .xsel { height: 32px; }
 .pm-icon { display: flex; align-items: center; gap: 6px; }
-.pm-icon select { width: 112px; }
+.pm-icon select, .pm-icon .xsel { width: 112px; }
 /* назва виду оплати не стискається до двох літер: таблиця краще прокрутиться вбік */
 .pm-table { min-width: 960px; }
 .pm-table td:nth-child(3) input { min-width: 190px; width: 100%; }
-.pm-table td:nth-child(4) select { min-width: 170px; }
-.pm-table td:nth-child(5) select, .pm-table td:nth-child(6) select { min-width: 150px; }
+.pm-table td:nth-child(4) select, .pm-table td:nth-child(4) .xsel { min-width: 170px; }
+.pm-table td:nth-child(5) select, .pm-table td:nth-child(6) select, .pm-table td:nth-child(5) .xsel, .pm-table td:nth-child(6) .xsel { min-width: 150px; }
 .dir-st-btn { font: inherit; font-size: 12px; color: var(--muted); background: none; border: 0; cursor: pointer; padding: 0 2px; text-align: left; grid-column: 1 / -1; margin-top: -2px; }
 .dir-st-btn:hover { color: var(--accent); }
 .pay-cell { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
@@ -257,7 +257,7 @@ a[onClick], a:not([href]) { cursor: pointer; }
 .st-cell .badge { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
 .remind-dot { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: var(--r-pill); color: var(--warn); background: var(--warn-soft); flex: none; }
 .remind-dot.due { color: #fff; background: var(--bad); }
-.t.dense td select { min-width: 140px; }
+.t.dense td select, .t.dense td .xsel { min-width: 140px; }
 
 /* Вікно створення ТТН */
 .ttn-seats { display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--side); border: 1px solid var(--line); border-radius: var(--r-block); }
@@ -282,16 +282,16 @@ a[onClick], a:not([href]) { cursor: pointer; }
 .np-info { flex-direction: row; flex-wrap: wrap; gap: 8px 20px; margin-top: 6px; }
 .np-rules { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .np-rule { display: grid; grid-template-columns: minmax(0, 1.6fr) 14px minmax(0, 1fr) minmax(0, 1fr) 24px; gap: 8px; align-items: center; }
-.np-rule select { height: 34px; }
+.np-rule select, .np-rule .xsel { height: 34px; }
 .np-rule.head span { font-size: 12px; color: var(--muted); }
 .np-rule .dir-st-btn { grid-column: auto; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .np-rule-ex { grid-column: 1 / -1; padding-bottom: 6px; }
 @media (max-width: 760px) {
   .np-rule { grid-template-columns: minmax(0, 1fr) 28px; padding: 10px 0; border-top: 1px solid var(--line); }
   .np-rule > .muted, .np-rule.head { display: none; }
-  .np-rule > select:first-of-type { grid-column: 1; grid-row: 1; }
+  .np-rule > select:first-of-type, .np-rule > .xsel:first-of-type { grid-column: 1; grid-row: 1; }
   .np-rule > .x { grid-column: 2; grid-row: 1; }
-  .np-rule > select:nth-of-type(2), .np-rule > .dir-st-btn { grid-column: 1 / -1; }
+  .np-rule > select:nth-of-type(2), .np-rule > .dir-st-btn, .np-rule > .xsel:nth-of-type(2) { grid-column: 1 / -1; }
 }
 
 /* Маркетплейси */
@@ -300,7 +300,7 @@ a[onClick], a:not([href]) { cursor: pointer; }
 .mp-maps { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .mp-map { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
 .mp-map-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 8px; align-items: center; font-size: 13px; }
-.mp-map-row select { height: 32px; }
+.mp-map-row select, .mp-map-row .xsel { height: 32px; }
 @media (max-width: 900px) { .mp-maps { grid-template-columns: 1fr; } }
 
 

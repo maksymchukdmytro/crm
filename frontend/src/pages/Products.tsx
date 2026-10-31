@@ -11,7 +11,7 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { AttributeGroup, Category, Manufacturer, Product, ProductDetail } from "../lib/types";
 type ProductSummary = { days: number; qty: number; sum: number; margin: number; buyout_rate: number | null; upsell_share: number | null; orders: number; sold_total: number };
-import { Badge, Block, Button, confirmAction, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, Tag, Toggle, Window, useMobile } from "../components/ui";
+import { Badge, Block, Button, confirmAction, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, Tag, Toggle, Window, useMobile , Select } from "../components/ui";
 import MultiSelect from "../components/MultiSelect";
 import { MovesTable } from "./Catalog";
 import "./products.css";
@@ -84,15 +84,15 @@ function ProductList({ editable }: { editable: boolean }) {
       {editable && <MobileActs><RoundButton icon={Plus} label="Новий товар" primary onClick={() => setEdit("new")} /></MobileActs>}
       <div className="filters">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Назва, артикул або модель" />
-        {catOpts.length > 0 && <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        {catOpts.length > 0 && <Select value={category} onChange={(e) => setCategory(e.target.value)}>
           <option value="">Усі категорії</option><option value="-1">Без категорії</option>
-          {catOpts.map((c) => <option key={c.id} value={c.id}>{c.depth ? "  · " : ""}{c.label}</option>)}</select>}
-        {meta.manufacturers.length > 0 && <select value={manufacturer} onChange={(e) => setManufacturer(e.target.value)}>
-          <option value="">Усі виробники</option>{meta.manufacturers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select>}
-        <select value={stockState} onChange={(e) => setStockState(e.target.value)}>
+          {catOpts.map((c) => <option key={c.id} value={c.id}>{c.depth ? "  · " : ""}{c.label}</option>)}</Select>}
+        {meta.manufacturers.length > 0 && <Select value={manufacturer} onChange={(e) => setManufacturer(e.target.value)}>
+          <option value="">Усі виробники</option>{meta.manufacturers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</Select>}
+        <Select value={stockState} onChange={(e) => setStockState(e.target.value)}>
           <option value="">Будь-який залишок</option><option value="in">Є в наявності</option><option value="low">Закінчується</option>
-          <option value="out">Немає</option><option value="minus">Мінус</option></select>
-        <select value={show} onChange={(e) => setShow(e.target.value)}><option value="active">Активні</option><option value="inactive">Архів</option><option value="all">Усі</option></select>
+          <option value="out">Немає</option><option value="minus">Мінус</option></Select>
+        <Select value={show} onChange={(e) => setShow(e.target.value)}><option value="active">Активні</option><option value="inactive">Архів</option><option value="all">Усі</option></Select>
         <span className="spacer" />
         {editable && <button className="btn primary" onClick={() => setEdit("new")}><Plus size={15} /> Товар</button>}
       </div>
@@ -297,10 +297,10 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
               <Field label="Назва"><input value={String(v("name", ""))} onChange={set("name")} required autoFocus={isNew} /></Field>
               <div className="pw-2">
                 <Field label="Артикул (SKU)"><input className="mono" value={String(v("sku", ""))} onChange={set("sku")} /></Field>
-                <Field label="Категорія"><select value={String(v("category_id", "") ?? "")} onChange={(e) => setF({ ...f, category_id: e.target.value ? Number(e.target.value) : null })}>
-                  <option value="">без категорії</option>{categoryOptions(meta.categories).map((c) => <option key={c.id} value={c.id}>{c.depth ? "· " : ""}{c.label}</option>)}</select></Field>
-                <Field label="Виробник"><select value={String(v("manufacturer_id", "") ?? "")} onChange={(e) => setF({ ...f, manufacturer_id: e.target.value ? Number(e.target.value) : null })}>
-                  <option value="">не вказано</option>{meta.manufacturers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></Field>
+                <Field label="Категорія"><Select value={String(v("category_id", "") ?? "")} onChange={(e) => setF({ ...f, category_id: e.target.value ? Number(e.target.value) : null })}>
+                  <option value="">без категорії</option>{categoryOptions(meta.categories).map((c) => <option key={c.id} value={c.id}>{c.depth ? "· " : ""}{c.label}</option>)}</Select></Field>
+                <Field label="Виробник"><Select value={String(v("manufacturer_id", "") ?? "")} onChange={(e) => setF({ ...f, manufacturer_id: e.target.value ? Number(e.target.value) : null })}>
+                  <option value="">не вказано</option>{meta.manufacturers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</Select></Field>
                 <Field label="Модель"><input value={String(v("model", ""))} onChange={set("model")} placeholder="—" /></Field>
               </div>
               <Field label="Країни продажу" hint="Порожньо — у всіх країнах">
@@ -568,7 +568,7 @@ function CategoriesTab() {
   return (
     <div className="card dir">
       <AddRow placeholder="Нова категорія" onAdd={(name) => save({ name, parent_id: parent ? Number(parent) : null })}>
-        <select value={parent} onChange={(e) => setParent(e.target.value)} style={{ width: "auto" }}><option value="">розділ (верхній рівень)</option>{roots.map((r) => <option key={r.id} value={r.id}>у «{r.name}»</option>)}</select>
+        <Select value={parent} onChange={(e) => setParent(e.target.value)} style={{ width: "auto" }}><option value="">розділ (верхній рівень)</option>{roots.map((r) => <option key={r.id} value={r.id}>у «{r.name}»</option>)}</Select>
       </AddRow>
       {roots.map((r) => <div key={r.id}>{row(r, 0)}{data.filter((c) => c.parent_id === r.id).map((c) => row(c, 1))}</div>)}
       {!data.length && <Empty><FolderTree size={22} className="e-ico" />Категорій ще немає. Почніть із розділів, наприклад «Мікрофони» чи «Світло».</Empty>}

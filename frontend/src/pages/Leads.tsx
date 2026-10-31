@@ -10,6 +10,7 @@ import type { Order, OrderList, OrderRow } from "../lib/types";
 import { Button, ChipSelect, DenseTable, FilterChip, MobileActs, Ring, RoundButton, Segmented, StatusPill, Tabs, UaPhone, Window, type DenseCol, type TabItem } from "../components/ui";
 import { SOURCE_COLORS } from "./Orders";
 import LeadWindow from "./LeadWindow";
+import { SourceChips } from "./NewOrder";
 
 const TABS: [string, string][] = [["open", "Відкриті"], ["new", "Нові"], ["no_answer", "Недодзвон"], ["callback", "Передзвонити"],
   ["duplicate", "Дублі"], ["refused", "Відмова ліда"], ["converted", "Створено замовлення"], ["all", "Усі"]];
@@ -205,10 +206,11 @@ function NewLeadDialog({ onClose, onOpen }: { onClose: () => void; onOpen: (id: 
   const toast = useToast();
   const [name, setName] = useState("");
   const [tel, setTel] = useState("");
+  const [src, setSrc] = useState<number | "">("");
   const newSt = meta.statuses.find((s) => s.code === "new");
   const ok = tel.replace(/\D/g, "").length >= 12;
   const add = useMutation({
-    mutationFn: () => api.post<Order>("/orders", { customer_name: name.trim(), phone: tel, country: "UA", status_id: newSt?.id }),
+    mutationFn: () => api.post<Order>("/orders", { customer_name: name.trim(), phone: tel, country: "UA", status_id: newSt?.id, source_id: src || null }),
     onSuccess: (o) => {
       qc.invalidateQueries({ queryKey: ["orders"] });
       qc.invalidateQueries({ queryKey: ["counters"] });
@@ -223,10 +225,11 @@ function NewLeadDialog({ onClose, onOpen }: { onClose: () => void; onOpen: (id: 
       footer={<><span className="spacer" /><Button onClick={onClose}>Скасувати</Button>
         <Button variant="primary" icon={Plus} disabled={!ok || add.isPending} onClick={() => add.mutate()}>{add.isPending ? "Додаю…" : "Додати лід"}</Button></>}>
       <form className="form new-lead" onSubmit={(e) => { e.preventDefault(); if (ok && !add.isPending) add.mutate(); }}>
-        <label className="fbox"><span className="lbl">Ім'я</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Як звати покупця" autoFocus /></label>
         <label className="fbox"><span className="lbl">Телефон</span>
-          <UaPhone value={tel} country="UA" onChange={setTel} aria-label="Телефон" /></label>
+          <UaPhone value={tel} country="UA" onChange={setTel} aria-label="Телефон" autoFocus /></label>
+        <label className="fbox"><span className="lbl">Ім'я</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Як звати покупця" /></label>
+        <div className="new-lead-src"><SourceChips form={{ source_id: src }} set={(p) => setSrc(p.source_id)} /></div>
         <p className="hint">Лід з'явиться в стовпці «Новий». Товари, оплату й доставку додасте, відкривши його.</p>
         <button type="submit" hidden aria-hidden tabIndex={-1} />
       </form>

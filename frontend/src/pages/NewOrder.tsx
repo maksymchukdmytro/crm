@@ -22,7 +22,7 @@ import { Goods } from "./card/Goods";
 import { digits, plural, shortDate } from "./card/util";
 
 // доставка — останній крок: «Створити й оформити ТТН» одразу веде у вікно ТТН (рішення власника 31.10)
-const STEPS = ["Покупець", "Товар", "Оплата", "Джерело", "Доставка"] as const;
+const STEPS = ["Покупець", "Товар", "Оплата", "Деталі", "Доставка"] as const;
 const DRAFT = "crm-new-order-draft-2";
 const USAGE = "crm-pay-usage";
 const KIND_TEXT: Record<string, string> = { cod: "післяплата", partial: "передоплата + решта", prepaid: "повна оплата" };
@@ -253,6 +253,29 @@ function StepCustomer({ form, set }: { form: Form; set: (p: Partial<Form>) => vo
       ? <><label className="wz-lb" htmlFor="wz-email">Email</label>
         <input id="wz-email" className="wz-big" type="email" value={form.email} autoFocus={!form.email} onChange={(e) => set({ email: e.target.value })} placeholder="name@example.com" /></>
       : <button type="button" className="wz-add" onClick={() => setEmail(true)}><Plus size={15} />Email</button>}
+    <SourceChips form={form} set={set} />
+  </>);
+}
+
+/** Джерело замовлення — чипами (найпопулярніші першими, решта — «Ще»); той самий вибір і у «Новий лід». */
+export function SourceChips({ form, set }: { form: Pick<Form, "source_id">; set: (p: { source_id: number | "" }) => void }) {
+  const meta = useMeta();
+  const [more, setMore] = useState(false);
+  const sources = meta.order_sources;
+  const TOP = 7;
+  if (!sources.length) return null;
+  const shown = more ? sources : sources.slice(0, TOP);
+  const cur = sources.find((x) => x.id === form.source_id);
+  const chips = cur && !shown.includes(cur) ? [...shown, cur] : shown;
+  return (<>
+    <div className="wz-lb wz-lb-src">Джерело</div>
+    <div className="wz-chips" role="radiogroup" aria-label="Джерело">
+      {chips.map((x) => (
+        <button key={x.id} type="button" role="radio" aria-checked={x.id === form.source_id} className={`wz-chip${x.id === form.source_id ? " on" : ""}`}
+          onClick={() => set({ source_id: x.id === form.source_id ? "" : x.id })}>{x.name}</button>
+      ))}
+      {!more && sources.length > TOP && <button type="button" className="wz-chip dash" onClick={() => setMore(true)}>Ще {sources.length - TOP}</button>}
+    </div>
   </>);
 }
 
@@ -414,14 +437,9 @@ function ReadyTtn({ form, set }: { form: Form; set: (p: Partial<Form>) => void }
 // ======================================================================== 5. Джерело й деталі
 function StepDetails({ form, set }: { form: Form; set: (p: Partial<Form>) => void }) {
   const meta = useMeta();
-  const [more, setMore] = useState(false);
   const [extra, setExtra] = useState(false);
   const [utm, setUtm] = useState(false);
-  const sources = meta.order_sources;
-  const TOP = 7;
-  const shown = more ? sources : sources.slice(0, TOP);
-  const curSrc = sources.find((s) => s.id === form.source_id);
-  const chips = curSrc && !shown.includes(curSrc) ? [...shown, curSrc] : shown;
+  const curSrc = meta.order_sources.find((s) => s.id === form.source_id);
   const office = meta.offices.find((o) => o.id === (curSrc?.office_id ?? form.office_id))?.name;
   const extras = EXTRA.map((f, i) => ({ f, i, name: meta.extra_fields[i] || `Поле ${i + 1}` })).filter((x) => meta.extra_on?.[x.i] ?? true);
   // вибір — таким самим меню, як у картці замовлення (SelectPick), а не системним списком
@@ -432,17 +450,7 @@ function StepDetails({ form, set }: { form: Form; set: (p: Partial<Form>) => voi
   );
   const me = meta.managers.find((m) => m.id === meta.user.id);
   return (<>
-    <Q title="Звідки замовлення?" sub="Джерело, менеджер і коментар — далі доставка" />
-    {sources.length > 0 && (<>
-      <div className="wz-lb">Джерело</div>
-      <div className="wz-chips" role="radiogroup" aria-label="Джерело">
-        {chips.map((s) => (
-          <button key={s.id} type="button" role="radio" aria-checked={s.id === form.source_id} className={`wz-chip${s.id === form.source_id ? " on" : ""}`}
-            onClick={() => set({ source_id: s.id === form.source_id ? "" : s.id })}>{s.name}</button>
-        ))}
-        {!more && sources.length > TOP && <button type="button" className="wz-chip dash" onClick={() => setMore(true)}>Ще {sources.length - TOP}</button>}
-      </div>
-    </>)}
+    <Q title="Деталі замовлення" sub="Менеджер, юрособа й коментар — далі доставка" />
     <div className="wz-grid2">
       {meta.user.role === "admin" ? sel("wz-mgr", "Менеджер", form.manager_id, (v) => set({ manager_id: v }), meta.managers.map((m) => (m.id === meta.user.id ? { ...m, name: `${m.name} (ви)` } : m)),
         "Автоматично", "за правилом розподілу")

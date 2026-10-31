@@ -11,7 +11,7 @@ import { api, qs, ROOT } from "../lib/api";
 import { useMeta } from "../lib/app";
 import { dt, isoDay, money, phone } from "../lib/format";
 import type { Stats, StatsBreakdown, StatsOptions, StatsOrders, StatsProduct, StatsSegments, StatsSummary, Status } from "../lib/types";
-import { Empty, Pill, Spinner, Tabs } from "../components/ui";
+import { Empty, Pill, Spinner, Tabs , Select } from "../components/ui";
 import MultiSelect, { EMPTY, type MsOption } from "../components/MultiSelect";
 import StatsChart, { type ChartStatus } from "../components/StatsChart";
 import OrderModal from "./OrderCard";
@@ -143,12 +143,12 @@ export default function StatsPage() {
         <div className="st-head-r">
           <label className="st-sel" title="За якою датою рахувати замовлення"><CalendarDays size={15} />
             <span className="st-sel-pre">За датою:</span>
-            <select value={dateField} onChange={(e) => set({ date_field: e.target.value })}>
+            <Select value={dateField} onChange={(e) => set({ date_field: e.target.value })}>
               {Object.entries(opts.data?.date_fields ?? { created: "Додане" }).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select><ChevronDown size={14} /></label>
-          <label className="st-sel"><select value={preset} onChange={(e) => set({ p: e.target.value === "d30" ? null : e.target.value, ...(e.target.value === "custom" ? { from, to } : { from: null, to: null }) })}>
+            </Select><ChevronDown size={14} /></label>
+          <label className="st-sel"><Select value={preset} onChange={(e) => set({ p: e.target.value === "d30" ? null : e.target.value, ...(e.target.value === "custom" ? { from, to } : { from: null, to: null }) })}>
             {PRESETS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select><ChevronDown size={14} /></label>
+          </Select><ChevronDown size={14} /></label>
           {preset === "custom" ? (
             <span className="st-dates"><input type="date" value={from} max={to} onChange={(e) => set({ from: e.target.value })} /><span>—</span>
               <input type="date" value={to} min={from} onChange={(e) => set({ to: e.target.value })} /></span>
@@ -359,9 +359,9 @@ function BreakdownTab({ qkey, params, dims, extraName, exportHref, onPick }: {
   return (
     <div className="card flush">
       <TabHead exportHref={exportHref(dim)}>
-        <label className="st-sel"><select value={dim} onChange={(e) => setDim(e.target.value)}>
+        <label className="st-sel"><Select value={dim} onChange={(e) => setDim(e.target.value)}>
           {Object.entries(dims).map(([k, v]) => <option key={k} value={k}>{dimName(k, v)}</option>)}
-        </select><ChevronDown size={14} /></label>
+        </Select><ChevronDown size={14} /></label>
         {isFetching && <span className="spinner sm" />}
         {FILTERABLE_DIMS.has(dim) && <span className="muted">Клік по рядку — додати у фільтр</span>}
       </TabHead>
@@ -449,9 +449,9 @@ function SegmentsTab({ qkey, params, metrics }: { qkey: string; params: Record<s
   return (
     <div className="card">
       <div className="st-tabhead flat">
-        <label className="st-sel"><select value={metric} onChange={(e) => setMetric(e.target.value)}>
+        <label className="st-sel"><Select value={metric} onChange={(e) => setMetric(e.target.value)}>
           {Object.entries(metrics).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select><ChevronDown size={14} /></label>
+        </Select><ChevronDown size={14} /></label>
         <span className="muted">Розподіл ваших замовлень за ціною — на який чек і офер покупці реагують найкраще{data?.step ? `, крок ${money(data.step)} ₴` : ""}</span>
       </div>
       {!data ? <Empty><Spinner /></Empty> : !buckets.length ? <Empty>Немає даних</Empty> : <>

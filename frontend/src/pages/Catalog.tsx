@@ -6,7 +6,7 @@ import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num } from "../lib/format";
 import type { Move, Product, Purchase, Supplier, Warehouse } from "../lib/types";
-import { Badge, Button, DenseTable, Empty, Field, MobileActs, Modal, RoundButton, Segmented, Spinner, Tabs, Window, type DenseCol } from "../components/ui";
+import { Badge, Button, DenseTable, Empty, Field, MobileActs, Modal, RoundButton, Segmented, Spinner, Tabs, Window, type DenseCol , Select } from "../components/ui";
 
 
 export function MovesTable({ moves, compact = false }: { moves: Move[]; compact?: boolean }) {
@@ -152,12 +152,12 @@ function AdjustWindow({ initial, onClose }: { initial: { product_id: string; var
     <Window size="sm" onClose={onClose} title="Прийняти / списати · інвентаризація"
       footer={<><span className="spacer" /><Button onClick={onClose}>Скасувати</Button><Button variant="primary" disabled={adjust.isPending || !adj.product_id || !adj.qty} onClick={() => adjust.mutate()}>Застосувати</Button></>}>
       <form className="form" onSubmit={(e) => { e.preventDefault(); adjust.mutate(); }}>
-        <Field label="Товар"><select value={adj.product_id} onChange={(e) => setAdj({ ...adj, product_id: e.target.value, variant_id: "" })} required autoFocus>
-          <option value="">Оберіть товар…</option>{meta.products.map((p) => <option key={p.id} value={p.id}>{p.name} (зараз {p.stock})</option>)}</select></Field>
-        {vs.length > 0 && <Field label="Варіант"><select value={adj.variant_id} onChange={(e) => setAdj({ ...adj, variant_id: e.target.value })} required>
-          <option value="">Оберіть варіант…</option>{vs.map((x) => <option key={x.id} value={x.id}>{x.name} (зараз {x.stock})</option>)}</select></Field>}
+        <Field label="Товар"><Select value={adj.product_id} onChange={(e) => setAdj({ ...adj, product_id: e.target.value, variant_id: "" })} required autoFocus>
+          <option value="">Оберіть товар…</option>{meta.products.map((p) => <option key={p.id} value={p.id}>{p.name} (зараз {p.stock})</option>)}</Select></Field>
+        {vs.length > 0 && <Field label="Варіант"><Select value={adj.variant_id} onChange={(e) => setAdj({ ...adj, variant_id: e.target.value })} required>
+          <option value="">Оберіть варіант…</option>{vs.map((x) => <option key={x.id} value={x.id}>{x.name} (зараз {x.stock})</option>)}</Select></Field>}
         <div className="cols">
-          <Field label="Режим"><select value={adj.mode} onChange={(e) => setAdj({ ...adj, mode: e.target.value })}><option value="set">Фактичний залишок</option><option value="delta">Додати / відняти (+5, −2)</option></select></Field>
+          <Field label="Режим"><Select value={adj.mode} onChange={(e) => setAdj({ ...adj, mode: e.target.value })}><option value="set">Фактичний залишок</option><option value="delta">Додати / відняти (+5, −2)</option></Select></Field>
           <Field label="Кількість"><input value={adj.qty} onChange={(e) => setAdj({ ...adj, qty: e.target.value })} required inputMode="numeric" /></Field>
         </div>
         <Field label="Причина"><input value={adj.comment} onChange={(e) => setAdj({ ...adj, comment: e.target.value })} placeholder="Інвентаризація, брак, пересорт…" /></Field>
@@ -171,7 +171,7 @@ function AllMoves({ onClose }: { onClose: () => void }) {
   const { data } = useQuery({ queryKey: ["warehouse", "moves", kind], queryFn: () => api.get<Warehouse>(`/warehouse${qs({ kind })}`) });
   return (
     <Window size="lg" onClose={onClose} title="Рух товарів"
-      actions={data && <select style={{ width: "auto" }} value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Операція"><option value="">Усі операції</option>{Object.entries(data.kinds).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>}>
+      actions={data && <Select style={{ width: "auto" }} value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Операція"><option value="">Усі операції</option>{Object.entries(data.kinds).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select>}>
       {data ? <MovesTable moves={data.moves} /> : <Empty><Spinner /></Empty>}
     </Window>
   );
@@ -248,14 +248,14 @@ function PurchaseModal({ id, onClose, product = "" }: { id: number | "new"; onCl
     <Modal onClose={onClose} size="lg" title={isNew ? "Нова закупівля" : <>Закупівля №{id} <Badge kind={PSTATUS[data!.status]?.[1]}>{PSTATUS[data!.status]?.[0]}</Badge></>}>
       <fieldset disabled={!editable} className="form" style={{ border: 0, padding: 0, margin: 0 }}>
         <div className="cols">
-          <Field label="Постачальник"><select value={cur.supplier_id} onChange={(e) => setDraft({ ...cur, supplier_id: e.target.value })}><option value="">—</option>{sups.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
+          <Field label="Постачальник"><Select value={cur.supplier_id} onChange={(e) => setDraft({ ...cur, supplier_id: e.target.value })}><option value="">—</option>{sups.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select></Field>
           <Field label="Коментар"><input value={cur.comment} onChange={(e) => setDraft({ ...cur, comment: e.target.value })} /></Field>
         </div>
         <table className="t items">
           <thead><tr><th>Товар</th><th className="num">К-сть</th><th className="num">Ціна закупівлі</th><th className="num">Сума</th><th /></tr></thead>
           <tbody>{cur.items.map((it, i) => (
             <tr key={i}>
-              <td><select value={it.product_id} onChange={(e) => setItem(i, { product_id: e.target.value })}><option value="">Оберіть…</option>{meta.products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></td>
+              <td><Select value={it.product_id} onChange={(e) => setItem(i, { product_id: e.target.value })}><option value="">Оберіть…</option>{meta.products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select></td>
               <td className="qty num"><input type="number" min={1} value={it.qty} onChange={(e) => setItem(i, { qty: e.target.value })} /></td>
               <td className="price num"><input value={it.cost} onChange={(e) => setItem(i, { cost: e.target.value })} inputMode="decimal" /></td>
               <td className="num">{money(num(it.qty) * num(it.cost), true)}</td>

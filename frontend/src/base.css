@@ -110,15 +110,15 @@ label > .hint { line-height: 1.35; }
 .checks { display: flex; flex-direction: column; gap: 10px; padding: 2px 0; }
 .form-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-top: 4px; }
 .form-actions .spacer { flex: 1; }
-input, select, textarea { font: inherit; color: var(--ink); background: #fff; border: 1px solid #dfdfdc; border-radius: var(--r-field); padding: 6px 10px; min-width: 0; width: 100%; transition: border-color .12s, box-shadow .12s; }
+input, select, textarea, .xsel { font: inherit; color: var(--ink); background: #fff; border: 1px solid #dfdfdc; border-radius: var(--r-field); padding: 6px 10px; min-width: 0; width: 100%; transition: border-color .12s, box-shadow .12s; }
 input::placeholder, textarea::placeholder { color: var(--faint); }
 input[type=checkbox], input[type=radio] { width: 15px; height: 15px; accent-color: var(--ink); }
 input[type=color] { padding: 2px; height: 32px; width: 44px; }
 textarea { min-height: 64px; resize: vertical; }
-.form input:not([type=checkbox]):not([type=radio]):not([type=color]), .form select { height: 36px; }
-input:focus, select:focus, textarea:focus { outline: none; border-color: #9fc5ef; box-shadow: 0 0 0 3px rgba(35, 131, 226, .14); }
-input:disabled, fieldset:disabled input, fieldset:disabled select { background: var(--line-2); color: var(--muted); }
-select { appearance: none; padding-right: 26px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238f8e8a' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 7px center / 14px; }
+.form input:not([type=checkbox]):not([type=radio]):not([type=color]), .form select, .form .xsel { height: 36px; }
+input:focus, select:focus, textarea:focus, .xsel:focus { outline: none; border-color: #9fc5ef; box-shadow: 0 0 0 3px rgba(35, 131, 226, .14); }
+input:disabled, fieldset:disabled input, fieldset:disabled select, fieldset:disabled .xsel { background: var(--line-2); color: var(--muted); }
+select, .xsel { appearance: none; padding-right: 26px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238f8e8a' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 7px center / 14px; }
 .hint { font-size: 12px; color: var(--muted); font-weight: 400; }
 
 /* Кнопки */
@@ -178,13 +178,13 @@ table.dense td { font-size: 13.5px; }
 
 /* Фільтри */
 .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
-.filters input, .filters select { width: auto; min-width: 120px; font-size: 13.5px; padding-top: 5px; padding-bottom: 5px; }
+.filters input, .filters select, .filters .xsel { width: auto; min-width: 120px; font-size: 13.5px; padding-top: 5px; padding-bottom: 5px; }
 .filters input[type=search] { min-width: 260px; padding-left: 30px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238f8e8a' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 9px center / 15px; }
 .filters input[type=checkbox] { min-width: 0; }
 .filters label.check { font-size: 13.5px; color: var(--ink-2); }
 .bulk { display: none; gap: 8px; align-items: center; padding: 7px 12px; background: var(--accent-soft); border-bottom: 1px solid var(--line); flex-wrap: wrap; font-size: 13.5px; }
 .bulk.on { display: flex; }
-.bulk select { width: auto; }
+.bulk select, .bulk .xsel { width: auto; }
 .pager { display: flex; gap: 6px; align-items: center; justify-content: space-between; padding: 10px 12px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line-2); }
 
 /* Повідомлення */
@@ -277,9 +277,9 @@ details.box summary { cursor: pointer; font-weight: 450; font-size: 13.5px; }
 .prop { display: flex; align-items: center; gap: 8px; min-height: 34px; border-radius: var(--r-field); padding: 0 4px; position: relative; }
 .prop:hover { background: var(--hover); }
 .prop > svg.i { color: var(--muted); }
-.prop input, .prop select, .prop textarea { border-color: transparent; background-color: transparent; padding: 5px 6px; font-size: 14px; }
-.prop input:hover, .prop select:hover { border-color: transparent; }
-.prop input:focus, .prop select:focus, .prop textarea:focus { background-color: #fff; border-color: #9fc5ef; }
+.prop input, .prop select, .prop textarea, .prop .xsel { border-color: transparent; background-color: transparent; padding: 5px 6px; font-size: 14px; }
+.prop input:hover, .prop select:hover, .prop .xsel:hover { border-color: transparent; }
+.prop input:focus, .prop select:focus, .prop textarea:focus, .prop .xsel:focus { background-color: #fff; border-color: #9fc5ef; }
 .prop .val { padding: 5px 6px; font-size: 14px; flex: 1; min-width: 0; }
 .prop .val.muted { color: var(--muted); }
 .prop .acts { display: flex; gap: 2px; margin-left: auto; }

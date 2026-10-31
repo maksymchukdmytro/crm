@@ -14,7 +14,7 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { Order } from "../lib/types";
 import {
-  Block, Button, Checklist, IconButton, MenuButton, PayCheck, Ring, RoundButton, Segmented, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useMobile, useOutside,
+  Block, Button, Checklist, IconButton, MenuButton, PayCheck, Ring, RoundButton, Segmented, Select, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useMobile, useOutside,
   type CheckItem,
 } from "../components/ui";
 import { flag, PayLabel } from "../components/payicons";
@@ -778,8 +778,8 @@ function PaymentBlock({ order, form, set, total, cod, prepay, step, readOnly, bu
       {!readOnly && order && (adding ? (
         <form className="oc-addpay" onSubmit={(e) => { e.preventDefault(); onAddPayment({ amount: extra.amount, method: extra.method }); setAdding(false); setExtra({ amount: "", method: "card" }); }}>
           <span className="money-in"><input autoFocus value={extra.amount} onChange={(e) => setExtra({ ...extra, amount: e.target.value })} inputMode="decimal" placeholder="Сума" aria-label="Сума оплати" /><span className="unit">₴</span></span>
-          <select value={extra.method} onChange={(e) => setExtra({ ...extra, method: e.target.value })} aria-label="Спосіб">
-            <option value="card">Карта</option><option value="iban">Рахунок</option><option value="cash">Готівка</option><option value="other">Інше</option></select>
+          <Select value={extra.method} onChange={(e) => setExtra({ ...extra, method: e.target.value })} aria-label="Спосіб">
+            <option value="card">Карта</option><option value="iban">Рахунок</option><option value="cash">Готівка</option><option value="other">Інше</option></Select>
           <Button type="submit" size={30} disabled={!extra.amount}>Додати</Button>
           <IconButton icon={X} label="Скасувати" quiet size={28} onClick={() => setAdding(false)} />
         </form>
@@ -1002,7 +1002,7 @@ function HistoryPanel({ order, onClose, onComment, onSms }: { order: Order; onCl
       footer={kind === "sms" && meta.sms_ready ? (
         <form className="hp-form" onSubmit={(e) => { e.preventDefault(); if (text.trim()) { onSms(text, channel); setText(""); } }}>
           <textarea rows={2} value={text} onChange={(e) => setText(e.target.value)} placeholder="Текст SMS. Можна {ttn}, {total}, {cod}, {first_name}…" aria-label="Текст SMS" />
-          <div className="hp-row"><select value={channel} onChange={(e) => setChannel(e.target.value)} aria-label="Канал"><option value="sms">SMS</option><option value="viber">Viber</option><option value="hybrid">Viber → SMS</option></select>
+          <div className="hp-row"><Select value={channel} onChange={(e) => setChannel(e.target.value)} aria-label="Канал"><option value="sms">SMS</option><option value="viber">Viber</option><option value="hybrid">Viber → SMS</option></Select>
             <Button type="submit" size={30} icon={Send} disabled={!text.trim()}>Надіслати</Button></div>
         </form>
       ) : (

@@ -10,3 +10,4 @@ export * from "./hooks";
 export * from "./ChipSelect";
 export * from "./DenseTable";
 export * from "./ColumnsMenu";
+export * from "./Select";
