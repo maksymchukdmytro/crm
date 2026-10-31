@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Copy, KeyRound, ListChecks, MapPin, MessageSquare, Package,
+  Calendar, Check, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Copy, KeyRound, ListChecks, MapPin, MessageSquare, Package,
   Printer, Search, Send, Store, Truck, User, Users, X,
 } from "lucide-react";
 import { api, qs } from "../lib/api";
@@ -15,6 +15,7 @@ import { money } from "../lib/format";
 import type { Order, TtnParams, TtnPreview } from "../lib/types";
 import { StatusPill, Window, useMobile } from "../components/ui";
 import { printLabel } from "./card/util";
+import { SelectPick } from "../components/marks";
 
 const PAYERS = { Recipient: "Отримувач", Sender: "Відправник", ThirdPerson: "Третя особа" } as const;
 const CARGO = { Parcel: "Посилка", Cargo: "Вантаж", Documents: "Документи", TiresWheels: "Шини-диски", Pallet: "Палети" } as const;
@@ -124,11 +125,10 @@ export default function TtnDialog({ order, accountId, onClose, onCreated }: {
       <div className="tt-title"><b>Нова ТТН{mobile ? ` · №${order.id}` : ""}</b>
         <small>{mobile ? (done ? "Готово" : `Крок ${mstep + 1} з 2 · ${mstep ? "Посилка й оплата" : "Куди"}`) : sub}</small></div>
       {!done && accounts.length > 0 && (
-        <label className="tt-key d-only" title={data?.sender || undefined}>
-          <KeyRound size={15} aria-hidden /><span className="muted">Відправник:</span>
-          <select value={acc} onChange={(e) => setAcc(e.target.value ? Number(e.target.value) : "")} aria-label="Відправник — ключ НП">
-            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}{a.is_default && !/основн/i.test(a.name) ? " · основний ключ" : ""}</option>)}
-          </select><ChevronDown size={15} aria-hidden /></label>
+        <div className="tt-key d-only" title={data?.sender || undefined}>
+          <SelectPick<number | ""> ariaLabel="Відправник — ключ НП" className="tt-key-pick" value={acc} onChange={setAcc}
+            button={<><KeyRound size={15} aria-hidden /><span className="muted">Відправник:</span><b>{accounts.find((a) => a.id === acc)?.name ?? "ключ НП"}</b></>}
+            options={accounts.map((a) => ({ value: a.id as number | "", label: a.name, hint: a.is_default ? "основний ключ" : undefined }))} /></div>
       )}
       <button type="button" className="wz-x d-only" aria-label="Закрити (Esc)" onClick={onClose}><X size={17} /></button>
       {mobile && !done && <div className="wz-prog m-only" aria-hidden>{[0, 1].map((i) => <i key={i} className={i < mstep ? "ok" : i === mstep ? "cur" : ""} />)}</div>}
@@ -147,11 +147,10 @@ export default function TtnDialog({ order, accountId, onClose, onCreated }: {
   const where = (
     <section className="tt-sec">
       {mobile && accounts.length > 0 && (
-        <label className="tt-mkey"><span className="np-badge lg">НП</span>
-          <span className="tt-mkey-t"><b>{accounts.find((a) => a.id === acc)?.name ?? "Ключ НП"}</b><small>{acc === accounts.find((a) => a.is_default)?.id && !/основн/i.test(accounts.find((a) => a.id === acc)?.name ?? "") ? "основний ключ · " : ""}відправник</small></span>
-          <select value={acc} onChange={(e) => setAcc(e.target.value ? Number(e.target.value) : "")} aria-label="Відправник — ключ НП">
-            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}{a.is_default && !/основн/i.test(a.name) ? " · основний ключ" : ""}</option>)}
-          </select><ChevronDown size={16} aria-hidden /></label>
+        <SelectPick<number | ""> ariaLabel="Відправник — ключ НП" className="tt-mkey" value={acc} onChange={setAcc}
+          button={<><span className="np-badge lg">НП</span><span className="tt-mkey-t"><b>{accounts.find((a) => a.id === acc)?.name ?? "Ключ НП"}</b>
+            <small>{acc === accounts.find((a) => a.is_default)?.id && !/основн/i.test(accounts.find((a) => a.id === acc)?.name ?? "") ? "основний ключ · " : ""}відправник</small></span></>}
+          options={accounts.map((a) => ({ value: a.id as number | "", label: a.name, hint: a.is_default ? "основний ключ" : undefined }))} />
       )}
       <h3 className="tt-h d-only">Куди</h3>
       <div className="tt-ways" role="radiogroup" aria-label="Спосіб доставки">
@@ -201,8 +200,8 @@ export default function TtnDialog({ order, accountId, onClose, onCreated }: {
       {parcelOpen && (
         <div className="tt-edit">
           <label className="fbox"><span className="wz-lb">Тип вантажу</span>
-            <span className="wz-sel"><select value={p.cargo_type} onChange={(e) => set({ cargo_type: e.target.value as TtnParams["cargo_type"] })}>
-              {Object.entries(CARGO).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select><ChevronDown size={16} aria-hidden /></span></label>
+            <SelectPick<string> ariaLabel="Тип вантажу" className="wz-pick" value={p.cargo_type} onChange={(v) => set({ cargo_type: v as TtnParams["cargo_type"] })}
+              options={Object.entries(CARGO).map(([k, n]) => ({ value: k, label: n }))} /></label>
           <label className="fbox"><span className="wz-lb">Вага, кг</span>
             <input className="wz-big sm" value={p.seats[0]?.weight ?? ""} inputMode="decimal" onChange={(e) => seat({ weight: e.target.value.replace(",", ".") })} /></label>
           <div className="fbox"><span className="wz-lb">Д × Ш × В, см</span>
@@ -400,12 +399,16 @@ function NpSearch({ kind, label, cityRef, value, refValue, placeholder, icon, ac
   );
 }
 
-/** Відділення або поштомати міста — список одразу під пошуком (номер, адреса, ліміт ваги), вибране підсвічене. */
+/** Відділення або поштомати міста: поки не вибрано — список одразу під пошуком (номер, адреса, ліміт ваги);
+ *  після вибору список згортається у вибране відділення, «Змінити» — знову відкриває пошук. */
 function WarehouseList({ cityRef, way, value, onPick }: { cityRef: string; way: Way; value: { name: string; ref: string }; onPick: (o: Opt) => void }) {
   const [q, setQ] = useState("");
+  const [open, setOpen] = useState(!value.ref);
+  const input = useRef<HTMLInputElement>(null);
   const dq = useDebounced(q.trim(), 250);
+  useEffect(() => { if (!value.ref) setOpen(true); }, [value.ref, cityRef]);
   const res = useQuery({
-    queryKey: ["np", "warehouses", cityRef, dq], enabled: !!cityRef, retry: false, placeholderData: (prev) => prev,
+    queryKey: ["np", "warehouses", cityRef, dq], enabled: !!cityRef && open, retry: false, placeholderData: (prev) => prev,
     queryFn: () => api.get<{ ok: boolean; items?: Opt[]; error?: string }>(`/np/warehouses${qs({ city_ref: cityRef, q: dq })}`),
   });
   const all = useMemo(() => (res.data?.items ?? []).filter((o) => (way === "postomat" ? o.kind === "postomat" : o.kind !== "postomat")), [res.data, way]);
@@ -414,14 +417,32 @@ function WarehouseList({ cityRef, way, value, onPick }: { cityRef: string; way: 
   const list = useRef<HTMLDivElement>(null);
   useEffect(() => { list.current?.querySelector<HTMLElement>("[aria-selected=true]")?.scrollIntoView({ block: "nearest" }); }, [items.length]);
   const word = way === "postomat" ? "Поштомат" : "Відділення";
+  const pick = (o: Opt) => { onPick(o); setQ(""); setOpen(false); };
+  const [selName, ...selRest] = value.name.split(":");
+  if (!open && value.ref) {
+    return (
+      <div className="fbox tt-search">
+        <span className="wz-lb">{word}</span>
+        <button type="button" className="wz-big tt-in ok tt-chosen" onClick={() => { setOpen(true); setTimeout(() => input.current?.focus(), 0); }}
+          aria-label={`${word}: ${value.name}. Змінити`}>
+          <Store size={18} />
+          <span className="tt-chosen-t"><b>{noKg(selName)}</b>{selRest.length > 0 && <small>{selRest.join(":").trim()}</small>}</span>
+          <span className="tt-change">Змінити</span>
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="fbox tt-search">
       <span className="wz-lb">{word}</span>
       <span className={`wz-big tt-in${value.ref ? " ok" : ""}`}>
         <Search size={18} />
-        <input value={q} disabled={!cityRef} placeholder={!cityRef ? "Спершу оберіть місто" : value.ref ? noKg(value.name.split(":")[0]) : "Номер або вулиця"} onChange={(e) => setQ(e.target.value)}
+        <input ref={input} value={q} disabled={!cityRef} placeholder={!cityRef ? "Спершу оберіть місто" : "Номер або вулиця"} onChange={(e) => setQ(e.target.value)}
           aria-label={`Пошук: ${word.toLowerCase()}`} autoComplete="off"
-          onKeyDown={(e) => { if (e.key === "Enter" && items[0]) { e.preventDefault(); onPick(items[0]); setQ(""); } }} />
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && items[0]) { e.preventDefault(); pick(items[0]); }
+            if (e.key === "Escape" && value.ref) { e.stopPropagation(); setOpen(false); }
+          }} />
         {cityRef && res.data?.ok && <small className="muted tt-cnt">{items.length} у місті</small>}
       </span>
       {cityRef && (
@@ -432,7 +453,7 @@ function WarehouseList({ cityRef, way, value, onPick }: { cityRef: string; way: 
           {items.map((o) => {
             const [n, ...rest] = (o.label || o.name).split(":");
             return (
-              <button key={o.ref} type="button" role="option" aria-selected={o.ref === value.ref} className={`tt-wh${o.ref === value.ref ? " on" : ""}`} onClick={() => { onPick(o); setQ(""); }}>
+              <button key={o.ref} type="button" role="option" aria-selected={o.ref === value.ref} className={`tt-wh${o.ref === value.ref ? " on" : ""}`} onClick={() => pick(o)}>
                 <span className="tt-wh-t"><b>{noKg(n)}</b>{o.max_weight ? <span className="tt-tag">до {o.max_weight} кг</span> : null}{rest.length > 0 && <small>{rest.join(":").trim()}</small>}</span>
                 <i className="rd" aria-hidden />
               </button>
