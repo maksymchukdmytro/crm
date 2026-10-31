@@ -150,7 +150,6 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
 .wz-draft b { color: var(--ink); font-weight: 600; }
 .wz-err { display: flex; align-items: center; gap: 7px; width: 100%; margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--bad-soft); color: var(--bad-ink); font-size: 13.5px; }
 .wz-err svg { flex: none; }
-.wz-foot .wz-err { order: -1; }
 .wz-btns { display: flex; align-items: center; gap: 10px; flex: 1; }
 .wz-btns .spacer { flex: 1; }
 .wz-btns .btn { height: 52px; padding: 0 22px; border-radius: 16px; font-size: 16px; font-weight: 600; gap: 8px; }
@@ -158,7 +157,7 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
 .wz-back { background: #F2F3F5; border: 0; }
 .wz-alt { background: #F2F3F5; border: 0; }
 .wz-next { box-shadow: 0 8px 18px -8px rgba(46, 107, 230, .7); }
-.wz-foot:not(.last) .wz-draft { order: 0; }
+.wz-btns .wz-draft { margin-right: 6px; }
 
 /* ------------------------------------------------------------ ТТН: ПК */
 .tt-key { position: relative; display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px; border-radius: 12px; background: #F6F7F8; font-size: 13.5px; color: var(--ink); max-width: 420px; }
@@ -314,7 +313,8 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
   .wz-disc input { background: #fff; }
 
   .wz-foot { gap: 10px; }
-  .wz-draft { width: 100%; justify-content: center; }
+  .wz-btns { flex-wrap: wrap; }
+  .wz-btns .wz-draft { order: -1; width: 100%; justify-content: center; margin: 0 0 2px; }
   .wz-btns .btn { height: 56px; border-radius: 18px; }
   .wz-btns kbd { display: none; }
   .wz-back { width: 56px; padding: 0 !important; justify-content: center; background: #fff !important; }
@@ -322,7 +322,6 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
   .wz-btns .wz-next { flex: 1; justify-content: center; }
   .wz-btns .spacer { display: none; }
   /* останній крок: велика «Створити й оформити ТТН», під нею тихіше «Назад» і «Створити без ТТН» */
-  .wz-foot.last .wz-btns { flex-wrap: wrap; }
   .wz-foot.last .wz-next { order: 1; flex: 1 0 100%; }
   .wz-foot.last .wz-back { order: 2; width: auto; height: 40px; padding: 0 8px !important; background: none !important; color: var(--muted); font-size: 14px; }
   .wz-foot.last .wz-back span { display: inline; }

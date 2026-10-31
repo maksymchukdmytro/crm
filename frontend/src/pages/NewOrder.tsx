@@ -167,17 +167,17 @@ export default function NewOrder({ onClose, onCreated }: { onClose: () => void; 
   const draftLine = (
     <span className="wz-draft">
       <ReceiptText size={14} aria-hidden />
-      {restored ? <>Чернетку відновлено · <button type="button" className="link-btn" onClick={startOver}>почати заново</button></>
+      {last && !restored ? <>Разом <b>{money(total)} ₴</b></> : restored ? <>Чернетку відновлено · <button type="button" className="link-btn" onClick={startOver}>почати заново</button></>
         : <>Чернетка · <b>{form.items.length ? `${money(total)} ₴` : "товарів ще немає"}</b> · зберігається сама</>}
     </span>
   );
   const footer = (
     <div className={`wz-foot${last ? " last" : ""}`}>
-      {draftLine}
       {err && <p className="wz-err" role="alert"><CircleAlert size={15} />{err}</p>}
       <div className="wz-btns">
         {step > 0 && <button type="button" className="btn wz-back" onClick={() => go(step - 1)} aria-label="Назад"><ChevronLeft size={20} /><span>Назад</span></button>}
         <span className="spacer" />
+        {draftLine}
         {last ? (<>
           {wantTtn && <button type="button" className="btn wz-alt" disabled={create.isPending} onClick={() => create.mutate(false)}>Створити без ТТН</button>}
           <button type="button" className="btn primary wz-next" disabled={create.isPending} onClick={() => create.mutate(wantTtn)}>
