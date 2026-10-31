@@ -4,6 +4,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse, Response
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session, selectinload
 
@@ -11,13 +12,13 @@ from ..carriers import CARRIERS, CarrierError
 from ..db import get_db
 from ..deps import Forbidden
 from ..models import AuditLog, Customer, Order, OrderItem, Payment, SmsMessage, Status, User, utcnow
-from ..routers.orders import _apply
+from ..services.order_filters import apply as _apply
 from ..services import audit, delivery, payments, queue
 from ..services import orders as svc
 from ..services import settings as st
 from ..services import sms as sms_svc
 from ..services.audit import ACTION_NAMES
-from ..web import f_details
+from ..formatting import f_details
 from .schemas import BulkIn, BulkOut, DocumentsOut, HistoryOut, OrderIn, OrderListOut, OrderOut, PaymentIn, PrepayConfirmIn, ReceiptIn, NpRegistryOut, SmsIn, TextIn, TrackOut, TtnCreatedOut, TtnIn, TtnPreviewOut
 from .common import bad, iso, j_order, j_order_row, staff
 
@@ -206,6 +207,59 @@ def sources(db: Session = Depends(get_db), user: User = Depends(staff)):
 
 
 # ------------------------------------------------------------------ картка
+@router.get("/export.csv", response_class=Response, responses={200: {"content": {"text/csv": {}}}})
+def export_csv(request: Request, db: Session = Depends(get_db), user: User = Depends(staff)):
+    """Експорт поточної вибірки списку в CSV (Excel відкриває з «;» і BOM): ті самі фільтри, що й у списку."""
+    import csv
+    import io
+    from ..formatting import f_dt
+    f = {k: (request.query_params.get(k) or "").strip() for k in FILTERS}
+    q = _apply(svc.visible_orders_query(db, user), f).options(
+        selectinload(Order.items), selectinload(Order.status), selectinload(Order.manager)).order_by(Order.id.desc())
+    buf = io.StringIO()
+    buf.write("\ufeff")
+    w = csv.writer(buf, delimiter=";")
+    w.writerow(["ID", "Дата", "Статус", "Менеджер", "Клієнт", "Телефон", "Товари", "Сума", "Накладений",
+                "Доставка", "Місто", "Відділення", "ТТН", "Стан доставки", "Джерело", "Кампанія", "Сайт"])
+    for o in q.yield_per(500):
+        w.writerow([o.id, f_dt(o.created_at), o.status.name, o.manager.display if o.manager else "",
+                    o.customer_name, o.phone, "; ".join(f"{i.name} x{i.qty}" for i in o.items),
+                    o.total, o.cod_amount, o.delivery_method_name, o.city_name, o.warehouse_name, o.ttn,
+                    o.delivery_status, o.utm_source, o.utm_campaign, o.site])
+    return Response(buf.getvalue(), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="orders.csv"'})
+
+
+@router.get("/{order_id}/print", response_class=HTMLResponse)
+def order_print(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
+    """Бланк замовлення для друку (простий аркуш: покупець, доставка, товари, суми, коментар)."""
+    from html import escape as e
+    from ..formatting import f_dt, f_money, f_phone
+    o = _get(db, order_id, user)
+    company = st.get(db, "company_name") or "CRM"
+    where = ", ".join(x for x in (o.delivery_method_name, o.city_name, o.warehouse_name, o.address, o.postcode) if x)
+    rows = "".join(f"<tr><td>{n}</td><td>{e(i.name)}</td><td class=n>{i.qty}</td><td class=n>{f_money(i.price, True)}</td>"
+                   f"<td class=n>{f_money(i.sum, True)}</td></tr>" for n, i in enumerate(o.items, 1))
+    foot = (f"<tr><td colspan=4>Знижка</td><td class=n>−{f_money(o.discount, True)}</td></tr>" if o.discount else "") + \
+        f"<tr><td colspan=4>Разом</td><td class=n>{f_money(o.total, True)} грн</td></tr>" + \
+        (f"<tr><td colspan=4>Передоплата</td><td class=n>{f_money(o.prepayment, True)} грн</td></tr>" if o.prepayment else "") + \
+        f"<tr><td colspan=4><b>До сплати при отриманні</b></td><td class=n><b>{f_money(o.cod_amount, True)} грн</b></td></tr>"
+    kv = [("Отримувач", e(o.customer_name)), ("Телефон", e(f_phone(o.phone))), ("Доставка", e(where)),
+          *([("ТТН", f"<span class=m>{e(o.ttn)}</span>")] if o.ttn else []), ("Оплата", e(o.payment_type_name))]
+    html = f"""<!doctype html><html lang="uk"><head><meta charset="utf-8"><title>Замовлення №{o.id}</title><style>
+body{{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1f1f1c;max-width:760px;margin:28px auto;padding:0 20px}}
+h1{{font-size:20px;margin:0}} .top{{display:flex;justify-content:space-between;align-items:center;gap:12px}} .mut{{color:#6f6e69}}
+button{{font:inherit;padding:8px 14px;border:1px solid #d6d6d3;border-radius:8px;background:#fff;cursor:pointer}}
+dl{{display:grid;grid-template-columns:120px 1fr;gap:6px 12px;margin:18px 0}} dt{{color:#6f6e69}} dd{{margin:0}}
+table{{width:100%;border-collapse:collapse}} th,td{{padding:6px 8px;border-bottom:1px solid #ecece9;text-align:left}} .n{{text-align:right}}
+.m{{font-family:ui-monospace,Menlo,Consolas,monospace}} @media print{{button{{display:none}} body{{margin:0}}}}
+</style></head><body><div class="top"><h1>{e(company)} — замовлення №{o.id}</h1><button onclick="print()">Друкувати</button></div>
+<p class="mut">від {f_dt(o.created_at)}</p><dl>{"".join(f"<dt>{k}</dt><dd>{v}</dd>" for k, v in kv)}</dl>
+<table><thead><tr><th>#</th><th>Товар</th><th class=n>К-сть</th><th class=n>Ціна</th><th class=n>Сума</th></tr></thead>
+<tbody>{rows}</tbody><tfoot>{foot}</tfoot></table>{f'<p><b>Коментар:</b> {e(o.comment)}</p>' if o.comment else ""}</body></html>"""
+    return HTMLResponse(html)
+
+
 @router.get("/{order_id}", response_model=OrderOut)
 def get_order(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
     return _full(db, _get(db, order_id, user), user)

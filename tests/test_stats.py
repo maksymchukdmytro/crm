@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from app.models import Order, OrderSource, Status, User, utcnow
 from app.services import settings as st
 from app.services import stats as svc
-from app.web import today_local
+from app.formatting import today_local
 
 from .test_api import api, api_manager, new_order, sid  # noqa: F401 — фікстури
 

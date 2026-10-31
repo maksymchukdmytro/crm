@@ -28,7 +28,7 @@ def entity_for(db: Session, order: Order) -> LegalEntity | None:
 
 def build_data(db: Session, order: Order) -> dict:
     """Дані для PDF (видаткова, рахунок-фактура, гарантійний талон) — з поточного замовлення. Їх же зберігає знімок."""
-    from ..web import today_local
+    from ..formatting import today_local
     s = st.get_all(db)
     le = entity_for(db, order)
     seller = {"name": (le.name if le else "") or s.get("company_name", ""), "code": le.code if le else "",

@@ -19,8 +19,8 @@ from ..carriers.novaposhta import NovaPoshta
 from ..config import config
 from ..db import get_db
 from ..models import CHECKBOX_PAYMENTS, ROLES, STOCK_ACTIONS, AuditLog, CheckboxCashier, MarketplaceShop, NpAccount, NpStatusRule, Office, Order, OrderMark, OrderSource, Payment, PaymentMethod, StatusReason, SmsMessage, SmsTemplate, Status, User
-from ..routers.payments import parse_registry
-from ..routers.settings import CHECKBOXES, SECTION_KEYS
+from ..services.registry_csv import parse_registry
+from ..services.settings_sections import CHECKBOXES, SECTION_KEYS
 from ..security import hash_password
 from ..services import audit
 from ..services import np as np_svc
@@ -31,7 +31,7 @@ from ..services import sms as sms_svc
 from ..services.audit import ACTION_NAMES
 from ..services.orders import normalize_phone, to_int
 from ..services.reports import period_bounds
-from ..web import f_details, parse_date, today_local
+from ..formatting import f_details, parse_date, today_local
 from .schemas import SystemOut, AuditOut, DoneOut, Ok, PaymentsOut, ReceiveIn, RegistryOut, ReportOut, SettingsOut, SmsTemplateIn, SmsTestIn, StatusIn, UserIn, UserOut, PaymentMethodIn, SourceIn, NpAccountIn, NpRuleIn, ShopCheckOut, ShopIn, ShopSyncOut, CashierCheckOut, CashierIn, TestDataIn, TestDataOut, LegalEntityIn, EntityAccountIn, EntityAccountOut
 from .common import admin, bad, iso, j_payment, j_payment_method, j_source, j_status, j_user, sales
 

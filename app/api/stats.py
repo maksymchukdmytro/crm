@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import User
 from ..services import stats as svc
-from ..web import today_local
+from ..formatting import today_local
 from .common import sales
 from .schemas import (
     StatsBreakdownOut, StatsOptionsOut, StatsOrdersOut, StatsOut, StatsProductsOut, StatsQuery, StatsSegmentsOut,

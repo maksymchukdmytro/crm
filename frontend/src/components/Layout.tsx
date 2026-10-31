@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Activity, BarChart3, Bell, Boxes, Building2, ChartColumnStacked, Check, ChevronDown, Contact, ExternalLink, FileText, History, Inbox,
+  Activity, BarChart3, Bell, Boxes, Building2, ChartColumnStacked, Check, ChevronDown, Contact, FileText, History, Inbox,
   KanbanSquare, LogOut, Menu, MessageSquare, Package, PanelLeftClose, PanelLeftOpen, ReceiptText, ScanBarcode, Search, Settings,
   ShoppingCart, UserPlus, UserRound, Wallet, House, PackagePlus, PhoneIncoming, AlarmClock, Ellipsis, ChevronRight,
 } from "lucide-react";
@@ -198,7 +198,6 @@ export default function Layout() {
                   {prefCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}{prefCollapsed ? "Розгорнути меню" : "Згорнути меню"}
                 </button>
               )}
-              <a className="pop-item" href={`${ROOT}/classic/orders`}><ExternalLink size={16} />Класичний інтерфейс</a>
               <button className="pop-item" onClick={logout}><LogOut size={16} />Вийти</button>
             </>)}
           </MenuButton>
@@ -337,7 +336,6 @@ function MoreSheet({ routes, officeName, onOffice, onLogout }: {
           );
         })}
         <button type="button" className="mm-row" onClick={() => nav("/profile")}><UserRound size={19} /><span>Мій профіль</span><ChevronRight size={17} /></button>
-        <a className="mm-row" href={`${ROOT}/classic/orders`}><ExternalLink size={19} /><span>Класичний інтерфейс</span><ChevronRight size={17} /></a>
         <button type="button" className="mm-row bad" onClick={onLogout}><LogOut size={19} /><span>Вийти</span></button>
       </div>
     </div>

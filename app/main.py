@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -21,10 +21,9 @@ from .api import leads as api_leads
 from .api import documents as api_documents
 from .config import config
 from .deps import Forbidden, NotAuthenticated, current_user
-from .routers import api, audit_log, auth, orders, payments, products, purchases, reports, settings, warehouse
+from .api import intake
 from .services import monitoring
 from .services.seed import seed
-from .web import BASE_DIR, CLASSIC_PREFIX, redirect, render
 
 # Зібраний фронтенд (React): frontend/dist. У Docker і на сервері збирається під час встановлення.
 SPA_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
@@ -63,7 +62,6 @@ def create_app(database_url: str | None = None, run_seed: bool = True) -> FastAP
         https_only=config.HTTPS_ONLY,
         path=config.ROOT_PATH or "/",
     )
-    app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
     @app.middleware("http")
     async def _metrics(request: Request, call_next):
@@ -83,10 +81,7 @@ def create_app(database_url: str | None = None, run_seed: bool = True) -> FastAP
     for r in (api_core, api_orders, api_catalog, api_admin, api_stats, api_customers, api_dashboard, api_shell, api_leads, api_documents):
         app.include_router(r.router)
     # Прийом заявок (webhook) і довідники Нової Пошти
-    app.include_router(api.router)
-    # Класичний серверний інтерфейс — запасний, за адресою /classic (у документацію API не входить)
-    for r in (auth, orders, products, warehouse, purchases, payments, reports, settings, audit_log):
-        app.include_router(r.router, prefix=CLASSIC_PREFIX, include_in_schema=False)
+    app.include_router(intake.router)
 
     # Документація API — лише для тих, хто увійшов
     @app.get("/api/openapi.json", include_in_schema=False)
@@ -97,29 +92,24 @@ def create_app(database_url: str | None = None, run_seed: bool = True) -> FastAP
     def api_docs(user=Depends(current_user)):
         return get_swagger_ui_html(openapi_url=f"{config.ROOT_PATH}/api/openapi.json", title="CRM API")
 
+    def _home() -> RedirectResponse:
+        return RedirectResponse(f"{config.ROOT_PATH}/", status_code=303)
+
     @app.exception_handler(NotAuthenticated)
     async def _not_auth(request: Request, exc: NotAuthenticated):
         if request.url.path.startswith("/api/"):
             return JSONResponse({"error": "Потрібна авторизація"}, status_code=401)
-        path = request.url.path
-        if path.startswith(CLASSIC_PREFIX):
-            path = path[len(CLASSIC_PREFIX):] or "/"
-        nxt = path + (f"?{request.url.query}" if request.url.query else "")
-        return redirect(f"/login?next={nxt}")
+        return _home()  # вхід показує сам застосунок
 
     @app.exception_handler(Forbidden)
     async def _forbidden(request: Request, exc: Forbidden):
         if request.url.path.startswith("/api/"):
             return JSONResponse({"error": "Недостатньо прав"}, status_code=403)
-        return render(request, "error.html", {"title": "Немає доступу",
-                                              "message": "У вашої ролі немає доступу до цього розділу."}, 403)
+        return _home()
 
     @app.exception_handler(HTTPException)
     async def _http(request: Request, exc: HTTPException):
-        if request.url.path.startswith("/api/"):
-            return JSONResponse({"error": exc.detail}, status_code=exc.status_code)
-        return render(request, "error.html", {"title": f"Помилка {exc.status_code}", "message": exc.detail or ""},
-                      exc.status_code)
+        return JSONResponse({"error": exc.detail}, status_code=exc.status_code)
 
     @app.exception_handler(RequestValidationError)
     async def _validation(request: Request, exc: RequestValidationError):
@@ -178,12 +168,11 @@ def create_app(database_url: str | None = None, run_seed: bool = True) -> FastAP
     @app.get("/{path:path}", include_in_schema=False)
     def spa(path: str):
         """Усі інші адреси — новий інтерфейс (маршрутизацію робить сам застосунок)."""
-        if path.startswith(("api/", "static/", "assets/", "media/")):
+        if path.startswith(("api/", "assets/", "media/")):
             return JSONResponse({"error": "Не знайдено"}, status_code=404)
         html = _spa_index()
-        if html is None:
-            # фронтенд ще не зібрано — відкриваємо класичний інтерфейс
-            return redirect("/orders")
+        if html is None:  # фронтенд ще не зібрано
+            return HTMLResponse("<p>Інтерфейс ще не зібрано: <code>cd frontend && npm ci && npm run build</code></p>", status_code=503)
         return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
     return app
