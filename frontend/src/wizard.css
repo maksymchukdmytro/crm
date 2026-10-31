@@ -12,7 +12,8 @@
 .np-badge.lg { height: 26px; padding: 0 6px; border-radius: 7px; font-size: 11.5px; font-weight: 700; }
 
 /* ------------------------------------------------------------ рамка */
-.win.wz { max-width: 860px; border-radius: 26px; }
+.win.wz { max-width: 860px; height: min(780px, calc(100dvh - 32px)); border-radius: 26px; }
+.win-backdrop:has(> .wz) { padding: 16px; }
 .win.tt2 { max-width: 1100px; height: auto; border-radius: 26px; }
 .win.tt2.tt-done { max-width: 760px; }
 .wz .win-body.wz-body, .tt2 .win-body.tt-body { padding: 4px 34px 8px; }
@@ -95,7 +96,11 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
 .wz-goods .goods { gap: 8px; }
 .wz-goods .gi { min-height: 54px; border-radius: 14px; background: var(--wz-tile); border: 0; }
 .wz-goods .gi-offers { border-radius: 14px; padding: 10px 10px 10px 14px; }
-.wz-goods .ac-list { max-height: 320px; }
+/* результати пошуку — у потоці сторінки (не випадаючим вікном), щоб їх було видно повністю */
+.wz-goods .psearch { flex-wrap: wrap; }
+.wz-goods .psearch-ic { top: 19px; }
+.wz-goods .psearch .ac-list { position: static; width: 100%; max-height: none; margin-top: 8px; padding: 6px; border-radius: 16px !important; }
+.wz-goods .psearch .ac-list > div { min-height: 48px; border-radius: 12px; font-size: 14.5px; }
 .wz-total { display: flex; align-items: center; justify-content: flex-end; gap: 22px; margin-top: 14px; font-size: 14px; }
 .wz-total b { font-size: 19px; font-weight: 600; }
 .wz-total small { color: var(--muted); }
@@ -143,6 +148,33 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
 .wz-chip.on { background: var(--accent); color: #fff; }
 .wz-chip.dash { background: none; border: 1.5px dashed #D3D4D8; color: var(--muted); }
 .wz-folds { display: flex; gap: 18px; }
+
+/* ------------------------------------------------------------ вибір менеджера, юрособи, позначки — меню як скрізь */
+.wz-pick .ipick-btn, .tt-edit .wz-pick .ipick-btn { min-height: 48px; padding: 0 14px; border: 2px solid transparent; border-radius: 14px; background: var(--wz-tile); font-size: 15px; }
+.wz-pick .ipick-btn:hover { border-color: transparent; background: #EFF0F2; }
+.wz-pick .ipick-btn[aria-expanded="true"] { border-color: var(--accent); background: #fff; box-shadow: var(--wz-ring); }
+.wz-pick .ipick-list { top: calc(100% + 6px); border-radius: 14px; padding: 6px; }
+.wz-pick .ipick-list > button { min-height: 42px; border-radius: 10px; font-size: 14.5px; }
+.tt-key { padding: 0; background: none; }
+.tt-key-pick .ipick-btn { height: 42px; min-height: 42px; gap: 8px; padding: 0 12px; border: 0; border-radius: 12px; background: #F6F7F8; font-size: 13.5px; }
+.tt-key-pick .spick-val { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.tt-key-pick .ipick-list { left: auto; min-width: 280px; }
+.tt-chosen { width: 100%; text-align: left; cursor: pointer; font: inherit; color: var(--ink); }
+.tt-chosen > svg { color: var(--accent); flex: none; }
+.tt-chosen-t { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.tt-chosen-t b { font-size: 16px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tt-chosen-t small { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tt-change { flex: none; color: var(--accent); font-size: 13.5px; font-weight: 500; }
+
+/* невисокий екран ноутбука: менше повітря над кроком, більше — під вміст */
+@media (max-height: 760px) and (min-width: 769px) {
+  .wz-head { padding-top: 14px; }
+  .wz-rail { margin: 10px 0 2px; }
+  .wz-q { margin: 10px 0 12px; }
+  .wz-q h2 { font-size: 22px; }
+  .wz .win-foot { padding: 10px 34px 16px; }
+  .wz-btns .btn { height: 46px; }
+}
 
 /* ------------------------------------------------------------ низ: чернетка, помилка, кнопки */
 .wz-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: 100%; }
@@ -269,6 +301,7 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
 @media (max-width: 768px) {
   .wz, .tt2 { --wz-tile: #FFFFFF; }
   .win-backdrop:has(> .wz), .win-backdrop:has(> .tt2) { padding: 0; background: var(--m-bg); }
+  .win-backdrop:has(> .wz) { padding: 0; }
   .win.wz, .win.tt2, .win.tt2.tt-done { max-width: none; width: 100%; height: 100dvh; max-height: none; border-radius: 0; background: var(--m-bg); box-shadow: none; }
   .wz .win-body.wz-body, .tt2 .win-body.tt-body { padding: 0 var(--m-pad) 16px; background: var(--m-bg); }
   .wz .win-foot, .tt2 .win-foot { padding: 10px var(--m-pad) calc(14px + env(safe-area-inset-bottom)); background: var(--m-bg); }
@@ -328,12 +361,12 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
   .wz-foot.last .wz-alt { order: 3; margin-left: auto; height: 40px; padding: 0 8px; background: none; color: var(--accent); font-size: 14px; }
 
   /* ТТН */
-  .tt-mkey { position: relative; display: flex; align-items: center; gap: 10px; margin: 14px 0 12px; padding: 10px 12px; border-radius: 15px; background: #fff; }
+  .tt-mkey { margin: 14px 0 12px; }
+  .tt-mkey .ipick-btn { display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 8px 12px; border: 0; border-radius: 15px; background: #fff; }
+  .tt-mkey .spick-val { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .tt-mkey-t { flex: 1; min-width: 0; line-height: 1.25; }
   .tt-mkey-t b { display: block; font-weight: 500; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tt-mkey-t small { color: var(--muted); font-size: 12px; }
-  .tt-mkey select { position: absolute; inset: 0; opacity: 0; width: 100%; font-size: 16px; }
-  .tt-mkey > svg { color: var(--faint); }
   .tt-ways { gap: 8px; }
   .tt-way { flex-direction: column; justify-content: center; gap: 6px; min-height: 96px; padding: 8px 4px; border-radius: 18px; text-align: center; }
   .tt-way b { font-size: 13.5px; }

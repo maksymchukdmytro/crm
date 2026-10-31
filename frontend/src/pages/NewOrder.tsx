@@ -15,6 +15,7 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { Customer, Order } from "../lib/types";
 import { UaPhone, Window } from "../components/ui";
+import { SelectPick } from "../components/marks";
 import { flag, PayIcon } from "../components/payicons";
 import { EXTRA, UTM, payload, toForm, type Form } from "./card/state";
 import { Goods } from "./card/Goods";
@@ -53,7 +54,10 @@ export default function NewOrder({ onClose, onCreated }: { onClose: () => void; 
   // чернетка: відновлюємо, якщо замовлення починається «з нуля» (не копія іншого й не з номера)
   const saved = useMemo(() => (fromId || sp.get("phone") ? null : readJson<Draft | null>(DRAFT, null)), []); // eslint-disable-line react-hooks/exhaustive-deps
   const fresh = saved && Date.now() - saved.at < 3 * 86400_000 && (digits(saved.form.phone).length > 3 || saved.form.items.length > 0) ? saved : null;
-  const [form, setForm] = useState<Form>(() => fresh?.form ?? toForm(sp.get("phone") ? { phone: sp.get("phone")! } : undefined, newStatus));
+  const [form, setForm] = useState<Form>(() => fresh?.form ?? {
+    ...toForm(sp.get("phone") ? { phone: sp.get("phone")! } : undefined, newStatus),
+    manager_id: meta.managers.some((m) => m.id === meta.user.id) ? meta.user.id : "",  // менеджер — автоматично той, хто створює; адмін може змінити
+  });
   const [step, setStep] = useState(fresh?.step ?? 0);
   const [reached, setReached] = useState(fresh?.step ?? 0);
   const [mode, setMode] = useState<"create" | "ready">(fresh?.mode ?? "create");
@@ -420,11 +424,13 @@ function StepDetails({ form, set }: { form: Form; set: (p: Partial<Form>) => voi
   const chips = curSrc && !shown.includes(curSrc) ? [...shown, curSrc] : shown;
   const office = meta.offices.find((o) => o.id === (curSrc?.office_id ?? form.office_id))?.name;
   const extras = EXTRA.map((f, i) => ({ f, i, name: meta.extra_fields[i] || `Поле ${i + 1}` })).filter((x) => meta.extra_on?.[x.i] ?? true);
-  const sel = (id: string, label: string, v: number | "", on: (v: number | "") => void, items: { id: number; name: string }[], empty: string) => (
-    <div><label className="wz-lb" htmlFor={id}>{label}</label>
-      <span className="wz-sel"><select id={id} value={v} onChange={(e) => on(e.target.value ? Number(e.target.value) : "")}>
-        <option value="">{empty}</option>{items.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select><ChevronDown size={16} aria-hidden /></span></div>
+  // вибір — таким самим меню, як у картці замовлення (SelectPick), а не системним списком
+  const sel = (id: string, label: string, v: number | "", on: (v: number | "") => void, items: { id: number; name: string }[], empty: string, emptyHint?: string) => (
+    <div><div className="wz-lb" id={`${id}-l`}>{label}</div>
+      <SelectPick<number | ""> ariaLabel={label} value={v} onChange={on} className="wz-pick"
+        options={[{ value: "", label: <span className="muted">{empty}</span>, hint: emptyHint }, ...items.map((x) => ({ value: x.id as number | "", label: x.name }))]} /></div>
   );
+  const me = meta.managers.find((m) => m.id === meta.user.id);
   return (<>
     <Q title="Звідки замовлення?" sub="Джерело, менеджер і коментар — далі доставка" />
     {sources.length > 0 && (<>
@@ -438,8 +444,9 @@ function StepDetails({ form, set }: { form: Form; set: (p: Partial<Form>) => voi
       </div>
     </>)}
     <div className="wz-grid2">
-      {meta.user.role === "admin" ? sel("wz-mgr", "Менеджер", form.manager_id, (v) => set({ manager_id: v }), meta.managers, "не призначений")
-        : <div><div className="wz-lb">Менеджер</div><div className="wz-ro">{meta.user.name || "Ви"}</div></div>}
+      {meta.user.role === "admin" ? sel("wz-mgr", "Менеджер", form.manager_id, (v) => set({ manager_id: v }), meta.managers.map((m) => (m.id === meta.user.id ? { ...m, name: `${m.name} (ви)` } : m)),
+        "Автоматично", "за правилом розподілу")
+        : <div><div className="wz-lb">Менеджер</div><div className="wz-ro">{me?.name ?? meta.user.name} · ви</div></div>}
       <div><div className="wz-lb">Відділ</div><div className="wz-ro">{office ?? "за джерелом"}</div></div>
       {meta.legal_entities.length > 0
         ? sel("wz-le", "Юрособа", form.legal_entity_id, (v) => set({ legal_entity_id: v }), meta.legal_entities, meta.legal_entities.find((x) => x.is_default)?.name ?? "за замовчуванням")
