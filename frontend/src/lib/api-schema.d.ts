@@ -658,6 +658,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/np/streets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Np Streets
+         * @description Вулиці міста з довідника НП — для ТТН «Кур'єр на адресу».
+         */
+        get: operations["np_streets_api_np_streets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/np/ttn-lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Np Ttn Lookup
+         * @description «Ввести готову ТТН»: знайти накладну, оформлену в кабінеті НП, — куди їде, вартість, післяплата, чи збігається телефон.
+         */
+        get: operations["np_ttn_lookup_api_np_ttn_lookup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/np/warehouses": {
         parameters: {
             query?: never;
@@ -3970,6 +4010,37 @@ export interface components {
             /** Office Id */
             office_id?: number | null;
         };
+        /** NpPlace */
+        NpPlace: {
+            /**
+             * Kind
+             * @default
+             */
+            kind: string;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /** Max Weight */
+            max_weight?: number | null;
+            /** Name */
+            name: string;
+            /** Ref */
+            ref: string;
+        };
+        /** NpPlacesOut */
+        NpPlacesOut: {
+            /**
+             * Error
+             * @default
+             */
+            error: string;
+            /** Items */
+            items?: components["schemas"]["NpPlace"][];
+            /** Ok */
+            ok: boolean;
+        };
         /** NpRegistryOut */
         NpRegistryOut: {
             /** Done */
@@ -6860,6 +6931,10 @@ export interface components {
             declared_cost?: number | null;
             /** Description */
             description?: string | null;
+            /** Flat */
+            flat?: string | null;
+            /** House */
+            house?: string | null;
             /** Np Account Id */
             np_account_id?: number | null;
             /** Payer */
@@ -6868,10 +6943,93 @@ export interface components {
             seats?: components["schemas"]["SeatIn"][] | null;
             /** Service Type */
             service_type?: ("WarehouseWarehouse" | "WarehouseDoors" | "DoorsWarehouse" | "DoorsDoors") | null;
+            /** Street Name */
+            street_name?: string | null;
+            /**
+             * Street Ref
+             * @description Кур'єр на адресу (service_type=WarehouseDoors): вулиця з довідника НП
+             */
+            street_ref?: string | null;
             /** Warehouse Name */
             warehouse_name?: string | null;
             /** Warehouse Ref */
             warehouse_ref?: string | null;
+        };
+        /**
+         * TtnLookupOut
+         * @description Готова ТТН Нової Пошти за номером: для кроку «Ввести готову ТТН» нового замовлення.
+         */
+        TtnLookupOut: {
+            /**
+             * City Name
+             * @default
+             */
+            city_name: string;
+            /**
+             * City Ref
+             * @default
+             */
+            city_ref: string;
+            /**
+             * Cod Amount
+             * @default 0
+             */
+            cod_amount: number;
+            /**
+             * Cod Kind
+             * @default none
+             * @enum {string}
+             */
+            cod_kind: "control" | "backward" | "none";
+            /**
+             * Cost
+             * @default 0
+             */
+            cost: number;
+            /**
+             * Error
+             * @default
+             */
+            error: string;
+            /** Eta */
+            eta?: string | null;
+            /** Found */
+            found: boolean;
+            /**
+             * Number
+             * @default
+             */
+            number: string;
+            /**
+             * Phone Match
+             * @description Телефон отримувача в ТТН збігається з телефоном замовлення; None — не перевірено
+             */
+            phone_match?: boolean | null;
+            /**
+             * Recipient
+             * @default
+             */
+            recipient: string;
+            /**
+             * State
+             * @default
+             */
+            state: string;
+            /**
+             * Status
+             * @default
+             */
+            status: string;
+            /**
+             * Warehouse Name
+             * @default
+             */
+            warehouse_name: string;
+            /**
+             * Warehouse Ref
+             * @default
+             */
+            warehouse_ref: string;
         };
         /** TtnParams */
         TtnParams: {
@@ -8515,6 +8673,72 @@ export interface operations {
             };
         };
     };
+    np_streets_api_np_streets_get: {
+        parameters: {
+            query: {
+                city_ref: string;
+                q?: string;
+                np_account_id?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpPlacesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    np_ttn_lookup_api_np_ttn_lookup_get: {
+        parameters: {
+            query: {
+                number: string;
+                phone?: string;
+                np_account_id?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TtnLookupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     np_warehouses_api_np_warehouses_get: {
         parameters: {
             query: {
@@ -9330,6 +9554,7 @@ export interface operations {
             query?: {
                 np_account_id?: number;
                 city_ref?: string;
+                service_type?: string;
             };
             header?: never;
             path: {
