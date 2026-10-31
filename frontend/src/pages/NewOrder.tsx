@@ -129,6 +129,13 @@ export default function NewOrder({ onClose, onCreated }: { onClose: () => void; 
     onError: (e) => setErr(errText(e)),
   });
   const last = step === STEPS.length - 1;
+  // подвійний клік / Enter двічі — лише одне замовлення (isPending оновлюється після рендеру, тож замок — синхронний)
+  const lock = useRef(false);
+  const submit = (ttn: boolean) => {
+    if (lock.current) return;
+    lock.current = true;
+    create.mutate(ttn, { onError: () => { lock.current = false; } });
+  };
 
   // Enter — далі (поле пошуку товару й коментар Enter забирають собі), Ctrl ⏎ — створити
   useEffect(() => {
@@ -137,8 +144,8 @@ export default function NewOrder({ onClose, onCreated }: { onClose: () => void; 
       const t = e.target as HTMLElement;
       if (t.tagName === "TEXTAREA" || (t.tagName === "BUTTON" && t.getAttribute("role") !== "radio") || t.closest(".pop, .menu-pop, .ac-list")) return;
       e.preventDefault();
-      if (e.ctrlKey || e.metaKey) { if (!create.isPending) create.mutate(wantTtn); return; }
-      if (last) { if (!create.isPending) create.mutate(wantTtn); } else next();
+      if (e.ctrlKey || e.metaKey) { if (!create.isPending) submit(wantTtn); return; }
+      if (last) { if (!create.isPending) submit(wantTtn); } else next();
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
@@ -184,8 +191,8 @@ export default function NewOrder({ onClose, onCreated }: { onClose: () => void; 
         <span className="spacer" />
         {draftLine}
         {last ? (<>
-          {wantTtn && <button type="button" className="btn wz-alt" disabled={create.isPending} onClick={() => create.mutate(false)}>Створити без ТТН</button>}
-          <button type="button" className="btn primary wz-next" disabled={create.isPending} onClick={() => create.mutate(wantTtn)}>
+          {wantTtn && <button type="button" className="btn wz-alt" disabled={create.isPending} onClick={() => submit(false)}>Створити без ТТН</button>}
+          <button type="button" className="btn primary wz-next" disabled={create.isPending} onClick={() => submit(wantTtn)}>
             {wantTtn ? <><Truck size={18} />{create.isPending ? "Створюю…" : "Створити й оформити ТТН"}</> : <><Check size={18} />{create.isPending ? "Створюю…" : `Створити · ${money(total)} ₴`}</>}
             <kbd>Ctrl ⏎</kbd>
           </button>

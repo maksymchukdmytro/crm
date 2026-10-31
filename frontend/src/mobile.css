@@ -317,7 +317,7 @@
   .oc-grid > *, .oc-grid .block, .oc-bottom > * { margin: 0 !important; }
   .oc-grid .block, .oc-bottom .block, .oc-bottom > section { border: 0 !important; border-radius: var(--m-r) !important; background: #fff; padding: 14px 16px; box-shadow: none; }
   .oc-bottom { display: flex !important; flex-direction: column; gap: var(--m-gap); }
-  .oc-bottom .oc-sum { display: none; }
+  .oc-bottom .oc-sum, .oc-grid .oc-sum, .oc-grid .oc-hist { display: none; }
   .oc-right .oc-goods { min-height: 0 !important; }
   .oc-strip { border-radius: 16px; margin-bottom: 10px; }
 
@@ -550,3 +550,4 @@
   .tabbar a, .tabbar button { font-size: 10px; }
   .m-top h1 { font-size: 26px; }
 }
+@media (max-width: 768px) { .oc-goods .block-head .sub { display: none; } }

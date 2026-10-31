@@ -1,5 +1,5 @@
 // Ліди (UI-DESIGN §4.3, макети 06 і 07): вигляди Стрічка, Дошка, Передзвони; «Почати дзвонити» відкриває чергу.
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Clock3, KanbanSquare, List, Phone, PhoneCall, Plus, Search, X } from "lucide-react";
@@ -209,6 +209,7 @@ function NewLeadDialog({ onClose, onOpen }: { onClose: () => void; onOpen: (id: 
   const [src, setSrc] = useState<number | "">("");
   const newSt = meta.statuses.find((s) => s.code === "new");
   const ok = tel.replace(/\D/g, "").length >= 12;
+  const lock = useRef(false);
   const add = useMutation({
     mutationFn: () => api.post<Order>("/orders", { customer_name: name.trim(), phone: tel, country: "UA", status_id: newSt?.id, source_id: src || null }),
     onSuccess: (o) => {
@@ -218,13 +219,14 @@ function NewLeadDialog({ onClose, onOpen }: { onClose: () => void; onOpen: (id: 
       toast(`Лід ${leadNo(o.id)} додано`, "ok", { action: { label: "Відкрити", onClick: () => onOpen(o.id) } });
       onClose();
     },
-    onError: (e) => toast(errText(e), "error"),
+    onError: (e) => { lock.current = false; toast(errText(e), "error"); },
   });
+  const addOnce = () => { if (lock.current || !ok) return; lock.current = true; add.mutate(); };
   return (
     <Window size="sm" onClose={onClose} title="Новий лід" label="Новий лід"
       footer={<><span className="spacer" /><Button onClick={onClose}>Скасувати</Button>
-        <Button variant="primary" icon={Plus} disabled={!ok || add.isPending} onClick={() => add.mutate()}>{add.isPending ? "Додаю…" : "Додати лід"}</Button></>}>
-      <form className="form new-lead" onSubmit={(e) => { e.preventDefault(); if (ok && !add.isPending) add.mutate(); }}>
+        <Button variant="primary" icon={Plus} disabled={!ok || add.isPending} onClick={addOnce}>{add.isPending ? "Додаю…" : "Додати лід"}</Button></>}>
+      <form className="form new-lead" onSubmit={(e) => { e.preventDefault(); addOnce(); }}>
         <label className="fbox"><span className="lbl">Телефон</span>
           <UaPhone value={tel} country="UA" onChange={setTel} aria-label="Телефон" autoFocus /></label>
         <label className="fbox"><span className="lbl">Ім'я</span>

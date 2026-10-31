@@ -132,14 +132,18 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
       }
     },
     onError: (e) => {
+      creatingRef.current = false;
       setSaveState("error");
       toast(errText(e), "error");
       if (e instanceof ApiError && e.status === 409) { setVersion(""); qc.invalidateQueries({ queryKey: ["order", oid] }); }
     },
     onSettled: () => { if (againRef.current) { againRef.current = false; setTimeout(() => saveNow(), 0); } },
   });
+  const creatingRef = useRef(false);  // нове замовлення/лід: подвійний клік не створює двох
   const saveNow = useCallback(() => {
+    if (isNew && creatingRef.current) return;
     if (save.isPending) { againRef.current = true; return; }
+    if (isNew) creatingRef.current = true;
     if (JSON.stringify(formRef.current) === baseline && !isNew) return;
     save.mutate();
   }, [save, baseline, isNew]);
@@ -229,7 +233,6 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
     );
   }
 
-  const steps = isNew || code === "unsorted";
   const custDone = digits(form.phone).length >= 10 && !!form.customer_name.trim();
   const delivDone = !!(form.ttn || form.city_name || form.delivery_method === "pickup");
 
@@ -239,11 +242,12 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
       {isNew ? <h2 className="oc-new-title">{isLeadNew ? "Новий лід" : "Нове замовлення"}</h2> : <StatusTrack statusId={form.status_id} onPick={changeStatus} disabled={closed} />}
       <div className="oc-head-acts">
         <span className={`oc-save-st ${saveState}`} aria-live="polite">
-          {saveState === "saving" ? "Зберігаю…" : saveState === "error" ? "Не збережено" : dirty && !isNew ? "Є зміни" : saveState === "saved" ? "Збережено" : ""}
+          {saveState === "saving" ? "Зберігаю…" : saveState === "error" ? "Не збережено" : dirty && !isNew ? "Зберігаю…" : isNew ? "" : <><CircleCheck size={14} />Збережено</>}
         </span>
         {order && <PrintMenu order={order} onBefore={saveAsync} onError={(m) => toast(m, "error")} />}
         {order && order.checkbox_ready && <CheckMenu order={order} busy={action.isPending} onReceipt={(k) => action.mutate({ path: "/receipts", body: { kind: k } })} />}
-        <Button variant="primary" icon={Check} kbd="Ctrl S" disabled={save.isPending || closed} onClick={() => saveNow()}>{isNew ? "Створити" : "Зберегти"}</Button>
+        {isNew && <Button variant="primary" icon={Check} kbd="Ctrl S" disabled={save.isPending} onClick={() => saveNow()}>Створити</Button>}
+        {saveState === "error" && <Button icon={RefreshCw} onClick={() => saveNow()}>Зберегти ще раз</Button>}
         {order && <RemindButton value={form.remind_at} onChange={(v) => { set({ remind_at: v }); }} />}
         {order && <IconButton icon={History} label="Історія (H)" count={(order.history?.length ?? 0) + (order.comments?.length ?? 0)} onClick={() => setHistory(true)} />}
         <IconButton icon={X} label="Закрити (Esc)" quiet onClick={close} />
@@ -341,24 +345,14 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
         <div className="oc-strip lock"><Lock size={15} /><span>Замовлення закрите — «{status?.name}». Зміни вимкнено, щоб не зачепити склад і оплати.</span>
           <button className="btn sm" onClick={() => setUnlocked(true)}><Pencil size={14} />Редагувати</button></div>
       )}
-      <div className={`oc-grid${closed ? " ro" : ""}`}>
-        {/* ======== ліва колонка ======== */}
+      {/* варіант C (рішення власника 31.10): ліворуч кроки картками — Покупець → Товари → Оплата | Доставка;
+          праворуч сума з головною дією, деталі й коротка історія. Вузький екран і телефон — одна колонка в тому ж порядку. */}
+      <div className={`oc-grid oc-c${closed ? " ro" : ""}`}>
         <div className="oc-left">
-          <CustomerBlock order={order} form={form} set={set} isNew={isNew} step={steps ? { n: 1, done: custDone } : undefined} forceEdit={mobile && editCust}
+          <CustomerBlock order={order} form={form} set={set} isNew={isNew} step={{ n: 1, done: custDone }} forceEdit={mobile && editCust}
             onNewForClient={() => navigate(`/orders/new?from=${oid}`)} onOpen={onOpen} readOnly={closed} />
-          <PaymentBlock order={order} form={form} set={set} total={total} cod={cod} prepay={prepay} step={steps ? { n: 3, done: !!form.payment_method_id } : undefined}
-            readOnly={closed} busy={action.isPending}
-            onConfirm={(account_id) => action.mutate({ path: "/prepayment/confirm", body: { account_id } })}
-            onReceipt={(k) => action.mutate({ path: "/receipts", body: { kind: k } })}
-            onAddPayment={(body) => action.mutate({ path: "/payments", body })} />
-          <DeliveryBlock order={order} form={form} set={set} cod={cod} codKind={method?.np_cod ?? ""} step={steps ? { n: 4, done: delivDone } : undefined}
-            readOnly={closed} locked={shippedLock} busy={action.isPending || save.isPending} isNew={isNew}
-            onCreateTtn={openTtn} onAction={(path, m) => action.mutate({ path, method: m })} />
-        </div>
-        {/* ======== права колонка ======== */}
-        <div className="oc-right">
-          <Block title="Товари" sub={form.items.length ? `${form.items.length} ${plural(form.items.length, "позиція", "позиції", "позицій")}` : undefined}
-            step={steps ? { n: 2, done: form.items.length > 0 } : undefined} className="oc-goods"
+          <Block title="Товари" sub={form.items.length ? `${form.items.length} ${plural(form.items.length, "позиція", "позиції", "позицій")} · ${money(total)} ₴` : undefined}
+            step={{ n: 2, done: form.items.length > 0 }} className="oc-goods"
             acts={!closed && <>
               <Button size={30} icon={Plus} onClick={() => goods.current?.focusSearch()}>Товар</Button>
               <Button size={30} icon={Plus} onClick={() => goods.current?.startUpsell()}>Допродаж</Button>
@@ -371,11 +365,25 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
               {order?.items_cost != null && <div><span>Собівартість · прибуток</span><b className="num">{money(order.items_cost)} ₴ · {money(total - order.items_cost)} ₴</b></div>}
             </div>
           </Block>
+          <div className="oc-pd">
+            <PaymentBlock order={order} form={form} set={set} total={total} cod={cod} prepay={prepay} step={{ n: 3, done: !!form.payment_method_id }}
+              readOnly={closed} busy={action.isPending}
+              onConfirm={(account_id) => action.mutate({ path: "/prepayment/confirm", body: { account_id } })}
+              onReceipt={(k) => action.mutate({ path: "/receipts", body: { kind: k } })}
+              onAddPayment={(body) => action.mutate({ path: "/payments", body })} />
+            <DeliveryBlock order={order} form={form} set={set} cod={cod} codKind={method?.np_cod ?? ""} step={{ n: 4, done: delivDone }}
+              readOnly={closed} locked={shippedLock} busy={action.isPending || save.isPending} isNew={isNew}
+              onCreateTtn={openTtn} onAction={(path, m) => action.mutate({ path, method: m })} />
+          </div>
+        </div>
+        <div className="oc-right">
+          <SummaryCard order={order} form={form} total={total} cod={cod} prepay={prepay} subtotal={subtotal}
+            onTodo={(a) => runTodo(a)} onReceipt={(k) => action.mutate({ path: "/receipts", body: { kind: k } })}
+            primary={!mobile ? <Button variant="primary" icon={primary.icon} disabled={primary.disabled} onClick={primary.run} kbd={primary.label === "Створити ТТН" ? "Ctrl ⏎" : undefined}>{primary.label}</Button> : null} />
           <div className="oc-bottom">
             <DetailsBlock order={order} form={form} set={set} readOnly={closed} onTake={() => action.mutate({ path: "/take" })} />
-            <SummaryCard order={order} form={form} total={total} cod={cod} prepay={prepay} subtotal={subtotal}
-              onTodo={(a) => runTodo(a)} onReceipt={(k) => action.mutate({ path: "/receipts", body: { kind: k } })} />
           </div>
+          {order && !mobile && <HistoryInline order={order} onAll={() => setHistory(true)} />}
         </div>
       </div>
 
@@ -614,14 +622,13 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
   const src = meta.order_sources.find((s) => s.id === form.source_id)?.name;
   const entity = meta.legal_entities.find((e) => e.id === form.legal_entity_id) ?? meta.legal_entities.find((e) => e.is_default);
   return (
-    <Block title={isNew ? "Покупець" : undefined} step={isNew ? step : undefined} className="oc-cust">
+    <Block title="Покупець" step={step} className="oc-cust" sub={!isNew && c ? [`${c.orders} ${plural(c.orders, "замовлення", "замовлення", "замовлень")}`, c.buyout_rate != null && c.delivered + c.refused > 0 ? `викуп ${Math.round(c.buyout_rate)}%` : "", c.refused ? `відмов ${c.refused}` : ""].filter(Boolean).join(" · ") : undefined}>
       {c?.blacklisted && <div className="oc-strip bad"><Ban size={15} /><span><b>Чорний список.</b> {c.blacklist_reason || "Причину не вказано"}</span>
         <button className="link-btn" onClick={() => navigate(`/customers/${c.id}`)}>Картка</button></div>}
       {order?.duplicate_of_id && <div className="oc-strip warn"><Copy size={15} /><span>Можливий дубль замовлення №{order.duplicate_of_id}</span>
         <button className="link-btn" onClick={() => onOpen(order.duplicate_of_id!)}>Відкрити</button></div>}
       {!isNew && order && (
         <div className="oc-meta">
-          {step && <span className={`step${step.done ? " done" : ""}`}>{step.done ? <Check size={11} strokeWidth={3} /> : step.n}</span>}
           Замовлення №{order.id} · {dateTime(order.created_at)}{src && ` · ${src}`}
           {order.shop_id && <Tag kind="info">{meta.shops[String(order.shop_id)] ?? "Маркетплейс"} №{order.external_id}</Tag>}
         </div>
@@ -950,8 +957,9 @@ function DetailsBlock({ order, form, set, readOnly, onTake }: { order?: Order; f
 }
 
 // ======================================================================== Підсумок
-function SummaryCard({ order, form, total, cod, prepay, subtotal, onTodo, onReceipt }: {
+function SummaryCard({ order, form, total, cod, prepay, subtotal, onTodo, onReceipt, primary }: {
   order?: Order; form: Form; total: number; cod: number; prepay: number; subtotal: number; onTodo: (a: string) => void; onReceipt: (k: string) => void;
+  primary?: React.ReactNode;
 }) {
   const meta = useMeta();
   const [showTodo, setShowTodo] = useState(false);
@@ -985,7 +993,26 @@ function SummaryCard({ order, form, total, cod, prepay, subtotal, onTodo, onRece
           {showTodo && <div className="pop todo-pop"><div className="note-head">Що лишилось</div><Checklist items={items} /></div>}
         </div>
       )}
+      {primary && <div className="oc-sum-go">{primary}</div>}
     </section>
+  );
+}
+
+// ======================================================================== Історія — коротко в картці (останні події) і повністю в бічній панелі
+function HistoryInline({ order, onAll }: { order: Order; onAll: () => void }) {
+  const q = useQuery({ queryKey: ["order-history", order.id, "all", order.version], queryFn: () => api.get<{ events: { kind: string; text: string; details: string; user: string; at: string | null }[] }>(`/orders/${order.id}/history?kind=all`) });
+  const ev = (q.data?.events ?? []).slice(0, 4);
+  return (
+    <Block title="Історія" className="oc-hist" acts={<button type="button" className="link-btn" onClick={onAll}>Усе й коментарі</button>}>
+      {!q.data ? <div className="skel-rows"><div className="skel-row"><span className="skel" /></div></div> : ev.length === 0 ? <p className="hint">Подій ще немає</p> : (
+        <ul className="oc-hist-list">
+          {ev.map((e, i) => (
+            <li key={i}><span className={`oc-hist-ic ${e.kind}`}>{e.kind === "status" ? <Check size={12} strokeWidth={3} /> : e.kind === "sms" ? <MessageSquare size={12} /> : e.kind === "comment" ? <MessageCircle size={12} /> : <History size={12} />}</span>
+              <span className="oc-hist-t"><b>{e.text}{e.details && e.kind !== "other" ? ` · ${e.details}` : ""}</b><small>{[e.user, dateTime(e.at)].filter(Boolean).join(" · ")}</small></span></li>
+          ))}
+        </ul>
+      )}
+    </Block>
   );
 }
 
