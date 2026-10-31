@@ -43,7 +43,7 @@
 .oc-grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 12px; align-items: start; }
 .oc-grid.ro input, .oc-grid.ro select, .oc-grid.ro textarea, .oc-grid.ro .xsel { background: transparent; }
 .oc-left, .oc-right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.oc-bottom { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.oc-bottom { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: stretch; }
 .oc-loading .block { display: flex; flex-direction: column; gap: 14px; min-height: 260px; }
 .oc-body .block { padding: 16px 16px 14px; }
 .oc-body .block-head { margin-bottom: 10px; }
@@ -225,38 +225,48 @@
 .np-pop { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60; max-height: 280px; overflow-y: auto; min-width: 280px; }
 .np-opt { min-height: 36px; border-radius: var(--r-field); }
 
-/* товари — головне праворуч: блок розтягується на всю висоту, деталі й підсумок під ним — компактні (як на макеті) */
+/* варіант C: ліворуч кроки картками (Покупець → Товари → Оплата | Доставка), праворуч сума з головною дією, деталі, історія */
 @media (min-width: 1101px) {
-  /* сітка заповнює вікно до низу (як на макеті), без порожнього місця */
   .oc-body { display: flex; flex-direction: column; }
   .oc-body > .oc-grid { flex: 1 0 auto; }
-  .oc-left > .block:last-child { flex: 1 0 auto; }
-  .oc-bottom > .block, .oc-bottom > .oc-sum { height: 100%; }
-  .oc-grid { align-items: stretch; }
-  /* товари ростуть, але не витісняють деталі й підсумок за межі екрана; решту висоти забирає нижній ряд */
-  /* товари забирають усю вільну висоту, деталі й підсумок — за вмістом */
-  .oc-right .oc-goods { flex: 1 1 auto; min-height: 300px; display: flex; flex-direction: column; }
-  .oc-right > .oc-bottom { flex: 0 0 auto; }
+  .oc-grid.oc-c { grid-template-columns: minmax(0, 1fr) 340px; align-items: stretch; }
+  .oc-c .oc-goods { flex: 1 1 auto; min-height: 260px; display: flex; flex-direction: column; }
   .oc-goods .oc-totals { margin-top: auto; }
-  .oc-bottom { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
-  .oc-details .props { grid-template-columns: 74px minmax(0, 1fr) 74px minmax(0, 1fr); column-gap: 12px; }
+  .oc-pd { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: stretch; }
+  .oc-c .oc-right > .oc-hist { flex: 1 1 auto; }
+  .oc-details .props { grid-template-columns: 74px minmax(0, 1fr); column-gap: 10px; }
   .oc-details .props > dt, .oc-details .props > dd { min-height: 28px; padding: 1px 0; }
   .oc-details .props > dt { font-size: 12.5px; }
   .oc-details .props > dt.wide { grid-column: 1; }
   .oc-details .props > dd.wide { grid-column: 2 / -1; }
-  .oc-details .props.utm { grid-template-columns: 74px minmax(0, 1fr) 74px minmax(0, 1fr); }
+  .oc-details .props.utm { grid-template-columns: 74px minmax(0, 1fr); }
 }
+.oc-c .oc-cust .block-head .sub { margin-left: 2px; }
+.oc-sum-go { margin-top: 14px; }
+.oc-sum-go .btn { width: 100%; height: 46px; justify-content: center; font-size: 15px; font-weight: 600; border-radius: 14px; }
+.oc-hist-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.oc-hist-list li { display: flex; gap: 10px; align-items: flex-start; }
+.oc-hist-ic { display: grid; place-items: center; width: 24px; height: 24px; flex: none; border-radius: 8px; background: #F0F0EE; color: #57564F; }
+.oc-hist-ic.status { background: var(--accent-soft); color: var(--accent); }
+.oc-hist-ic.comment { background: #F1ECFB; color: #7C3AED; }
+.oc-hist-ic.sms { background: var(--ok-soft); color: var(--ok); }
+.oc-hist-t { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.oc-hist-t b { font-weight: 450; font-size: 13px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.oc-hist-t small { color: var(--faint); font-size: 11.5px; }
+.oc-save-st { display: inline-flex; align-items: center; justify-content: flex-end; gap: 5px; }
 
 @media (max-width: 1100px) {
   .oc-grid { grid-template-columns: minmax(0, 1fr); }
   /* одна колонка (телефон, вузький екран): покупець → товари → оплата → доставка → деталі й підсумок */
-  .oc-left, .oc-right { display: contents; }
+  .oc-left, .oc-right, .oc-pd { display: contents; }
   .oc-grid > * , .oc-left > *, .oc-right > * { order: 10; }
   .oc-cust { order: 1 !important; }
   .oc-goods { order: 2 !important; }
   .oc-pay { order: 3 !important; }
   .oc-dlv { order: 4 !important; }
   .oc-bottom { order: 5 !important; }
+  .oc-sum { order: 6 !important; }
+  .oc-hist { order: 7 !important; }
   .oc-bottom { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 768px) {
