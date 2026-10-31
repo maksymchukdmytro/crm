@@ -44,7 +44,7 @@
 
 /* у вікні налаштувань таблиця й форма «Новий …» — одна під одною: збоку таблиця стискається до нечитабельного */
 .set-scroll .grid.two { grid-template-columns: minmax(0, 1fr); }
-.set-scroll .t td input:not([type=checkbox]):not([type=radio]):not([type=color]), .set-scroll .t td select { min-width: 120px; }
+.set-scroll .t td input:not([type=checkbox]):not([type=radio]):not([type=color]), .set-scroll .t td select, .set-scroll .t td .xsel { min-width: 120px; }
 .set-scroll .t td .sub { white-space: nowrap; }
 .set-scroll .t td .btn { white-space: nowrap; }
 .set-scroll .chips .chip, .set-scroll .t .chip { white-space: nowrap; }
@@ -60,3 +60,27 @@
   .set-bar { padding: 10px 16px; }
   .set-bar .hint { display: none; }
 }
+
+/* ---------------------------------------------------------------- види оплат: ручка порядку, значок-меню, перемикач */
+.pm-table th:first-child, .pm-grip-td { width: 34px; padding-right: 0 !important; }
+.pm-grip { display: grid; place-items: center; width: 28px; height: 32px; border: 0; border-radius: 8px; background: none; color: var(--faint); cursor: grab; }
+.pm-grip:hover, .pm-grip:focus-visible { background: var(--hover); color: var(--ink-2); }
+.pm-grip:active { cursor: grabbing; }
+.pm-table tr.dragging td { opacity: .45; }
+.pm-table tr.over td { box-shadow: inset 0 2px 0 var(--accent); }
+.pm-name { display: flex; align-items: center; gap: 10px; min-width: 260px; }
+.pm-ic { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border: 1px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer; }
+.pm-ic:hover, .pm-ic[aria-expanded="true"] { border-color: var(--accent-line); background: var(--accent-soft); }
+.pm-name-in { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.pm-name-in small { font-size: 11px; color: var(--faint); padding: 1px 2px 0; }
+.pm-table .pm-name-in input { height: 32px; }
+.pm-ic-pop { width: 284px; padding: 4px; }
+.pm-ic-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 4px 4px 8px; }
+.pm-ic-opt { display: grid; place-items: center; height: 40px; border: 1px solid transparent; border-radius: 10px; background: none; cursor: pointer; }
+.pm-ic-opt:hover { background: var(--hover); }
+.pm-ic-opt.on { border-color: var(--accent); background: var(--accent-soft); }
+.pm-ic-up { position: relative; flex-wrap: wrap; }
+.pm-ic-up small { width: 100%; padding-left: 24px; color: var(--muted); font-size: 11.5px; }
+.pm-ic-up input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.pm-ic-hint { margin: 4px 8px 6px; }
+.pm-table .toggle-row { justify-content: center; }

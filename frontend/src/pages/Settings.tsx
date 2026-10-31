@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useId, useMemo, useR
 import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowDown, ArrowUp, Building2, Check, ChevronLeft, ChevronRight, CircleAlert, Copy, FileText, KeyRound, Landmark, Layers, ListChecks, MessageSquare, Plus, Receipt, RefreshCw,
+  ArrowDown, ArrowUp, Building2, GripVertical, Check, ChevronLeft, ChevronRight, CircleAlert, Copy, FileText, KeyRound, Landmark, Layers, ListChecks, MessageSquare, Plus, Receipt, RefreshCw,
   Search, Send, ShieldCheck, SlidersHorizontal, Star, Store, Trash2, Truck, Upload, Users as UsersIcon, Wallet, Webhook as WebhookIcon, X, type LucideIcon,
 } from "lucide-react";
 import { api } from "../lib/api";
@@ -11,7 +11,7 @@ import { dt, phone } from "../lib/format";
 import type { BlockedIp, Cashier, CustomerGroup, DirItem, LegalEntity, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { MarkLookPick } from "../components/marks";
-import { Badge, Button, Empty, Field, IconButton, NpAutocomplete, RoundButton, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
+import { Badge, Button, Empty, Field, IconButton, MenuButton, NpAutocomplete, RoundButton, Select, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
 
 type S = Settings;
 
@@ -248,7 +248,7 @@ function General({ s }: { s: S }) {
         <h2>Замовлення</h2>
         <div className="cols c3">
           <Field label="Пошук дублів за телефоном, днів" hint="0 — не шукати"><input type="number" min={0} {...bind("duplicate_days")} /></Field>
-          <Field label="Розподіл нових заявок"><select {...bind("auto_assign")}><option value="off">Вручну — менеджер бере сам</option><option value="round_robin">По черзі між менеджерами</option></select></Field>
+          <Field label="Розподіл нових заявок"><Select {...bind("auto_assign")}><option value="off">Вручну — менеджер бере сам</option><option value="round_robin">По черзі між менеджерами</option></Select></Field>
           <Field label="Перевіряти посилки кожні, хв"><input type="number" min={5} {...bind("tracking_interval_min")} /></Field>
         </div>
         <Toggle {...flag("managers_see_own_only")} label="Менеджери бачать лише свої й нерозподілені замовлення" />
@@ -299,7 +299,7 @@ function LeadsSection({ s }: { s: S }) {
           <Field label="Чекає — помаранчевим після, хв"><input type="number" min={1} {...bind("lead_wait_warn_min")} /></Field>
           <Field label="Чекає — червоним після, хв"><input type="number" min={1} {...bind("lead_wait_bad_min")} /></Field>
           <Field label="Нагадати після недодзвону через, хв"><input type="number" min={5} {...bind("lead_noanswer_remind_min")} /></Field>
-          <Field label="Замовлення з ліда отримує статус"><select {...bind("lead_to_order_status")}><option value="confirmed">Прийнятий</option><option value="unsorted">Несортований</option></select></Field>
+          <Field label="Замовлення з ліда отримує статус"><Select {...bind("lead_to_order_status")}><option value="confirmed">Прийнятий</option><option value="unsorted">Несортований</option></Select></Field>
         </form>
       )}
     </section>
@@ -361,7 +361,7 @@ function Delivery({ s }: { s: S }) {
           <Secret label="Bearer StatusTracking" k="up_tracking_bearer" bind={up.bind} hint="Якщо порожньо — Bearer eCom" />
           <div className="cols">
             <Field label="UUID клієнта-відправника"><input className="mono" {...up.bind("up_sender_uuid")} /></Field>
-            <Field label="Тип відправлення"><select {...up.bind("up_type")}><option value="STANDARD">Стандарт</option><option value="EXPRESS">Експрес</option></select></Field>
+            <Field label="Тип відправлення"><Select {...up.bind("up_type")}><option value="STANDARD">Стандарт</option><option value="EXPRESS">Експрес</option></Select></Field>
           </div>
           <label className="check"><input type="checkbox" {...up.check("up_sandbox")} /> Тестове середовище</label>
         </form>
@@ -395,7 +395,7 @@ function Sms({ s }: { s: S }) {
         <form className="card form" onSubmit={(e) => { e.preventDefault(); testMut.mutate(); }}>
           <h2>Тестове повідомлення</h2>
           <div className="cols"><Field label="Телефон"><input value={test.phone} onChange={(e) => setTest({ ...test, phone: e.target.value })} required /></Field>
-            <Field label="Канал"><select value={test.channel} onChange={(e) => setTest({ ...test, channel: e.target.value })}><option value="sms">SMS</option><option value="viber">Viber</option></select></Field></div>
+            <Field label="Канал"><Select value={test.channel} onChange={(e) => setTest({ ...test, channel: e.target.value })}><option value="sms">SMS</option><option value="viber">Viber</option></Select></Field></div>
           <div className="form-actions"><button className="btn" disabled={testMut.isPending}>Надіслати</button></div>
         </form>
         <div className="card flush"><div style={{ padding: "14px 16px 4px" }}><h2>Останні повідомлення</h2></div>
@@ -412,8 +412,8 @@ function Sms({ s }: { s: S }) {
         </div>
         <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/sms-templates", body: { ...nt, active: true }, method: "post" }); setNt({ ...nt, text: "" }); }}>
           <h2>Новий шаблон</h2>
-          <div className="cols"><Field label="Статус"><select value={nt.status_id} onChange={(e) => setNt({ ...nt, status_id: Number(e.target.value) })}>{s.statuses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
-            <Field label="Канал"><select value={nt.channel} onChange={(e) => setNt({ ...nt, channel: e.target.value })}><option value="sms">SMS</option><option value="viber">Viber</option><option value="hybrid">Viber → SMS</option></select></Field></div>
+          <div className="cols"><Field label="Статус"><Select value={nt.status_id} onChange={(e) => setNt({ ...nt, status_id: Number(e.target.value) })}>{s.statuses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</Select></Field>
+            <Field label="Канал"><Select value={nt.channel} onChange={(e) => setNt({ ...nt, channel: e.target.value })}><option value="sms">SMS</option><option value="viber">Viber</option><option value="hybrid">Viber → SMS</option></Select></Field></div>
           <Field label="Текст"><textarea rows={3} value={nt.text} onChange={(e) => setNt({ ...nt, text: e.target.value })} required /></Field>
           <div className="form-actions"><button className="btn primary"><Plus size={14} /> Додати</button></div>
         </form>
@@ -426,8 +426,8 @@ function TemplateRow({ t, statuses, onSave }: { t: S["sms_templates"][number]; s
   const [v, setV] = useState(t);
   return (
     <form className="form tpl" onSubmit={(e) => { e.preventDefault(); onSave(v); }}>
-      <div className="row"><select value={v.status_id} onChange={(e) => setV({ ...v, status_id: Number(e.target.value) })}>{statuses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
-        <select value={v.channel} onChange={(e) => setV({ ...v, channel: e.target.value })} style={{ maxWidth: 150 }}><option value="sms">SMS</option><option value="viber">Viber</option><option value="hybrid">Viber → SMS</option></select></div>
+      <div className="row"><Select value={v.status_id} onChange={(e) => setV({ ...v, status_id: Number(e.target.value) })}>{statuses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</Select>
+        <Select value={v.channel} onChange={(e) => setV({ ...v, channel: e.target.value })} style={{ maxWidth: 150 }}><option value="sms">SMS</option><option value="viber">Viber</option><option value="hybrid">Viber → SMS</option></Select></div>
       <textarea rows={2} value={v.text} onChange={(e) => setV({ ...v, text: e.target.value })} />
       <div className="row"><label className="check"><input type="checkbox" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} /> Активний</label><span className="spacer" />
         <button type="button" className="btn sm danger" onClick={() => { if (window.confirm("Видалити шаблон?")) onSave({ id: t.id, delete: true }); }}><Trash2 size={13} /></button>
@@ -453,8 +453,8 @@ function Statuses({ s }: { s: S }) {
               <td style={{ width: 80 }}><input type="number" value={r.sort} onChange={(e) => upd(r.id, { sort: Number(e.target.value) })} /></td>
               <td style={{ width: 56 }}><input type="color" value={r.color} onChange={(e) => upd(r.id, { color: e.target.value })} /></td>
               <td><input value={r.name} onChange={(e) => upd(r.id, { name: e.target.value })} /><span className="sub mono">{r.code}</span></td>
-              <td><select value={r.stage ?? "order"} onChange={(e) => upd(r.id, { stage: e.target.value as Status["stage"] })}><option value="lead">Ліди</option><option value="order">Замовлення</option></select></td>
-              <td><select value={r.stock_action} onChange={(e) => upd(r.id, { stock_action: e.target.value })}>{Object.entries(s.stock_actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></td>
+              <td><Select value={r.stage ?? "order"} onChange={(e) => upd(r.id, { stage: e.target.value as Status["stage"] })}><option value="lead">Ліди</option><option value="order">Замовлення</option></Select></td>
+              <td><Select value={r.stock_action} onChange={(e) => upd(r.id, { stock_action: e.target.value })}>{Object.entries(s.stock_actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></td>
               <td><input type="checkbox" checked={r.approved} onChange={(e) => upd(r.id, { approved: e.target.checked })} /></td>
               <td><input type="checkbox" checked={r.final} onChange={(e) => upd(r.id, { final: e.target.checked })} /></td>
               <td><input type="checkbox" checked={r.active} disabled={r.code === "new"} onChange={(e) => upd(r.id, { active: e.target.checked })} /></td>
@@ -466,7 +466,7 @@ function Statuses({ s }: { s: S }) {
       <form className="card row" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/statuses", body: nw, method: "post" }, { onSuccess: (x) => { tr.reset(x.statuses); setNw({ ...nw, name: "" }); } }); }}>
         <Field label="Новий статус"><input value={nw.name} onChange={(e) => setNw({ ...nw, name: e.target.value })} required /></Field>
         <Field label="Колір"><input type="color" value={nw.color} onChange={(e) => setNw({ ...nw, color: e.target.value })} /></Field>
-        <Field label="Дія зі складом"><select value={nw.stock_action} onChange={(e) => setNw({ ...nw, stock_action: e.target.value })}>{Object.entries(s.stock_actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
+        <Field label="Дія зі складом"><Select value={nw.stock_action} onChange={(e) => setNw({ ...nw, stock_action: e.target.value })}>{Object.entries(s.stock_actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></Field>
         <button className="btn"><Plus size={14} /> Додати</button>
       </form>
       <p className="hint"><b>Розділ</b>: «Ліди» — обробка заявки (новий, недозвон, передзвонити…), «Замовлення» — усе після підтвердження. Зміна статусу переносить замовлення між розділами.</p>
@@ -497,7 +497,7 @@ function Users({ s }: { s: S }) {
           <Field label="Логін"><input value={nw.username} onChange={(e) => setNw({ ...nw, username: e.target.value })} required autoComplete="off" /></Field>
           <Field label="Ім'я"><input value={nw.full_name} onChange={(e) => setNw({ ...nw, full_name: e.target.value })} /></Field>
         </div>
-        <Field label="Роль"><select value={nw.role} onChange={(e) => setNw({ ...nw, role: e.target.value })}>{Object.entries(s.roles).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
+        <Field label="Роль"><Select value={nw.role} onChange={(e) => setNw({ ...nw, role: e.target.value })}>{Object.entries(s.roles).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></Field>
         {s.offices.some((o) => o.active) && <Field label="Відділи" hint="Порожньо — бачить замовлення всіх відділів"><OfficeChips offices={s.offices.filter((o) => o.active)} value={nw.offices} onChange={(v) => setNw({ ...nw, offices: v })} /></Field>}
         <Field label="Пароль"><input type="password" minLength={8} value={nw.password} onChange={(e) => setNw({ ...nw, password: e.target.value })} required autoComplete="new-password" /></Field>
         <div className="form-actions"><button className="btn primary"><Plus size={14} /> Додати</button></div>
@@ -519,7 +519,7 @@ function UserRow({ u, roles, offices, self, onSave }: { u: User; roles: Record<s
   return (
     <tr>
       <td><input value={v.full_name} onChange={(e) => setV({ ...v, full_name: e.target.value })} placeholder="Ім'я" /><span className="sub mono">{u.username}{u.last_login_at && ` · вхід ${dt(u.last_login_at, true)}`}</span></td>
-      <td><select value={v.role} onChange={(e) => setV({ ...v, role: e.target.value })} disabled={self}>{Object.entries(roles).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></td>
+      <td><Select value={v.role} onChange={(e) => setV({ ...v, role: e.target.value })} disabled={self}>{Object.entries(roles).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></td>
       {offices.length > 0 && <td>{v.role === "admin" ? <span className="muted">усі</span> : <OfficeChips offices={offices} value={v.offices} onChange={(o) => setV({ ...v, offices: o })} />}</td>}
       <td><input type="password" value={v.password} onChange={(e) => setV({ ...v, password: e.target.value })} placeholder="не змінювати" autoComplete="new-password" /></td>
       <td><input type="checkbox" checked={v.is_active} disabled={self} onChange={(e) => setV({ ...v, is_active: e.target.checked })} /></td>
@@ -589,8 +589,8 @@ function DirEditor({ kind, title, hint, items, statuses, offices }: { kind: stri
           <div className={`dir-row ${r.active ? "" : "off"}`} key={r.key}>
             {kind === "marks" && <MarkLookPick icon={r.icon} color={r.color} onChange={(icon, color) => upd(r.key, { icon, color })} />}
             <input value={r.name} onChange={(e) => upd(r.key, { name: e.target.value })} placeholder="Назва" />
-            {offices && <select className="dir-office" value={r.office_id ?? ""} title="Відділ джерела" onChange={(e) => upd(r.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
-              <option value="">без відділу</option>{offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select>}
+            {offices && <Select className="dir-office" value={r.office_id ?? ""} title="Відділ джерела" onChange={(e) => upd(r.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
+              <option value="">без відділу</option>{offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</Select>}
             <label className="mini-check" title="Показувати в замовленнях"><input type="checkbox" checked={r.active} onChange={(e) => upd(r.key, { active: e.target.checked })} /> активна</label>
             <button type="button" className="x" title="Прибрати" onClick={() => (r.id ? upd(r.key, { delete: true }) : setRows(rows.filter((x) => x.key !== r.key)))}>×</button>
             {statuses && open !== r.key && <button type="button" className="dir-st-btn" onClick={() => setOpen(r.key)}>
@@ -616,6 +616,10 @@ function PaymentMethods({ s }: { s: S }) {
   const [showOff, setShowOff] = useState(false);
   const upd = (key: string, patch: Partial<PaymentMethod>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const move = (i: number, d: number) => { const a = [...rows]; const j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; setRows(a); };
+  // порядок — перетягуванням за ручку (найчастіші вгорі: так їх показує й майстер нового замовлення)
+  const [drag, setDrag] = useState<number | null>(null);
+  const [over, setOver] = useState<number | null>(null);
+  const moveTo = (from: number, to: number) => { const a = [...rows]; const [x] = a.splice(from, 1); a.splice(to, 0, x); setRows(a); };
   const submit = () => save.mutate({ path: "/settings/payment-methods", method: "put", body: rows.filter((r) => r.name.trim()).map((r, i) => ({ id: r.id || undefined, name: r.name, icon: r.icon, kind: r.kind, checkbox_type: r.checkbox_type, np_cod: r.np_cod ?? "", active: r.active, sort: i * 10 })) },
     { onSuccess: (x) => tr.reset((x as S).payment_methods.map((m) => ({ ...m, key: rk() }))) });
   useRegister(tr.dirty, submit, tr.restore);
@@ -626,32 +630,55 @@ function PaymentMethods({ s }: { s: S }) {
         <p className="hint">Вид оплати визначає розрахунок, тип оплати в чеку Checkbox і що має стояти в ТТН Нової Пошти (колонка «Перевірка оплати» в замовленнях). Номери (ID) такі ж, як у LP-CRM.</p></div>
         <label className="mini-check"><input type="checkbox" checked={showOff} onChange={(e) => setShowOff(e.target.checked)} /> показати вимкнені</label></div>
       <div className="tablewrap"><table className="t dense pm-table">
-        <thead><tr><th>ID</th><th>Значок</th><th>Назва</th><th>Розрахунок</th><th title="Тип оплати в чеку Checkbox">Checkbox</th><th title="Що має стояти в ТТН Нової Пошти — для колонки «Перевірка оплати»">ТТН Нової Пошти</th><th>Активний</th><th /></tr></thead>
+        <thead><tr><th aria-label="Порядок" /><th>Вид оплати</th><th>Розрахунок</th><th title="Тип оплати в чеку Checkbox">Checkbox</th><th title="Що має стояти в ТТН Нової Пошти — для колонки «Перевірка оплати»">ТТН Нової Пошти</th><th>Увімкнено</th></tr></thead>
         <tbody>{shown.map(([r, i]) => (
-          <tr key={r.key} className={r.active ? "" : "off"}>
-            <td className="muted mono">{r.id || "нов."}</td>
-            <td><div className="pm-icon"><PayIcon icon={r.icon} image={r.image} size={24} />
-              {r.image ? <span className="pm-own">свій значок</span>
-                : <select value={r.icon} onChange={(e) => upd(r.key, { icon: e.target.value })} aria-label="Значок">{Object.entries(PAY_ICONS).map(([k, d]) => <option key={k} value={k}>{d.label}</option>)}</select>}
-              {r.id > 0 && (r.image
-                ? <button type="button" className="x" title="Прибрати свій значок" onClick={() => save.mutate({ path: `/settings/payment-methods/${r.id}/image`, method: "del" }, { onSuccess: (x) => upd(r.key, { image: (x as S).payment_methods.find((m) => m.id === r.id)?.image ?? "" }) })}>×</button>
-                : <label className="pm-up" title="Завантажити свій значок (PNG, JPG, WEBP до 1 МБ), напр. офіційний логотип">
-                    <Upload size={14} /><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(e) => {
-                      const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
-                      const fd = new FormData(); fd.append("file", f);
-                      save.mutate({ path: `/settings/payment-methods/${r.id}/image`, method: "post", body: fd }, { onSuccess: (x) => upd(r.key, { image: (x as S).payment_methods.find((m) => m.id === r.id)?.image ?? "" }) });
-                    }} /></label>)}
+          <tr key={r.key} className={`${r.active ? "" : "off"}${drag === i ? " dragging" : ""}${over === i && drag !== null && drag !== i ? " over" : ""}`}
+            onDragOver={(e) => { if (drag === null) return; e.preventDefault(); setOver(i); }}
+            onDrop={(e) => { e.preventDefault(); if (drag !== null && drag !== i) moveTo(drag, i); setDrag(null); setOver(null); }}>
+            <td className="pm-grip-td">
+              <button type="button" className="pm-grip" draggable title="Перетягніть, щоб змінити порядок (або ↑↓ з клавіатури)" aria-label={`Порядок: ${r.name || "новий вид"}. Стрілки вгору й вниз — перемістити`}
+                onDragStart={(e) => { setDrag(i); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i)); }}
+                onDragEnd={() => { setDrag(null); setOver(null); }}
+                onKeyDown={(e) => { if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); move(i, e.key === "ArrowUp" ? -1 : 1); } }}>
+                <GripVertical size={16} /></button></td>
+            <td><div className="pm-name">
+              <MenuButton align="left" className="pm-ic-menu" button={({ open, toggle }) => (
+                <button type="button" className="pm-ic" aria-label="Значок" aria-expanded={open} title="Змінити значок" onClick={toggle}><PayIcon icon={r.icon} image={r.image} size={26} /></button>
+              )}>
+                {(close) => (
+                  <div className="pm-ic-pop">
+                    <div className="note-head">Значок</div>
+                    <div className="pm-ic-grid">
+                      {Object.entries(PAY_ICONS).map(([k, d]) => (
+                        <button key={k} type="button" className={`pm-ic-opt${!r.image && r.icon === k ? " on" : ""}`} title={d.label} aria-label={d.label}
+                          onClick={() => { upd(r.key, { icon: k }); if (r.image && r.id > 0) save.mutate({ path: `/settings/payment-methods/${r.id}/image`, method: "del" }, { onSuccess: (x) => upd(r.key, { image: (x as S).payment_methods.find((m) => m.id === r.id)?.image ?? "" }) }); close(); }}>
+                          <PayIcon icon={k} size={24} /></button>
+                      ))}
+                    </div>
+                    {r.id > 0 ? (
+                      <label className="pop-item pm-ic-up"><Upload size={15} />{r.image ? "Замінити свій значок" : "Завантажити свій значок"}<small>PNG, JPG, WEBP до 1 МБ</small>
+                        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(e) => {
+                          const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+                          const fd = new FormData(); fd.append("file", f);
+                          save.mutate({ path: `/settings/payment-methods/${r.id}/image`, method: "post", body: fd }, { onSuccess: (x) => upd(r.key, { image: (x as S).payment_methods.find((m) => m.id === r.id)?.image ?? "" }) });
+                          close();
+                        }} /></label>
+                    ) : <p className="hint pm-ic-hint">Свій значок можна додати після збереження</p>}
+                    {r.image && <button type="button" className="pop-item danger" onClick={() => { save.mutate({ path: `/settings/payment-methods/${r.id}/image`, method: "del" }, { onSuccess: (x) => upd(r.key, { image: (x as S).payment_methods.find((m) => m.id === r.id)?.image ?? "" }) }); close(); }}><Trash2 size={15} />Прибрати свій значок</button>}
+                  </div>
+                )}
+              </MenuButton>
+              <span className="pm-name-in"><input value={r.name} placeholder="Назва виду оплати" onChange={(e) => upd(r.key, { name: e.target.value })} aria-label="Назва" />
+                <small className="mono">{r.id ? `ID ${r.id}` : "новий"}</small></span>
             </div></td>
-            <td><input value={r.name} onChange={(e) => upd(r.key, { name: e.target.value })} /></td>
-            <td><select value={r.kind} onChange={(e) => upd(r.key, { kind: e.target.value as PaymentMethod["kind"] })}>
-              <option value="cod">Післяплата</option><option value="partial">Передоплата + післяплата</option><option value="prepaid">Оплачено (ТТН без післяплати)</option></select></td>
-            <td><select value={r.checkbox_type} onChange={(e) => upd(r.key, { checkbox_type: e.target.value })}>
-              <option value="">— не фіскалізувати</option>{Object.entries(s.checkbox_payments).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></td>
-            <td><select value={r.kind === "prepaid" ? "none" : r.np_cod ?? ""} disabled={r.kind === "prepaid"} title={r.kind === "prepaid" ? "Оплачено повністю — у ТТН не має бути післяплати" : undefined}
-              onChange={(e) => upd(r.key, { np_cod: e.target.value as PaymentMethod["np_cod"] })}>
-              <option value="">— не перевіряти</option><option value="control">Контроль оплати</option><option value="backward">Грошовий переказ</option><option value="none">Без післяплати</option></select></td>
-            <td><input type="checkbox" checked={r.active} onChange={(e) => upd(r.key, { active: e.target.checked })} /></td>
-            <td className="nowrap"><button type="button" className="x" title="Вище" onClick={() => move(i, -1)}><ArrowUp size={13} /></button><button type="button" className="x" title="Нижче" onClick={() => move(i, 1)}><ArrowDown size={13} /></button></td>
+            <td><Select value={r.kind} onChange={(e) => upd(r.key, { kind: e.target.value as PaymentMethod["kind"] })} aria-label="Розрахунок">
+              <option value="cod">Післяплата</option><option value="partial">Передоплата + післяплата</option><option value="prepaid">Оплачено (ТТН без післяплати)</option></Select></td>
+            <td><Select value={r.checkbox_type} onChange={(e) => upd(r.key, { checkbox_type: e.target.value })} aria-label="Checkbox">
+              <option value="">— не фіскалізувати</option>{Object.entries(s.checkbox_payments).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></td>
+            <td><Select value={r.kind === "prepaid" ? "none" : r.np_cod ?? ""} disabled={r.kind === "prepaid"} title={r.kind === "prepaid" ? "Оплачено повністю — у ТТН не має бути післяплати" : undefined}
+              onChange={(e) => upd(r.key, { np_cod: e.target.value as PaymentMethod["np_cod"] })} aria-label="ТТН Нової Пошти">
+              <option value="">— не перевіряти</option><option value="control">Контроль оплати</option><option value="backward">Грошовий переказ</option><option value="none">Без післяплати</option></Select></td>
+            <td><Toggle checked={r.active} onChange={(v) => upd(r.key, { active: v })} /></td>
           </tr>
         ))}</tbody>
       </table></div>
@@ -714,10 +741,10 @@ function NpAccounts({ s }: { s: S }) {
                       <span className="hint">{a.id ? "Підтягне контрагентів і контактних осіб відправника" : "Збережіть ключ, потім синхронізуйте"}</span>
                     </div>
                     {senders.length > 0 && <div className="cols">
-                      <Field label="Контрагент"><select value={a.sender_ref} onChange={(e) => { const x = senders.find((y) => y.ref === e.target.value); upd(a.key, { sender_ref: e.target.value, sender_name: x?.name ?? "", contact_ref: "", contact_name: "", sender_phone: "" }); }}>
-                        {senders.map((x) => <option key={x.ref} value={x.ref}>{x.name}</option>)}</select></Field>
-                      <Field label="Відправник (контактна особа)"><select value={a.contact_ref} onChange={(e) => { const c = sender?.contacts.find((y) => y.ref === e.target.value); upd(a.key, { contact_ref: e.target.value, contact_name: c?.name ?? "", sender_phone: c?.phone ?? "" }); }}>
-                        <option value="">оберіть</option>{(sender?.contacts ?? []).map((c) => <option key={c.ref} value={c.ref}>{c.name} ({c.phone})</option>)}</select></Field>
+                      <Field label="Контрагент"><Select value={a.sender_ref} onChange={(e) => { const x = senders.find((y) => y.ref === e.target.value); upd(a.key, { sender_ref: e.target.value, sender_name: x?.name ?? "", contact_ref: "", contact_name: "", sender_phone: "" }); }}>
+                        {senders.map((x) => <option key={x.ref} value={x.ref}>{x.name}</option>)}</Select></Field>
+                      <Field label="Відправник (контактна особа)"><Select value={a.contact_ref} onChange={(e) => { const c = sender?.contacts.find((y) => y.ref === e.target.value); upd(a.key, { contact_ref: e.target.value, contact_name: c?.name ?? "", sender_phone: c?.phone ?? "" }); }}>
+                        <option value="">оберіть</option>{(sender?.contacts ?? []).map((c) => <option key={c.ref} value={c.ref}>{c.name} ({c.phone})</option>)}</Select></Field>
                     </div>}
                     <div className="cols">
                       <Field label="Місто відправки"><NpAutocomplete kind="cities" value={a.city_name} refValue={a.city_ref} placeholder="Почніть вводити"
@@ -726,20 +753,20 @@ function NpAccounts({ s }: { s: S }) {
                         onType={(t) => upd(a.key, { warehouse_name: t, warehouse_ref: "" })} onPick={(o) => upd(a.key, { warehouse_name: o.name, warehouse_ref: o.ref })} /></Field>
                     </div>
                     <div className="cols c3">
-                      <Field label="Платник доставки"><select value={a.payer} onChange={(e) => upd(a.key, { payer: e.target.value })}>{Object.entries(NP_PAYERS).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
-                      <Field label="Тип відправлення"><select value={a.cargo_type} onChange={(e) => upd(a.key, { cargo_type: e.target.value })}>{Object.entries(NP_CARGO).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
-                      <Field label="Технологія"><select value={a.service_type} onChange={(e) => upd(a.key, { service_type: e.target.value })}>{Object.entries(NP_SERVICE).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
+                      <Field label="Платник доставки"><Select value={a.payer} onChange={(e) => upd(a.key, { payer: e.target.value })}>{Object.entries(NP_PAYERS).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></Field>
+                      <Field label="Тип відправлення"><Select value={a.cargo_type} onChange={(e) => upd(a.key, { cargo_type: e.target.value })}>{Object.entries(NP_CARGO).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></Field>
+                      <Field label="Технологія"><Select value={a.service_type} onChange={(e) => upd(a.key, { service_type: e.target.value })}>{Object.entries(NP_SERVICE).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></Field>
                     </div>
                     <div className="cols c3">
-                      <Field label="Післяплата" hint="Контроль оплати — гроші на рахунок, потрібен договір з НП"><select value={a.cod_mode} onChange={(e) => upd(a.key, { cod_mode: e.target.value })}>
-                        <option value="backward">Грошовий переказ</option><option value="afterpayment">Контроль оплати</option></select></Field>
-                      <Field label="Платник переказу"><select value={a.cod_payer} onChange={(e) => upd(a.key, { cod_payer: e.target.value })}><option value="Recipient">Одержувач</option><option value="Sender">Відправник</option></select></Field>
+                      <Field label="Післяплата" hint="Контроль оплати — гроші на рахунок, потрібен договір з НП"><Select value={a.cod_mode} onChange={(e) => upd(a.key, { cod_mode: e.target.value })}>
+                        <option value="backward">Грошовий переказ</option><option value="afterpayment">Контроль оплати</option></Select></Field>
+                      <Field label="Платник переказу"><Select value={a.cod_payer} onChange={(e) => upd(a.key, { cod_payer: e.target.value })}><option value="Recipient">Одержувач</option><option value="Sender">Відправник</option></Select></Field>
                       {s.legal_entities.length > 0 ? (
-                        <Field label="Юрособа" hint="Замовлення цієї юрособи йдуть з цього ключа"><select value={a.legal_entity_id ?? ""} onChange={(e) => upd(a.key, { legal_entity_id: e.target.value ? Number(e.target.value) : null })}>
-                          <option value="">будь-яка</option>{s.legal_entities.filter((x) => x.is_active).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
+                        <Field label="Юрособа" hint="Замовлення цієї юрособи йдуть з цього ключа"><Select value={a.legal_entity_id ?? ""} onChange={(e) => upd(a.key, { legal_entity_id: e.target.value ? Number(e.target.value) : null })}>
+                          <option value="">будь-яка</option>{s.legal_entities.filter((x) => x.is_active).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</Select></Field>
                       ) : (
-                        <Field label="Відділ" hint="Замовлення цього відділу йдуть з цього ключа"><select value={a.office_id ?? ""} onChange={(e) => upd(a.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
-                          <option value="">будь-який</option>{s.offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></Field>
+                        <Field label="Відділ" hint="Замовлення цього відділу йдуть з цього ключа"><Select value={a.office_id ?? ""} onChange={(e) => upd(a.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
+                          <option value="">будь-який</option>{s.offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</Select></Field>
                       )}
                     </div>
                     <div className="cols c3">
@@ -790,9 +817,9 @@ function NpRules({ s }: { s: S }) {
         <div className="np-rule head"><span>Статус ТТН</span><span /><span>Статус замовлення</span><span>Винятки</span><span /></div>
         {rows.map((r) => (
           <div className="np-rule" key={r.key}>
-            <select value={r.np_code} onChange={(e) => upd(r.key, { np_code: e.target.value })}>{Object.entries(s.np_statuses).map(([c, n]) => <option key={c} value={c}>{n}</option>)}</select>
+            <Select value={r.np_code} onChange={(e) => upd(r.key, { np_code: e.target.value })}>{Object.entries(s.np_statuses).map(([c, n]) => <option key={c} value={c}>{n}</option>)}</Select>
             <span className="muted">→</span>
-            <select value={r.status_id} onChange={(e) => upd(r.key, { status_id: Number(e.target.value) })}>{statuses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
+            <Select value={r.status_id} onChange={(e) => upd(r.key, { status_id: Number(e.target.value) })}>{statuses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</Select>
             <button type="button" className="dir-st-btn" onClick={() => setOpen(open === r.key ? "" : r.key)}>{r.except_ids.length ? r.except_ids.map((i) => s.statuses.find((x) => x.id === i)?.name).filter(Boolean).join(", ") : "без винятків"}</button>
             <button type="button" className="x" title="Прибрати" onClick={() => setRows(rows.filter((x) => x.key !== r.key))}>×</button>
             {open === r.key && <div className="chips np-rule-ex">{statuses.map((x) => {
@@ -870,12 +897,12 @@ function Shops({ s }: { s: S }) {
                   {x.kind === "rozetka" && <div className="cols"><Field label="Пароль кабінету продавця"><input type="password" autoComplete="new-password" placeholder={x.secret ? "збережено" : "не вказано"} value={x.secret === "********" ? "" : x.secret} onChange={(e) => upd(x.key, { secret: e.target.value || (x.id ? "********" : "") })} /></Field>
                     <Field label="Імпортувати з дати" hint="Порожньо — останні 14 днів"><input type="date" value={x.since ? x.since.slice(0, 10) : ""} onChange={(e) => upd(x.key, { since: e.target.value || null })} /></Field></div>}
                   <div className="cols c3">
-                    <Field label="Відділ" hint="У який відділ іти замовленням"><select value={x.office_id ?? ""} onChange={(e) => upd(x.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
-                      <option value="">не вказано</option>{s.offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></Field>
-                    <Field label="Статус нових замовлень"><select value={x.import_status_id ?? ""} onChange={(e) => upd(x.key, { import_status_id: e.target.value ? Number(e.target.value) : null })}>
-                      <option value="">як усі нові</option>{statuses.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}</select></Field>
-                    <Field label="Назву магазину в поле"><select value={x.extra_field} onChange={(e) => upd(x.key, { extra_field: Number(e.target.value) })}>
-                      <option value={0}>не писати</option>{[1, 2, 3, 4].map((i) => <option key={i} value={i}>{meta.extra_fields[i - 1] || `Поле ${i}`}</option>)}</select></Field>
+                    <Field label="Відділ" hint="У який відділ іти замовленням"><Select value={x.office_id ?? ""} onChange={(e) => upd(x.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
+                      <option value="">не вказано</option>{s.offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</Select></Field>
+                    <Field label="Статус нових замовлень"><Select value={x.import_status_id ?? ""} onChange={(e) => upd(x.key, { import_status_id: e.target.value ? Number(e.target.value) : null })}>
+                      <option value="">як усі нові</option>{statuses.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}</Select></Field>
+                    <Field label="Назву магазину в поле"><Select value={x.extra_field} onChange={(e) => upd(x.key, { extra_field: Number(e.target.value) })}>
+                      <option value={0}>не писати</option>{[1, 2, 3, 4].map((i) => <option key={i} value={i}>{meta.extra_fields[i - 1] || `Поле ${i}`}</option>)}</Select></Field>
                   </div>
                   <div className="np-sync">
                     <button type="button" className="btn sm" disabled={!x.id} onClick={() => run(x.id, "check")} title={x.id ? "" : "Спершу збережіть"}><RefreshCw size={14} /> Перевірити підключення</button>
@@ -894,22 +921,22 @@ function Shops({ s }: { s: S }) {
                       {Object.keys(mpStatuses).length === 0 ? <p className="hint">Натисніть «Перевірити підключення», щоб завантажити статуси Rozetka.</p> :
                         <div className="mp-map">{statuses.map((st) => (
                           <div className="mp-map-row" key={st.id}><span>{st.name}</span>
-                            <select value={x.status_map[String(st.id)] ?? ""} onChange={(e) => { const m = { ...x.status_map }; if (e.target.value) m[String(st.id)] = e.target.value; else delete m[String(st.id)]; upd(x.key, { status_map: m }); }}>
-                              <option value="">не передавати</option>{Object.entries(mpStatuses).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
+                            <Select value={x.status_map[String(st.id)] ?? ""} onChange={(e) => { const m = { ...x.status_map }; if (e.target.value) m[String(st.id)] = e.target.value; else delete m[String(st.id)]; upd(x.key, { status_map: m }); }}>
+                              <option value="">не передавати</option>{Object.entries(mpStatuses).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></div>
                         ))}</div>}
                     </div>
                     <div><span className="lbl">Оплата на маркетплейсі → вид оплати</span>
                       {(dir.payments ?? []).length === 0 ? <p className="hint">З'являться після першої синхронізації. Поки типово: оплачено — {x.kind === "rozetka" ? "RozetkaPay" : "Пром-оплата"}, інакше — {x.kind === "rozetka" ? "Післяплата Rozetka" : "Післяплата NovaPay"}.</p> :
                         <div className="mp-map">{(dir.payments ?? []).map((n) => (
                           <div className="mp-map-row" key={n}><span>{n}</span>
-                            <select value={x.payment_map[n] ?? ""} onChange={(e) => { const m = { ...x.payment_map }; if (e.target.value) m[n] = Number(e.target.value); else delete m[n]; upd(x.key, { payment_map: m }); }}>
-                              <option value="">типово</option>{meta.payment_methods.map((pm) => <option key={pm.id} value={pm.id}>{pm.name}</option>)}</select></div>
+                            <Select value={x.payment_map[n] ?? ""} onChange={(e) => { const m = { ...x.payment_map }; if (e.target.value) m[n] = Number(e.target.value); else delete m[n]; upd(x.key, { payment_map: m }); }}>
+                              <option value="">типово</option>{meta.payment_methods.map((pm) => <option key={pm.id} value={pm.id}>{pm.name}</option>)}</Select></div>
                         ))}</div>}
                       {(dir.deliveries ?? []).length > 0 && <><span className="lbl" style={{ marginTop: 10, display: "block" }}>Доставка на маркетплейсі → служба доставки</span>
                         <div className="mp-map">{(dir.deliveries ?? []).map((n) => (
                           <div className="mp-map-row" key={n}><span>{n}</span>
-                            <select value={x.delivery_map[n] ?? ""} onChange={(e) => { const m = { ...x.delivery_map }; if (e.target.value) m[n] = e.target.value; else delete m[n]; upd(x.key, { delivery_map: m }); }}>
-                              <option value="">за назвою</option>{Object.entries(meta.delivery_methods).map(([k, nm]) => <option key={k} value={k}>{nm}</option>)}</select></div>
+                            <Select value={x.delivery_map[n] ?? ""} onChange={(e) => { const m = { ...x.delivery_map }; if (e.target.value) m[n] = e.target.value; else delete m[n]; upd(x.key, { delivery_map: m }); }}>
+                              <option value="">за назвою</option>{Object.entries(meta.delivery_methods).map(([k, nm]) => <option key={k} value={k}>{nm}</option>)}</Select></div>
                         ))}</div></>}
                     </div>
                   </div>
@@ -969,14 +996,14 @@ function CheckboxSettings({ s }: { s: S }) {
                   <Field label="Пароль касира"><input type="password" autoComplete="new-password" placeholder={c.password ? "збережено" : "не вказано"} value={c.password === "********" ? "" : c.password} onChange={(e) => upd(c.key, { password: e.target.value || (c.id ? "********" : "") })} /></Field>
                 </div>
                 {byEntity ? (
-                  <Field label="Юрособа" hint="Чеки замовлень цієї юрособи йдуть через цю касу"><select value={c.legal_entity_id ?? ""} required onChange={(e) => upd(c.key, { legal_entity_id: e.target.value ? Number(e.target.value) : null })}>
-                    <option value="">оберіть юрособу</option>{s.legal_entities.map((x) => <option key={x.id} value={x.id}>{x.name}{x.is_default ? " (за замовч.)" : ""}</option>)}</select></Field>
+                  <Field label="Юрособа" hint="Чеки замовлень цієї юрособи йдуть через цю касу"><Select value={c.legal_entity_id ?? ""} required onChange={(e) => upd(c.key, { legal_entity_id: e.target.value ? Number(e.target.value) : null })}>
+                    <option value="">оберіть юрособу</option>{s.legal_entities.map((x) => <option key={x.id} value={x.id}>{x.name}{x.is_default ? " (за замовч.)" : ""}</option>)}</Select></Field>
                 ) : (
                 <div className="cols">
-                  <Field label="Умова вибору каси"><select value={c.condition} onChange={(e) => upd(c.key, { condition: e.target.value as Cashier["condition"], condition_value: null })}>
-                    {Object.entries(COND).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Field>
-                  {c.condition !== "none" && <Field label="Значення"><select value={c.condition_value ?? ""} onChange={(e) => upd(c.key, { condition_value: e.target.value ? Number(e.target.value) : null })}>
-                    <option value="">оберіть</option>{options(c).map(([id, n]) => <option key={id} value={id}>{n}</option>)}</select></Field>}
+                  <Field label="Умова вибору каси"><Select value={c.condition} onChange={(e) => upd(c.key, { condition: e.target.value as Cashier["condition"], condition_value: null })}>
+                    {Object.entries(COND).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></Field>
+                  {c.condition !== "none" && <Field label="Значення"><Select value={c.condition_value ?? ""} onChange={(e) => upd(c.key, { condition_value: e.target.value ? Number(e.target.value) : null })}>
+                    <option value="">оберіть</option>{options(c).map(([id, n]) => <option key={id} value={id}>{n}</option>)}</Select></Field>}
                 </div>
                 )}
                 {c.last_error && <p className="flash error">{c.last_error}</p>}
@@ -1000,7 +1027,7 @@ function CheckboxSettings({ s }: { s: S }) {
         <p className="hint">Чек створюється сам, коли замовлення переходить у вибраний статус (один раз на замовлення).</p>
         <div className="cols">
           {([["cb_sell_status", "Чек продажу"], ["cb_return_status", "Чек повернення"], ["cb_prepay_status", "Чек передоплати"], ["cb_postpay_status", "Чек післяплати"]] as const).map(([k, n]) => (
-            <Field key={k} label={n}><select {...auto.bind(k)}><option value="">вручну</option>{statuses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
+            <Field key={k} label={n}><Select {...auto.bind(k)}><option value="">вручну</option>{statuses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</Select></Field>
           ))}
         </div>
       </form>
@@ -1048,8 +1075,8 @@ function LegalEntities({ s }: { s: S }) {
               <FileText size={13} /> Реквізити для документів{!(r.address || r.bank || r.signer) && <span className="muted"> · не заповнено</span>}</button>
             {openReq === r.key && (
               <div className="ent-req">
-                <label className="lbl">Тип коду<select value={r.code_label ?? "РНОКПП"} onChange={(e) => upd(r.key, { code_label: e.target.value })}>
-                  <option>РНОКПП</option><option>ІПН</option><option>ЄДРПОУ</option></select></label>
+                <label className="lbl">Тип коду<Select value={r.code_label ?? "РНОКПП"} onChange={(e) => upd(r.key, { code_label: e.target.value })}>
+                  <option>РНОКПП</option><option>ІПН</option><option>ЄДРПОУ</option></Select></label>
                 <label className="lbl">Адреса<input value={r.address ?? ""} onChange={(e) => upd(r.key, { address: e.target.value })} placeholder="м. Тульчин, вул. …" /></label>
                 <label className="lbl">Банк<input value={r.bank ?? ""} onChange={(e) => upd(r.key, { bank: e.target.value })} placeholder="АТ КБ «ПриватБанк»" /></label>
                 <label className="lbl">Телефон<input value={r.phone ?? ""} onChange={(e) => upd(r.key, { phone: e.target.value })} placeholder="+380…" /></label>
@@ -1102,7 +1129,7 @@ function EntityAccounts({ entityId }: { entityId: number }) {
           {q.data && !q.data.length && <p className="hint">Рахунків ще немає. Додайте, куди надходять передоплати — у картці замовлення його можна буде вибрати.</p>}
           <form className="ent-acc-add" onSubmit={(e) => { e.preventDefault(); if (draft.name.trim()) add.mutate(); }}>
             <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Назва, напр. Monobank" aria-label="Назва рахунку" />
-            <select value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })} aria-label="Тип">{Object.entries(ACC_KINDS).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>
+            <Select value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })} aria-label="Тип">{Object.entries(ACC_KINDS).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select>
             {draft.kind === "iban" ? <input value={draft.iban} onChange={(e) => setDraft({ ...draft, iban: e.target.value })} placeholder="UA…" aria-label="IBAN" />
               : <input value={draft.card_mask} onChange={(e) => setDraft({ ...draft, card_mask: e.target.value })} placeholder="Останні цифри, напр. •• 1234" aria-label="Картка" />}
             <button className="btn sm" disabled={!draft.name.trim() || add.isPending}><Plus size={14} />Додати</button>
@@ -1148,8 +1175,8 @@ function DocsSettings({ s }: { s: S }) {
         <p className="hint">Нумерація окрема для кожної юрособи й типу документа: префікс + порядковий номер (РН-0168). Номер не використовується повторно;
           свій префікс для юрособи можна задати у вкладці «Юрособи».</p>
         <div className="cols">
-          <Field label="Коли видавати видаткову й гарантійний талон"><select {...bind("doc_auto_issue")}>
-            <option value="shipped">Самі, коли замовлення стає «Відправленим»</option><option value="print">При першому друці</option><option value="off">Лише вручну</option></select></Field>
+          <Field label="Коли видавати видаткову й гарантійний талон"><Select {...bind("doc_auto_issue")}>
+            <option value="shipped">Самі, коли замовлення стає «Відправленим»</option><option value="print">При першому друці</option><option value="off">Лише вручну</option></Select></Field>
           <label className="check" style={{ alignSelf: "end" }}><input type="checkbox" {...check("doc_in_parcel")} /> Класти видаткову в посилку («Що лишилось» нагадає надрукувати)</label>
         </div>
         <div className="cols c3">

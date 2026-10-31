@@ -6,7 +6,7 @@ import { api, qs } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { date, dt, isoDay, money } from "../lib/format";
 import type { Audit, Payment, Payments, Registry, Report as ReportData } from "../lib/types";
-import { Badge, Empty, Kpi, Spinner } from "../components/ui";
+import { Badge, Empty, Kpi, Spinner , Select } from "../components/ui";
 
 // ================================================================ оплати
 
@@ -109,7 +109,7 @@ export function ReportsPage() {
       <div className="filters">
         <input type="date" value={data.date_from} onChange={(e) => setP({ ...p, date_from: e.target.value, date_to: data.date_to })} />
         <input type="date" value={data.date_to} onChange={(e) => setP({ ...p, date_to: e.target.value, date_from: data.date_from })} />
-        {meta.user.role === "admin" && <select value={p.manager} onChange={(e) => setP({ ...p, manager: e.target.value })}><option value="">Усі менеджери</option>{meta.managers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select>}
+        {meta.user.role === "admin" && <Select value={p.manager} onChange={(e) => setP({ ...p, manager: e.target.value })}><option value="">Усі менеджери</option>{meta.managers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</Select>}
         <span className="spacer" />
         {presets().map(([n, a, b]) => <button key={n} className={`btn sm ${data.date_from === a && data.date_to === b ? "dark" : ""}`} onClick={() => setP({ ...p, date_from: a, date_to: b })}>{n}</button>)}
       </div>
@@ -173,8 +173,8 @@ export function AuditPage() {
     <div>
       <div className="head"><h1><span className="h-ico"><History size={18} /></span>Журнал дій</h1></div>
       <div className="filters">
-        <select value={f.entity} onChange={(e) => setF({ ...f, entity: e.target.value })}><option value="">Усі об'єкти</option>{Object.entries(ENTITIES).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>
-        <select value={f.action} onChange={(e) => setF({ ...f, action: e.target.value })}><option value="">Усі дії</option>{Object.entries(actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>
+        <Select value={f.entity} onChange={(e) => setF({ ...f, entity: e.target.value })}><option value="">Усі об'єкти</option>{Object.entries(ENTITIES).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select>
+        <Select value={f.action} onChange={(e) => setF({ ...f, action: e.target.value })}><option value="">Усі дії</option>{Object.entries(actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select>
         <input type="date" value={f.date_from} onChange={(e) => setF({ ...f, date_from: e.target.value })} />
         <input type="date" value={f.date_to} onChange={(e) => setF({ ...f, date_to: e.target.value })} />
       </div>

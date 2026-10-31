@@ -50,9 +50,9 @@ h3 { text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--ink-
 .tabs a.on::after { height: 2px; left: 8px; right: 8px; background: var(--c, var(--brand)); }
 
 /* ---------------------------------------------------------------- поля й кнопки */
-input, select, textarea { border-color: #d7dbe3; border-radius: var(--r-field); }
-input:hover, select:hover, textarea:hover { border-color: #c4cad5; }
-input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47, 84, 212, .14); }
+input, select, textarea, .xsel { border-color: #d7dbe3; border-radius: var(--r-field); }
+input:hover, select:hover, textarea:hover, .xsel:hover { border-color: #c4cad5; }
+input:focus, select:focus, textarea:focus, .xsel:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47, 84, 212, .14); }
 input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .btn { border-color: #d7dbe3; border-radius: var(--r-field); font-weight: 500; color: var(--ink); background: #fff; }
 .btn:hover { background: #f6f7f9; border-color: #c4cad5; }
@@ -67,7 +67,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .btn.accent:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
 .pill { border-radius: var(--r-field); font-weight: 560; }
 .badge { border-radius: var(--r-field); }
-.filters input, .filters select { height: 34px; }
+.filters input, .filters select, .filters .xsel { height: 34px; }
 .empty { color: var(--muted); }
 
 /* ---------------------------------------------------------------- вікна */

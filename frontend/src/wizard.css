@@ -64,9 +64,9 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
 .wz-phone .ua-phone input { height: 100%; padding-left: 8px; font-size: inherit; font-weight: 500; }
 .wz-money span { color: var(--muted); }
 .wz-sel { position: relative; display: flex; align-items: center; }
-.wz-sel select { width: 100%; height: 48px; padding: 0 38px 0 14px; border: 2px solid transparent; border-radius: 14px; background: var(--wz-tile); font: inherit; font-size: 15px;
+.wz-sel select, .wz-sel .xsel { width: 100%; height: 48px; padding: 0 38px 0 14px; border: 2px solid transparent; border-radius: 14px; background: var(--wz-tile); font: inherit; font-size: 15px;
   color: var(--ink); appearance: none; -webkit-appearance: none; cursor: pointer; }
-.wz-sel select:focus { outline: none; border-color: var(--accent); box-shadow: var(--wz-ring); background: #fff; }
+.wz-sel select:focus, .wz-sel .xsel:focus { outline: none; border-color: var(--accent); box-shadow: var(--wz-ring); background: #fff; }
 .wz-sel svg { position: absolute; right: 14px; color: var(--faint); pointer-events: none; }
 .wz-ro { display: flex; align-items: center; height: 48px; padding: 0 14px; border-radius: 14px; background: #F2F3F5; color: var(--ink-2); font-size: 15px; }
 .wz-note { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 11px 14px; border-radius: 14px; background: #F2F3F5; color: var(--ink-2); font-size: 13.5px; line-height: 1.35; }
@@ -193,7 +193,7 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
 
 /* ------------------------------------------------------------ ТТН: ПК */
 .tt-key { position: relative; display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px; border-radius: 12px; background: #F6F7F8; font-size: 13.5px; color: var(--ink); max-width: 420px; }
-.tt-key select { min-width: 0; height: 40px; padding: 0 22px 0 0; border: 0; background: none; font: inherit; font-weight: 500; appearance: none; -webkit-appearance: none; cursor: pointer; text-overflow: ellipsis; }
+.tt-key select, .tt-key .xsel { min-width: 0; height: 40px; padding: 0 22px 0 0; border: 0; background: none; font: inherit; font-weight: 500; appearance: none; -webkit-appearance: none; cursor: pointer; text-overflow: ellipsis; }
 .tt-key > svg:last-child { position: absolute; right: 12px; pointer-events: none; color: var(--faint); }
 .tt-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: stretch; padding: 16px 0 26px; }
 .tt-main { min-width: 0; }
@@ -243,7 +243,7 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
 .tt-edit { display: grid; grid-template-columns: 1.2fr .7fr 1.5fr .6fr 1fr; gap: 10px; margin-top: 10px; align-items: end; }
 .tt-edit .wz-lb { margin: 0 0 6px 4px; }
 .tt-edit .wide { grid-column: 1 / -1; }
-.tt-edit .wz-sel select { height: 46px; }
+.tt-edit .wz-sel select, .tt-edit .wz-sel .xsel { height: 46px; }
 .tt-dims { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
 .tt-dims input { text-align: center; padding: 0 4px !important; }
 .tt-side { display: flex; flex-direction: column; padding: 18px 20px; border-radius: 20px; background: var(--accent-soft); color: #1F2F55; }
@@ -321,7 +321,7 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
   .wz-q { margin: 20px 4px 16px; }
   .wz-big { height: 58px; border-radius: 17px; font-size: 19px; padding: 0 16px; }
   .wz-big.sm { height: 50px; font-size: 16px; }
-  input.wz-big, .wz-big input, .wz-sel select, .wz-disc input { font-size: max(16px, 1em); }
+  input.wz-big, .wz-big input, .wz-sel select, .wz-disc input, .wz-sel .xsel { font-size: max(16px, 1em); }
   .wz-note { background: #E8E9EC; }
   .wz-row2, .wz-grid2 { grid-template-columns: 1fr 1fr; gap: 0 10px; }
   .wz-row2 { grid-template-columns: 1fr; }
@@ -338,7 +338,7 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
   .wz-modes { grid-template-columns: 1fr; gap: 8px; }
   .wz-mode { align-items: center; padding: 14px; border-radius: 18px; }
   .wz-chip { background: #fff; }
-  .wz-sel select, .wz-ro { height: 52px; border-radius: 15px; background: #fff; }
+  .wz-sel select, .wz-ro, .wz-sel .xsel { height: 52px; border-radius: 15px; background: #fff; }
   .wz-ro { background: #E8E9EC; }
   .wz-goods .gi { background: #fff; }
   .wz-goods .psearch input, .wz-goods .psearch.big input { background: #fff; height: 58px; }
@@ -408,3 +408,9 @@ input.wz-big:focus, textarea.wz-big:focus, .wz-big:focus-within { outline: none;
   .wz-carriers { grid-template-columns: 1fr; }
   .tt-num b { font-size: 20px; }
 }
+
+/* джерело на першому кроці майстра й у «Новий лід» */
+.wz-lb-src { margin-top: 18px; }
+.new-lead-src .wz-lb { margin: 4px 0 6px 2px; font-size: 12px; }
+.new-lead-src .wz-chip { height: 38px; padding: 0 14px; border-radius: 12px; font-size: 13.5px; background: #F2F3F5; }
+.new-lead-src .wz-chip.on { background: var(--accent); color: #fff; }

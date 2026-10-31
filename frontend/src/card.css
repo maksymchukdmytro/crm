@@ -41,7 +41,7 @@
 .oc-strip.warn { background: var(--warn-soft); color: var(--warn-ink); margin: -2px 0 12px; }
 .oc-strip .link-btn { margin-left: auto; color: inherit; font-weight: 560; }
 .oc-grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 12px; align-items: start; }
-.oc-grid.ro input, .oc-grid.ro select, .oc-grid.ro textarea { background: transparent; }
+.oc-grid.ro input, .oc-grid.ro select, .oc-grid.ro textarea, .oc-grid.ro .xsel { background: transparent; }
 .oc-left, .oc-right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .oc-bottom { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: stretch; }
 .oc-loading .block { display: flex; flex-direction: column; gap: 14px; min-height: 260px; }
@@ -67,7 +67,7 @@
 .phone-pill-in input { flex: 1; min-width: 0; height: 34px; min-height: 0 !important; border: 0; padding: 0 4px; background: none; box-shadow: none !important;
   font-size: 14px; font-weight: 450; font-variant-numeric: tabular-nums; }
 .oc-entity { position: relative; display: flex; align-items: center; gap: 7px; margin: 0 0 12px; font-size: 12.5px; color: var(--muted); cursor: pointer; }
-.oc-entity select { position: absolute; inset: 0; opacity: 0; cursor: pointer; min-height: 0; }
+.oc-entity select, .oc-entity .xsel { position: absolute; inset: 0; opacity: 0; cursor: pointer; min-height: 0; }
 .oc-entity:hover { color: var(--ink); }
 .oc-cust .tiles4 { margin-bottom: 10px; }
 .oc-email { width: 100%; margin-bottom: 8px; }
@@ -93,10 +93,10 @@
 .oc-prepay input { text-align: left; padding-left: 10px; }
 .oc-acc, .oc-select { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px;
   border: 1px solid var(--line); border-radius: var(--r-field); background: var(--surface); font-size: 13px; }
-.oc-select select { position: static; opacity: 1; flex: 1; border: 0; padding: 0; height: 34px; min-height: 0; background: none; box-shadow: none !important; appearance: none; font-weight: 450; }
+.oc-select select, .oc-select .xsel { position: static; opacity: 1; flex: 1; border: 0; padding: 0; height: 34px; min-height: 0; background: none; box-shadow: none !important; appearance: none; font-weight: 450; }
 .oc-acc > svg, .oc-select > svg { color: var(--muted); flex: none; pointer-events: none; }
 .oc-acc { overflow: hidden; }
-.oc-acc select { opacity: 1; position: static; color: var(--ink); border: 0; padding: 0; height: 34px; background: none; box-shadow: none !important; appearance: none; flex: 1; min-width: 0; }
+.oc-acc select, .oc-acc .xsel { opacity: 1; position: static; color: var(--ink); border: 0; padding: 0; height: 34px; background: none; box-shadow: none !important; appearance: none; flex: 1; min-width: 0; }
 .np-badge { display: inline-grid; place-items: center; height: 18px; padding: 0 5px; border-radius: var(--r-mark); background: #E53935; color: #fff; font-size: 10px; font-weight: 600; flex: none; }
 .oc-ok { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border: 0; background: none; color: var(--faint); border-radius: var(--r-pill); cursor: pointer; }
 .oc-ok:hover:not(:disabled) { background: var(--ok-soft); color: var(--ok); }
@@ -108,7 +108,7 @@
 .oc-pays > div { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; }
 .oc-addpay { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
 .oc-addpay .money-in { width: 110px; }
-.oc-addpay select { width: auto; }
+.oc-addpay select, .oc-addpay .xsel { width: auto; }
 .oc-pay .add-chip { margin-top: 6px; }
 
 /* доставка */
@@ -141,7 +141,7 @@
 .gi-name-in:hover { border-color: var(--line); }
 .gi-var { position: relative; display: inline-flex; align-items: center; gap: 4px; height: 22px; max-width: 150px; padding: 0 8px; font-size: 12px; font-weight: 450;
   color: var(--accent-ink-2); background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: var(--r-pill); flex: none; cursor: pointer; }
-.gi-var select { position: absolute; inset: 0; opacity: 0; cursor: pointer; min-height: 0; }
+.gi-var select, .gi-var .xsel { position: absolute; inset: 0; opacity: 0; cursor: pointer; min-height: 0; }
 .gi-meta { display: inline-flex; gap: 8px; font-size: 11.5px; color: var(--faint); white-space: nowrap; flex: none; }
 .gi-meta .mono { font-size: 11px; }
 .gi-l2 { display: flex; align-items: center; gap: 10px; min-height: 0; }
@@ -216,11 +216,11 @@
 .hp-form { display: flex; flex-direction: column; gap: 6px; width: 100%; }
 .hp-form textarea { width: 100%; resize: vertical; }
 .hp-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.hp-row select { width: auto; }
+.hp-row select, .hp-row .xsel { width: auto; }
 
 /* вікно ТТН — у wizard.css; спільне для пошуку в довіднику НП */
 .sel-ic { position: relative; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-field); background: var(--surface); }
-.sel-ic select { flex: 1; border: 0; padding: 0; min-height: 0; height: 34px; background: none; box-shadow: none !important; }
+.sel-ic select, .sel-ic .xsel { flex: 1; border: 0; padding: 0; min-height: 0; height: 34px; background: none; box-shadow: none !important; }
 .ro-field { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; background: var(--soft); border-radius: var(--r-field); color: var(--muted); font-size: 13px; overflow: hidden; white-space: nowrap; }
 .np-pop { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60; max-height: 280px; overflow-y: auto; min-width: 280px; }
 .np-opt { min-height: 36px; border-radius: var(--r-field); }

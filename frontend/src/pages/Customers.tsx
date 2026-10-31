@@ -7,7 +7,7 @@ import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, money, phone } from "../lib/format";
 import type { CustomerDetail, CustomerList } from "../lib/types";
-import { Block, Button, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, StatusPill, Tag, Toggle, UaPhone, Window, useMobile } from "../components/ui";
+import { Block, Button, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, StatusPill, Tag, Toggle, UaPhone, Window, useMobile , Select } from "../components/ui";
 import OrderModal from "./OrderCard";
 import "./customers.css";
 
@@ -50,7 +50,7 @@ export default function CustomersPage() {
       <div className="filters">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ім'я, телефон або email" />
         <span className="cu-sort">
-          <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Сортування">{SORTS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+          <Select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Сортування">{SORTS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select>
           <button className="btn icon" title={desc ? "За спаданням" : "За зростанням"} onClick={() => setDesc((d) => !d)}>{desc ? <ArrowDown size={15} /> : <ArrowUp size={15} />}</button>
         </span>
       </div>
@@ -226,8 +226,8 @@ function CustomerCard({ id, onClose }: { id: number; onClose: () => void }) {
             <div className="pw-2">
               <Field label="Ім'я"><input value={v("name", "")} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
               <Field label="Email"><input type="email" value={v("email", "")} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
-              <Field label="Група"><select value={v<number | null>("group_id", null) ?? ""} onChange={(e) => setF({ ...f, group_id: e.target.value ? Number(e.target.value) : null })}>
-                <option value="">без групи</option>{meta.customer_groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</select></Field>
+              <Field label="Група"><Select value={v<number | null>("group_id", null) ?? ""} onChange={(e) => setF({ ...f, group_id: e.target.value ? Number(e.target.value) : null })}>
+                <option value="">без групи</option>{meta.customer_groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</Select></Field>
               <Field label="Додатковий телефон"><UaPhone value={"phone2" in f ? String(f.phone2) : String(v("phone2", "") || "")} onChange={(x) => setF({ ...f, phone2: x })} aria-label="Додатковий телефон" /></Field>
             </div>
             <Field label="Коментар"><textarea rows={2} value={v("comment", "")} onChange={(e) => setF({ ...f, comment: e.target.value })} placeholder="Бачать менеджери в картці замовлення" /></Field>
@@ -302,8 +302,8 @@ function NewCustomer({ onClose, onCreated }: { onClose: () => void; onCreated: (
         <Field label="Телефон"><UaPhone value={f.phone} onChange={(x) => setF({ ...f, phone: x })} required autoFocus aria-label="Телефон" /></Field>
         <Field label="Ім'я"><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
         <Field label="Email"><input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
-        <Field label="Група"><select value={f.group_id} onChange={(e) => setF({ ...f, group_id: e.target.value ? Number(e.target.value) : "" })}>
-          <option value="">за замовчуванням</option>{meta.customer_groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</select></Field>
+        <Field label="Група"><Select value={f.group_id} onChange={(e) => setF({ ...f, group_id: e.target.value ? Number(e.target.value) : "" })}>
+          <option value="">за замовчуванням</option>{meta.customer_groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</Select></Field>
         <div className="form-actions"><button className="btn primary" disabled={create.isPending}>Додати покупця</button><button type="button" className="btn" onClick={onClose}>Скасувати</button></div>
       </form>
     </Modal>
