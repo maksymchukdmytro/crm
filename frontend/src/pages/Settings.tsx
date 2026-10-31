@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useId, useMemo, useR
 import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowDown, ArrowUp, Building2, GripVertical, Check, ChevronLeft, ChevronRight, CircleAlert, Copy, FileText, KeyRound, Landmark, Layers, ListChecks, MessageSquare, Plus, Receipt, RefreshCw,
+  Building2, GripVertical, Check, ChevronLeft, ChevronRight, CircleAlert, Copy, FileText, KeyRound, Landmark, Layers, ListChecks, MessageSquare, Plus, Receipt, RefreshCw,
   Search, Send, ShieldCheck, SlidersHorizontal, Star, Store, Trash2, Truck, Upload, Users as UsersIcon, Wallet, Webhook as WebhookIcon, X, type LucideIcon,
 } from "lucide-react";
 import { api } from "../lib/api";
@@ -446,18 +446,18 @@ function Statuses({ s }: { s: S }) {
   return (
     <div className="stack">
       <div className="card flush tablewrap">
-        <table className="t dense">
+        <table className="t dense t-cards">
           <thead><tr><th>Порядок</th><th>Колір</th><th>Назва</th><th title="У якому розділі показується замовлення з цим статусом">Розділ</th><th>Дія зі складом</th><th title="Рахується як підтверджене у звітах">Апрув</th><th>Фінальний</th><th>Активний</th><th /></tr></thead>
           <tbody>{rows.map((r) => (
             <tr key={r.id}>
-              <td style={{ width: 80 }}><input type="number" value={r.sort} onChange={(e) => upd(r.id, { sort: Number(e.target.value) })} /></td>
-              <td style={{ width: 56 }}><input type="color" value={r.color} onChange={(e) => upd(r.id, { color: e.target.value })} /></td>
-              <td><input value={r.name} onChange={(e) => upd(r.id, { name: e.target.value })} /><span className="sub mono">{r.code}</span></td>
-              <td><Select value={r.stage ?? "order"} onChange={(e) => upd(r.id, { stage: e.target.value as Status["stage"] })}><option value="lead">Ліди</option><option value="order">Замовлення</option></Select></td>
-              <td><Select value={r.stock_action} onChange={(e) => upd(r.id, { stock_action: e.target.value })}>{Object.entries(s.stock_actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></td>
-              <td><input type="checkbox" checked={r.approved} onChange={(e) => upd(r.id, { approved: e.target.checked })} /></td>
-              <td><input type="checkbox" checked={r.final} onChange={(e) => upd(r.id, { final: e.target.checked })} /></td>
-              <td><input type="checkbox" checked={r.active} disabled={r.code === "new"} onChange={(e) => upd(r.id, { active: e.target.checked })} /></td>
+              <td data-label="Порядок" style={{ width: 80 }}><input type="number" value={r.sort} onChange={(e) => upd(r.id, { sort: Number(e.target.value) })} /></td>
+              <td data-label="Колір" style={{ width: 56 }}><input type="color" value={r.color} onChange={(e) => upd(r.id, { color: e.target.value })} /></td>
+              <td className="full" data-label="Назва"><input value={r.name} onChange={(e) => upd(r.id, { name: e.target.value })} /><span className="sub mono">{r.code}</span></td>
+              <td data-label="Розділ"><Select value={r.stage ?? "order"} onChange={(e) => upd(r.id, { stage: e.target.value as Status["stage"] })}><option value="lead">Ліди</option><option value="order">Замовлення</option></Select></td>
+              <td data-label="Дія зі складом"><Select value={r.stock_action} onChange={(e) => upd(r.id, { stock_action: e.target.value })}>{Object.entries(s.stock_actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></td>
+              <td data-label="Підтверджене" className="t-cards-chk"><input type="checkbox" checked={r.approved} onChange={(e) => upd(r.id, { approved: e.target.checked })} /></td>
+              <td data-label="Фінальний" className="t-cards-chk"><input type="checkbox" checked={r.final} onChange={(e) => upd(r.id, { final: e.target.checked })} /></td>
+              <td data-label="Активний" className="t-cards-chk"><input type="checkbox" checked={r.active} disabled={r.code === "new"} onChange={(e) => upd(r.id, { active: e.target.checked })} /></td>
               <td>{!r.system && <button className="btn sm danger" onClick={() => { if (window.confirm("Видалити статус?")) save.mutate({ path: `/settings/statuses/${r.id}`, method: "del" }, { onSuccess: (x) => tr.reset(x.statuses) }); }}><Trash2 size={13} /></button>}</td>
             </tr>
           ))}</tbody>
@@ -487,7 +487,7 @@ function Users({ s }: { s: S }) {
   });
   return (
     <div className="grid two">
-      <div className="card flush tablewrap"><table className="t dense">
+      <div className="card flush tablewrap"><table className="t dense t-cards">
         <thead><tr><th>Користувач</th><th>Роль</th>{s.offices.length > 0 && <th title="Замовлення яких відділів бачить користувач">Відділи</th>}<th>Новий пароль</th><th>Активний</th><th /></tr></thead>
         <tbody>{s.users.map((u) => <UserRow key={u.id} u={u} roles={s.roles} offices={s.offices.filter((o) => o.active)} self={u.id === meta.user.id} onSave={(body) => mut.mutate({ id: u.id, body })} />)}</tbody>
       </table></div>
@@ -518,12 +518,12 @@ function UserRow({ u, roles, offices, self, onSave }: { u: User; roles: Record<s
   const [v, setV] = useState({ full_name: u.full_name, role: u.role as string, password: "", is_active: u.is_active, offices: u.offices ?? [] });
   return (
     <tr>
-      <td><input value={v.full_name} onChange={(e) => setV({ ...v, full_name: e.target.value })} placeholder="Ім'я" /><span className="sub mono">{u.username}{u.last_login_at && ` · вхід ${dt(u.last_login_at, true)}`}</span></td>
-      <td><Select value={v.role} onChange={(e) => setV({ ...v, role: e.target.value })} disabled={self}>{Object.entries(roles).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></td>
-      {offices.length > 0 && <td>{v.role === "admin" ? <span className="muted">усі</span> : <OfficeChips offices={offices} value={v.offices} onChange={(o) => setV({ ...v, offices: o })} />}</td>}
-      <td><input type="password" value={v.password} onChange={(e) => setV({ ...v, password: e.target.value })} placeholder="не змінювати" autoComplete="new-password" /></td>
-      <td><input type="checkbox" checked={v.is_active} disabled={self} onChange={(e) => setV({ ...v, is_active: e.target.checked })} /></td>
-      <td><button className="btn sm" onClick={() => { onSave({ ...v, password: v.password || undefined }); setV({ ...v, password: "" }); }}>Зберегти</button></td>
+      <td className="full" data-label="Користувач"><input value={v.full_name} onChange={(e) => setV({ ...v, full_name: e.target.value })} placeholder="Ім'я" /><span className="sub mono">{u.username}{u.last_login_at && ` · вхід ${dt(u.last_login_at, true)}`}</span></td>
+      <td data-label="Роль"><Select value={v.role} onChange={(e) => setV({ ...v, role: e.target.value })} disabled={self}>{Object.entries(roles).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></td>
+      {offices.length > 0 && <td className="full" data-label="Відділи">{v.role === "admin" ? <span className="muted">усі</span> : <OfficeChips offices={offices} value={v.offices} onChange={(o) => setV({ ...v, offices: o })} />}</td>}
+      <td data-label="Новий пароль"><input type="password" value={v.password} onChange={(e) => setV({ ...v, password: e.target.value })} placeholder="не змінювати" autoComplete="new-password" /></td>
+      <td data-label="Активний" className="t-cards-chk"><input type="checkbox" checked={v.is_active} disabled={self} onChange={(e) => setV({ ...v, is_active: e.target.checked })} /></td>
+      <td className="full"><button className="btn sm" onClick={() => { onSave({ ...v, password: v.password || undefined }); setV({ ...v, password: "" }); }}>Зберегти</button></td>
     </tr>
   );
 }
@@ -629,7 +629,7 @@ function PaymentMethods({ s }: { s: S }) {
       <div className="card-head pad"><div><h2>Види оплат <span className="muted">{rows.filter((r) => r.active).length} з {rows.length}</span></h2>
         <p className="hint">Вид оплати визначає розрахунок, тип оплати в чеку Checkbox і що має стояти в ТТН Нової Пошти (колонка «Перевірка оплати» в замовленнях). Номери (ID) такі ж, як у LP-CRM.</p></div>
         <label className="mini-check"><input type="checkbox" checked={showOff} onChange={(e) => setShowOff(e.target.checked)} /> показати вимкнені</label></div>
-      <div className="tablewrap"><table className="t dense pm-table">
+      <div className="tablewrap"><table className="t dense pm-table t-cards">
         <thead><tr><th aria-label="Порядок" /><th>Вид оплати</th><th>Розрахунок</th><th title="Тип оплати в чеку Checkbox">Checkbox</th><th title="Що має стояти в ТТН Нової Пошти — для колонки «Перевірка оплати»">ТТН Нової Пошти</th><th>Увімкнено</th></tr></thead>
         <tbody>{shown.map(([r, i]) => (
           <tr key={r.key} className={`${r.active ? "" : "off"}${drag === i ? " dragging" : ""}${over === i && drag !== null && drag !== i ? " over" : ""}`}
@@ -641,7 +641,7 @@ function PaymentMethods({ s }: { s: S }) {
                 onDragEnd={() => { setDrag(null); setOver(null); }}
                 onKeyDown={(e) => { if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); move(i, e.key === "ArrowUp" ? -1 : 1); } }}>
                 <GripVertical size={16} /></button></td>
-            <td><div className="pm-name">
+            <td className="full"><div className="pm-name">
               <MenuButton align="left" className="pm-ic-menu" button={({ open, toggle }) => (
                 <button type="button" className="pm-ic" aria-label="Значок" aria-expanded={open} title="Змінити значок" onClick={toggle}><PayIcon icon={r.icon} image={r.image} size={26} /></button>
               )}>
@@ -671,14 +671,14 @@ function PaymentMethods({ s }: { s: S }) {
               <span className="pm-name-in"><input value={r.name} placeholder="Назва виду оплати" onChange={(e) => upd(r.key, { name: e.target.value })} aria-label="Назва" />
                 <small className="mono">{r.id ? `ID ${r.id}` : "новий"}</small></span>
             </div></td>
-            <td><Select value={r.kind} onChange={(e) => upd(r.key, { kind: e.target.value as PaymentMethod["kind"] })} aria-label="Розрахунок">
+            <td data-label="Розрахунок"><Select value={r.kind} onChange={(e) => upd(r.key, { kind: e.target.value as PaymentMethod["kind"] })} aria-label="Розрахунок">
               <option value="cod">Післяплата</option><option value="partial">Передоплата + післяплата</option><option value="prepaid">Оплачено (ТТН без післяплати)</option></Select></td>
-            <td><Select value={r.checkbox_type} onChange={(e) => upd(r.key, { checkbox_type: e.target.value })} aria-label="Checkbox">
+            <td data-label="Checkbox"><Select value={r.checkbox_type} onChange={(e) => upd(r.key, { checkbox_type: e.target.value })} aria-label="Checkbox">
               <option value="">— не фіскалізувати</option>{Object.entries(s.checkbox_payments).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></td>
-            <td><Select value={r.kind === "prepaid" ? "none" : r.np_cod ?? ""} disabled={r.kind === "prepaid"} title={r.kind === "prepaid" ? "Оплачено повністю — у ТТН не має бути післяплати" : undefined}
+            <td data-label="ТТН Нової Пошти"><Select value={r.kind === "prepaid" ? "none" : r.np_cod ?? ""} disabled={r.kind === "prepaid"} title={r.kind === "prepaid" ? "Оплачено повністю — у ТТН не має бути післяплати" : undefined}
               onChange={(e) => upd(r.key, { np_cod: e.target.value as PaymentMethod["np_cod"] })} aria-label="ТТН Нової Пошти">
               <option value="">— не перевіряти</option><option value="control">Контроль оплати</option><option value="backward">Грошовий переказ</option><option value="none">Без післяплати</option></Select></td>
-            <td><Toggle checked={r.active} onChange={(v) => upd(r.key, { active: v })} /></td>
+            <td data-label="Увімкнено" className="t-cards-tgl"><Toggle checked={r.active} onChange={(v) => upd(r.key, { active: v })} /></td>
           </tr>
         ))}</tbody>
       </table></div>
@@ -969,6 +969,10 @@ function CheckboxSettings({ s }: { s: S }) {
   const auto = useForm(s, ["cb_sell_status", "cb_return_status", "cb_prepay_status", "cb_postpay_status"], "/settings/checkbox");
   const upd = (key: string, patch: Partial<CashRow>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const move = (i: number, d: number) => { const a = [...rows]; const j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; setRows(a); };
+  // порядок кас (перевіряються згори вниз) — перетягуванням за ручку, як види оплат
+  const [drag, setDrag] = useState<number | null>(null);
+  const [over, setOver] = useState<number | null>(null);
+  const moveTo = (from: number, to: number) => { const a = [...rows]; const [x] = a.splice(from, 1); a.splice(to, 0, x); setRows(a); };
   const visible = rows.map((r, i) => [r, i] as const).filter(([r]) => !r.delete);
   const options = (c: CashRow): [number, string][] => c.condition === "office" ? s.offices.filter((o) => o.active).map((o) => [o.id, o.name])
     : c.condition === "user" ? s.users.filter((u) => u.is_active).map((u) => [u.id, u.name])
@@ -985,7 +989,20 @@ function CheckboxSettings({ s }: { s: S }) {
         {visible.length === 0 && <Empty>Кас ще немає. Ключ ліцензії, логін і пароль касира — у кабінеті Checkbox.</Empty>}
         <div className="np-accs">
           {visible.map(([c, i]) => (
-            <div className="np-acc open" key={c.key}>
+            <div className={`np-acc open${drag === i ? " dragging" : ""}${over === i && drag !== null && drag !== i ? " over" : ""}`} key={c.key}
+              onDragOver={(e) => { if (drag === null) return; e.preventDefault(); setOver(i); }}
+              onDrop={(e) => { e.preventDefault(); if (drag !== null && drag !== i) moveTo(drag, i); setDrag(null); setOver(null); }}>
+              {!byEntity && visible.length > 1 && (
+                <div className="cb-order">
+                  <button type="button" className="pm-grip" draggable title="Перетягніть, щоб змінити порядок перевірки кас (або ↑↓ з клавіатури)"
+                    aria-label={`Порядок каси ${c.name || "нова"}. Стрілки вгору й вниз — перемістити`}
+                    onDragStart={(e) => { setDrag(i); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i)); }}
+                    onDragEnd={() => { setDrag(null); setOver(null); }}
+                    onKeyDown={(e) => { if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); move(i, e.key === "ArrowUp" ? -1 : 1); } }}>
+                    <GripVertical size={16} /></button>
+                  <span className="muted">Перевіряється {visible.findIndex(([x]) => x.key === c.key) + 1}-ю</span>
+                </div>
+              )}
               <div className="form np-acc-b cb-row">
                 <div className="cols">
                   <Field label="ПІБ касира" hint="Друкується в чеку"><input value={c.name} onChange={(e) => upd(c.key, { name: e.target.value })} /></Field>
@@ -1012,8 +1029,6 @@ function CheckboxSettings({ s }: { s: S }) {
                   <label className="check" title="Тестовий сервер Checkbox — чеки не фіскальні"><input type="checkbox" checked={c.test_mode} onChange={(e) => upd(c.key, { test_mode: e.target.checked })} /> Тестова каса</label>
                   <label className="check"><input type="checkbox" checked={c.is_active} onChange={(e) => upd(c.key, { is_active: e.target.checked })} /> Активна</label>
                   <span className="spacer" />
-                  <button type="button" className="x" title="Вище" onClick={() => move(i, -1)}><ArrowUp size={13} /></button>
-                  <button type="button" className="x" title="Нижче" onClick={() => move(i, 1)}><ArrowDown size={13} /></button>
                   <button type="button" className="btn sm" disabled={!c.id} onClick={() => check(c.id)}>Перевірити</button>
                   <button type="button" className="btn sm danger" onClick={() => (c.id ? upd(c.key, { delete: true }) : setRows(rows.filter((r) => r.key !== c.key)))}><Trash2 size={13} /></button>
                 </div>

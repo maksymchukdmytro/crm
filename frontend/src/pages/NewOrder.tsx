@@ -292,7 +292,7 @@ function StepGoods({ form, set, subtotal, total }: { form: Form; set: (p: Partia
   return (<>
     <Q title="Що замовляє?" sub="Назва, артикул або штрихкод · ↑↓ і Enter — додати" />
     <div className="wz-goods">
-      <Goods items={form.items} products={meta.products} onChange={(items) => set({ items })} />
+      <Goods items={form.items} products={meta.products} onChange={(items) => set({ items })} autoFocusSearch />
     </div>
     {form.items.length > 0 && (
       <div className="wz-total">

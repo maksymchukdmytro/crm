@@ -420,3 +420,31 @@ def can_view(db: Session, user: User, order: Order) -> bool:
         # своє замовлення менеджер бачить завжди — навіть якщо джерело належить іншому відділу
         return order.office_id in [int(x) for x in user.offices] or order.manager_id == user.id
     return True
+
+
+def can_delete(user: User, order: Order) -> bool:
+    """Видаляти може адміністратор і менеджер — лише своє замовлення (або без менеджера)."""
+    return user.role == "admin" or (user.role == "manager" and order.manager_id in (None, user.id))
+
+
+def delete_order(db: Session, order: Order, user: User | None) -> str:
+    """Видалити замовлення назавжди. Повертає причину відмови або "" (видалено).
+    Не видаляємо те, що вже має наслідки поза CRM: ТТН у перевізника, фіскальний чек, відвантажений товар."""
+    from ..models import CheckboxReceipt, StockMovement
+    from . import audit, events, stock
+    if order.stock_shipped:
+        return f"№{order.id}: товар уже відвантажено — спершу поверніть замовлення на склад (статус «Повернено»)"
+    if order.carrier_ref:
+        return f"№{order.id}: є ТТН {order.ttn} у перевізника — спершу видаліть ТТН"
+    if db.query(CheckboxReceipt).filter(CheckboxReceipt.order_id == order.id, CheckboxReceipt.status == "done").count():
+        return f"№{order.id}: є фіскальний чек — створіть чек повернення й скасуйте замовлення"
+    if order.stock_reserved:
+        stock.release(db, order, user)  # резерв повертається на склад
+    db.query(StockMovement).filter(StockMovement.order_id == order.id).update({StockMovement.order_id: None}, synchronize_session=False)
+    db.query(Order).filter(Order.duplicate_of_id == order.id).update({Order.duplicate_of_id: None}, synchronize_session=False)
+    audit.log(db, user, "order", order.id, "delete", {"покупець": order.customer_name, "телефон": order.phone, "сума": order.total})
+    oid = order.id
+    db.delete(order)
+    db.flush()
+    events.order_changed(db, oid)
+    return ""

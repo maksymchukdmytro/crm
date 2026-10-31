@@ -2,7 +2,7 @@
 // Результати дзвінка: Недодзвон F1 · Передзвонити F2 · Відмова F3 · Дубль. Головна дія — «Створити замовлення» (Ctrl ⏎).
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Check, ChevronLeft, Copy, MessageCircle, MoreHorizontal, Package, Phone, PhoneMissed, PhoneOff, Plus, Send, Timer } from "lucide-react";
+import { Ban, Check, ChevronLeft, Copy, MessageCircle, MoreHorizontal, Package, Phone, PhoneMissed, PhoneOff, Plus, Send, Timer, Trash2 } from "lucide-react";
 import { api, ApiError } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, money, phone } from "../lib/format";
@@ -22,6 +22,13 @@ export default function LeadWindow({ id, onClose, onOpen }: { id: number; onClos
   const mobile = useMobile();
   const statuses = Object.fromEntries(meta.statuses.map((s) => [s.id, s]));
   const { data: o, isLoading } = useQuery({ queryKey: ["order", id], queryFn: () => api.get<Order>(`/orders/${id}`) });
+  const askDelete = () => {
+    if (!window.confirm(`Видалити лід ${leadNo(id)} назавжди? Відновити його не можна.`)) return;
+    api.del(`/orders/${id}`).then(() => {
+      qc.invalidateQueries({ queryKey: ["orders"] }); qc.invalidateQueries({ queryKey: ["leads"] }); qc.invalidateQueries({ queryKey: ["counters"] });
+      toast(`Лід ${leadNo(id)} видалено`); onClose();
+    }).catch((e) => toast(errText(e), "error"));
+  };
   const queue = useQuery({
     queryKey: ["orders", "leads", "queue-rows"],
     queryFn: () => api.get<OrderList>("/orders?stage=lead&tab=open&sort=wait&limit=200&counts=0"),
@@ -87,6 +94,7 @@ export default function LeadWindow({ id, onClose, onOpen }: { id: number; onClos
       <div className="acts">
         {o?.duplicate_of_id && <span className="badge warn">Можливий дубль №{o.duplicate_of_id}</span>}
         {o?.customer?.blacklisted && <span className="badge bad"><Ban size={11} />У чорному списку</span>}
+        {o && <IconButton icon={Trash2} label="Видалити лід" quiet onClick={askDelete} />}
       </div>
     </div>
   );
@@ -103,6 +111,7 @@ export default function LeadWindow({ id, onClose, onOpen }: { id: number; onClos
           {(closeMenu) => (<>
             <button className="pop-item" onClick={() => { closeMenu(); setPop("duplicate"); }}><Copy size={16} />Позначити як дубль</button>
             <button className="pop-item" onClick={() => { closeMenu(); setFullCard(true); }}><Plus size={16} />Відкрити повну картку</button>
+            <button className="pop-item danger" onClick={() => { closeMenu(); askDelete(); }}><Trash2 size={16} />Видалити лід</button>
           </>)}
         </MenuButton>
       ) : <span className="rb-gap" aria-hidden />}

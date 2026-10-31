@@ -802,7 +802,12 @@ export interface paths {
         get: operations["get_order_api_orders__order_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Order
+         * @description Видалити замовлення (ліда) назавжди: резерв повертається на склад; не можна, якщо є ТТН у перевізника, фіскальний чек
+         *     чи товар уже відвантажено.
+         */
+        delete: operations["delete_order_api_orders__order_id__delete"];
         options?: never;
         head?: never;
         /** Update Order */
@@ -2257,7 +2262,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "status" | "assign" | "ttn" | "track" | "fiscalize" | "registry";
+            action: "status" | "assign" | "ttn" | "track" | "fiscalize" | "registry" | "delete";
             /** Ids */
             ids: number[];
             /** Value */
@@ -8971,6 +8976,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_order_api_orders__order_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
                 };
             };
             /** @description Validation Error */

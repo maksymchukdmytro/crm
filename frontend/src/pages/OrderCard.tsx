@@ -6,7 +6,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlarmClock, ArrowLeft, ArrowUpRight, Ban, Bell, Building2, Check, ChevronDown, ChevronLeft, CircleCheck, Copy, CreditCard, ExternalLink, FileText, History,
-  Landmark, ListChecks, Lock, MessageCircle, MessageSquare, MoreHorizontal, Pencil, Phone, Plus, Printer, Receipt, RefreshCw, ScanBarcode,
+  ListChecks, Lock, MessageCircle, MessageSquare, MoreHorizontal, Pencil, Phone, Plus, Printer, Receipt, RefreshCw, ScanBarcode,
   Send, ShieldCheck, Tag as TagIcon, Trash2, Truck, Wallet, X,
 } from "lucide-react";
 import { api, ApiError, qs, ROOT } from "../lib/api";
@@ -223,6 +223,22 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
     else action.mutate({ path: "/ttn" });
   }, [order]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const canDelete = !!order && (meta.user.role === "admin" || (meta.user.role === "manager" && (!order.manager_id || order.manager_id === meta.user.id)));
+  const remove = useMutation({
+    mutationFn: () => api.del(`/orders/${oid}`),
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: ["order", oid] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
+      qc.invalidateQueries({ queryKey: ["counters"] });
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      toast(`Замовлення №${oid} видалено`);
+      onClose();
+    },
+    onError: (e) => toast(errText(e), "error"),
+  });
+  const askDelete = () => {
+    if (window.confirm(`Видалити замовлення №${oid} назавжди?\n\nРезерв товару повернеться на склад. Відновити замовлення не можна.`)) remove.mutate();
+  };
   const close = () => { if (dirty && !isNew) saveNow(); else if (dirty && isNew && !window.confirm("Замовлення ще не створено. Закрити без збереження?")) return; onClose(); };
 
   if (!isNew && (isLoading || !order || !baseline)) {
@@ -250,6 +266,15 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
         {saveState === "error" && <Button icon={RefreshCw} onClick={() => saveNow()}>Зберегти ще раз</Button>}
         {order && <RemindButton value={form.remind_at} onChange={(v) => { set({ remind_at: v }); }} />}
         {order && <IconButton icon={History} label="Історія (H)" count={(order.history?.length ?? 0) + (order.comments?.length ?? 0)} onClick={() => setHistory(true)} />}
+        {order && (
+          <MenuButton button={({ open, toggle }) => <IconButton icon={MoreHorizontal} label="Ще дії" aria-expanded={open} onClick={toggle} />}>
+            {(closeMenu) => (<>
+              <button className="pop-item" onClick={() => { closeMenu(); navigate(`/orders/new?from=${oid}`); }}><Plus size={16} />Нове замовлення цьому покупцю</button>
+              <a className="pop-item" href={`${ROOT}/api/orders/${oid}/print`} target="_blank" rel="noreferrer" onClick={closeMenu}><Printer size={16} />Бланк замовлення</a>
+              {canDelete && <button className="pop-item danger" disabled={remove.isPending} onClick={() => { closeMenu(); askDelete(); }}><Trash2 size={16} />Видалити замовлення</button>}
+            </>)}
+          </MenuButton>
+        )}
         <IconButton icon={X} label="Закрити (Esc)" quiet onClick={close} />
       </div>
     </div>
@@ -269,6 +294,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
             <button className="pop-item" onClick={() => { closeMenu(); setEditCust((x) => !x); }}><Pencil size={16} />{editCust ? "Сховати дані покупця" : "Змінити дані покупця"}</button>
             <button className="pop-item" onClick={() => { closeMenu(); navigate(`/orders/new?from=${oid}`); }}><Plus size={16} />Нове замовлення цьому покупцю</button>
             <a className="pop-item" href={`${ROOT}/api/orders/${oid}/print`} target="_blank" rel="noreferrer" onClick={closeMenu}><Printer size={16} />Бланк замовлення</a>
+            {canDelete && <button className="pop-item danger" disabled={remove.isPending} onClick={() => { closeMenu(); askDelete(); }}><Trash2 size={16} />Видалити замовлення</button>}
           </>)}
         </MenuButton>
       ) : <span className="rb-gap" aria-hidden />}
@@ -620,7 +646,6 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
   const c = order?.customer;
   const tel = digits(form.phone);
   const src = meta.order_sources.find((s) => s.id === form.source_id)?.name;
-  const entity = meta.legal_entities.find((e) => e.id === form.legal_entity_id) ?? meta.legal_entities.find((e) => e.is_default);
   return (
     <Block title="Покупець" step={step} className="oc-cust" sub={!isNew && c ? [`${c.orders} ${plural(c.orders, "замовлення", "замовлення", "замовлень")}`, c.buyout_rate != null && c.delivered + c.refused > 0 ? `викуп ${Math.round(c.buyout_rate)}%` : "", c.refused ? `відмов ${c.refused}` : ""].filter(Boolean).join(" · ") : undefined}>
       {c?.blacklisted && <div className="oc-strip bad"><Ban size={15} /><span><b>Чорний список.</b> {c.blacklist_reason || "Причину не вказано"}</span>
@@ -654,15 +679,6 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
           <a className="icon-btn" href={`sms:+${tel}`} aria-label="SMS" title="SMS"><MessageSquare size={16} /></a>
         </>}
       </div>
-      {meta.legal_entities.length > 0 && (
-        <div className="oc-entity" title="Від чийого імені продаж: за юрособою обирається каса Checkbox, ключ НП і реквізити документів">
-          <SelectPick<number | ""> ariaLabel="Юрособа" disabled={readOnly} value={form.legal_entity_id} className="oc-entity-pick"
-            onChange={(v) => set({ legal_entity_id: v })}
-            button={<><Landmark size={14} aria-hidden /><span className="ell">{entity?.name ?? "Юрособа"}{entity?.has_cashier ? " · каса" : ""}{meta.np_accounts.length ? " і ключ НП" : ""}</span></>}
-            options={[{ value: "", label: meta.legal_entities.find((x) => x.is_default)?.name ?? "За замовчуванням", hint: "за замовчуванням" },
-              ...meta.legal_entities.map((x) => ({ value: x.id as number | "", label: x.name, hint: x.has_cashier ? "каса Checkbox" : "без каси" }))]} />
-        </div>
-      )}
       {c && (
         <div className="tiles4">
           <div><b>{c.orders}</b><span>Замовлень</span></div>
@@ -909,8 +925,11 @@ function DetailsBlock({ order, form, set, readOnly, onTake }: { order?: Order; f
     { k: "src", label: "Джерело", v: sel(form.source_id, (v) => set({ source_id: v }), meta.order_sources, "не вказано", "Джерело") },
     { k: "mgr", label: "Менеджер", v: mgr },
     { k: "office", label: "Відділ", v: <span className="prop-val muted">{office ?? "—"}</span> },
+    // юрособа: кожна один раз; «основна» — та, що діє, коли не вибрано іншу (від неї каса Checkbox, ключ НП і реквізити документів)
     { k: "le", label: "Юрособа", v: meta.legal_entities.length
-      ? sel(form.legal_entity_id, (v) => set({ legal_entity_id: v }), meta.legal_entities, "за замовчуванням", "Юрособа")
+      ? <SelectPick<number | ""> ariaLabel="Юрособа" disabled={readOnly} className="prop-ipick" value={form.legal_entity_id || (meta.legal_entities.find((e) => e.is_default)?.id ?? "")}
+          onChange={(v) => set({ legal_entity_id: v === meta.legal_entities.find((e) => e.is_default)?.id && !form.legal_entity_id ? "" : v })}
+          options={meta.legal_entities.map((e) => ({ value: e.id as number | "", label: e.name, hint: [e.is_default ? "основна" : "", e.has_cashier ? "каса Checkbox" : "без каси"].filter(Boolean).join(" · ") }))} />
       : <span className="prop-val muted">—</span> },
     { k: "comment", label: "Коментар", wide: true, v: <textarea className="prop-area" rows={2} value={form.comment} disabled={readOnly} onChange={(e) => set({ comment: e.target.value })}
       placeholder="Коментар до замовлення" aria-label="Коментар" /> },

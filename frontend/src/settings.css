@@ -84,3 +84,6 @@
 .pm-ic-up input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .pm-ic-hint { margin: 4px 8px 6px; }
 .pm-table .toggle-row { justify-content: center; }
+.cb-order { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; font-size: 12.5px; }
+.np-acc.dragging { opacity: .45; }
+.np-acc.over { box-shadow: 0 -3px 0 var(--accent); }

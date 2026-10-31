@@ -501,7 +501,8 @@
        "ttn",
        "track",
        "fiscalize",
-       "registry"
+       "registry",
+       "delete"
       ],
       "title": "Action",
       "type": "string"
@@ -16127,6 +16128,47 @@
    }
   },
   "/api/orders/{order_id}": {
+   "delete": {
+    "description": "Видалити замовлення (ліда) назавжди: резерв повертається на склад; не можна, якщо є ТТН у перевізника, фіскальний чек\nчи товар уже відвантажено.",
+    "operationId": "delete_order_api_orders__order_id__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "order_id",
+      "required": true,
+      "schema": {
+       "title": "Order Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Order",
+    "tags": [
+     "orders"
+    ]
+   },
    "get": {
     "operationId": "get_order_api_orders__order_id__get",
     "parameters": [

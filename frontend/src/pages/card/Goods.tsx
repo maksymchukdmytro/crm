@@ -12,8 +12,8 @@ type Pick = { p: Product; v?: Variant };
 export type GoodsHandle = { focusSearch: () => void; startUpsell: () => void };
 
 export const Goods = forwardRef<GoodsHandle, {
-  items: OrderItem[]; products: Product[]; onChange: (i: OrderItem[]) => void; readOnly?: boolean;
-}>(function Goods({ items: raw, products, onChange: emit, readOnly }, ref) {
+  items: OrderItem[]; products: Product[]; onChange: (i: OrderItem[]) => void; readOnly?: boolean; autoFocusSearch?: boolean;
+}>(function Goods({ items: raw, products, onChange: emit, readOnly, autoFocusSearch }, ref) {
   const items = useMemo(() => arrange(raw), [raw]);
   const onChange = (next: OrderItem[]) => emit(arrange(next));
   const [upFor, setUpFor] = useState<string | null>(null);
@@ -130,7 +130,7 @@ export const Goods = forwardRef<GoodsHandle, {
     <div className="goods">
       {body}
       {!readOnly && (<>
-        <ProductSearch inputRef={search} products={products} free placeholder="Додати товар: назва, артикул або штрихкод" onPick={addMain} big={!items.length} />
+        <ProductSearch inputRef={search} products={products} free placeholder="Додати товар: назва, артикул або штрихкод" onPick={addMain} big={!items.length} autoFocus={autoFocusSearch && !items.length} />
         {offers.length > 0 && (
           <div className="gi-offers">
             <Sparkles size={15} aria-hidden />

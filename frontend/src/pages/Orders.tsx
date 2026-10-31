@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  AlarmClock, Ban, Bookmark, CalendarDays, Check, CircleAlert, Copy, Download, Eye, KanbanSquare, List, ListFilter, Package, Phone, Printer, Receipt, RefreshCw, Search, Truck, UserRound, X,
+  AlarmClock, Ban, Bookmark, CalendarDays, Check, CircleAlert, Copy, Download, Eye, KanbanSquare, List, ListFilter, Package, Phone, Plus, Printer, Receipt, ReceiptText, RefreshCw, Search, Trash2, Truck, UserRound, X,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
@@ -14,8 +14,7 @@ import { MarkIcon } from "../components/marks";
 import type { OrderList, OrderRow } from "../lib/types";
 import {
   BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, IconButton, MenuButton, MobileActs, PayCheck, RoundButton, Segmented, Sheet, StatusPill, Tabs, Tag,
-  useColumns, useOutside, type DenseCol, type TabItem,
-} from "../components/ui";
+  useColumns, useOutside, type DenseCol, type TabItem, EmptyState } from "../components/ui";
 import OrderModal from "./OrderCard";
 
 const FILTERS = ["status", "q", "manager", "delivery", "src", "entity", "pm", "mark", "date_from", "date_to", "dup", "remind", "ttn"] as const;
@@ -289,7 +288,8 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
           <IconButton size={28} quiet icon={Eye} label="Перегляд" onClick={() => nav(`${base}/${o.id}${window.location.search}`)} />
         </>)}
         empty={<div className="empty-state">
-          <p>{anyFilter || f.q ? "За цими фільтрами нічого немає" : isUnsorted ? "Усі замовлення розібрано" : "Замовлень поки немає"}</p>
+          {!(anyFilter || f.q) && !isUnsorted ? <EmptyState icon={ReceiptText} title="Замовлень поки немає" text="Заявки з лендингів і маркетплейсів з'являться тут самі. Або створіть замовлення вручну"
+            action={{ label: "Нове замовлення", icon: Plus, onClick: () => nav("/orders/new") }} /> : <p>{anyFilter || f.q ? "За цими фільтрами нічого немає" : "Усі замовлення розібрано"}</p>}
           {(anyFilter || f.q) && <button className="btn" onClick={() => { setSearch(""); setSp(f.status ? { status: f.status } : {}, { replace: true }); }}>Скинути фільтр</button>}
         </div>}
       />
@@ -314,6 +314,11 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         <button className="btn quiet sm" onClick={() => bulk.mutate({ action: "track" })}><RefreshCw size={14} />Оновити трекінг</button>
         {meta.checkbox_ready && <button className="btn quiet sm" onClick={() => bulk.mutate({ action: "fiscalize" })}><Receipt size={14} />Фіскалізувати</button>}
         <button className="btn quiet sm" onClick={() => { navigator.clipboard?.writeText(selectedIds.join(", ")); toast("Номери скопійовано"); }}><Copy size={14} />Номери</button>
+        {meta.user.role !== "warehouse" && (
+          <button className="btn quiet sm danger" onClick={() => {
+            if (window.confirm(`Видалити ${sel.size} ${sel.size === 1 ? "замовлення" : "замовлень"} назавжди?\n\nРезерв повернеться на склад. Замовлення з ТТН у перевізника, фіскальним чеком чи вже відвантажені не видаляться.`)) bulk.mutate({ action: "delete" });
+          }}><Trash2 size={14} />Видалити</button>
+        )}
       </BulkBar>
 
       {id && <OrderModal id={id} onClose={() => nav(`${base}${window.location.search}`)} onOpen={(oid) => nav(`${base}/${oid}${window.location.search}`)}

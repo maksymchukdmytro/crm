@@ -608,7 +608,7 @@ class OrderIn(In):
 
 class BulkIn(In):
     ids: list[int]
-    action: Literal["status", "assign", "ttn", "track", "fiscalize", "registry"]
+    action: Literal["status", "assign", "ttn", "track", "fiscalize", "registry", "delete"]
     value: int | str | None = None
 
 

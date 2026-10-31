@@ -19,7 +19,7 @@ from ..services import settings as st
 from ..services import sms as sms_svc
 from ..services.audit import ACTION_NAMES
 from ..formatting import f_details
-from .schemas import BulkIn, BulkOut, DocumentsOut, HistoryOut, OrderIn, OrderListOut, OrderOut, PaymentIn, PrepayConfirmIn, ReceiptIn, NpRegistryOut, SmsIn, TextIn, TrackOut, TtnCreatedOut, TtnIn, TtnPreviewOut
+from .schemas import BulkIn, BulkOut, Ok, DocumentsOut, HistoryOut, OrderIn, OrderListOut, OrderOut, PaymentIn, PrepayConfirmIn, ReceiptIn, NpRegistryOut, SmsIn, TextIn, TrackOut, TtnCreatedOut, TtnIn, TtnPreviewOut
 from .common import bad, iso, j_order, j_order_row, staff
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
@@ -371,10 +371,34 @@ def bulk(body: BulkIn, db: Session = Depends(get_db), user: User = Depends(staff
         res = delivery.sync_tracking(db, [o.id for o in orders], force=True)
         done = res["checked"]
         errors.extend(res["errors"])
+    elif action == "delete":
+        for o in orders:
+            if not svc.can_delete(user, o):
+                errors.append(f"№{o.id}: видаляти може адміністратор або менеджер цього замовлення")
+                continue
+            err = svc.delete_order(db, o, user)
+            if err:
+                errors.append(err)
+            else:
+                done += 1
     else:
         bad("Невідома дія")
     db.commit()
     return {"done": done, "queued": queued, "errors": errors[:20]}
+
+
+@router.delete("/{order_id}", response_model=Ok)
+def delete_order(order_id: int, db: Session = Depends(get_db), user: User = Depends(staff)):
+    """Видалити замовлення (ліда) назавжди: резерв повертається на склад; не можна, якщо є ТТН у перевізника, фіскальний чек
+    чи товар уже відвантажено."""
+    order = _get(db, order_id, user)
+    if not svc.can_delete(user, order):
+        raise Forbidden()
+    err = svc.delete_order(db, order, user)
+    if err:
+        bad(err, 409)
+    db.commit()
+    return {"ok": True}
 
 
 @router.post("/{order_id}/take", response_model=OrderOut)
