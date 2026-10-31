@@ -84,15 +84,22 @@ export function Select({ value, defaultValue, onChange, children, disabled, clas
       setOpen(false);
     };
     const close = () => setOpen(false);
+    // прокрутка сторінки чи таблиці — список їде за полем; поле зникло з екрана — список закривається
+    const follow = (e: Event) => {
+      if (list.current?.contains(e.target as Node)) return;
+      const r = btn.current?.getBoundingClientRect();
+      if (!r || r.bottom < 0 || r.top > window.innerHeight) { setOpen(false); return; }
+      place();
+    };
     document.addEventListener("mousedown", away, true);
     document.addEventListener("touchstart", away, true);
     window.addEventListener("resize", close);
-    document.addEventListener("scroll", away, true);
+    document.addEventListener("scroll", follow, true);
     return () => {
       document.removeEventListener("mousedown", away, true);
       document.removeEventListener("touchstart", away, true);
       window.removeEventListener("resize", close);
-      document.removeEventListener("scroll", away, true);
+      document.removeEventListener("scroll", follow, true);
     };
   }, [open]);
 
