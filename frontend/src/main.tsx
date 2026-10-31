@@ -15,6 +15,7 @@ import "./card.css";
 import "./catalog.css";
 import "./settings.css";
 import "./mobile.css";
+import "./wizard.css";
 
 initMonitoring();
 

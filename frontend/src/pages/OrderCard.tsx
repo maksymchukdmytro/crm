@@ -20,6 +20,7 @@ import {
 import { flag, PayLabel } from "../components/payicons";
 import { IconPick, MarkIcon, SelectPick } from "../components/marks";
 import TtnDialog from "./TtnDialog";
+import NewOrder from "./NewOrder";
 import { DOC_KINDS, KIND_OF, printDocument, type DocKind } from "../lib/docs";
 import { EXTRA, UTM, payload, toForm, type Form } from "./card/state";
 import { Goods, type GoodsHandle } from "./card/Goods";
@@ -37,6 +38,10 @@ const COD_TEXT: Record<string, string> = { control: "контроль оплат
 let ttnAfterCreate: number | null = null;
 
 export default function OrderModal({ id, onClose, onOpen, ids }: { id: string; onClose: () => void; onOpen: (id: number) => void; ids?: number[] }) {
+  // нове замовлення — покроково (крім нового ліда, він має свою картку); існуюче — повна картка
+  if (id === "new" && !window.location.pathname.includes("/leads")) {
+    return <NewOrder onClose={onClose} onCreated={(o, ttn) => { if (ttn) ttnAfterCreate = o.id; onOpen(o.id); }} />;
+  }
   return <OrderCard key={id} id={id} onClose={onClose} onOpen={onOpen} ids={ids} />;
 }
 
@@ -383,9 +388,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
             const f = toForm(o, newStatus);
             setForm(f); setBaseline(JSON.stringify(f)); setVersion(o.version);
             qc.invalidateQueries({ queryKey: ["orders"] });
-            setTtnOpen(false);
-            toast(`ТТН ${o.ttn} створено`);
-            if (labelUrl) printLabel(o.id, toast);
+            if (labelUrl) printLabel(o.id, toast);  // вікно ТТН лишається відкритим — показує «Готово»
           }} />
       )}
       {history && order && <HistoryPanel order={order} onClose={() => setHistory(false)}

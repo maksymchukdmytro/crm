@@ -113,3 +113,54 @@ def test_items_cost_only_for_admin(api, api_manager, db, products):
     r = api_manager.get(f"/api/orders/{o['id']}")
     if r.status_code == 200:
         assert r.json()["items_cost"] is None
+
+
+def test_ttn_courier_to_address(api, db, products, mock_api):
+    """Кур'єр на адресу: вулиця з довідника НП → Address.save → адреса в ТТН; адреса пишеться в замовлення."""
+    _np_account(db)
+    np_mock(mock_api)
+    mock_api.on(lambda c: c["json"].get("calledMethod") == "getStreet",
+                {"success": True, "data": [{"Ref": "ST1", "Description": "Шевченка", "StreetsType": "вул."}]})
+    mock_api.on(lambda c: c["json"].get("modelName") == "Address" and c["json"].get("calledMethod") == "save",
+                {"success": True, "data": [{"Ref": "ADDR1"}]})
+    mock_api.on(lambda c: c["json"].get("calledMethod") == "getDocumentPrice", {"success": True, "data": [{"Cost": 120}]})
+    o = new_order(api, products, phone="0501112203")
+    st = api.get("/api/np/streets", params={"city_ref": "CT", "q": "шев"}).json()
+    assert st["ok"] and st["items"][0] == {"ref": "ST1", "name": "вул. Шевченка", "label": "вул. Шевченка", "max_weight": None, "kind": ""}
+    p = api.get(f"/api/orders/{o['id']}/ttn/preview", params={"city_ref": "CT", "service_type": "WarehouseDoors"}).json()
+    assert p["params"]["service_type"] == "WarehouseDoors" and p["price"] == 120
+    price = [c["json"]["methodProperties"] for c in mock_api.calls if c["json"].get("calledMethod") == "getDocumentPrice"][-1]
+    assert price["ServiceType"] == "WarehouseDoors"
+    # без вулиці — зрозуміла помилка, ТТН не створюється
+    r = api.post(f"/api/orders/{o['id']}/ttn", json={"city_name": "Тульчин", "city_ref": "CT", "service_type": "WarehouseDoors", "house": "12"})
+    assert r.status_code == 422 and "вулицю" in r.text
+    r = api.post(f"/api/orders/{o['id']}/ttn", json={"city_name": "Тульчин", "city_ref": "CT", "service_type": "WarehouseDoors",
+                                                     "street_ref": "ST1", "street_name": "вул. Шевченка", "house": "12", "flat": "5"})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d["ttn"] == "20450000000001" and d["address"] == "вул. Шевченка, 12, кв. 5" and d["warehouse_name"] == "Адресна доставка"
+    addr = [c["json"]["methodProperties"] for c in mock_api.calls if c["json"].get("modelName") == "Address" and c["json"].get("calledMethod") == "save"][0]
+    assert addr == {"CounterpartyRef": "REC", "StreetRef": "ST1", "BuildingNumber": "12", "Flat": "5", "Note": ""}
+    doc = [c["json"]["methodProperties"] for c in mock_api.calls if c["json"].get("modelName") == "InternetDocument" and c["json"].get("calledMethod") == "save"][0]
+    assert doc["RecipientAddress"] == "ADDR1" and doc["ServiceType"] == "WarehouseDoors"
+
+
+def test_np_ttn_lookup(api, db, mock_api):
+    """«Ввести готову ТТН»: пошук накладної з кабінету НП за номером і телефоном."""
+    _np_account(db)
+    found = {"Number": "20450000000099", "StatusCode": "1", "Status": "Відправник самостійно створив накладну",
+             "CityRecipient": "Тульчин", "RefCityRecipient": "CT", "WarehouseRecipient": "Відділення №3", "WarehouseRecipientRef": "W3",
+             "DocumentCost": "85", "AfterpaymentOnGoodsCost": "1797", "RecipientFullName": "Коваленко Олена", "PhoneRecipient": "380671112233",
+             "ScheduledDeliveryDate": "31-10-2026 13:00:00"}
+    mock_api.on(lambda c: c["json"].get("calledMethod") == "getStatusDocuments",
+                lambda c: {"success": True, "data": [found if c["json"]["methodProperties"]["Documents"][0]["DocumentNumber"] == "20450000000099"
+                                                     else {"Number": "20450000000000", "StatusCode": "3", "Status": "Номер не знайдено"}]})
+    r = api.get("/api/np/ttn-lookup", params={"number": "123"}).json()
+    assert not r["found"] and "14 цифр" in r["error"]
+    r = api.get("/api/np/ttn-lookup", params={"number": "20 4500 0000 0099", "phone": "+380 67 111 22 33"}).json()
+    assert r["found"] and r["city_name"] == "Тульчин" and r["warehouse_ref"] == "W3" and r["cod_amount"] == 1797 and r["cod_kind"] == "control"
+    assert r["cost"] == 85 and r["phone_match"] is True and r["recipient"] == "Коваленко Олена"
+    sent = [c["json"]["methodProperties"]["Documents"][0] for c in mock_api.calls if c["json"].get("calledMethod") == "getStatusDocuments"][0]
+    assert sent == {"DocumentNumber": "20450000000099", "Phone": "380671112233"}
+    r = api.get("/api/np/ttn-lookup", params={"number": "20450000000000"}).json()
+    assert not r["found"] and "не знайшла" in r["error"]

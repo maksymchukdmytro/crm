@@ -346,7 +346,7 @@ def comment(order_id: int, body: TextIn, db: Session = Depends(get_db), user: Us
 
 
 @router.get("/{order_id}/ttn/preview", response_model=TtnPreviewOut)
-def ttn_preview(order_id: int, np_account_id: int = 0, city_ref: str = "", db: Session = Depends(get_db), user: User = Depends(staff)):
+def ttn_preview(order_id: int, np_account_id: int = 0, city_ref: str = "", service_type: str = "", db: Session = Depends(get_db), user: User = Depends(staff)):
     """Параметри ТТН за замовчуванням для вікна «Створення накладної» (лише Нова Пошта)."""
     from ..services import np as np_svc
     order = _get(db, order_id, user)
@@ -358,6 +358,8 @@ def ttn_preview(order_id: int, np_account_id: int = 0, city_ref: str = "", db: S
     carrier = delivery.carrier_for(db, order)
     db.rollback()
     params = carrier.shipment_defaults(order)
+    if service_type in ("WarehouseWarehouse", "WarehouseDoors"):  # кур'єр на адресу — інша ціна й дата
+        params["service_type"] = service_type
     prepaid = bool(order.payment_method and order.payment_method.kind == "prepaid")
     if prepaid:
         params.update(cod_mode="none", cod_amount=0)
@@ -387,6 +389,11 @@ def ttn_create(order_id: int, body: TtnIn | None = None, db: Session = Depends(g
     for k in ("city_name", "city_ref", "warehouse_name", "warehouse_ref"):  # місто й відділення з вікна ТТН
         if k in opts:
             setattr(order, k, str(opts.pop(k))[:255])
+    if opts.get("service_type") == "WarehouseDoors":  # кур'єр на адресу: адреса — у замовленні, відділення немає
+        flat = str(opts.get("flat") or "").strip()
+        order.address = ", ".join(x for x in (opts.get("street_name") or "", str(opts.get("house") or "").strip(), f"кв. {flat}" if flat else "") if x)[:255]
+        order.warehouse_name, order.warehouse_ref = "Адресна доставка", ""
+    opts.pop("street_name", None)
     if "seats" in opts:
         opts["seats"] = [dict(x) for x in opts["seats"]]
     try:

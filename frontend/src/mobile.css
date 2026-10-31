@@ -379,7 +379,7 @@
   .oc-mbar .btn.primary { flex: 1; box-shadow: 0 8px 18px -8px rgba(46, 107, 230, .7); }
   .oc-mbar .btn.soft { flex: 0 0 34%; }
   .oc-mbar .rb { width: 54px; height: 54px; border-radius: 17px; }
-  body:has(.ttn-win, .side-panel) .oc-mbar { display: none; }
+  body:has(.tt2, .side-panel) .oc-mbar { display: none; }
 
   /* кроки нового замовлення: номер у кружечку, зроблений — зелена галочка */
   .oc-grid .block-head h2, .oc-grid .block > header h2 { font-size: 16px; font-weight: 600; }
@@ -442,19 +442,6 @@
   .page-orders .chips-row > .chip-sel:not(:has(.fchip.on)), .page-orders .chips-row > .fchip:not(.on) { display: none; }
   .page-orders .chips-row:not(:has(.fchip.on)) { display: none; }
 
-  .win-backdrop:has(> .ttn-win) { background: rgba(24, 24, 22, .38); align-items: flex-end; }
-  .ttn-win.win.lg { height: auto; max-height: 92dvh; border-radius: 26px 26px 0 0; background: #F7F7F8; }
-  .ttn-win .win-head { border: 0; padding: 16px 16px 8px; min-height: 0; }
-  .ttn-win .win-head::before { content: ""; position: absolute; left: 50%; top: 8px; width: 40px; height: 5px; margin-left: -20px; border-radius: 99px; background: #D6D6D3; }
-  .ttn-win .ttn-body { background: #F7F7F8; padding: 0 16px 12px !important; }
-  .ttn-win .ttn-grid, .ttn-win .ttn-form, .ttn-win .ttn-side { gap: 10px; }
-  .ttn-win .block, .ttn-win .summary-block { border: 0; border-radius: 18px; }
-  .ttn-win .win-foot { border: 0; background: #F7F7F8; padding: 8px 16px calc(14px + env(safe-area-inset-bottom)); }
-  .ttn-win .win-foot .btn.primary { flex: 1; height: 52px; border-radius: 16px; font-size: 15px; font-weight: 600; justify-content: center; }
-  .ttn-win .ttn-foot-hint, .ttn-win kbd { display: none; }
-  .ttn-win .seg { display: flex; width: 100%; border-radius: 13px; background: #E8E9EC; }
-  .ttn-win .seg > button { flex: 1; min-width: 0; justify-content: center; height: 34px; padding: 0 6px; border-radius: 10px; font-size: 12.5px; }
-  .ttn-win .seg > button svg { display: none; }
 
   /* ------------------------------------------------------------ покупці */
   .customers .head { display: none; }

@@ -97,6 +97,43 @@ class NovaPoshta(Carrier):
             out.append({"ref": w.get("Ref"), "name": w.get("Description"), "label": w.get("Description"), "max_weight": mw or None, "kind": kind})
         return out
 
+    def search_streets(self, city_ref: str, query: str) -> list[dict]:
+        """Вулиці міста для адресної доставки (Address.getStreet)."""
+        data = self.call("Address", "getStreet", {"CityRef": city_ref, "FindByString": query, "Limit": "20", "Page": "1"})
+        return [{"ref": x.get("Ref"), "name": f"{x.get('StreetsType') or ''} {x.get('Description') or ''}".strip(),
+                 "label": f"{x.get('StreetsType') or ''} {x.get('Description') or ''}".strip()} for x in data if x.get("Ref")]
+
+    def lookup(self, number: str, phone: str = "") -> dict | None:
+        """Готова ТТН, оформлена в кабінеті НП: куди їде, скільки коштує, яка післяплата (TrackingDocument.getStatusDocuments).
+        Без телефону отримувача НП віддає не всі поля. None — номер не знайдено."""
+        d = (self.call("TrackingDocument", "getStatusDocuments", {"Documents": [{"DocumentNumber": number, "Phone": phone}]}) or [{}])[0]
+        code = str(d.get("StatusCode") or "")
+        if not code or code in ("2", "3"):
+            return None
+
+        def f(*keys):
+            for k in keys:
+                if d.get(k) not in (None, ""):
+                    return d[k]
+            return ""
+
+        def money(v):
+            try:
+                return float(v or 0)
+            except (TypeError, ValueError):
+                return 0.0
+        after, back = money(d.get("AfterpaymentOnGoodsCost")), money(d.get("RedeliverySum"))
+        tel = "".join(ch for ch in str(d.get("PhoneRecipient") or "") if ch.isdigit())
+        return {
+            "number": str(d.get("Number") or number), "code": code, "state": np_state(code), "status": d.get("Status") or "",
+            "city_name": f("CityRecipient"), "city_ref": f("RefCityRecipient", "CityRecipientRef"),
+            "warehouse_name": f("WarehouseRecipient", "RecipientAddress"), "warehouse_ref": f("WarehouseRecipientRef", "RefWarehouseRecipient"),
+            "cost": money(d.get("DocumentCost")), "cod_amount": after or back, "cod_kind": "control" if after else "backward" if back else "none",
+            "recipient": f("RecipientFullName", "RecipientFullNameEW"),
+            "phone_match": None if not (tel and phone) else tel[-9:] == phone[-9:],
+            "eta": str(f("ScheduledDeliveryDate"))[:10] or None,
+        }
+
     # --- Вартість, дата доставки, реєстр -----------------------------------
     def price(self, order: Order, params: dict) -> dict:
         """Орієнтовна вартість доставки й комісія за контроль оплати (InternetDocument.getDocumentPrice)."""
@@ -236,12 +273,19 @@ class NovaPoshta(Carrier):
         ] if not s.get(k)]
         if missing:
             raise CarrierError("Не заповнені дані відправника НП: " + ", ".join(missing))
-        if not order.city_ref or not order.warehouse_ref:
+        p = self.shipment_defaults(order)
+        p.update({k: v for k, v in (opts or {}).items() if v is not None and k in p})
+        doors = p["service_type"] == "WarehouseDoors"  # кур'єр на адресу: вулиця з довідника НП, будинок, квартира
+        street = (opts or {}).get("street_ref") or ""
+        house = str((opts or {}).get("house") or "").strip()
+        if not order.city_ref:
+            raise CarrierError("Оберіть місто Нової Пошти зі списку")
+        if doors and not (street and house):
+            raise CarrierError("Для кур'єра оберіть вулицю зі списку НП і вкажіть будинок")
+        if not doors and not order.warehouse_ref:
             raise CarrierError("Оберіть місто і відділення Нової Пошти зі списку")
         if not order.phone:
             raise CarrierError("Не вказано телефон отримувача")
-        p = self.shipment_defaults(order)
-        p.update({k: v for k, v in (opts or {}).items() if v is not None and k in p})
         seats = p["seats"] or [{"length": 20, "width": 15, "height": 10, "weight": p["weight"]}]
         options, volume, total_w = [], Decimal(0), Decimal(0)
         for x in seats:
@@ -256,6 +300,13 @@ class NovaPoshta(Carrier):
             volume += ln * wd * ht / 1_000_000
             total_w += w
         recipient, contact = self._recipient(order)
+        address = order.warehouse_ref
+        if doors:
+            address = (self.call("Address", "save", {
+                "CounterpartyRef": recipient, "StreetRef": street, "BuildingNumber": house[:10],
+                "Flat": str((opts or {}).get("flat") or "").strip()[:10], "Note": ""}) or [{}])[0].get("Ref", "")
+            if not address:
+                raise CarrierError("Нова Пошта не зберегла адресу отримувача")
         props = {
             "PayerType": p["payer"],
             "PaymentMethod": "Cash",
@@ -275,7 +326,7 @@ class NovaPoshta(Carrier):
             "SendersPhone": s["np_sender_phone"],
             "CityRecipient": order.city_ref,
             "Recipient": recipient,
-            "RecipientAddress": order.warehouse_ref,
+            "RecipientAddress": address,
             "ContactRecipient": contact,
             "RecipientsPhone": order.phone,
             "InfoRegClientBarcodes": str(order.id),

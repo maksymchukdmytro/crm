@@ -4706,6 +4706,70 @@
     "title": "NpAccountShort",
     "type": "object"
    },
+   "NpPlace": {
+    "properties": {
+     "kind": {
+      "default": "",
+      "title": "Kind",
+      "type": "string"
+     },
+     "label": {
+      "default": "",
+      "title": "Label",
+      "type": "string"
+     },
+     "max_weight": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Max Weight"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "ref": {
+      "title": "Ref",
+      "type": "string"
+     }
+    },
+    "required": [
+     "ref",
+     "name"
+    ],
+    "title": "NpPlace",
+    "type": "object"
+   },
+   "NpPlacesOut": {
+    "properties": {
+     "error": {
+      "default": "",
+      "title": "Error",
+      "type": "string"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/NpPlace"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "ok": {
+      "title": "Ok",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "ok"
+    ],
+    "title": "NpPlacesOut",
+    "type": "object"
+   },
    "NpRegistryOut": {
     "properties": {
      "done": {
@@ -12724,6 +12788,30 @@
       ],
       "title": "Description"
      },
+     "flat": {
+      "anyOf": [
+       {
+        "maxLength": 10,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Flat"
+     },
+     "house": {
+      "anyOf": [
+       {
+        "maxLength": 10,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "House"
+     },
      "np_account_id": {
       "anyOf": [
        {
@@ -12784,6 +12872,31 @@
       ],
       "title": "Service Type"
      },
+     "street_name": {
+      "anyOf": [
+       {
+        "maxLength": 200,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Street Name"
+     },
+     "street_ref": {
+      "anyOf": [
+       {
+        "maxLength": 64,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Кур'єр на адресу (service_type=WarehouseDoors): вулиця з довідника НП",
+      "title": "Street Ref"
+     },
      "warehouse_name": {
       "anyOf": [
        {
@@ -12810,6 +12923,108 @@
      }
     },
     "title": "TtnIn",
+    "type": "object"
+   },
+   "TtnLookupOut": {
+    "description": "Готова ТТН Нової Пошти за номером: для кроку «Ввести готову ТТН» нового замовлення.",
+    "properties": {
+     "city_name": {
+      "default": "",
+      "title": "City Name",
+      "type": "string"
+     },
+     "city_ref": {
+      "default": "",
+      "title": "City Ref",
+      "type": "string"
+     },
+     "cod_amount": {
+      "default": 0,
+      "title": "Cod Amount",
+      "type": "number"
+     },
+     "cod_kind": {
+      "default": "none",
+      "enum": [
+       "control",
+       "backward",
+       "none"
+      ],
+      "title": "Cod Kind",
+      "type": "string"
+     },
+     "cost": {
+      "default": 0,
+      "title": "Cost",
+      "type": "number"
+     },
+     "error": {
+      "default": "",
+      "title": "Error",
+      "type": "string"
+     },
+     "eta": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Eta"
+     },
+     "found": {
+      "title": "Found",
+      "type": "boolean"
+     },
+     "number": {
+      "default": "",
+      "title": "Number",
+      "type": "string"
+     },
+     "phone_match": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Телефон отримувача в ТТН збігається з телефоном замовлення; None — не перевірено",
+      "title": "Phone Match"
+     },
+     "recipient": {
+      "default": "",
+      "title": "Recipient",
+      "type": "string"
+     },
+     "state": {
+      "default": "",
+      "title": "State",
+      "type": "string"
+     },
+     "status": {
+      "default": "",
+      "title": "Status",
+      "type": "string"
+     },
+     "warehouse_name": {
+      "default": "",
+      "title": "Warehouse Name",
+      "type": "string"
+     },
+     "warehouse_ref": {
+      "default": "",
+      "title": "Warehouse Ref",
+      "type": "string"
+     }
+    },
+    "required": [
+     "found"
+    ],
+    "title": "TtnLookupOut",
     "type": "object"
    },
    "TtnParams": {
@@ -15520,6 +15735,132 @@
     "summary": "Np Cities"
    }
   },
+  "/api/np/streets": {
+   "get": {
+    "description": "Вулиці міста з довідника НП — для ТТН «Кур'єр на адресу».",
+    "operationId": "np_streets_api_np_streets_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "city_ref",
+      "required": true,
+      "schema": {
+       "title": "City Ref",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Q",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "np_account_id",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Np Account Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NpPlacesOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Np Streets",
+    "tags": [
+     "core"
+    ]
+   }
+  },
+  "/api/np/ttn-lookup": {
+   "get": {
+    "description": "«Ввести готову ТТН»: знайти накладну, оформлену в кабінеті НП, — куди їде, вартість, післяплата, чи збігається телефон.",
+    "operationId": "np_ttn_lookup_api_np_ttn_lookup_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "number",
+      "required": true,
+      "schema": {
+       "title": "Number",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "phone",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Phone",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "np_account_id",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "Np Account Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TtnLookupOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Np Ttn Lookup",
+    "tags": [
+     "core"
+    ]
+   }
+  },
   "/api/np/warehouses": {
    "get": {
     "operationId": "np_warehouses_api_np_warehouses_get",
@@ -16748,6 +17089,16 @@
       "schema": {
        "default": "",
        "title": "City Ref",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "service_type",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Service Type",
        "type": "string"
       }
      }
