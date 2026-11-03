@@ -2686,6 +2686,12 @@ export interface components {
         DashAttention: {
             /** Arrived */
             arrived: number;
+            /**
+             * Arrived Stale
+             * @description Посилки, що лежать на пошті понад 3 дні
+             * @default 0
+             */
+            arrived_stale: number;
             /** Cod Collected */
             cod_collected: number;
             /** Cod Expected */
@@ -2707,6 +2713,11 @@ export interface components {
             reminders: number;
             /** To Ship */
             to_ship: number;
+            /**
+             * Unsorted Oldest Min
+             * @description Скільки хвилин чекає найстаріше несортоване
+             */
+            unsorted_oldest_min?: number | null;
         };
         /** DashCustomers */
         DashCustomers: {
@@ -2806,6 +2817,19 @@ export interface components {
             /** Upsell Rate */
             upsell_rate: number;
         };
+        /** DashReminder */
+        DashReminder: {
+            /** Customer Name */
+            customer_name: string;
+            /** Id */
+            id: number;
+            /** Phone */
+            phone: string;
+            /** Remind At */
+            remind_at: string;
+            /** Status Id */
+            status_id: number;
+        };
         /** DashTeam */
         DashTeam: {
             /**
@@ -2882,6 +2906,11 @@ export interface components {
             /** Days */
             days: components["schemas"]["DashDay"][];
             month: components["schemas"]["DashMonth"];
+            /**
+             * My Reminders
+             * @description Нагадування на сьогодні й прострочені
+             */
+            my_reminders?: components["schemas"]["DashReminder"][];
             period: components["schemas"]["DashPeriod"];
             /** Prev Days */
             prev_days?: components["schemas"]["DashDay"][];
@@ -2891,6 +2920,11 @@ export interface components {
             today: components["schemas"]["DashToday"];
             /** Top */
             top: components["schemas"]["DashTop"][];
+            /**
+             * Week
+             * @description Останні 7 днів по днях — міні-графік
+             */
+            week?: components["schemas"]["DashDay"][];
         };
         /** DayGroup */
         DayGroup: {
