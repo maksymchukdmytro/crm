@@ -67,6 +67,41 @@ def stats_query(db: Session):
     )
 
 
+SEGMENTS = {"vip": "VIP", "regular": "Постійний", "repeat": "Повторний", "new": "Новий", "risk": "Ризик відмови"}
+
+
+def vip_group_ids(db: Session) -> list[int]:
+    return [i for (i,) in db.query(CustomerGroup.id).filter(CustomerGroup.name.ilike("%vip%"))]
+
+
+def segment_expr(st, vip_ids: list[int]):
+    """Сегмент покупця одним виразом SQL (макет v26, 17): чорний список і часті відмови — «ризик», група VIP,
+    3+ отриманих — «постійний», 2+ замовлення — «повторний», інакше — «новий»."""
+    orders = func.coalesce(st.c.orders, 0)
+    delivered = func.coalesce(st.c.delivered, 0)
+    refused = func.coalesce(st.c.refused, 0)
+    whens = [(Customer.is_blacklisted.is_(True), "risk")]
+    if vip_ids:
+        whens.append((Customer.group_id.in_(vip_ids), "vip"))
+    whens += [((refused >= 2) | ((delivered + refused >= 2) & (delivered * 2 < delivered + refused)), "risk"),
+              (delivered >= 3, "regular"), (orders >= 2, "repeat")]
+    return case(*whens, else_="new")
+
+
+def segment_of(c: Customer, stats: dict | None, vip_ids: list[int]) -> str:
+    s = stats or EMPTY_STATS
+    o, d, r = s.get("orders", 0), s.get("delivered", 0), s.get("refused", 0)
+    if c.is_blacklisted:
+        return "risk"
+    if c.group_id in vip_ids:
+        return "vip"
+    if r >= 2 or (d + r >= 2 and d * 2 < d + r):
+        return "risk"
+    if d >= 3:
+        return "regular"
+    return "repeat" if o >= 2 else "new"
+
+
 def stats_for(db: Session, ids: list[int]) -> dict[int, dict]:
     if not ids:
         return {}

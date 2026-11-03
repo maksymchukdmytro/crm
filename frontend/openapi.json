@@ -1272,6 +1272,12 @@
       "title": "Refused",
       "type": "integer"
      },
+     "segment": {
+      "default": "",
+      "description": "vip | regular | repeat | new | risk — лише в списку",
+      "title": "Segment",
+      "type": "string"
+     },
      "sources": {
       "items": {
        "type": "string"
@@ -1522,6 +1528,14 @@
       "title": "Rows",
       "type": "array"
      },
+     "segments": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "description": "Скільки покупців у кожному сегменті за поточним пошуком і групою",
+      "title": "Segments",
+      "type": "object"
+     },
      "total": {
       "title": "Total",
       "type": "integer"
@@ -1680,6 +1694,12 @@
      "refused": {
       "title": "Refused",
       "type": "integer"
+     },
+     "segment": {
+      "default": "",
+      "description": "vip | regular | repeat | new | risk — лише в списку",
+      "title": "Segment",
+      "type": "string"
      },
      "sum_delivered": {
       "title": "Sum Delivered",
@@ -7400,6 +7420,18 @@
       "title": "Countries",
       "type": "array"
      },
+     "days_left": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "На скільки днів вистачить доступного залишку за темпом 30 днів",
+      "title": "Days Left"
+     },
      "description": {
       "default": "",
       "title": "Description",
@@ -7488,6 +7520,14 @@
       "title": "Sale Price",
       "type": "number"
      },
+     "sales_trend": {
+      "description": "Продажі за 30 днів по 3 дні (10 точок) — міні-графік у списку",
+      "items": {
+       "type": "integer"
+      },
+      "title": "Sales Trend",
+      "type": "array"
+     },
      "ship_description": {
       "default": "",
       "title": "Ship Description",
@@ -7499,6 +7539,12 @@
      },
      "sold": {
       "title": "Sold",
+      "type": "integer"
+     },
+     "sold_30": {
+      "default": 0,
+      "description": "Продано штук за 30 днів (без скасованих і дублів) — лише в списку",
+      "title": "Sold 30",
       "type": "integer"
      },
      "spec_price": {
@@ -7920,6 +7966,18 @@
       "title": "Countries",
       "type": "array"
      },
+     "days_left": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "На скільки днів вистачить доступного залишку за темпом 30 днів",
+      "title": "Days Left"
+     },
      "discount_percent": {
       "default": 0,
       "title": "Discount Percent",
@@ -7989,6 +8047,14 @@
       "title": "Sale Price",
       "type": "number"
      },
+     "sales_trend": {
+      "description": "Продажі за 30 днів по 3 дні (10 точок) — міні-графік у списку",
+      "items": {
+       "type": "integer"
+      },
+      "title": "Sales Trend",
+      "type": "array"
+     },
      "ship_description": {
       "default": "",
       "title": "Ship Description",
@@ -7997,6 +8063,12 @@
      "sku": {
       "title": "Sku",
       "type": "string"
+     },
+     "sold_30": {
+      "default": 0,
+      "description": "Продано штук за 30 днів (без скасованих і дублів) — лише в списку",
+      "title": "Sold 30",
+      "type": "integer"
      },
      "spec_price": {
       "default": 0,
@@ -14713,6 +14785,16 @@
        "default": 100,
        "title": "Limit",
        "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "segment",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Segment",
+       "type": "string"
       }
      }
     ],

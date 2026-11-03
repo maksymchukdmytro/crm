@@ -35,7 +35,7 @@ def j_customer(c: Customer, s: dict | None = None) -> dict:
 
 @router.get("/customers", response_model=CustomerListOut)
 def customers(q: str = "", group: str = "", blacklist: str = "", sort: str = "last", desc: bool = True,
-              min_orders: int = 0, offset: int = 0, limit: int = 100,
+              min_orders: int = 0, offset: int = 0, limit: int = 100, segment: str = "",
               db: Session = Depends(get_db), user: User = Depends(sales)):
     st = svc.stats_query(db).subquery()
     base = db.query(Customer).outerjoin(st, st.c.cid == Customer.id)
@@ -57,6 +57,11 @@ def customers(q: str = "", group: str = "", blacklist: str = "", sort: str = "la
         base = base.filter(Customer.is_blacklisted.is_(False))
     if min_orders:
         base = base.filter(func.coalesce(st.c.orders, 0) >= min_orders)
+    vip = svc.vip_group_ids(db)
+    seg = svc.segment_expr(st, vip)
+    segments = {k: int(n) for k, n in base.with_entities(seg, func.count(Customer.id)).group_by(seg).order_by(None).all()}
+    if segment in svc.SEGMENTS:
+        base = base.filter(seg == segment)
     total = base.count()
     done = func.coalesce(st.c.delivered, 0) + func.coalesce(st.c.refused, 0)
     keys = {
@@ -69,7 +74,12 @@ def customers(q: str = "", group: str = "", blacklist: str = "", sort: str = "la
     rows = (base.options(selectinload(Customer.group)).order_by(order, Customer.id.desc())
             .offset(max(0, offset)).limit(max(1, min(limit, 500))).all())
     stats = svc.stats_for(db, [c.id for c in rows])
-    return {"total": total, "offset": offset, "rows": [j_customer(c, stats.get(c.id)) for c in rows]}
+    out = []
+    for c in rows:
+        d = j_customer(c, stats.get(c.id))
+        d["segment"] = svc.segment_of(c, stats.get(c.id), vip)
+        out.append(d)
+    return {"total": total, "offset": offset, "rows": out, "segments": segments}
 
 
 def _get(db: Session, cid: int) -> Customer:

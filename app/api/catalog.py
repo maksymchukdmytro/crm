@@ -160,7 +160,38 @@ def products(q: str = "", show: str = "active", category: int = 0, manufacturer:
         query = query.filter(Product.stock - Product.reserved < 0)
     elif stock_state == "low":
         query = query.filter(Product.stock - Product.reserved <= Product.min_stock)
-    return [j_product(p) for p in query.order_by(Product.is_upsell, Product.name).all()]
+    items = query.order_by(Product.is_upsell, Product.name).all()
+    sales = _sales_30(db, [p.id for p in items])
+    out = []
+    for p in items:
+        d = j_product(p)
+        trend = sales.get(p.id, [0] * 10)
+        d["sold_30"] = sum(trend)
+        d["sales_trend"] = trend
+        d["days_left"] = round(max(p.available, 0) / (d["sold_30"] / 30), 1) if d["sold_30"] else None
+        out.append(d)
+    return out
+
+
+def _sales_30(db: Session, ids: list[int]) -> dict[int, list[int]]:
+    """Продано штук за 30 днів по товарах: 10 відрізків по 3 дні (старші — ліворуч), без скасованих і дублів."""
+    if not ids:
+        return {}
+    from datetime import timedelta
+    from ..models import Order, OrderItem, Status, utcnow
+    now = utcnow()
+    start = now - timedelta(days=30)
+    excluded = [i for (i,) in db.query(Status.id).filter(Status.code.in_(("cancelled", "duplicate", "lead_refused")))]
+    lead_ids = [i for (i,) in db.query(Status.id).filter(Status.stage == "lead")]
+    q = (db.query(OrderItem.product_id, Order.created_at, OrderItem.qty).join(Order, Order.id == OrderItem.order_id)
+         .filter(OrderItem.product_id.in_(ids), Order.created_at >= start, Order.duplicate_of_id.is_(None)))
+    if excluded or lead_ids:
+        q = q.filter(Order.status_id.notin_(excluded + lead_ids))
+    out: dict[int, list[int]] = {}
+    for pid, at, qty in q.all():
+        k = min(9, max(0, int((at - start).total_seconds() // (3 * 86400))))
+        out.setdefault(pid, [0] * 10)[k] += int(qty or 0)
+    return out
 
 
 @router.get("/products/{pid}", response_model=ProductDetailOut)

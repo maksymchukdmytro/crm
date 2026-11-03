@@ -7,9 +7,13 @@ import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, money, phone } from "../lib/format";
 import type { CustomerDetail, CustomerList } from "../lib/types";
-import { Block, Button, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, StatusPill, Tag, Toggle, UaPhone, Window, useMobile , Select, EmptyState } from "../components/ui";
+import { Block, Button, Empty, Field, IconButton, MenuButton, MobileActs, Modal, Ring, RoundButton, Spinner, StatusPill, Tag, Toggle, UaPhone, Window, useMobile , Select, EmptyState } from "../components/ui";
 import OrderModal from "./OrderCard";
 import "./customers.css";
+
+// сегменти (макет v26, 17): рахує сервер — за викупом, відмовами, кількістю отриманих і групою VIP
+const SEGS: [string, string, string][] = [["", "Усі", "#1F1F1C"], ["vip", "VIP", "#A16207"], ["regular", "Постійні", "#16A34A"],
+  ["repeat", "Повторні", "#7C3AED"], ["new", "Нові", "#2E6BE6"], ["risk", "Ризик відмови", "#DC2626"]];
 
 const SORTS: [string, string][] = [["last", "Останнє замовлення"], ["orders", "Кількість замовлень"], ["sum", "Сума отриманих"],
   ["refused", "Відмови"], ["buyout", "Викуп"], ["created", "Дата додавання"], ["name", "Ім'я"]];
@@ -21,6 +25,7 @@ export default function CustomersPage() {
   const [q, setQ] = useState("");
   const [group, setGroup] = useState("");
   const [blacklist, setBlacklist] = useState("");
+  const [segment, setSegment] = useState("");
   const [sort, setSort] = useState("last");
   const [desc, setDesc] = useState(true);
   const [page, setPage] = useState(0);
@@ -28,8 +33,8 @@ export default function CustomersPage() {
   const [adding, setAdding] = useState(() => !!sp.get("new"));
   useEffect(() => { if (sp.get("new")) { setAdding(true); const n = new URLSearchParams(sp); n.delete("new"); setSp(n, { replace: true }); } }, [sp, setSp]);
   const dq = useDebounced(q, 300);
-  useEffect(() => setPage(0), [dq, group, blacklist, sort, desc]);
-  const params = { q: dq, group, blacklist, sort, desc, offset: page * 100, limit: 100 };
+  useEffect(() => setPage(0), [dq, group, blacklist, sort, desc, segment]);
+  const params = { q: dq, group, blacklist, sort, desc, segment, offset: page * 100, limit: 100 };
   const mobile = useMobile();
   const { data, isFetching } = useQuery({ queryKey: ["customers", params], queryFn: () => api.get<CustomerList>(`/customers${qs(params)}`), placeholderData: keepPreviousData });
 
@@ -39,6 +44,14 @@ export default function CustomersPage() {
         <h1><span className="h-ico"><Contact size={18} /></span>Покупці <small className="muted">{data?.total ?? ""}</small> {isFetching && <span className="spinner sm" />}</h1>
         <div className="actions"><button className="btn primary" onClick={() => setAdding(true)}><Plus size={15} /> Покупець</button></div>
       </div>
+      {!mobile && (
+        <div className="cu-segs" role="radiogroup" aria-label="Сегмент">
+          {SEGS.map(([k, n, c]) => (
+            <button key={k} type="button" role="radio" aria-checked={segment === k} className={segment === k ? "on" : ""} onClick={() => setSegment(k)}>
+              <i style={{ background: c }} />{n}{k ? data?.segments?.[k] != null && <em>{data.segments[k]}</em> : null}</button>
+          ))}
+        </div>
+      )}
       <div className="cu-groups">
         <button className={!group && !blacklist ? "on" : ""} onClick={() => { setGroup(""); setBlacklist(""); }}>Усі</button>
         {meta.customer_groups.map((g) => (
@@ -82,24 +95,35 @@ export default function CustomersPage() {
         </div>
       )}
       {!mobile && <div className="card flush tablewrap">
-        <table className="t cu-table m-cards">
-          <thead><tr><th>Покупець</th><th>Група</th><th className="num">Замовлень</th><th className="num">Отримано</th><th className="num">Відмов</th>
-            <th className="num">Викуп</th><th className="num">Сума отриманих</th><th>Останнє</th></tr></thead>
+        <table className="t cu-table v2">
+          <thead><tr><th>Покупець</th><th>Сегмент</th><th>Викуп</th><th>Замовлень · сума</th><th>Останнє</th><th>Зв'язок</th></tr></thead>
           <tbody>
-            {!data && <tr><td colSpan={8}><Empty><Spinner /></Empty></td></tr>}
-            {data?.rows.map((c) => (
-              <tr key={c.id} className={`clickable ${c.blacklisted ? "is-bl" : ""}`} onClick={() => nav(`/customers/${c.id}`)}>
-                <td><div className="cu-name">{c.blacklisted && <Ban size={14} className="bl-ico" />}{c.name || <span className="muted">Без імені</span>}</div>
-                  <span className="sub">{phone(c.phone)}{c.email && ` · ${c.email}`}</span></td>
-                <td>{c.group ? <span className="pill" style={{ ["--c" as string]: c.group_color || "#64748b" }}>{c.group}</span> : <span className="muted">—</span>}</td>
-                <td className="num"><b>{c.orders}</b></td><td className="num">{c.delivered || ""}</td>
-                <td className={`num ${c.refused ? "lowstock" : ""}`}>{c.refused || ""}</td>
-                <td className="num">{c.buyout_rate == null ? <span className="muted">—</span> : <span className={`rate ${c.buyout_rate >= 70 ? "hi" : c.buyout_rate >= 40 ? "mid" : "lo"}`}>{c.buyout_rate}%</span>}</td>
-                <td className="num">{c.sum_delivered ? `${money(c.sum_delivered)} ₴` : ""}</td>
-                <td className="muted nowrap">{date(c.last_order_at)}</td>
-              </tr>
-            ))}
-            {data && !data.rows.length && <tr><td colSpan={8}><Empty>{dq ? "Нікого не знайдено" : "Покупці з'являться із першими замовленнями"}</Empty></td></tr>}
+            {!data && <tr><td colSpan={6}><Empty><Spinner /></Empty></td></tr>}
+            {data?.rows.map((c) => {
+              const ini = (c.name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+              const seg = SEGS.find(([k]) => k === c.segment);
+              const tel = c.phone.replace(/\D/g, "");
+              const b = c.buyout_rate;
+              return (
+                <tr key={c.id} className={`clickable ${c.blacklisted ? "is-bl" : ""}`} onClick={() => nav(`/customers/${c.id}`)}>
+                  <td><div className="cu-who"><span className="cu-av">{ini}</span>
+                    <div><div className="cu-name">{c.blacklisted && <Ban size={14} className="bl-ico" />}{c.name || <span className="muted">Без імені</span>}</div>
+                      {c.group && <span className="cu-grp" style={{ ["--c" as string]: c.group_color || "#64748b" }}>{c.group}</span>}</div></div></td>
+                  <td>{seg ? <span className="pill" style={{ ["--c" as string]: seg[2] }}>{seg[1]}</span> : null}</td>
+                  <td><span className="cu-ring" title={b == null ? "Ще немає отриманих чи відмов" : `Отримано ${c.delivered}, відмов ${c.refused}`}>
+                    <Ring value={b == null ? "—" : Math.round(b)} frac={b == null ? 0 : b / 100} color={b == null ? "var(--faint)" : b >= 70 ? "#16A34A" : b >= 40 ? "#D97706" : "#DC2626"} size={34} stroke={3.5} />
+                    <small className="muted">{b == null ? "ще немає" : "%"}</small></span></td>
+                  <td><div className="cu-ord"><b>{c.orders}</b><small className="muted">{c.sum_total ? `${money(c.sum_total)} ₴` : ""}</small></div></td>
+                  <td className="muted nowrap">{date(c.last_order_at)}</td>
+                  <td onClick={(e) => e.stopPropagation()}>{tel ? <span className="cu-acts">
+                    <a className="cu-b" href={`tel:+${tel}`} aria-label={`Подзвонити ${phone(c.phone)}`} title={phone(c.phone)}><Phone size={14} /></a>
+                    <a className="cu-b v" href={`viber://chat?number=%2B${tel}`} aria-label="Viber" title="Viber"><MessageCircle size={14} /></a>
+                    <a className="cu-b t" href={`https://t.me/+${tel}`} target="_blank" rel="noreferrer" aria-label="Telegram" title="Telegram"><Send size={14} /></a>
+                  </span> : <span className="muted">—</span>}</td>
+                </tr>
+              );
+            })}
+            {data && !data.rows.length && <tr><td colSpan={6}><Empty>{dq || segment ? "Нікого не знайдено" : "Покупці з'являться із першими замовленнями"}</Empty></td></tr>}
           </tbody>
         </table>
       </div>}

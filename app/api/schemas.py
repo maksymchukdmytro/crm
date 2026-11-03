@@ -81,6 +81,9 @@ class ProductOut(Out):
     wholesale_price: float = 0
     photo: str | None = Field(None, description="Головне фото: шлях від кореня CRM (/media/…)")
     variants: list[VariantOut] = Field(default_factory=list)
+    sold_30: int = Field(0, description="Продано штук за 30 днів (без скасованих і дублів) — лише в списку")
+    sales_trend: list[int] = Field(default_factory=list, description="Продажі за 30 днів по 3 дні (10 точок) — міні-графік у списку")
+    days_left: float | None = Field(None, description="На скільки днів вистачить доступного залишку за темпом 30 днів")
 
 
 class VariantOut(Out):
@@ -1581,12 +1584,14 @@ class CustomerOut(Out):
     buyout_rate: float | None
     first_order_at: str | None
     last_order_at: str | None
+    segment: str = Field("", description="vip | regular | repeat | new | risk — лише в списку")
 
 
 class CustomerListOut(Out):
     total: int
     offset: int
     rows: list[CustomerOut]
+    segments: dict[str, int] = Field(default_factory=dict, description="Скільки покупців у кожному сегменті за поточним пошуком і групою")
 
 
 class CustomerComm(Out):

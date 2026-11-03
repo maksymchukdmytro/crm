@@ -259,3 +259,36 @@ def test_office_is_derived_from_source(api, db, products):
     api.put("/api/settings/dir/sources", json=[{**src, "office_id": site}])
     db.expire_all()
     assert db.get(Order, o["id"]).office_id == site  # зміна відділу джерела переносить і замовлення
+
+
+def test_products_sales_30_trend_and_days_left(api, db, products):
+    """Список товарів: продано за 30 днів, міні-графік по 3 дні й прогноз «на скільки днів вистачить» (макет v26, 15)."""
+    from .test_api import new_order
+    cream, soap = products
+    new_order(api, products)  # 2 креми + 1 мило
+    rows = {p["id"]: p for p in api.get("/api/products").json()}
+    c = rows[cream.id]
+    assert c["sold_30"] == 2 and len(c["sales_trend"]) == 10 and c["sales_trend"][-1] == 2
+    assert c["days_left"] == round(max(c["available"], 0) / (2 / 30), 1)
+    assert rows[soap.id]["sold_30"] == 1
+
+
+def test_customer_segments(api, db, products):
+    """Сегменти покупців у списку (макет v26, 17): новий, повторний, постійний, ризик; фільтр і лічильники."""
+    delivered = db.query(Status).filter(Status.code == "delivered").one()
+    refused = db.query(Status).filter(Status.code == "refused").one()
+    for _ in range(3):
+        o = new_order(api, products, phone="0501110001")
+        db.get(Order, o["id"]).status_id = delivered.id
+    new_order(api, products, phone="0501110002")
+    for _ in range(2):
+        o = new_order(api, products, phone="0501110003")
+        db.get(Order, o["id"]).status_id = refused.id
+    new_order(api, products, phone="0501110004"); new_order(api, products, phone="0501110004")
+    db.commit()
+    d = api.get("/api/customers").json()
+    seg = {r["phone"][-4:]: r["segment"] for r in d["rows"]}
+    assert seg == {"0001": "regular", "0002": "new", "0003": "risk", "0004": "repeat"}
+    assert d["segments"] == {"regular": 1, "new": 1, "risk": 1, "repeat": 1}
+    only = api.get("/api/customers?segment=risk").json()
+    assert only["total"] == 1 and only["rows"][0]["phone"].endswith("0003")
