@@ -873,7 +873,7 @@ function PaymentBlock({ order, form, set, total, cod, prepay, step, readOnly, bu
   const paidFully = total > 0 && cod <= 0 && (kind === "prepaid" ? received.length > 0 : true) && kind !== "cod";
   const mobile = useMobile();
   const [open, setOpen] = useState(false);
-  if (!mobile && order && method && !open && !adding && (kind === "cod" || !!confirmed)) {
+  if (order && method && !open && !adding && (kind === "cod" || !!confirmed)) {
     const parts = [
       confirmed ? `${money(prepay)} ₴ надійшло` : "",
       cod > 0 ? `${money(cod)} ₴ при отриманні` : confirmed ? "" : "без післяплати",
@@ -995,7 +995,8 @@ function DeliveryBlock({ order, form, set, cod, codKind, step, readOnly, locked,
         </div>
       );
   const stateTag = hasTtn && stateName ? <Tag kind={order?.delivery_state === "delivered" ? "ok" : order?.delivery_state === "refused" || order?.delivery_state === "returned" ? "bad" : "warn"}>{stateName}</Tag> : undefined;
-  if (!mobile && order && hasTtn && !open) {
+  // оформлену доставку — підсумком (ПК: з ТТН; телефон, B6: і до ТТН, коли місто вже вибрано); олівець розгортає форму
+  if (order && !open && (hasTtn || (mobile && !!form.city_name && dm !== "pickup" && !isNew))) {
     const ttn = order.ttn || form.ttn;
     return (
       <Block title="Доставка" step={step} className="oc-dlv oc-compact"
@@ -1003,8 +1004,8 @@ function DeliveryBlock({ order, form, set, cod, codKind, step, readOnly, locked,
         <div className="oc-sumline">
           <span className="oc-sl-ic">{dm === "novaposhta" ? <span className="np-badge">НП</span> : <Truck size={18} />}</span>
           <div className="oc-sl-t"><b className="ell" title={whereLine}>{whereLine || meta.delivery_methods[dm] || "Адреса не вказана"}</b>
-            <span><span className="mono">{ttn}</span>
-              <button type="button" className="oc-copy" aria-label="Скопіювати ТТН" onClick={() => { navigator.clipboard?.writeText(ttn); toast("ТТН скопійовано"); }}><Copy size={12} /></button>
+            <span>{ttn ? <><span className="mono">{ttn}</span>
+              <button type="button" className="oc-copy" aria-label="Скопіювати ТТН" onClick={() => { navigator.clipboard?.writeText(ttn); toast("ТТН скопійовано"); }}><Copy size={12} /></button></> : "ТТН ще немає"}
               {num(order.delivery_cost) > 0 && ` · ${money(order.delivery_cost)} ₴`}{order.delivery_eta && ` · прибуде ${shortDate(order.delivery_eta)}`}</span></div>
         </div>
         {order.delivery_status && <div className="oc-sl-note">{order.delivery_status}{order.delivery_checked_at && ` · ${dateTime(order.delivery_checked_at)}`}</div>}
@@ -1064,6 +1065,8 @@ function DetailsBlock({ order, form, set, readOnly, onTake }: { order?: Order; f
   const meta = useMeta();
   const [utm, setUtm] = useState(false);
   const [extra, setExtra] = useState(false);
+  const mobile = useMobile();
+  const [full, setFull] = useState(false);
   const status = meta.statuses.find((s) => s.id === form.status_id);
   const reasons = meta.reasons.filter((r) => r.status_ids.includes(form.status_id));
   const srcOffice = meta.order_sources.find((x) => x.id === form.source_id)?.office_id;
@@ -1101,8 +1104,27 @@ function DetailsBlock({ order, form, set, readOnly, onTake }: { order?: Order; f
   // поля 1–4 — згорнуто, як UTM
   const extras = EXTRA.map((f, i) => ({ f, i, name: meta.extra_fields[i] || `Поле ${i + 1}` })).filter((x) => meta.extra_on?.[x.i] ?? true);
   const filled = extras.filter((x) => form[x.f]).length;
+  // телефон (B8): деталі — рядком чипів і коментар; «змінити» розгортає всі поля
+  if (mobile && !full) {
+    const le = meta.legal_entities.find((e) => e.id === form.legal_entity_id) ?? (meta.legal_entities.length > 1 ? meta.legal_entities.find((e) => e.is_default) : undefined);
+    const mark = meta.marks.find((m) => m.id === form.mark_id);
+    const chips = [
+      meta.order_sources.find((x) => x.id === form.source_id)?.name ?? "без джерела",
+      meta.managers.find((m) => m.id === form.manager_id)?.name ?? order?.manager?.name ?? "без менеджера",
+      office, le?.name, mark?.name, meta.reasons.find((r) => r.id === form.reason_id)?.name,
+      order?.shop_id ? `${meta.shops[String(order.shop_id)] ?? "Маркетплейс"} №${order.external_id}` : "",
+    ].filter(Boolean) as string[];
+    return (
+      <Block title="Деталі" className="oc-details oc-det-m" acts={!readOnly && <button type="button" className="link-btn det-edit" onClick={() => setFull(true)}>змінити</button>}>
+        <div className="det-chips">{chips.map((c, i) => <span key={i} className="det-chip">{c}</span>)}
+          {canTake && !readOnly && <button type="button" className="det-chip take" onClick={onTake}>Взяти собі</button>}</div>
+        <textarea className="prop-area det-comment" rows={2} value={form.comment} disabled={readOnly} onChange={(e) => set({ comment: e.target.value })}
+          placeholder="Коментар до замовлення" aria-label="Коментар" />
+      </Block>
+    );
+  }
   return (
-    <Block title="Деталі" className="oc-details">
+    <Block title="Деталі" className="oc-details" acts={mobile ? <button type="button" className="link-btn det-edit" onClick={() => setFull(false)}>згорнути</button> : undefined}>
       <dl className="props">{rows.map((r) => [<dt key={`t-${r.k}`} className={r.wide ? "wide" : undefined}>{r.label}</dt>,
         <dd key={`d-${r.k}`} className={r.wide ? "wide" : undefined}>{r.v}</dd>])}</dl>
       <div className="det-toggles">

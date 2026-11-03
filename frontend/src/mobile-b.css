@@ -77,3 +77,23 @@
   .m-sw-bg.t-bad { background: var(--bad); }
 }
 @media (max-width: 768px) and (prefers-reduced-motion: reduce) { .m-sw > .m-card, .m-sw-bg { transition: none; } }
+
+@media (max-width: 768px) {
+  /* B7 · товари: −/+ по 44 px, свайп ліворуч — прибрати */
+  .gi .qty-step { height: 44px; border: 0; border-radius: 12px; background: #F2F2F0; }
+  .gi .qty-step button { width: 44px; height: 44px; border-radius: 12px; color: var(--ink-2); }
+  .gi .qty-step input { width: 34px; height: 40px; font-size: 16px; font-weight: 600; }
+  .gi-sw { position: relative; border-radius: 12px; }
+  .gi-sw > .gi { position: relative; z-index: 1; background: var(--m-card, #fff); transition: transform 180ms var(--ease, ease); touch-action: pan-y; }
+  .gi-sw.on > .gi { transition: none; }
+  .gi-sw-bg { position: absolute; inset: 0; z-index: 0; display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding-right: 18px; border-radius: 12px;
+    background: var(--bad); color: #fff; font-size: 13.5px; font-weight: 600; opacity: .55; }
+  .gi-sw.go .gi-sw-bg { opacity: 1; }
+
+  /* B8 · деталі — чипами */
+  .oc-det-m .det-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .det-chip { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border: 0; border-radius: 99px; background: #F2F2F0; font: inherit; font-size: 14px; color: var(--ink); }
+  .det-chip.take { background: var(--accent-soft); color: #1F56C4; font-weight: 550; cursor: pointer; }
+  .det-comment { width: 100%; min-height: 48px; font-size: 15px; border-radius: 14px; }
+  .det-edit { min-height: 44px; padding: 0 4px; font-size: 14px; }
+}
