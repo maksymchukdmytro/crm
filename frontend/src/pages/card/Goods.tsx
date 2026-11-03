@@ -84,7 +84,10 @@ export const Goods = forwardRef<GoodsHandle, {
             <span className="gi-meta">
               {i.upsell && <span>допродаж</span>}
               {sku && <span className="mono">{sku}</span>}
-              {avail != null && p && <span className={avail < i.qty ? "t-bad" : ""}>{avail} шт</span>}
+              {avail != null && p && (
+                <span className={`gi-stk ${avail <= 0 || avail < i.qty ? "bad" : avail <= 5 ? "low" : "ok"}`}
+                  title={avail <= 0 ? "Немає на складі" : avail < i.qty ? "Не вистачає на складі" : avail <= 5 ? "Закінчується" : "Є на складі"}><i aria-hidden />{avail} шт</span>
+              )}
             </span>
           </div>
           {!readOnly && (

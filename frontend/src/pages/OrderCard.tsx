@@ -11,13 +11,13 @@ import {
 } from "lucide-react";
 import { api, ApiError, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
-import { money, num } from "../lib/format";
+import { money, num, phone as fmtPhone } from "../lib/format";
 import type { Order } from "../lib/types";
 import {
   Block, Button, Checklist, IconButton, MenuButton, PayCheck, Ring, RoundButton, Segmented, Select, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useMobile, useOutside,
   type CheckItem,
 } from "../components/ui";
-import { flag, PayLabel } from "../components/payicons";
+import { flag, PayIcon, PayLabel } from "../components/payicons";
 import { IconPick, MarkIcon, SelectPick } from "../components/marks";
 import TtnDialog from "./TtnDialog";
 import NewOrder from "./NewOrder";
@@ -471,7 +471,7 @@ function OrderCard({ id, onClose, onOpen, ids, embed }: { id: string; onClose: (
           <div className="oc-bottom">
             <DetailsBlock order={order} form={form} set={set} readOnly={closed} onTake={() => action.mutate({ path: "/take" })} />
           </div>
-          {order && !mobile && <HistoryInline order={order} onAll={() => setHistory(true)} />}
+          {order && !mobile && <HistoryInline order={order} onAll={() => setHistory(true)} onComment={(text) => action.mutate({ path: "/comments", body: { text } })} />}
         </div>
       </div>
 
@@ -691,7 +691,10 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
 }) {
   const meta = useMeta();
   const navigate = useNavigate();
+  const mobile = useMobile();
   const [editName, setEditName] = useState(isNew || !form.customer_name);
+  // ПК, оформлений покупець — один рядок (ім'я, телефон, лічильники, зв'язок); олівець — повна форма
+  const [edit, setEdit] = useState(isNew || !form.customer_name.trim() || digits(form.phone).length < 10);
   // телефон, «⋯ → Змінити дані покупця»: одразу поле ПІБ з курсором, і блок прокручується в поле зору
   useEffect(() => {
     if (!forceEdit || readOnly) return;
@@ -708,12 +711,68 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
   const c = order?.customer;
   const tel = digits(form.phone);
   const src = meta.order_sources.find((s) => s.id === form.source_id)?.name;
+  const strips = (<>
+    {c?.blacklisted && <div className="oc-strip bad"><Ban size={15} /><span><b>Чорний список.</b> {c.blacklist_reason || "Причину не вказано"}</span>
+      <button className="link-btn" onClick={() => navigate(`/customers/${c.id}`)}>Картка</button></div>}
+    {order?.duplicate_of_id && <div className="oc-strip warn"><Copy size={15} /><span>Можливий дубль замовлення №{order.duplicate_of_id}</span>
+      <button className="link-btn" onClick={() => onOpen(order.duplicate_of_id!)}>Відкрити</button></div>}
+  </>);
+  const othersBlock = order && (<>
+    <div className="oc-others">
+      {(order.others?.length ?? 0) > 0 && (
+        <button type="button" className="link-btn" aria-expanded={others} onClick={() => setOthers((x) => !x)}>
+          Інші замовлення · {order.others.length} <ChevronDown size={13} className={others ? "rot" : ""} /></button>
+      )}
+      {!readOnly && <button type="button" className="link-btn" onClick={onNewForClient}><Plus size={13} />Нове замовлення цьому клієнту</button>}
+    </div>
+    {others && (
+      <div className="oc-others-list">
+        {order.others.map((o) => (
+          <button key={o.id} type="button" onClick={() => onOpen(o.id)}>
+            <span className="mono">№{o.id}</span><span className="muted">{shortDate(o.created_at)}</span>
+            <span className="ell">{o.items.map((i) => i.name).join(", ")}</span><b className="num">{money(o.total)} ₴</b>
+            <StatusPill status={meta.statuses.find((s) => s.id === o.status_id)} />
+          </button>
+        ))}
+      </div>
+    )}
+  </>);
+  if (!mobile && !edit && !forceEdit && !isNew) {
+    const ini = (form.customer_name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+    return (
+      <Block title="Покупець" step={step} className="oc-cust oc-cust-c"
+        acts={!readOnly && <IconButton icon={Pencil} label="Змінити дані покупця" quiet size={30} onClick={() => setEdit(true)} />}>
+        {strips}
+        <div className="oc-cl">
+          <span className="oc-cl-av" aria-hidden>{ini}</span>
+          <div className="oc-cl-t">
+            <b className="ell" title={form.customer_name}>{form.customer_name || "Без імені"}</b>
+            <span className="oc-cl-sub"><span className="num">{fmtPhone(form.phone)}</span>{form.email && <span className="ell">{form.email}</span>}</span>
+          </div>
+          {c && (
+            <div className="oc-cl-chips">
+              <span className="oc-chip">{c.orders} {plural(c.orders, "замовлення", "замовлення", "замовлень")}</span>
+              {c.buyout_rate != null && c.delivered + c.refused > 0 && <span className={`oc-chip ${c.buyout_rate >= 70 ? "ok" : "warn"}`}>викуп {Math.round(c.buyout_rate)}%</span>}
+              {c.refused > 0 && <span className="oc-chip bad">{c.refused} {plural(c.refused, "відмова", "відмови", "відмов")}</span>}
+            </div>
+          )}
+          {tel.length >= 10 && (
+            <div className="oc-cl-acts">
+              <a className="oc-cl-b" href={`tel:+${tel}`} aria-label="Подзвонити" title="Подзвонити"><Phone size={16} /></a>
+              <a className="oc-cl-b v" href={`viber://chat?number=%2B${tel}`} aria-label="Viber" title="Viber"><MessageCircle size={16} /></a>
+              <a className="oc-cl-b t" href={`https://t.me/+${tel}`} target="_blank" rel="noreferrer" aria-label="Telegram" title="Telegram"><Send size={16} /></a>
+            </div>
+          )}
+        </div>
+        {othersBlock}
+      </Block>
+    );
+  }
   return (
-    <Block title="Покупець" step={step} className="oc-cust" sub={!isNew && c ? [`${c.orders} ${plural(c.orders, "замовлення", "замовлення", "замовлень")}`, c.buyout_rate != null && c.delivered + c.refused > 0 ? `викуп ${Math.round(c.buyout_rate)}%` : "", c.refused ? `відмов ${c.refused}` : ""].filter(Boolean).join(" · ") : undefined}>
-      {c?.blacklisted && <div className="oc-strip bad"><Ban size={15} /><span><b>Чорний список.</b> {c.blacklist_reason || "Причину не вказано"}</span>
-        <button className="link-btn" onClick={() => navigate(`/customers/${c.id}`)}>Картка</button></div>}
-      {order?.duplicate_of_id && <div className="oc-strip warn"><Copy size={15} /><span>Можливий дубль замовлення №{order.duplicate_of_id}</span>
-        <button className="link-btn" onClick={() => onOpen(order.duplicate_of_id!)}>Відкрити</button></div>}
+    <Block title="Покупець" step={step} className="oc-cust"
+      acts={!mobile && !isNew && !forceEdit && form.customer_name.trim() && tel.length >= 10 ? <Button size={30} icon={Check} onClick={() => setEdit(false)}>Готово</Button> : undefined}
+      sub={!isNew && c ? [`${c.orders} ${plural(c.orders, "замовлення", "замовлення", "замовлень")}`, c.buyout_rate != null && c.delivered + c.refused > 0 ? `викуп ${Math.round(c.buyout_rate)}%` : "", c.refused ? `відмов ${c.refused}` : ""].filter(Boolean).join(" · ") : undefined}>
+      {strips}
       {!isNew && order && (
         <div className="oc-meta">
           Замовлення №{order.id} · {dateTime(order.created_at)}{src && ` · ${src}`}
@@ -752,26 +811,7 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
       {(form.email || showEmail) ? (
         <input className="oc-email" type="email" value={form.email} disabled={readOnly} autoFocus={showEmail && !form.email} onChange={(e) => set({ email: e.target.value })} placeholder="name@example.com" aria-label="Email" />
       ) : !readOnly && <button type="button" className="add-chip" onClick={() => setShowEmail(true)}><Plus size={13} />Email</button>}
-      {order && (
-        <div className="oc-others">
-          {(order.others?.length ?? 0) > 0 && (
-            <button type="button" className="link-btn" aria-expanded={others} onClick={() => setOthers((x) => !x)}>
-              Інші замовлення · {order.others.length} <ChevronDown size={13} className={others ? "rot" : ""} /></button>
-          )}
-          <button type="button" className="link-btn" onClick={onNewForClient}><Plus size={13} />Нове замовлення цьому клієнту</button>
-        </div>
-      )}
-      {others && order && (
-        <div className="oc-others-list">
-          {order.others.map((o) => (
-            <button key={o.id} type="button" onClick={() => onOpen(o.id)}>
-              <span className="mono">№{o.id}</span><span className="muted">{shortDate(o.created_at)}</span>
-              <span className="ell">{o.items.map((i) => i.name).join(", ")}</span><b className="num">{money(o.total)} ₴</b>
-              <StatusPill status={meta.statuses.find((s) => s.id === o.status_id)} />
-            </button>
-          ))}
-        </div>
-      )}
+      {othersBlock}
     </Block>
   );
 }
@@ -818,6 +858,26 @@ function PaymentBlock({ order, form, set, total, cod, prepay, step, readOnly, bu
   const rcDone = rs.find((r) => r.status === "done" && (r.kind === "prepay" || r.kind === "sell"));
   const codText = cod <= 0 ? "без післяплати" : COD_TEXT[method?.np_cod || ""] ?? "післяплата";
   const paidFully = total > 0 && cod <= 0 && (kind === "prepaid" ? received.length > 0 : true) && kind !== "cod";
+  const mobile = useMobile();
+  const [open, setOpen] = useState(false);
+  if (!mobile && order && method && !open && !adding && (kind === "cod" || !!confirmed)) {
+    const parts = [
+      confirmed ? `${money(prepay)} ₴ надійшло` : "",
+      cod > 0 ? `${money(cod)} ₴ при отриманні` : confirmed ? "" : "без післяплати",
+      rcDone ? "чек пробито" : order.checkbox_ready ? "чек не пробито" : "",
+    ].filter(Boolean);
+    return (
+      <Block title="Оплата" step={step} className="oc-pay oc-compact"
+        acts={!readOnly && <IconButton icon={Pencil} label="Змінити оплату" quiet size={30} onClick={() => setOpen(true)} />}>
+        <div className="oc-sumline">
+          <span className="oc-sl-ic"><PayIcon icon={method.icon} image={method.image} size={24} /></span>
+          <div className="oc-sl-t"><b className="ell">{method.name}</b>
+            <span className={confirmed || paidFully ? "ok" : ""}>{confirmed && <Check size={12} strokeWidth={2.6} />}{parts.join(" · ")}</span></div>
+        </div>
+        {form.delivery_method === "novaposhta" && <div className="oc-ttn-hint"><ArrowUpRight size={14} />У ТТН піде: {codText}{cod > 0 && ` · ${money(cod)} ₴`}</div>}
+      </Block>
+    );
+  }
   return (
     <Block title="Оплата" step={step} className="oc-pay"
       acts={rcDone ? <Tag kind="ok">Чек: {rcDone.kind === "prepay" ? "передоплата" : "продаж"} <Check size={11} /></Tag> : paidFully ? <Tag kind="ok">Повністю оплачено</Tag> : undefined}>
@@ -893,9 +953,55 @@ function DeliveryBlock({ order, form, set, cod, codKind, step, readOnly, locked,
     else opts.push([k, `${n}${meta.carriers[k]?.beta ? " (бета)" : ""}`]);
   });
   const whereLine = [form.city_name, form.warehouse_name].filter(Boolean).join(", ");
+  const mobile = useMobile();
+  const [open, setOpen] = useState(false);
+  const actsRow = dm !== "pickup" && (
+        <div className="oc-row oc-ttn-acts">
+          {hasTtn ? (
+            order?.label
+              ? <Button variant="soft" wide icon={TagIcon} onClick={() => printLabel(order.id, toast)}>{order.label === "rozetka" ? "Маркування Rozetka" : "Друк наклейки"}</Button>
+              : <Button variant="soft" wide icon={RefreshCw} disabled={busy || !carrier} onClick={() => onAction("/track")}>Оновити статус</Button>
+          ) : dm === "rozetka" ? (
+            <p className="hint">ТТН RMP-… створюється в кабінеті продавця Rozetka; вставте її сюди — маркування друкується з API Rozetka.</p>
+          ) : carrier?.configured ? (
+            <Button variant="soft" wide icon={Truck} kbd={dm === "novaposhta" ? "Ctrl ⏎" : undefined} disabled={readOnly}
+              title={isNew ? "Замовлення буде створено, і відкриється вікно ТТН" : undefined} onClick={onCreateTtn}>Створити ТТН</Button>
+          ) : carrier ? <p className="hint">Щоб створювати ТТН, заповніть доступи в «Налаштування → Доставка».</p> : null}
+          {order && (hasTtn || carrier) && (
+            <MenuButton button={({ open, toggle }) => <IconButton icon={MoreHorizontal} label="Ще дії з ТТН" aria-expanded={open} onClick={toggle} />}>
+              {(close) => (<>
+                {order.label && <button className="pop-item" onClick={() => { close(); printLabel(order.id, toast); }}><TagIcon size={16} />Наклейка</button>}
+                {hasTtn && dm === "novaposhta" && <button className="pop-item" disabled={!!order.np_registry_ref} onClick={() => { close(); onAction("/registry"); }}>
+                  <ListChecks size={16} />{order.np_registry_ref ? `У реєстрі ${order.np_registry_ref}` : "Додати в реєстр НП"}</button>}
+                {hasTtn && carrier && <button className="pop-item" onClick={() => { close(); onAction("/track"); }}><RefreshCw size={16} />Оновити статус</button>}
+                {hasTtn && <button className="pop-item" onClick={() => { close(); navigator.clipboard?.writeText(order.ttn || form.ttn); toast("ТТН скопійовано"); }}><Copy size={16} />Копіювати ТТН</button>}
+                {order.carrier_ref && !locked && <button className="pop-item danger" onClick={() => { close(); if (window.confirm(`Видалити ТТН ${order.ttn} у перевізника?`)) onAction("/ttn", "del"); }}><Trash2 size={16} />Видалити ТТН</button>}
+              </>)}
+            </MenuButton>
+          )}
+        </div>
+      );
+  const stateTag = hasTtn && stateName ? <Tag kind={order?.delivery_state === "delivered" ? "ok" : order?.delivery_state === "refused" || order?.delivery_state === "returned" ? "bad" : "warn"}>{stateName}</Tag> : undefined;
+  if (!mobile && order && hasTtn && !open) {
+    const ttn = order.ttn || form.ttn;
+    return (
+      <Block title="Доставка" step={step} className="oc-dlv oc-compact"
+        acts={<>{stateTag}{!dis && !order.carrier_ref && <IconButton icon={Pencil} label="Змінити доставку" quiet size={30} onClick={() => setOpen(true)} />}</>}>
+        <div className="oc-sumline">
+          <span className="oc-sl-ic">{dm === "novaposhta" ? <span className="np-badge">НП</span> : <Truck size={18} />}</span>
+          <div className="oc-sl-t"><b className="ell" title={whereLine}>{whereLine || meta.delivery_methods[dm] || "Адреса не вказана"}</b>
+            <span><span className="mono">{ttn}</span>
+              <button type="button" className="oc-copy" aria-label="Скопіювати ТТН" onClick={() => { navigator.clipboard?.writeText(ttn); toast("ТТН скопійовано"); }}><Copy size={12} /></button>
+              {num(order.delivery_cost) > 0 && ` · ${money(order.delivery_cost)} ₴`}{order.delivery_eta && ` · прибуде ${shortDate(order.delivery_eta)}`}</span></div>
+        </div>
+        {order.delivery_status && <div className="oc-sl-note">{order.delivery_status}{order.delivery_checked_at && ` · ${dateTime(order.delivery_checked_at)}`}</div>}
+        {order.pay_check && <div className={`pc-line pc-${order.pay_check.state}`}><PayCheck check={order.pay_check} text /></div>}
+        {actsRow}
+      </Block>
+    );
+  }
   return (
-    <Block title="Доставка" step={step} className="oc-dlv"
-      acts={hasTtn && stateName ? <Tag kind={order?.delivery_state === "delivered" ? "ok" : order?.delivery_state === "refused" || order?.delivery_state === "returned" ? "bad" : "warn"}>{stateName}</Tag> : undefined}>
+    <Block title="Доставка" step={step} className="oc-dlv" acts={stateTag}>
       <div className="oc-row">
         <Truck size={16} className="oc-row-ic" aria-hidden />
         <SelectPick<string> ariaLabel="Перевізник" disabled={dis || hasTtn} value={value} className="oc-select-pick"
@@ -934,32 +1040,7 @@ function DeliveryBlock({ order, form, set, cod, codKind, step, readOnly, locked,
         </div>
       )}
       {order?.pay_check && hasTtn && <div className={`pc-line pc-${order.pay_check.state}`}><PayCheck check={order.pay_check} text /></div>}
-      {dm !== "pickup" && (
-        <div className="oc-row oc-ttn-acts">
-          {hasTtn ? (
-            order?.label
-              ? <Button variant="soft" wide icon={TagIcon} onClick={() => printLabel(order.id, toast)}>{order.label === "rozetka" ? "Маркування Rozetka" : "Друк наклейки"}</Button>
-              : <Button variant="soft" wide icon={RefreshCw} disabled={busy || !carrier} onClick={() => onAction("/track")}>Оновити статус</Button>
-          ) : dm === "rozetka" ? (
-            <p className="hint">ТТН RMP-… створюється в кабінеті продавця Rozetka; вставте її сюди — маркування друкується з API Rozetka.</p>
-          ) : carrier?.configured ? (
-            <Button variant="soft" wide icon={Truck} kbd={dm === "novaposhta" ? "Ctrl ⏎" : undefined} disabled={readOnly}
-              title={isNew ? "Замовлення буде створено, і відкриється вікно ТТН" : undefined} onClick={onCreateTtn}>Створити ТТН</Button>
-          ) : carrier ? <p className="hint">Щоб створювати ТТН, заповніть доступи в «Налаштування → Доставка».</p> : null}
-          {order && (hasTtn || carrier) && (
-            <MenuButton button={({ open, toggle }) => <IconButton icon={MoreHorizontal} label="Ще дії з ТТН" aria-expanded={open} onClick={toggle} />}>
-              {(close) => (<>
-                {order.label && <button className="pop-item" onClick={() => { close(); printLabel(order.id, toast); }}><TagIcon size={16} />Наклейка</button>}
-                {hasTtn && dm === "novaposhta" && <button className="pop-item" disabled={!!order.np_registry_ref} onClick={() => { close(); onAction("/registry"); }}>
-                  <ListChecks size={16} />{order.np_registry_ref ? `У реєстрі ${order.np_registry_ref}` : "Додати в реєстр НП"}</button>}
-                {hasTtn && carrier && <button className="pop-item" onClick={() => { close(); onAction("/track"); }}><RefreshCw size={16} />Оновити статус</button>}
-                {hasTtn && <button className="pop-item" onClick={() => { close(); navigator.clipboard?.writeText(order.ttn || form.ttn); toast("ТТН скопійовано"); }}><Copy size={16} />Копіювати ТТН</button>}
-                {order.carrier_ref && !locked && <button className="pop-item danger" onClick={() => { close(); if (window.confirm(`Видалити ТТН ${order.ttn} у перевізника?`)) onAction("/ttn", "del"); }}><Trash2 size={16} />Видалити ТТН</button>}
-              </>)}
-            </MenuButton>
-          )}
-        </div>
-      )}
+      {actsRow}
       {!hasTtn && dm === "novaposhta" && carrier?.configured && <p className="oc-note">Місто, відділення й платник — у вікні створення ТТН</p>}
     </Block>
   );
@@ -1080,12 +1161,21 @@ function SummaryCard({ order, form, total, cod, prepay, subtotal, onTodo, onRece
 }
 
 // ======================================================================== Історія — коротко в картці (останні події) і повністю в бічній панелі
-function HistoryInline({ order, onAll }: { order: Order; onAll: () => void }) {
-  const q = useQuery({ queryKey: ["order-history", order.id, "all", order.version], queryFn: () => api.get<{ events: { kind: string; text: string; details: string; user: string; at: string | null }[] }>(`/orders/${order.id}/history?kind=all`) });
-  const ev = (q.data?.events ?? []).slice(0, 4);
+function HistoryInline({ order, onAll, onComment }: { order: Order; onAll: () => void; onComment: (t: string) => void }) {
+  // 9: фільтр «Усе / Статуси / SMS / Коментарі» і коментар прямо тут, без бічної панелі
+  const [kind, setKind] = useState<"all" | "status" | "sms" | "comments">("all");
+  const [text, setText] = useState("");
+  const q = useQuery({ queryKey: ["order-history", order.id, kind, order.version], queryFn: () => api.get<{ events: { kind: string; text: string; details: string; user: string; at: string | null }[] }>(`/orders/${order.id}/history?kind=${kind}`) });
+  const ev = (q.data?.events ?? []).slice(0, 5);
+  const send = () => { const t = text.trim(); if (!t) return; onComment(t); setText(""); };
   return (
-    <Block title="Історія" className="oc-hist" acts={<button type="button" className="link-btn" onClick={onAll}>Усе й коментарі</button>}>
-      {!q.data ? <div className="skel-rows"><div className="skel-row"><span className="skel" /></div></div> : ev.length === 0 ? <p className="hint">Подій ще немає</p> : (
+    <Block title="Історія" className="oc-hist" acts={<button type="button" className="link-btn" onClick={onAll}>Усе</button>}>
+      <div className="oc-hist-f" role="radiogroup" aria-label="Що показати">
+        {([["all", "Усе"], ["status", "Статуси"], ["sms", "SMS"], ["comments", "Коментарі"]] as const).map(([k, n]) => (
+          <button key={k} type="button" role="radio" aria-checked={kind === k} className={kind === k ? "on" : ""} onClick={() => setKind(k)}>{n}</button>
+        ))}
+      </div>
+      {!q.data ? <div className="skel-rows"><div className="skel-row"><span className="skel" /></div></div> : ev.length === 0 ? <p className="hint">{kind === "all" ? "Подій ще немає" : "Тут поки порожньо"}</p> : (
         <ul className="oc-hist-list">
           {ev.map((e, i) => (
             <li key={i}><span className={`oc-hist-ic ${e.kind}`}>{e.kind === "status" ? <Check size={12} strokeWidth={3} /> : e.kind === "sms" ? <MessageSquare size={12} /> : e.kind === "comment" ? <MessageCircle size={12} /> : <History size={12} />}</span>
@@ -1093,6 +1183,10 @@ function HistoryInline({ order, onAll }: { order: Order; onAll: () => void }) {
           ))}
         </ul>
       )}
+      <form className="oc-hist-in" onSubmit={(e) => { e.preventDefault(); send(); }}>
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Написати коментар…" aria-label="Коментар до замовлення" maxLength={2000} />
+        <button type="submit" className="oc-hist-send" disabled={!text.trim()} aria-label="Додати коментар"><Send size={15} /></button>
+      </form>
     </Block>
   );
 }
