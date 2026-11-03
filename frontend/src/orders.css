@@ -53,7 +53,7 @@
   .page-orders .dense-row { font-size: 13px; column-gap: 8px; padding: 0 12px; }
   .page-orders .o-cust > .ell { font-weight: 500; }
 
-  /* ---------------- картки: сітка, щільніше за макет (4 колонки на 1280, 5 — від 1440) */
+  /* ---------------- картки: сітка, щільніше за макет (4 колонки на 1280, 5 — від 1600) */
   .ocd-wrap { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -6px; padding: 2px 6px 16px; }
   .ocd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
   .ocd { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 10px 11px 10px 12px; background: var(--surface); border-radius: 16px;
