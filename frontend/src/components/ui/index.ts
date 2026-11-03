@@ -16,3 +16,5 @@ export * from "./ColorPick";
 export * from "./DatePick";
 export * from "./Confirm";
 export * from "./FileDrop";
+export * from "./ContextMenu";
+export * from "./Tooltip";

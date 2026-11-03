@@ -576,7 +576,7 @@ function MobileStatus({ statusId, onPick, disabled }: { statusId: number; onPick
   };
   return (
     <div className="oc-mstatus-wrap">
-      <MenuButton className="oc-mstatus-menu" align="left" button={({ open, toggle }) => (
+      <MenuButton className="oc-mstatus-menu" title="Статус замовлення" align="left" button={({ open, toggle }) => (
         <button type="button" className="oc-mstatus" style={{ ["--c" as string]: cur?.color ?? "#7C7B76" }} aria-expanded={open} disabled={disabled} onClick={toggle}>
           <i /><b>{cur?.name ?? "Статус"}</b><span>змінити<ChevronDown size={15} /></span>
         </button>

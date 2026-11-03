@@ -5,7 +5,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlarmClock, Ban, Bookmark, CalendarDays, Check, ChevronDown, CircleAlert, Copy, Crown, Download, Eye, Inbox, KanbanSquare, LayoutGrid, List, ListFilter, MessageCircle, MessageSquare, Package, PackageX, Phone, Plus, Printer, Receipt, ReceiptText, RefreshCw, Search, Send, Trash2, Truck, UserRound, Wallet, X,
+  AlarmClock, Ban, Bookmark, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, CircleDot, ExternalLink, Copy, Crown, Download, Eye, Inbox, KanbanSquare, LayoutGrid, List, ListFilter, MessageCircle, MessageSquare, Package, PackageX, Phone, Plus, Printer, Receipt, ReceiptText, RefreshCw, Search, Send, Trash2, Truck, UserRound, Wallet, X,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
@@ -15,7 +15,7 @@ import { MarkIcon } from "../components/marks";
 import type { Order, OrderList, OrderRow, Status } from "../lib/types";
 import {
   BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, MenuButton, MobileActs, PayCheck, RoundButton, Segmented, Sheet, StatusPill, Tabs,
-  ask, useColumns, useMobile, useOutside, type DenseCol, type TabItem, EmptyState, Floating, HoverCard, DatePop, DateRangeField, RangePicker, fmtRange } from "../components/ui";
+  ask, ContextMenu, menuPoint, useColumns, useMobile, useOutside, type DenseCol, type TabItem, EmptyState, Floating, HoverCard, DatePop, DateRangeField, RangePicker, fmtRange } from "../components/ui";
 import OrderModal, { openTtnOnLoad } from "./OrderCard";
 
 const FILTERS = ["status", "q", "manager", "delivery", "src", "entity", "pm", "mark", "date_from", "date_to", "dup", "remind", "ttn"] as const;
@@ -290,6 +290,16 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
   const allFilters = mobile || showF;
   const open = (oid: number) => nav(`${base}/${oid}${window.location.search}`);
   const openTtn = (oid: number) => { openTtnOnLoad(oid); open(oid); };
+  // контекстне меню рядка й картки (A6): правий клік або клавіша меню
+  const [ctx, setCtx] = useState<{ o: OrderRow; x: number; y: number; view: "main" | "status" | "manager" | number } | null>(null);
+  const tileMenu = (e: React.MouseEvent) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>("[data-oid]");
+    const o = el && rows.find((r) => r.id === Number(el.dataset.oid));
+    if (!o) return;
+    e.preventDefault();
+    const p = menuPoint(e, el);
+    setCtx({ o, ...p, view: "main" });
+  };
   const smsTtn = useMutation({
     mutationFn: (oid: number) => api.post(`/orders/${oid}/sms-ttn`, {}),
     onSuccess: () => toast("SMS з номером ТТН поставлено в чергу"),
@@ -371,7 +381,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     const mk = o.mark_id ? marks[o.mark_id] : null;
     const g = goodsOf(o);
     return (
-      <article role="listitem" tabIndex={0} className={`ocd${cur ? " cur" : ""}${due ? " due" : ""}`}
+      <article role="listitem" tabIndex={0} data-oid={o.id} className={`ocd${cur ? " cur" : ""}${due ? " due" : ""}`}
         onClick={() => open(o.id)} onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) open(o.id); }}>
         <div className="ocd-top">
           <StatusPill status={statuses[o.status_id]} />
@@ -398,7 +408,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     const st = statuses[o.status_id];
     const g = goodsOf(o);
     return (
-      <button type="button" role="option" aria-selected={cur} className={`ib-item${cur ? " on" : ""}`} onClick={() => nav(`${base}/${o.id}${window.location.search}`, { replace: true })}>
+      <button type="button" role="option" aria-selected={cur} data-oid={o.id} className={`ib-item${cur ? " on" : ""}`} onClick={() => nav(`${base}/${o.id}${window.location.search}`, { replace: true })}>
         <span className="r1"><i style={{ background: st?.color ?? "var(--faint)" }} title={st?.name} /><b>{o.customer_name || "без імені"}</b><span className="s">{money(o.total)} ₴</span></span>
         <span className="r2"><span className="no">№{o.id}</span><span className="ell">{g.first}{g.rest > 0 && ` +${g.rest}`}</span><span className="t">{shortWhen(o.created_at)}</span></span>
       </button>
@@ -461,7 +471,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         <div className="ocd-wrap">
           {query.isLoading ? <div className="ocd-grid">{Array.from({ length: 12 }, (_, i) => <div key={i} className="ocd sk"><span className="skel" /><span className="skel" /><span className="skel" /></div>)}</div>
             : !rows.length ? <div className="dense-empty">{emptyBox}</div> : (
-              <div className="ocd-grid" role="list" aria-label="Замовлення">
+              <div className="ocd-grid" role="list" aria-label="Замовлення" onContextMenu={mobile ? undefined : tileMenu}>
                 {rows.map((o) => <Tile key={o.id} o={o} cur={!!id && Number(id) === o.id} render={cardTile} />)}
               </div>
             )}
@@ -469,7 +479,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         </div>
       ) : view === "inbox" ? (
         <div className="ib">
-          <div className="ib-list" ref={ibList} role="listbox" aria-label="Замовлення">
+          <div className="ib-list" ref={ibList} role="listbox" aria-label="Замовлення" onContextMenu={tileMenu}>
             {query.isLoading ? Array.from({ length: 8 }, (_, i) => <div key={i} className="ib-item sk"><span className="skel" /><span className="skel" /></div>)
               : !rows.length ? <div className="ib-empty">{emptyBox}</div>
                 : rows.map((o) => <Tile key={o.id} o={o} cur={!!id && Number(id) === o.id} render={inboxItem} />)}
@@ -487,6 +497,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
           rows={rows} cols={cols} rowKey={(o) => o.id}
           selected={sel} onSelect={setSel} current={id ? Number(id) : null}
           onOpen={(o) => open(o.id)}
+          onRowMenu={mobile ? undefined : (o, x, y) => setCtx({ o, x, y, view: "main" })}
           isLoading={query.isLoading} onEndReached={endReached}
           rowHeight={mobile ? undefined : 40}
           rowClass={(o) => (o.remind_at && new Date(o.remind_at) <= new Date() ? "due" : "")}
@@ -534,6 +545,42 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
 
       {id && (view !== "inbox" || id === "new") && <OrderModal id={id} onClose={() => nav(`${base}${window.location.search}`)} onOpen={(oid) => nav(`${base}/${oid}${window.location.search}`)}
         ids={rows.map((r) => r.id)} />}
+      {ctx && <ContextMenu x={ctx.x} y={ctx.y} onClose={() => setCtx(null)} label={`Замовлення №${ctx.o.id}`}>{(close) => {
+        const o = ctx.o;
+        const back = <button type="button" className="pop-item ctx-back" onClick={() => setCtx({ ...ctx, view: "main" })}><ChevronLeft size={15} />Назад</button>;
+        if (ctx.view === "status" || typeof ctx.view === "number") {
+          const rs = typeof ctx.view === "number" ? meta.reasons.filter((r) => r.active && r.status_ids.includes(ctx.view as number)) : [];
+          if (typeof ctx.view === "number") return (<>{back}<div className="note-head">Причина</div>
+            {rs.map((r) => <button key={r.id} type="button" className="pop-item" onClick={() => { close(); setStatus(o, ctx.view as number, r.id); }}>{r.name}</button>)}</>);
+          return (<>{back}{stageStatuses.map((s) => (
+            <button key={s.id} type="button" role="menuitemradio" aria-checked={s.id === o.status_id} className={`pop-item${s.id === o.status_id ? " on" : ""}`} disabled={s.id === o.status_id}
+              onClick={() => {
+                if ((s.code === "cancelled" || s.code === "refused") && meta.reasons.some((r) => r.active && r.status_ids.includes(s.id))) { setCtx({ ...ctx, view: s.id }); return; }
+                close(); setStatus(o, s.id);
+              }}><StatusPill status={s} />{s.id === o.status_id && <Check size={14} className="hc-cur" />}</button>))}</>);
+        }
+        if (ctx.view === "manager") return (<>{back}
+          {meta.managers.map((m) => <button key={m.id} type="button" className={`pop-item${m.id === o.manager_id ? " on" : ""}`} onClick={() => { close(); bulk.mutate({ action: "assign", value: m.id, ids: [o.id] }); }}><UserRound size={15} />{m.name}</button>)}
+          <button type="button" className="pop-item" onClick={() => { close(); bulk.mutate({ action: "assign", value: 0, ids: [o.id] }); }}><X size={15} />Зняти менеджера</button></>);
+        const tel = (o.phone ?? "").replace(/\D/g, "");
+        return (<>
+          <div className="note-head">№{o.id}{o.customer_name ? ` · ${o.customer_name}` : ""}</div>
+          <button type="button" className="pop-item" onClick={() => { close(); open(o.id); }}><Eye size={15} />Відкрити<kbd>Enter</kbd></button>
+          <button type="button" className="pop-item" onClick={() => { close(); window.open(`${ROOT}${base}/${o.id}`, "_blank"); }}><ExternalLink size={15} />У новій вкладці</button>
+          {meta.user.role !== "warehouse" && <button type="button" className="pop-item" onClick={() => setCtx({ ...ctx, view: "status" })}><CircleDot size={15} />Змінити статус<ChevronRight size={14} className="ctx-more" /></button>}
+          {meta.user.role === "admin" && <button type="button" className="pop-item" onClick={() => setCtx({ ...ctx, view: "manager" })}><UserRound size={15} />Менеджер<ChevronRight size={14} className="ctx-more" /></button>}
+          {!o.ttn && o.delivery_method === "novaposhta" && <button type="button" className="pop-item" onClick={() => { close(); openTtn(o.id); }}><Truck size={15} />Створити ТТН</button>}
+          <a className="pop-item" href={`${ROOT}/api/orders/${o.id}/print`} target="_blank" rel="noreferrer" onClick={close}><Printer size={15} />Друк бланка</a>
+          <div className="pop-sep" />
+          <button type="button" className="pop-item" onClick={() => { close(); navigator.clipboard?.writeText(String(o.id)); toast(`Номер ${o.id} скопійовано`); }}><Copy size={15} />Копіювати номер</button>
+          {tel && <button type="button" className="pop-item" onClick={() => { close(); navigator.clipboard?.writeText(`+${tel}`); toast("Телефон скопійовано"); }}><Phone size={15} />Копіювати телефон</button>}
+          {o.ttn && <button type="button" className="pop-item" onClick={() => { close(); navigator.clipboard?.writeText(o.ttn ?? ""); toast("ТТН скопійовано"); }}><Package size={15} />Копіювати ТТН</button>}
+          {meta.user.role !== "warehouse" && <><div className="pop-sep" />
+            <button type="button" className="pop-item danger" onClick={async () => { close();
+              if (await ask({ title: `Видалити замовлення №${o.id} назавжди?`, text: "Резерв товару повернеться на склад. Відновити замовлення не можна.", action: "Видалити", danger: true })) bulk.mutate({ action: "delete", ids: [o.id] });
+            }}><Trash2 size={15} />Видалити</button></>}
+        </>);
+      }}</ContextMenu>}
     </div>
   );
 }
