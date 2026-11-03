@@ -135,7 +135,7 @@ export default function HomePage() {
           {todo.map((x) => (
             <button key={x.label} type="button" className={`hd-td ${x.tone}${x.n ? "" : " zero"}`} onClick={x.go}>
               <span className="sq"><x.icon size={17} /></span>
-              <span className="t"><b className="num">{x.n}</b><small>{x.label}</small>{x.sub && x.n > 0 && <small className="s">{x.sub}</small>}</span>
+              <span className="t"><b>{x.n}</b><small>{x.label}</small>{x.sub && x.n > 0 && <small className="s">{x.sub}</small>}</span>
               <ChevronRight size={16} className="go" aria-hidden />
             </button>
           ))}

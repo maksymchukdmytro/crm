@@ -109,7 +109,8 @@
 .hd-td.red .sq { background: var(--bad-soft); color: var(--bad); }
 .hd-td.orange .sq { background: var(--warn-soft); color: var(--warn); }
 .hd-td.purple .sq { background: #F1ECFB; color: #7C3AED; }
-.hd-td .t { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.2; }
+.hd-td .t { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; flex: 1; line-height: 1.2; text-align: left; }
+.hd-td .t b { font-variant-numeric: tabular-nums; }
 .hd-td .t b { font-size: 24px; font-weight: 600; letter-spacing: -.02em; }
 .hd-td .t small { font-size: 12.5px; color: var(--muted); }
 .hd-td .t small.s { color: var(--ink-2); margin-top: 2px; }

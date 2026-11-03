@@ -2,13 +2,13 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock3, Inbox, KanbanSquare, List, Phone, PhoneCall, Plus, Search, X } from "lucide-react";
-import { api, qs } from "../lib/api";
+import { Check, Clock3, Inbox, KanbanSquare, List, Phone, PhoneCall, PhoneMissed, Plus, Search, X } from "lucide-react";
+import { api, ApiError, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, phone } from "../lib/format";
 import type { Order, OrderList, OrderRow } from "../lib/types";
-import { Button, ChipSelect, DenseTable, FilterChip, MobileActs, Ring, RoundButton, Segmented, StatusPill, Tabs, UaPhone, Window, type DenseCol, type TabItem, EmptyState } from "../components/ui";
-import { SOURCE_COLORS } from "./Orders";
+import { Button, ChipSelect, DenseTable, FilterChip, Floating, HoverCard, MobileActs, Ring, RoundButton, Segmented, StatusPill, Tabs, UaPhone, Window, type DenseCol, type TabItem, EmptyState } from "../components/ui";
+import { PhoneCard, SOURCE_COLORS } from "./Orders";
 import LeadWindow from "./LeadWindow";
 import { SourceChips } from "./NewOrder";
 
@@ -94,21 +94,29 @@ export default function LeadsPage() {
   const tabs: TabItem<string>[] = TABS.map(([k, label]) => ({ key: k, label, count: tabsN?.[k as keyof typeof tabsN] ?? null, hot: k === "new" }));
   const meNone = `${meta.user.id},none`;
 
+  // колонки (макет v26, 13–14): скільки чекає кольором, спроби крапками, результат дзвінка одним кліком; телефон — значком
   const COLS: DenseCol<OrderRow>[] = [
-    { key: "id", label: "№", width: "70px", render: (o) => <span className="o-id">{leadNo(o.id)}</span> },
-    { key: "name", label: "Ім'я", width: "minmax(120px, 1.1fr)", title: (o) => o.customer_name, render: (o) => <span className="ell">{o.customer_name || <span className="muted">без імені</span>}</span> },
-    { key: "phone", mobile: "hide", label: "Телефон", width: "124px", render: (o) => <span className="num">{phone(o.phone)}</span> },
-    { key: "items", label: "Товар з форми", width: "minmax(120px, 1.3fr)", title: (o) => o.items.map((i) => i.name).join(", "), render: (o) => <span className="ell">{o.items[0]?.name ?? "—"}</span> },
-    { key: "total", mobile: "end", label: "Сума", width: "78px", align: "right", render: (o) => <b className="num">{money(o.total)} ₴</b> },
-    { key: "status", label: "Статус", width: "118px", render: (o) => <StatusPill status={statuses[o.status_id]} /> },
-    { key: "wait", label: "Чекає · спроба", width: "120px", render: (o) => <WaitBadge row={o} /> },
-    { key: "source", mobile: "hide", label: "Джерело", width: "minmax(80px, 0.8fr)", render: (o) => {
+    { key: "id", label: "№", width: "64px", render: (o) => <span className="o-id">{leadNo(o.id)}</span> },
+    { key: "name", label: "Лід", width: "minmax(130px, 1.2fr)", title: (o) => o.customer_name, render: (o) => {
       const s = sources[o.source_id ?? 0];
-      return s ? <span className="o-dot-txt"><i style={{ background: s.color }} /><span className="ell">{s.name}</span></span> : <span className="ell muted">{o.utm_source || "—"}</span>;
+      return <span className="o-cust"><i className="o-src" style={{ background: s?.color ?? "var(--line)" }} title={s?.name ?? o.utm_source ?? "Джерело не вказано"} />
+        <span className="ell">{o.customer_name || <span className="muted">без імені</span>}</span></span>;
     } },
-    { key: "manager", mobile: "hide", label: "Мен.", headTitle: "Менеджер", width: "36px", align: "center", render: (o) => o.manager_id
+    { key: "items", label: "Що цікавить", width: "minmax(120px, 1.2fr)", title: (o) => o.items.map((i) => i.name).join(", "), render: (o) => <span className="ell muted">{o.items[0]?.name ?? "—"}{o.total ? ` · ${money(o.total)} ₴` : ""}</span> },
+    { key: "wait", label: "Чекає", width: "108px", render: (o) => <WaitPill row={o} /> },
+    { key: "tries", label: "Спроби", headTitle: "Спроби дзвінка", width: "58px", render: (o) => (
+      <span className="ld-dots" title={`Спроб дзвінка: ${o.call_attempts ?? 0}`} aria-label={`Спроб дзвінка: ${o.call_attempts ?? 0}`}>
+        {[0, 1, 2].map((i) => <i key={i} className={i < (o.call_attempts ?? 0) ? "on" : ""} />)}{(o.call_attempts ?? 0) > 3 && <small>+{(o.call_attempts ?? 0) - 3}</small>}
+      </span>
+    ) },
+    { key: "status", label: "Статус", width: "124px", render: (o) => <StatusPill status={statuses[o.status_id]} /> },
+    { key: "result", mobile: "hide", label: "Результат дзвінка", width: "190px", render: (o) => <LeadResult o={o} open={(id) => nav(`/leads/${id}${window.location.search}`)} /> },
+    { key: "manager", mobile: "hide", label: "М.", headTitle: "Менеджер", width: "28px", align: "center", render: (o) => o.manager_id
       ? <span className="o-av" title={managers[o.manager_id]?.name}>{(managers[o.manager_id]?.name ?? "").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}</span>
       : <span className="muted">—</span> },
+    { key: "call", mobile: "hide", label: <Phone size={13} aria-label="Телефон" />, headTitle: "Телефон", width: "32px", align: "center", render: (o) => (
+      o.phone ? <HoverCard label={`Телефон ${phone(o.phone)}`} triggerClass="o-ic o-call" width={290} trigger={<Phone size={14} />}>{() => <PhoneCard o={o} />}</HoverCard> : <span className="o-none">—</span>
+    ) },
   ];
 
   const open = useCallback((o: { id: number }) => nav(`/leads/${o.id}${window.location.search}`), [nav]);
@@ -185,8 +193,7 @@ export default function LeadsPage() {
           isLoading={q.isLoading}
           rowClass={(o) => ((o.wait_minutes ?? 0) >= meta.lead_wait_bad_min ? "late" : "")}
           mobileCard={mobileCard}
-          actions={(o) => (statuses[o.status_id]?.code && ["new", "no_answer", "callback"].includes(statuses[o.status_id].code)
-            ? <Button size={30} icon={Phone} onClick={() => open(o)}>Дзвонити</Button> : null)}
+          rowHeight={44}
           empty={tab === "open" ? <EmptyState icon={Inbox} title="Відкритих лідів немає" text="Заявки з форм на сайті з'являться тут самі. Дзвінок чи повідомлення — додайте лід вручну"
             action={{ label: "Новий лід", icon: Plus, onClick: () => nav(`/leads/new${window.location.search}`) }} /> : <div className="empty-state"><p>Тут порожньо</p></div>} />
       )}
@@ -306,5 +313,61 @@ function Callbacks({ rows, onOpen }: { rows: OrderRow[]; onOpen: (o: OrderRow) =
         </section>
       ))}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------- скільки чекає — кольоровою таблеткою (зелений · жовтий · червоний)
+function WaitPill({ row }: { row: OrderRow }) {
+  const meta = useMeta();
+  const code = meta.statuses.find((s) => s.id === row.status_id)?.code;
+  const future = row.remind_at && new Date(row.remind_at) > new Date();
+  if (code === "callback" && row.remind_at && (future || row.wait_minutes == null)) return <span className="ld-wait cb"><PhoneCall size={12} />{callbackTime(row.remind_at)}</span>;
+  if (row.wait_minutes == null) return future ? <span className="ld-wait cb"><Clock3 size={12} />{callbackTime(row.remind_at!)}</span> : <span className="muted">—</span>;
+  const m = row.wait_minutes;
+  const cls = m >= meta.lead_wait_bad_min ? "bad" : m >= meta.lead_wait_warn_min ? "warn" : "ok";
+  return <span className={`ld-wait ${cls}`}><Clock3 size={12} />{waitText(m)}</span>;
+}
+
+// ---------------------------------------------------------------- результат дзвінка одним кліком: не відповів · передзвонити · оформити
+function LeadResult({ o, open }: { o: OrderRow; open: (id: number) => void }) {
+  const meta = useMeta();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const code = meta.statuses.find((s) => s.id === o.status_id)?.code ?? "";
+  const ref = useRef<HTMLButtonElement>(null);
+  const [menu, setMenu] = useState(false);
+  const done = () => { qc.invalidateQueries({ queryKey: ["orders"] }); qc.invalidateQueries({ queryKey: ["leads"] }); qc.invalidateQueries({ queryKey: ["counters"] }); };
+  const result = useMutation({
+    mutationFn: (body: { result: string; at?: string }) => api.post(`/orders/${o.id}/lead-result`, body),
+    onSuccess: (_, b) => { done(); toast(b.result === "no_answer" ? `${leadNo(o.id)}: недодзвон, спроба ${(o.call_attempts ?? 0) + 1}` : `${leadNo(o.id)}: передзвонити ${callbackTime(b.at!)}`); },
+    onError: (e) => toast(errText(e), "error"),
+  });
+  const convert = useMutation({
+    mutationFn: () => api.post<{ order: { id: number } }>(`/orders/${o.id}/convert`),
+    onSuccess: (r) => { done(); toast(`Створено замовлення №${r.order.id}`, "ok"); },
+    onError: (e) => { if (e instanceof ApiError && e.status === 422) { toast(errText(e), "warn"); open(o.id); } else toast(errText(e), "error"); },
+  });
+  if (!["new", "no_answer", "callback"].includes(code)) return <span className="muted">—</span>;
+  const busy = result.isPending || convert.isPending;
+  const at = (fn: (d: Date) => void) => { const d = new Date(); fn(d); return d.toISOString(); };
+  const now = new Date();
+  const presets: [string, string][] = [
+    ["Через годину", at((d) => d.setHours(d.getHours() + 1))],
+    ...(now.getHours() < 17 ? [["Сьогодні о 18:00", at((d) => d.setHours(18, 0, 0, 0))] as [string, string]] : []),
+    ["Завтра о 10:00", at((d) => { d.setDate(d.getDate() + 1); d.setHours(10, 0, 0, 0); })],
+    ["Післязавтра о 10:00", at((d) => { d.setDate(d.getDate() + 2); d.setHours(10, 0, 0, 0); })],
+  ];
+  return (
+    <span className="ld-res" onClick={(e) => e.stopPropagation()}>
+      <button type="button" className="ld-rb" disabled={busy} onClick={() => result.mutate({ result: "no_answer" })} title="Не відповів: +1 спроба">
+        <PhoneMissed size={13} />Не відповів</button>
+      <button ref={ref} type="button" className="ld-rb ic v" disabled={busy} aria-label="Передзвонити — обрати час" aria-expanded={menu} title="Передзвонити" onClick={() => setMenu((x) => !x)}><Clock3 size={14} /></button>
+      <button type="button" className="ld-rb ic g" disabled={busy} aria-label="Оформити замовлення з ліда" title="Оформити замовлення" onClick={() => convert.mutate()}><Check size={14} /></button>
+      <Floating anchor={ref.current} open={menu} onClose={() => setMenu(false)} width={210} className="hc-menu" role="menu" label="Коли передзвонити">
+        <div className="hc-t1">Передзвонити</div>
+        {presets.map(([n, v]) => <button key={n} type="button" role="menuitem" className="pop-item" onClick={() => { setMenu(false); result.mutate({ result: "callback", at: v }); }}>{n}</button>)}
+        <button type="button" role="menuitem" className="pop-item" onClick={() => { setMenu(false); open(o.id); }}>Свій час…</button>
+      </Floating>
+    </span>
   );
 }
