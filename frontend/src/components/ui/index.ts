@@ -12,3 +12,4 @@ export * from "./DenseTable";
 export * from "./ColumnsMenu";
 export * from "./Select";
 export * from "./HoverCard";
+export * from "./ColorPick";

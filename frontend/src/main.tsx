@@ -17,6 +17,7 @@ import "./catalog.css";
 import "./settings.css";
 import "./mobile.css";
 import "./wizard.css";
+import "./kit.css";
 
 initMonitoring();
 
