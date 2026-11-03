@@ -85,7 +85,7 @@ export const Goods = forwardRef<GoodsHandle, {
     const sku = i.variant_id ? variants.find((x) => x.id === i.variant_id)?.sku || p?.sku : p?.sku ?? i.sku;
     const photo = i.photo ?? p?.photo;
     const baseName = p && i.variant_id ? p.name : i.name;
-    const dx = sw?.key === i.key ? sw.dx : 0;
+    const dx = sw && sw.key === i.key ? sw.dx : 0;
     const line = (
       <div key={i.key} className={`gi${i.upsell ? " up" : ""}`} style={dx ? { transform: `translateX(${dx}px)` } : undefined} {...swipeProps(i)}>
         <span className="gi-ph">{i.upsell ? <Link2 size={15} /> : photo ? <img src={`${ROOT}${photo}`} alt="" /> : <Package size={15} />}</span>

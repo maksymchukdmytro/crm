@@ -222,7 +222,7 @@ export function AuditPage() {
     const today = isoDay(new Date()), yest = isoDay(new Date(Date.now() - 86400_000));
     const dayName = (d: string) => d === today ? "Сьогодні" : d === yest ? "Учора" : date(d);
     const days: [string, typeof rows][] = [];
-    rows.forEach((r) => { const d = isoDay(new Date(r.created_at)); const last = days[days.length - 1]; if (last && last[0] === d) last[1].push(r); else days.push([d, [r]]); });
+    rows.forEach((r) => { const d = isoDay(new Date(r.created_at ?? "")); const last = days[days.length - 1]; if (last && last[0] === d) last[1].push(r); else days.push([d, [r]]); });
     return (
       <div className="au-m">
         <div className="head"><h1>Журнал дій</h1></div>
@@ -244,7 +244,7 @@ export function AuditPage() {
                   <span className={`sq sm ${del ? "t-red" : AU_TONE[r.entity] ?? "t-gray"}`}><I size={15} /></span>
                   <span className="au-t"><b>{r.entity === "order" && r.entity_id ? `№${r.entity_id}: ` : r.entity_id ? `${ENTITIES[r.entity] ?? r.entity} №${r.entity_id}: ` : ""}{r.action_name}</b>
                     {r.details && <small className="au-d">{r.details}</small>}<small>{r.user}</small></span>
-                  <time>{new Date(r.created_at).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}</time>
+                  <time>{new Date(r.created_at ?? "").toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}</time>
                 </button>
               );
             })}

@@ -871,7 +871,6 @@ function PaymentBlock({ order, form, set, total, cod, prepay, step, readOnly, bu
   const rcDone = rs.find((r) => r.status === "done" && (r.kind === "prepay" || r.kind === "sell"));
   const codText = cod <= 0 ? "без післяплати" : COD_TEXT[method?.np_cod || ""] ?? "післяплата";
   const paidFully = total > 0 && cod <= 0 && (kind === "prepaid" ? received.length > 0 : true) && kind !== "cod";
-  const mobile = useMobile();
   const [open, setOpen] = useState(false);
   if (order && method && !open && !adding && (kind === "cod" || !!confirmed)) {
     const parts = [
