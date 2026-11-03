@@ -202,3 +202,58 @@
   .pu-m3 small { font-size: 12.5px; color: var(--muted); min-width: 0; }
   .pu-m3 b { font-size: 16px; font-weight: 600; white-space: nowrap; }
 }
+
+@media (max-width: 768px) {
+  /* B14 · дошка: колонка на весь екран, свайп, чипи статусів, крапки; перенести — довгий натиск */
+  .m-board .board-hint { display: none; }
+  .mb-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--m-pad)) 10px; padding: 0 var(--m-pad); }
+  .mb-chips::-webkit-scrollbar { display: none; }
+  .mb-chip { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 0; border-radius: 99px; font: inherit; font-size: 14px; font-weight: 500;
+    background: color-mix(in srgb, var(--c) 12%, white); color: color-mix(in srgb, var(--c) 78%, black); cursor: pointer; }
+  .mb-chip i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .mb-chip em { font-style: normal; opacity: .75; font-variant-numeric: tabular-nums; }
+  .mb-chip.on { background: color-mix(in srgb, var(--c) 82%, #000); color: #fff; }
+  .mb-cols { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 calc(-1 * var(--m-pad)); }
+  .mb-cols::-webkit-scrollbar { display: none; }
+  .mb-col { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; display: flex; flex-direction: column; gap: 10px; padding: 0 var(--m-pad) 16px; min-height: 50vh; }
+  .mb-card { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; user-select: none; }
+  .mb-card .kcard { margin: 0; padding: 12px 14px; border: 0; border-radius: var(--m-r); background: #fff; box-shadow: none; }
+  .mb-card .kcard-name { font-size: 16px; font-weight: 600; }
+  .mb-more { text-align: center; padding: 6px; }
+  .mb-dots { position: sticky; bottom: calc(92px + env(safe-area-inset-bottom)); display: flex; justify-content: center; gap: 5px; pointer-events: none; }
+  .mb-dots i { width: 6px; height: 6px; border-radius: 99px; background: #CFCFCB; transition: width 150ms; }
+  .mb-dots i.on { width: 16px; background: var(--ink); }
+}
+
+@media (max-width: 768px) {
+  /* B15 · статистика: плитки по дві, період і фільтри — чипами */
+  .stats .st-head-r > .st-sel:first-child, .stats .st-group, .stats .st-head-r > .btn, .stats .st-period { display: none; }
+  .stats .st-head-r { gap: 8px; }
+  .stats .st-sel { height: 40px; border-radius: 99px; background: var(--accent-soft); color: #1F4FB8; }
+  .stats .st-fbar { margin-top: -2px; }
+  .stats .st-more { height: 40px; border-radius: 99px; }
+  .stats .st-fmore { grid-template-columns: 1fr; }
+  .stats .st-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats .st-kpi { min-width: 0; }
+  .stats .st-kpi-l { flex-wrap: wrap; gap: 4px; }
+  .stats .st-kpi-v { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+@media (max-width: 768px) {
+  /* B16 · налаштування: статуси й користувачі — коротким списком, тап — шторка з полями */
+  .set-mlist { display: flex; flex-direction: column; border-radius: var(--m-r); background: #fff; overflow: hidden; }
+  .set-mrow2 { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; padding: 8px 14px; border: 0; border-top: 1px solid #F0F0EE;
+    background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
+  .set-mrow2:first-child { border-top: 0; }
+  .set-mrow2 > i { width: 14px; height: 14px; border-radius: 5px; flex: none; }
+  .set-mrow2 > span:not(.set-mav) { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .set-mrow2 b { font-size: 15.5px; font-weight: 550; }
+  .set-mrow2 small { font-size: 12.5px; color: var(--muted); }
+  .set-mrow2 > svg { color: var(--faint); flex: none; }
+  .set-mav { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 50%; background: var(--accent-soft); color: #1F4FB8; font-weight: 600; }
+  .set-mnew { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .set-msheet { display: flex; flex-direction: column; gap: 12px; }
+  .set-mcolor { display: flex; align-items: center; justify-content: space-between; }
+  .set-msave { flex: 1; height: 52px; justify-content: center; font-size: 16px; border-radius: 16px; }
+  .set-mdel { height: 48px; justify-content: center; }
+}

@@ -11,7 +11,7 @@ import { api, qs, ROOT } from "../lib/api";
 import { useMeta } from "../lib/app";
 import { dt, isoDay, money, phone } from "../lib/format";
 import type { Stats, StatsBreakdown, StatsOptions, StatsOrders, StatsProduct, StatsSegments, StatsSummary, Status } from "../lib/types";
-import { DateRangeField, Empty, Pill, Spinner, Tabs, Select, isoDate } from "../components/ui";
+import { DateRangeField, Empty, Pill, Spinner, Tabs, Select, isoDate, useMobile } from "../components/ui";
 import MultiSelect, { EMPTY, type MsOption } from "../components/MultiSelect";
 import StatsChart, { type ChartStatus } from "../components/StatsChart";
 import OrderModal from "./OrderCard";
@@ -130,6 +130,8 @@ export default function StatsPage() {
   const shownF = filters.filter((f) => !f.hide);
   const freq = shownF.filter((f) => FREQ.includes(f.key) || lists[f.key].length > 0);
   const rest = shownF.filter((f) => !freq.includes(f));
+  // телефон (B15): період і фільтри — двома чипами; усі фільтри в панелі «Фільтри»
+  const mobile = useMobile();
   const restActive = rest.filter((f) => lists[f.key].length).length + (upsell ? 1 : 0) + (search ? 1 : 0);
   const share = () => { navigator.clipboard?.writeText(window.location.href); };
 
@@ -160,12 +162,12 @@ export default function StatsPage() {
       </div>
 
       <div className="st-fbar">
-        {freq.map((f) => (
+        {(mobile ? [] : freq).map((f) => (
           <MultiSelect key={f.key} className="st-chip" label={f.label} placeholder={f.label} icon={f.icon} options={f.options} allowEmpty={f.empty}
             value={lists[f.key]} onChange={(v) => set({ [f.key]: v })} />
         ))}
         <button className={`st-more${showFilters ? " open" : ""}${restActive ? " on" : ""}`} onClick={() => setShowFilters((x) => !x)} aria-expanded={showFilters}>
-          <ListFilter size={14} />Ще {rest.length + 1} фільтрів і пошук{restActive ? ` · ${restActive}` : ""}<ChevronDown size={13} className={showFilters ? "rot" : ""} /></button>
+          <ListFilter size={14} />{mobile ? `Фільтри${activeCount ? ` · ${activeCount}` : ""}` : <>Ще {rest.length + 1} фільтрів і пошук{restActive ? ` · ${restActive}` : ""}</>}<ChevronDown size={13} className={showFilters ? "rot" : ""} /></button>
         {activeCount > 0 && <button className="link-btn" onClick={() => set(Object.fromEntries([...LIST_KEYS, "upsell", "search"].map((k) => [k, null])))}><RotateCcw size={13} />Скинути</button>}
       </div>
       {showFilters && (
@@ -173,7 +175,7 @@ export default function StatsPage() {
           <div className="st-search"><Search size={15} /><input type="search" placeholder="Пошук у полях 1–4 і коментарі" defaultValue={search}
             onKeyDown={(e) => { if (e.key === "Enter") set({ search: (e.target as HTMLInputElement).value.trim() }); }}
             onBlur={(e) => { if (e.target.value.trim() !== search) set({ search: e.target.value.trim() }); }} /></div>
-          {rest.map((f) => (
+          {(mobile ? [...freq, ...rest] : rest).map((f) => (
             <MultiSelect key={f.key} label={f.label} placeholder={f.label} icon={f.icon} options={f.options} allowEmpty={f.empty}
               value={lists[f.key]} onChange={(v) => set({ [f.key]: v })} />
           ))}
