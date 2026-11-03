@@ -15,7 +15,7 @@ import { MarkIcon } from "../components/marks";
 import type { Order, OrderList, OrderRow, Status } from "../lib/types";
 import {
   BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, MenuButton, MobileActs, PayCheck, RoundButton, Segmented, Sheet, StatusPill, Tabs,
-  useColumns, useMobile, useOutside, type DenseCol, type TabItem, EmptyState, Floating, HoverCard } from "../components/ui";
+  useColumns, useMobile, useOutside, type DenseCol, type TabItem, EmptyState, Floating, HoverCard, DatePop, DateRangeField, RangePicker, fmtRange } from "../components/ui";
 import OrderModal, { openTtnOnLoad } from "./OrderCard";
 
 const FILTERS = ["status", "q", "manager", "delivery", "src", "entity", "pm", "mark", "date_from", "date_to", "dup", "remind", "ttn"] as const;
@@ -560,8 +560,9 @@ function EndSentinel({ onEnd, busy, more, n }: { onEnd: () => void; busy: boolea
 const PERIODS = (): [string, string, string][] => {
   const t = new Date();
   const d = (shift: number) => { const x = new Date(t); x.setDate(x.getDate() - shift); return isoDay(x); };
-  return [["Сьогодні", d(0), d(0)], ["Сьогодні й учора", d(1), d(0)], ["7 днів", d(6), d(0)], ["30 днів", d(29), d(0)],
-    ["Цей місяць", isoDay(new Date(t.getFullYear(), t.getMonth(), 1)), d(0)]];
+  return [["Сьогодні", d(0), d(0)], ["Учора", d(1), d(1)], ["Сьогодні й учора", d(1), d(0)], ["7 днів", d(6), d(0)], ["30 днів", d(29), d(0)],
+    ["Цей місяць", isoDay(new Date(t.getFullYear(), t.getMonth(), 1)), d(0)],
+    ["Минулий місяць", isoDay(new Date(t.getFullYear(), t.getMonth() - 1, 1)), isoDay(new Date(t.getFullYear(), t.getMonth(), 0))]];
 };
 function FilterSheet({ f, onClose, onApply, onReset, sources }: {
   f: F; onClose: () => void; onApply: (p: Partial<F>) => void; onReset: () => void; sources: Record<number, { color: string }>;
@@ -588,7 +589,10 @@ function FilterSheet({ f, onClose, onApply, onReset, sources }: {
       <div className="fs-chips">{periods.map(([n, a, b]) => {
         const on = d.date_from === a && d.date_to === b;
         return <button key={n} type="button" className={`fs-chip${on ? " on" : ""}`} aria-pressed={on} onClick={() => setD({ ...d, date_from: on ? "" : a, date_to: on ? "" : b })}>{n}</button>;
-      })}</div>
+      })}
+        <DateRangeField className="fs-own" from={periods.some((p) => p[1] === d.date_from && p[2] === d.date_to) ? "" : d.date_from} to={periods.some((p) => p[1] === d.date_from && p[2] === d.date_to) ? "" : d.date_to}
+          presets={[]} label="Свій період" placeholder="Свій період" max={isoDay(new Date())} onChange={(a, b) => setD({ ...d, date_from: a, date_to: b })} />
+      </div>
       <div className="fs-l">Менеджер</div>
       {chips("manager", [...meta.managers.map((m) => ({ value: String(m.id), label: m.name })), { value: "none", label: "Без менеджера" }])}
       <div className="fs-l">Доставка</div>
@@ -602,35 +606,19 @@ function FilterSheet({ f, onClose, onApply, onReset, sources }: {
   );
 }
 
-// ---------------------------------------------------------------- чип дат: готові відрізки й свій період
+// ---------------------------------------------------------------- чип дат: готові відрізки й свій період (календар CRM, A4)
 function DateChip({ from, to, onChange }: { from: string; to: string; onChange: (a: string, b: string) => void }) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLSpanElement>(null);
-  useOutside(box, () => setOpen(false), open);
-  const today = new Date();
-  const d = (shift: number) => { const x = new Date(today); x.setDate(x.getDate() - shift); return isoDay(x); };
-  const monthStart = isoDay(new Date(today.getFullYear(), today.getMonth(), 1));
-  const presets: [string, string, string][] = [
-    ["Сьогодні", d(0), d(0)], ["Сьогодні й учора", d(1), d(0)], ["7 днів", d(6), d(0)], ["30 днів", d(29), d(0)], ["Цей місяць", monthStart, d(0)],
-  ];
+  const presets = PERIODS();
   const cur = presets.find((p) => p[1] === from && p[2] === to);
-  const label = cur ? cur[0] : from || to ? `${from || "…"} — ${to || "…"}` : undefined;
+  const label = cur ? cur[0] : from || to ? fmtRange(from, to) : undefined;
   return (
     <span className="chip-sel" ref={box}>
       <FilterChip label="Дата" value={label} icon={<CalendarDays size={13} />} onClick={() => setOpen((o) => !o)} onClear={() => onChange("", "")} />
-      {open && (
-        <div className="pop chip-pop date-pop">
-          {presets.map(([n, a, b]) => (
-            <button key={n} className={`pop-item${cur?.[0] === n ? " on" : ""}`} onClick={() => { onChange(a, b); setOpen(false); }}>
-              <span style={{ flex: 1 }}>{n}</span>{cur?.[0] === n && <Check size={14} />}
-            </button>
-          ))}
-          <div className="date-own">
-            <span className="lbl">Свій період</span>
-            <div><input type="date" value={from} onChange={(e) => onChange(e.target.value, to)} aria-label="Від" /><input type="date" value={to} onChange={(e) => onChange(from, e.target.value)} aria-label="До" /></div>
-          </div>
-        </div>
-      )}
+      <DatePop anchor={box.current} open={open} onClose={() => setOpen(false)} title="Період" width={444}>
+        <RangePicker from={from} to={to} max={isoDay(new Date())} presets={presets} onChange={(a, b) => { onChange(a, b); setOpen(false); }} />
+      </DatePop>
     </span>
   );
 }

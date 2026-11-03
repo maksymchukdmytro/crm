@@ -11,7 +11,7 @@ import { api, qs, ROOT } from "../lib/api";
 import { useMeta } from "../lib/app";
 import { dt, isoDay, money, phone } from "../lib/format";
 import type { Stats, StatsBreakdown, StatsOptions, StatsOrders, StatsProduct, StatsSegments, StatsSummary, Status } from "../lib/types";
-import { Empty, Pill, Spinner, Tabs , Select } from "../components/ui";
+import { DateRangeField, Empty, Pill, Spinner, Tabs, Select, isoDate } from "../components/ui";
 import MultiSelect, { EMPTY, type MsOption } from "../components/MultiSelect";
 import StatsChart, { type ChartStatus } from "../components/StatsChart";
 import OrderModal from "./OrderCard";
@@ -150,8 +150,7 @@ export default function StatsPage() {
             {PRESETS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Select><ChevronDown size={14} /></label>
           {preset === "custom" ? (
-            <span className="st-dates"><input type="date" value={from} max={to} onChange={(e) => set({ from: e.target.value })} /><span>—</span>
-              <input type="date" value={to} min={from} onChange={(e) => set({ to: e.target.value })} /></span>
+            <DateRangeField className="st-dates" from={from} to={to} presets={[]} label="Свій період" max={isoDate(new Date())} onChange={(a, b) => set({ from: a, to: b })} />
           ) : data && <span className="st-period">{data.date_from.split("-").reverse().join(".")} — {data.date_to.split("-").reverse().join(".")}</span>}
           <span className="seg st-group" role="radiogroup" aria-label="Групування">
             {GROUPS.map(([k, v]) => <button key={k} role="radio" aria-checked={group === k} className={group === k ? "on" : ""} onClick={() => set({ group: k === "auto" ? null : k })}>{v}</button>)}

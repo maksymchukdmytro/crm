@@ -1,6 +1,6 @@
 // Головна (UI-DESIGN §10, макет 04-holovna): 4 плитки (сьогодні, період, покупці, нові покупці), смуга «Потребує уваги»,
 // продажі по днях з пунктиром попереднього періоду, якість продажів (кільця з дельтою в пунктах), топ товарів і команда сьогодні.
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -11,7 +11,7 @@ import { api, qs } from "../lib/api";
 import { useMeta } from "../lib/app";
 import { isoDay, money, phone } from "../lib/format";
 import type { Dashboard } from "../lib/types";
-import { MenuButton, Segmented, Spinner, StatusPill, useMobile } from "../components/ui";
+import { DatePop, RangePicker, Segmented, Spinner, StatusPill, useMobile } from "../components/ui";
 import "./home.css";
 
 const WEEK = ["неділя", "понеділок", "вівторок", "середа", "четвер", "пʼятниця", "субота"];
@@ -38,7 +38,6 @@ export default function HomePage() {
   const prevM = ym(new Date(now.getFullYear(), now.getMonth() - 1, 1));
   const [period, setPeriod] = useState(cur);
   const mobile = useMobile();
-  const [custom, setCustom] = useState({ from: isoDay(new Date(now.getFullYear(), now.getMonth(), 1)), to: isoDay(now) });
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard", period], queryFn: () => api.get<Dashboard>(`/dashboard${qs({ period })}`), refetchInterval: 60_000, placeholderData: (p) => p,
   });
@@ -90,15 +89,7 @@ export default function HomePage() {
             onChange={(k) => { if (k !== "custom") setPeriod(k); }}
             items={[{ key: cur, label: MONTHS_NOM[now.getMonth()] }, { key: prevM, label: MONTHS_NOM[(now.getMonth() + 11) % 12] },
               { key: "custom", label: isMonth && (period === cur || period === prevM) ? "Свій період" : periodName }]} />
-          <MenuButton button={({ open, toggle }) => <button className="icon-btn" aria-label="Обрати свій період" aria-expanded={open} onClick={toggle}><CalendarDays size={16} /></button>}>
-            {(close) => (
-              <form className="hd-range" onSubmit={(e) => { e.preventDefault(); setPeriod(`${custom.from}..${custom.to}`); close(); }}>
-                <label>З<input type="date" value={custom.from} max={custom.to} onChange={(e) => setCustom({ ...custom, from: e.target.value })} /></label>
-                <label>По<input type="date" value={custom.to} min={custom.from} max={isoDay(now)} onChange={(e) => setCustom({ ...custom, to: e.target.value })} /></label>
-                <button className="btn primary sm">Показати</button>
-              </form>
-            )}
-          </MenuButton>
+          <PeriodPick period={period} onPick={(a, b) => setPeriod(`${a}..${b}`)} />
         </div>
       </div>
 
@@ -370,5 +361,20 @@ function HomeMobile({ data, periodName, attention, go, st }: {
         </section>
       )}
     </div>
+  );
+}
+
+// свій період головної: календар CRM з пресетами (A4)
+function PeriodPick({ period, onPick }: { period: string; onPick: (from: string, to: string) => void }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const [from, to] = period.includes("..") ? period.split("..") : ["", ""];
+  return (
+    <>
+      <button ref={ref} type="button" className="icon-btn" aria-label="Обрати свій період" aria-expanded={open} onClick={() => setOpen((o) => !o)}><CalendarDays size={16} /></button>
+      <DatePop anchor={ref.current} open={open} onClose={() => setOpen(false)} title="Свій період" width={444}>
+        <RangePicker from={from} to={to} max={isoDay(new Date())} onChange={(a, b) => { onPick(a, b); setOpen(false); }} />
+      </DatePop>
+    </>
   );
 }

@@ -11,7 +11,7 @@ import { dt, phone } from "../lib/format";
 import type { BlockedIp, Cashier, CustomerGroup, DirItem, LegalEntity, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { MarkLookPick } from "../components/marks";
-import { ColorPick, Badge, Button, Empty, Field, IconButton, MenuButton, NpAutocomplete, RoundButton, Select, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
+import { ColorPick, DateField, isoDate, Badge, Button, Empty, Field, IconButton, MenuButton, NpAutocomplete, RoundButton, Select, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
 
 type S = Settings;
 
@@ -895,7 +895,7 @@ function Shops({ s }: { s: S }) {
                       : <Field label="API-токен Prom" hint="Кабінет Prom → Налаштування → Керування API-токенами"><input className="mono" autoComplete="off" placeholder="не вказано" value={x.secret} onChange={(e) => upd(x.key, { secret: e.target.value })} /></Field>}
                   </div>
                   {x.kind === "rozetka" && <div className="cols"><Field label="Пароль кабінету продавця"><input type="password" autoComplete="new-password" placeholder={x.secret ? "збережено" : "не вказано"} value={x.secret === "********" ? "" : x.secret} onChange={(e) => upd(x.key, { secret: e.target.value || (x.id ? "********" : "") })} /></Field>
-                    <Field label="Імпортувати з дати" hint="Порожньо — останні 14 днів"><input type="date" value={x.since ? x.since.slice(0, 10) : ""} onChange={(e) => upd(x.key, { since: e.target.value || null })} /></Field></div>}
+                    <Field label="Імпортувати з дати" hint="Порожньо — останні 14 днів"><DateField value={x.since} clearable label="Імпортувати з дати" placeholder="Останні 14 днів" max={isoDate(new Date())} onChange={(d) => upd(x.key, { since: d || null })} /></Field></div>}
                   <div className="cols c3">
                     <Field label="Відділ" hint="У який відділ іти замовленням"><Select value={x.office_id ?? ""} onChange={(e) => upd(x.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
                       <option value="">не вказано</option>{s.offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</Select></Field>

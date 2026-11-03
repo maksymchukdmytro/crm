@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlarmClock, ArrowLeft, ArrowUpRight, Ban, Bell, Building2, Check, ChevronDown, ChevronLeft, CircleCheck, Copy, CreditCard, ExternalLink, FileText, History,
+  AlarmClock, ArrowLeft, ArrowUpRight, Ban, Bell, Building2, CalendarClock, Check, ChevronDown, ChevronLeft, CircleCheck, Copy, CreditCard, ExternalLink, FileText, History,
   ListChecks, Lock, MessageCircle, MessageSquare, MoreHorizontal, Pencil, Phone, Plus, Printer, Receipt, RefreshCw, ScanBarcode,
   Send, ShieldCheck, Tag as TagIcon, Trash2, Truck, Wallet, X,
 } from "lucide-react";
@@ -14,7 +14,7 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num, phone as fmtPhone } from "../lib/format";
 import type { Order } from "../lib/types";
 import {
-  Block, Button, Checklist, IconButton, MenuButton, PayCheck, Ring, RoundButton, Segmented, Select, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useMobile, useOutside,
+  Block, Button, Checklist, DateTimePicker, fmtDateTime, isoDate, IconButton, MenuButton, PayCheck, Ring, RoundButton, Segmented, Select, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useMobile, useOutside,
   type CheckItem,
 } from "../components/ui";
 import { flag, PayIcon, PayLabel } from "../components/payicons";
@@ -664,19 +664,28 @@ function RemindButton({ value, onChange }: { value: string; onChange: (v: string
     ["Через годину", () => local(new Date(Date.now() + 3600_000))], ["Сьогодні о 18:00", () => at(0, 18)],
     ["Завтра о 10:00", () => at(1, 10)], ["Через 3 дні", () => at(3, 10)],
   ];
+  // «Свій час» — календар і години в тому ж меню (A4), замість системного datetime-local
+  const [own, setOwn] = useState<string | null>(null);
   const due = value && new Date(value) <= new Date();
-  const label = value ? `Нагадування ${value.slice(8, 10)}.${value.slice(5, 7)} о ${value.slice(11, 16)}` : "Нагадати про замовлення";
+  const label = value ? `Нагадування ${fmtDateTime(value)}` : "Нагадати про замовлення";
   return (
     <MenuButton button={({ open, toggle }) => (
-      <button type="button" className={`icon-btn remind${value ? (due ? " due" : " on") : ""}`} aria-label={label} title={label} aria-expanded={open} onClick={toggle}>
+      <button type="button" className={`icon-btn remind${value ? (due ? " due" : " on") : ""}`} aria-label={label} title={label} aria-expanded={open}
+        onClick={() => { setOwn(null); toggle(); }}>
         {due ? <AlarmClock size={16} /> : <Bell size={16} />}
       </button>
     )}>
-      {(close) => (
+      {(close) => own != null ? (
+        <div className="dt-view">
+          <button type="button" className="dt-back" onClick={() => setOwn(null)}><ChevronLeft size={16} />Свій час</button>
+          <DateTimePicker value={own} min={isoDate(new Date())} onChange={setOwn} />
+          <Button variant="primary" icon={Bell} disabled={!own.slice(11)} onClick={() => { onChange(own); close(); }}>Нагадати {fmtDateTime(own)}</Button>
+        </div>
+      ) : (
         <div className="remind-menu">
           <div className="note-head">{value ? label : "Нагадати про замовлення"}</div>
           {presets.map(([t, f]) => <button key={t} className="pop-item" onClick={() => { onChange(f()); close(); }}>{t}</button>)}
-          <label className="remind-own"><span className="lbl">Свій час</span><input type="datetime-local" value={value} onChange={(e) => onChange(e.target.value)} /></label>
+          <button className="pop-item" onClick={() => setOwn(value || at(1, 10))}><CalendarClock size={15} />Свій час…</button>
           {value && <button className="pop-item danger" onClick={() => { onChange(""); close(); }}><X size={15} />Прибрати нагадування</button>}
         </div>
       )}

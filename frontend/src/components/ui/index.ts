@@ -13,3 +13,4 @@ export * from "./ColumnsMenu";
 export * from "./Select";
 export * from "./HoverCard";
 export * from "./ColorPick";
+export * from "./DatePick";

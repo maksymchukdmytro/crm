@@ -10,8 +10,7 @@
   margin-right: -14px; cursor: pointer; outline: none; min-width: 0; width: auto; height: 30px; }
 .st-sel > svg:last-child { pointer-events: none; color: var(--muted); }
 .st-period { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.st-dates { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
-.st-dates input { height: 32px; padding: 4px 8px; width: auto; }
+.st-dates.dfield { height: 32px; }
 .st-seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-field); overflow: hidden; margin-left: auto; background: #fff; }
 .st-seg button { border: 0; background: transparent; font: inherit; font-size: 12.5px; color: var(--ink-2); padding: 0 10px; height: 30px; cursor: pointer; }
 .st-seg button + button { border-left: 1px solid var(--line); }
