@@ -14,6 +14,7 @@ import "./customers.css";
 // сегменти (макет v26, 17): рахує сервер — за викупом, відмовами, кількістю отриманих і групою VIP
 const SEGS: [string, string, string][] = [["", "Усі", "#1F1F1C"], ["vip", "VIP", "#A16207"], ["regular", "Постійні", "#16A34A"],
   ["repeat", "Повторні", "#7C3AED"], ["new", "Нові", "#2E6BE6"], ["risk", "Ризик відмови", "#DC2626"]];
+const SEG_ONE: Record<string, string> = { vip: "VIP", regular: "Постійний", repeat: "Повторний", new: "Новий", risk: "Ризик відмови" };
 
 const SORTS: [string, string][] = [["last", "Останнє замовлення"], ["orders", "Кількість замовлень"], ["sum", "Сума отриманих"],
   ["refused", "Відмови"], ["buyout", "Викуп"], ["created", "Дата додавання"], ["name", "Ім'я"]];
@@ -108,8 +109,8 @@ export default function CustomersPage() {
                 <tr key={c.id} className={`clickable ${c.blacklisted ? "is-bl" : ""}`} onClick={() => nav(`/customers/${c.id}`)}>
                   <td><div className="cu-who"><span className="cu-av">{ini}</span>
                     <div><div className="cu-name">{c.blacklisted && <Ban size={14} className="bl-ico" />}{c.name || <span className="muted">Без імені</span>}</div>
-                      {c.group && <span className="cu-grp" style={{ ["--c" as string]: c.group_color || "#64748b" }}>{c.group}</span>}</div></div></td>
-                  <td>{seg ? <span className="pill" style={{ ["--c" as string]: seg[2] }}>{seg[1]}</span> : null}</td>
+                      {c.group && c.group_id !== data?.default_group_id && <span className="cu-grp" style={{ ["--c" as string]: c.group_color || "#64748b" }}>{c.group}</span>}</div></div></td>
+                  <td>{seg ? <span className="pill" style={{ ["--c" as string]: seg[2] }}>{SEG_ONE[seg[0]]}</span> : null}</td>
                   <td><span className="cu-ring" title={b == null ? "Ще немає отриманих чи відмов" : `Отримано ${c.delivered}, відмов ${c.refused}`}>
                     <Ring value={b == null ? "—" : Math.round(b)} frac={b == null ? 0 : b / 100} color={b == null ? "var(--faint)" : b >= 70 ? "#16A34A" : b >= 40 ? "#D97706" : "#DC2626"} size={34} stroke={3.5} />
                     <small className="muted">{b == null ? "ще немає" : "%"}</small></span></td>

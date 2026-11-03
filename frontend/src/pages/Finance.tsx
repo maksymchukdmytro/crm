@@ -1,29 +1,29 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BarChart3, History, Upload, Wallet } from "lucide-react";
+import { Banknote, BarChart3, CircleCheck, HandCoins, History, TriangleAlert, Upload, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, qs } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { date, dt, isoDay, money } from "../lib/format";
 import type { Audit, Payment, Payments, Registry, Report as ReportData } from "../lib/types";
-import { Badge, Empty, Kpi, Spinner , Select } from "../components/ui";
+import { Empty, Kpi, Spinner , Select } from "../components/ui";
 
 // ================================================================ оплати
 
 export function PaymentsPage() {
-  const meta = useMeta();
+  // макет v26 (19): зведення зверху й групи — що оплатили клієнти (позначити отриманим), що чекаємо, де розбіжність, що надійшло (за реєстрами)
   const nav = useNavigate();
   const qc = useQueryClient();
   const toast = useToast();
-  const [status, setStatus] = useState("collected");
   const [sel, setSel] = useState<Set<number>>(new Set());
   const [ref, setRef] = useState("");
   const [report, setReport] = useState<Registry | null>(null);
+  const [openG, setOpenG] = useState<Record<string, boolean>>({});
   const fileRef = useRef<HTMLInputElement>(null);
-  const { data } = useQuery({ queryKey: ["payments", status], queryFn: () => api.get<Payments>(`/payments${qs({ status })}`) });
+  const { data } = useQuery({ queryKey: ["payments", "all"], queryFn: () => api.get<Payments>(`/payments${qs({ status: "" })}`) });
   const receive = useMutation({
     mutationFn: () => api.post<{ done: number }>("/payments/receive", { ids: [...sel], reference: ref }),
-    onSuccess: (r) => { toast(`Позначено як отримані: ${r.done}`); setSel(new Set()); qc.invalidateQueries({ queryKey: ["payments"] }); },
+    onSuccess: (r) => { toast(`Позначено як отримані: ${r.done}`); setSel(new Set()); setRef(""); qc.invalidateQueries({ queryKey: ["payments"] }); },
     onError: (e) => toast(errText(e), "error"),
   });
   const upload = useMutation({
@@ -34,20 +34,66 @@ export function PaymentsPage() {
     },
     onError: (e) => toast(errText(e), "error"),
   });
-  const t = data?.totals ?? {};
-  const selectable = (p: Payment) => p.status === "expected" || p.status === "collected";
+  const items = data?.items ?? [];
+  const sum = (xs: Payment[], f: (p: Payment) => number = (p) => p.amount) => xs.reduce((a, p) => a + f(p), 0);
+  const weekAgo = Date.now() - 7 * 86400_000;
+  const collected = items.filter((p) => p.status === "collected");
+  const expected = items.filter((p) => p.status === "expected");
+  const received = items.filter((p) => p.status === "received");
+  const mismatch = received.filter((p) => p.received_amount != null && Math.abs(p.received_amount - p.amount) > 0.009);
+  const week = received.filter((p) => p.received_at && new Date(p.received_at).getTime() >= weekAgo);
+  // надійшло — групами за реєстром / приміткою виписки, без неї — за днем зарахування
+  const regs = new Map<string, Payment[]>();
+  received.filter((p) => !mismatch.includes(p)).forEach((p) => {
+    const k = p.reference ? `Реєстр · ${p.reference}` : `Зараховано ${date(p.received_at)}`;
+    regs.set(k, [...(regs.get(k) ?? []), p]);
+  });
+  const ageDays = (iso?: string | null) => (iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86400_000) : 0);
+  const toggle = (id: number) => setSel((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const row = (p: Payment, kind: "collected" | "expected" | "bad" | "ok") => (
+    <div key={p.id} className={`py-r${sel.has(p.id) ? " on" : ""}`}>
+      {kind === "collected" ? <input type="checkbox" checked={sel.has(p.id)} onChange={() => toggle(p.id)} aria-label={`Вибрати №${p.order_id}`} /> : <span />}
+      <button type="button" className="py-no" onClick={() => nav(`/orders/${p.order_id}`)}>№{p.order_id}</button>
+      <span className="ell">{p.customer || "—"}</span>
+      <span className="mono muted py-ttn">{p.ttn}</span>
+      <span className={`py-st ${kind}`}>{kind === "collected" ? `оплачено клієнтом ${date(p.collected_at)}`
+        : kind === "expected" ? (ageDays(p.created_at) > 4 ? `у дорозі ${ageDays(p.created_at)} дн` : "чекаємо")
+          : kind === "bad" ? "сума не збігається" : `надійшло ${date(p.received_at)}`}</span>
+      <b className="num py-sum">{kind === "bad" ? <>{money(p.amount)} → {money(p.received_amount ?? 0)} ₴</> : <>{money(p.amount)} ₴</>}</b>
+    </div>
+  );
+  const group = (key: string, title: string, tone: string, list: Payment[], kind: "collected" | "expected" | "bad" | "ok", total: string, extra?: ReactNode) => {
+    if (!list.length) return null;
+    const all = openG[key];
+    const shown = all ? list : list.slice(0, 5);
+    return (
+      <section key={key} className="py-g">
+        <div className="py-gh"><i style={{ background: tone }} /><b>{title}</b><span className="muted">{list.length}</span><span className="sp" />{extra}<b style={{ color: tone }}>{total}</b></div>
+        {shown.map((p) => row(p, kind))}
+        {list.length > 5 && <button type="button" className="py-more" onClick={() => setOpenG({ ...openG, [key]: !all })}>{all ? "Згорнути" : `і ще ${list.length - 5}`}</button>}
+      </section>
+    );
+  };
+  const allCollected = collected.length > 0 && collected.every((p) => sel.has(p.id));
   return (
-    <div>
-      <div className="head"><h1><span className="h-ico"><Wallet size={18} /></span>Накладені платежі</h1>
+    <div className="pay-v2">
+      <div className="head"><h1><span className="h-ico"><Wallet size={18} /></span>Оплати</h1>
         <div className="actions">
           <input ref={fileRef} type="file" accept=".csv,.txt" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) upload.mutate(f); e.target.value = ""; }} />
-          <button className="btn" onClick={() => fileRef.current?.click()} disabled={upload.isPending}><Upload size={15} /> Імпорт реєстру CSV</button>
+          <button className="btn" onClick={() => fileRef.current?.click()} disabled={upload.isPending}><Upload size={15} /> Імпорт реєстру НП (CSV)</button>
         </div></div>
-      <div className="kpis">
-        {Object.entries(meta.payment_statuses).map(([k, n]) => <Kpi key={k} label={n} value={`${money(t[k]?.sum ?? 0)} ₴`} sub={`${t[k]?.count ?? 0} відправлень`} />)}
+      <div className="py-tiles">
+        {([[HandCoins, "orange", "Післяплата в дорозі", `${money(sum(expected))} ₴`, `${expected.length} відправлень`],
+          [Banknote, "blue", "Оплачено клієнтом — до зарахування", `${money(sum(collected))} ₴`, `${collected.length} відправлень`],
+          [CircleCheck, "green", "Надійшло за 7 днів", `${money(sum(week, (p) => p.received_amount ?? p.amount))} ₴`, `${week.length} відправлень`],
+          [TriangleAlert, "red", "Розбіжності", String(mismatch.length), mismatch.length ? `на ${money(sum(mismatch, (p) => p.amount - (p.received_amount ?? 0)))} ₴` : "усе збігається"]] as const)
+          .map(([I, t, l, v, sub]) => (
+            <div key={l} className="py-tile"><span className={`sq ${t}`}><I size={17} /></span><div><small>{l}</small><b>{v}</b><small className="s">{sub}</small></div></div>
+          ))}
       </div>
       {report && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card" style={{ marginBottom: 12 }}>
           <div className="card-head"><h2>Результат звірки</h2><button className="btn sm ghost" onClick={() => setReport(null)}>Закрити</button></div>
           {report.mismatch.length > 0 && <><h3>Розбіжність суми ({report.mismatch.length})</h3>
             <table className="t dense"><tbody>{report.mismatch.map((r) => <tr key={r.ttn}><td className="mono">{r.ttn}</td><td><a onClick={() => nav(`/orders/${r.order_id}`)}>№{r.order_id}</a></td><td className="num">очікували {money(r.expected)}</td><td className="num lowstock">отримали {money(r.amount)}</td></tr>)}</tbody></table></>}
@@ -56,33 +102,20 @@ export function PaymentsPage() {
           {!report.mismatch.length && !report.not_found.length && <p>Усі рядки реєстру збіглися з очікуваними сумами.</p>}
         </div>
       )}
-      <div className="tabs">
-        {Object.entries(meta.payment_statuses).map(([k, n]) => <a key={k} className={status === k ? "on" : ""} onClick={() => { setStatus(k); setSel(new Set()); }}>{n} <span className="n">{t[k]?.count ?? 0}</span></a>)}
-        <a className={!status ? "on" : ""} onClick={() => setStatus("")}>Усі</a>
-      </div>
-      <div className="card flush">
-        {sel.size > 0 && <div className="bulk on">Вибрано: <strong>{sel.size}</strong>
-          <input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Примітка (№ виписки)" style={{ width: 220 }} />
-          <button className="btn primary sm" onClick={() => receive.mutate()}>Позначити «Гроші отримано»</button></div>}
-        <div className="tablewrap"><table className="t dense pay-table m-cards">
-          <thead><tr><th className="sel" /><th>Замовлення</th><th>ТТН</th><th>Служба</th><th className="num">Сума</th><th>Статус</th><th>Дата</th></tr></thead>
-          <tbody>
-            {!data && <tr><td colSpan={7}><Empty><Spinner /></Empty></td></tr>}
-            {data?.items.map((p) => (
-              <tr key={p.id} className={sel.has(p.id) ? "sel-on" : ""}>
-                <td className="sel">{selectable(p) && <input type="checkbox" checked={sel.has(p.id)} onChange={() => setSel((s) => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} />}</td>
-                <td><a onClick={() => nav(`/orders/${p.order_id}`)}><b>№{p.order_id}</b></a> <span className="muted">{p.customer}</span></td>
-                <td className="mono">{p.ttn}</td><td>{meta.delivery_methods[p.method] ?? p.method}</td>
-                <td className="num">{money(p.amount, true)}{p.received_amount !== null && p.received_amount !== p.amount && <span className="sub lowstock">отримано {money(p.received_amount, true)}</span>}</td>
-                <td><Badge kind={p.status === "received" ? "ok" : p.status === "cancelled" ? "bad" : p.status === "collected" ? "info" : "warn"}>{p.status_name}</Badge></td>
-                <td className="nowrap">{date(p.received_at || p.collected_at || p.created_at)}</td>
-              </tr>
-            ))}
-            {data && !data.items.length && <tr><td colSpan={7}><Empty>Немає платежів</Empty></td></tr>}
-          </tbody>
-        </table></div>
-      </div>
-      <p className="hint mt">При відправці замовлення з накладеним платежем створюється очікуваний платіж. Коли трекінг показує, що посилку отримано, — «Оплачено клієнтом». Після імпорту реєстру або ручної позначки — «Гроші отримано». Відмови скасовують платіж автоматично.</p>
+      {!data ? <Empty><Spinner /></Empty> : !items.length ? <Empty>Платежів ще немає. Вони з'являються самі, коли відправляється замовлення з післяплатою.</Empty> : (<>
+        {group("collected", "Оплачено клієнтом — позначте, коли гроші надійдуть", "#2E6BE6", collected, "collected", `${money(sum(collected))} ₴`,
+          <label className="py-all" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={allCollected} onChange={() => setSel(allCollected ? new Set() : new Set(collected.map((p) => p.id)))} />усі</label>)}
+        {group("bad", "Розбіжності", "#DC2626", mismatch, "bad", String(mismatch.length))}
+        {group("expected", "Очікуються · у дорозі й на пошті", "#D97706", expected, "expected", `${money(sum(expected))} ₴`)}
+        {[...regs.entries()].map(([k, list]) => group(k, k, "#16A34A", list, "ok", `надійшло ${money(sum(list, (p) => p.received_amount ?? p.amount))} ₴`))}
+      </>)}
+      {sel.size > 0 && (
+        <div className="bulkbar py-bulk"><span>Вибрано: <b>{sel.size}</b> на <b>{money(sum(collected.filter((p) => sel.has(p.id))))} ₴</b></span>
+          <input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="№ реєстру або виписки" aria-label="Примітка" />
+          <button className="btn primary sm" disabled={receive.isPending} onClick={() => receive.mutate()}>Гроші отримано</button>
+          <button className="btn quiet sm" onClick={() => setSel(new Set())}>Скасувати</button></div>
+      )}
+      <p className="hint mt">Платіж створюється сам, коли відправляється замовлення з післяплатою. Трекінг показує «отримано» — платіж переходить в «Оплачено клієнтом». Після імпорту реєстру НП або ручної позначки — «Гроші отримано». Відмови скасовують платіж автоматично.</p>
     </div>
   );
 }

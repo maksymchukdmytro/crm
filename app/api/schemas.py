@@ -1592,6 +1592,7 @@ class CustomerListOut(Out):
     offset: int
     rows: list[CustomerOut]
     segments: dict[str, int] = Field(default_factory=dict, description="Скільки покупців у кожному сегменті за поточним пошуком і групою")
+    default_group_id: int | None = Field(None, description="Група, яку отримує новий покупець (у списку її не підписуємо)")
 
 
 class CustomerComm(Out):

@@ -2620,6 +2620,11 @@ export interface components {
         };
         /** CustomerListOut */
         CustomerListOut: {
+            /**
+             * Default Group Id
+             * @description Група, яку отримує новий покупець (у списку її не підписуємо)
+             */
+            default_group_id?: number | null;
             /** Offset */
             offset: number;
             /** Rows */

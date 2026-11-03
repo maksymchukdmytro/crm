@@ -48,3 +48,6 @@
 .cu-b:hover { background: #E8E8E5; }
 .cu-b.v { background: #F1ECFB; color: #7C3AED; }
 .cu-b.t { background: var(--accent-soft); color: var(--accent); }
+.cu-ring .ring { position: relative; display: grid; place-items: center; flex: none; text-align: center; font-weight: 600; line-height: 1; }
+.cu-ring .ring svg { position: absolute; inset: 0; }
+.cu-ring .ring-v { position: relative; }

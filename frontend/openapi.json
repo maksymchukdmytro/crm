@@ -1517,6 +1517,18 @@
    },
    "CustomerListOut": {
     "properties": {
+     "default_group_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Група, яку отримує новий покупець (у списку її не підписуємо)",
+      "title": "Default Group Id"
+     },
      "offset": {
       "title": "Offset",
       "type": "integer"
