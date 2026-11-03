@@ -1,7 +1,7 @@
 // Список замовлень (макети v20, рішення власника 03.11): три вигляди на ПК — «Таблиця», «Картки» (щільніші за макет) і «Скринька»
 // (вузький список ліворуч + картка праворуч без вікна); «Дошка» — окрема сторінка. Шапка: назва з підсумком, пошук, фільтри,
 // вигляд і «+ Замовлення»; під нею вкладки статусів, а праворуч — лише ввімкнені фільтри (усі — під кнопкою фільтрів).
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -274,6 +274,15 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     inboxKey.current = filterKey;
   }, [view, rows, id, filterKey, query.isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // скринька: вибране завжди видно в списку, а біля кінця завантаженого — догружаємо наступну сотню, щоб J не впирався
+  const ibList = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (view !== "inbox" || !id) return;
+    ibList.current?.querySelector<HTMLElement>(".ib-item.on")?.scrollIntoView({ block: "nearest" });
+    const i = rows.findIndex((r) => r.id === Number(id));
+    if (i >= 0 && i >= rows.length - 5) endReached();
+  }, [view, id, rows.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // дія в картці за станом: прийняти → ТТН → нагадати SMS → відкрити
   const cardAction = (o: OrderRow) => {
     const code = statuses[o.status_id]?.code;
@@ -323,6 +332,46 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
       {!mobile && !search && <kbd aria-hidden>/</kbd>}
     </label>
   );
+  // картка в сітці й рядок скриньки: малюються через Tile (memo), тож догрузка ще 100 замовлень не перемальовує тисячі вже показаних
+  const cardTile = (o: OrderRow, cur: boolean) => {
+    const due = o.remind_at && new Date(o.remind_at) <= new Date();
+    const warn = o.blacklisted ? "Покупець у чорному списку" : o.no_stock ? "Товару не вистачає на складі" : o.duplicate_of_id ? `Можливий дубль №${o.duplicate_of_id}` : "";
+    const mk = o.mark_id ? marks[o.mark_id] : null;
+    const g = goodsOf(o);
+    return (
+      <article role="listitem" tabIndex={0} className={`ocd${cur ? " cur" : ""}${due ? " due" : ""}`}
+        onClick={() => open(o.id)} onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) open(o.id); }}>
+        <div className="ocd-top">
+          <StatusPill status={statuses[o.status_id]} />
+          {warn && <span className={`mc-flag ${o.blacklisted || o.no_stock ? "bad" : "warn"}`} title={warn} aria-label={warn}><CircleAlert size={13} /></span>}
+          {due && <span className="mc-flag bad" title="Нагадування настало" aria-label="Нагадування настало"><AlarmClock size={13} /></span>}
+          {mk && <span className="mc-flag" style={{ background: `color-mix(in srgb, ${mk.color} 14%, white)` }} title={mk.name}><MarkIcon icon={mk.icon} color={mk.color} size={12} /></span>}
+          <span className="ocd-meta" title={whenLabel(o.created_at)}>№{o.id} · {shortWhen(o.created_at)}</span>
+        </div>
+        <div className="ocd-name"><b title={o.customer_name}>{o.customer_name || <span className="muted">без імені</span>}</b><span className="sum">{money(o.total)} ₴</span></div>
+        <div className="ocd-row">
+          <span className="ocd-thumb" aria-hidden><Package size={13} /></span>
+          <span className="ocd-goods" title={o.items.map((i) => `${i.name} × ${i.qty}`).join(", ")}>{g.first}{g.rest > 0 && <span className="more"> +{g.rest}</span>}</span>
+          {dlvShort(o)}
+        </div>
+        <div className="ocd-acts">
+          {o.phone ? <a className="ocd-go ph" href={`tel:+${o.phone.replace(/\D/g, "")}`} onClick={(e) => e.stopPropagation()} aria-label={`Подзвонити ${phone(o.phone)}`} title={phone(o.phone)}><Phone size={15} /></a>
+            : <span className="ocd-go ph off" aria-hidden><Phone size={15} /></span>}
+          {cardAction(o)}
+        </div>
+      </article>
+    );
+  };
+  const inboxItem = (o: OrderRow, cur: boolean) => {
+    const st = statuses[o.status_id];
+    const g = goodsOf(o);
+    return (
+      <button type="button" role="option" aria-selected={cur} className={`ib-item${cur ? " on" : ""}`} onClick={() => nav(`${base}/${o.id}${window.location.search}`, { replace: true })}>
+        <span className="r1"><i style={{ background: st?.color ?? "var(--faint)" }} title={st?.name} /><b>{o.customer_name || "без імені"}</b><span className="s">{money(o.total)} ₴</span></span>
+        <span className="r2"><span className="no">№{o.id}</span><span className="ell">{g.first}{g.rest > 0 && ` +${g.rest}`}</span><span className="t">{shortWhen(o.created_at)}</span></span>
+      </button>
+    );
+  };
   const emptyBox = (
     <div className="empty-state">
       {!(anyFilter || f.q) && !isUnsorted ? <EmptyState icon={ReceiptText} title="Замовлень поки немає" text="Заявки з лендингів і маркетплейсів з'являться тут самі. Або створіть замовлення вручну"
@@ -381,55 +430,17 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
           {query.isLoading ? <div className="ocd-grid">{Array.from({ length: 12 }, (_, i) => <div key={i} className="ocd sk"><span className="skel" /><span className="skel" /><span className="skel" /></div>)}</div>
             : !rows.length ? <div className="dense-empty">{emptyBox}</div> : (
               <div className="ocd-grid" role="list" aria-label="Замовлення">
-                {rows.map((o) => {
-                  const due = o.remind_at && new Date(o.remind_at) <= new Date();
-                  const warn = o.blacklisted ? "Покупець у чорному списку" : o.no_stock ? "Товару не вистачає на складі" : o.duplicate_of_id ? `Можливий дубль №${o.duplicate_of_id}` : "";
-                  const mk = o.mark_id ? marks[o.mark_id] : null;
-                  const g = goodsOf(o);
-                  return (
-                    <article key={o.id} role="listitem" tabIndex={0} className={`ocd${id && Number(id) === o.id ? " cur" : ""}${due ? " due" : ""}`}
-                      onClick={() => open(o.id)} onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) open(o.id); }}>
-                      <div className="ocd-top">
-                        <StatusPill status={statuses[o.status_id]} />
-                        {warn && <span className={`mc-flag ${o.blacklisted || o.no_stock ? "bad" : "warn"}`} title={warn} aria-label={warn}><CircleAlert size={13} /></span>}
-                        {due && <span className="mc-flag bad" title="Нагадування настало" aria-label="Нагадування настало"><AlarmClock size={13} /></span>}
-                        {mk && <span className="mc-flag" style={{ background: `color-mix(in srgb, ${mk.color} 14%, white)` }} title={mk.name}><MarkIcon icon={mk.icon} color={mk.color} size={12} /></span>}
-                        <span className="ocd-meta" title={whenLabel(o.created_at)}>№{o.id} · {shortWhen(o.created_at)}</span>
-                      </div>
-                      <div className="ocd-name"><b title={o.customer_name}>{o.customer_name || <span className="muted">без імені</span>}</b><span className="sum">{money(o.total)} ₴</span></div>
-                      <div className="ocd-row">
-                        <span className="ocd-thumb" aria-hidden><Package size={13} /></span>
-                        <span className="ocd-goods" title={o.items.map((i) => `${i.name} × ${i.qty}`).join(", ")}>{g.first}{g.rest > 0 && <span className="more"> +{g.rest}</span>}</span>
-                        {dlvShort(o)}
-                      </div>
-                      <div className="ocd-acts">
-                        {o.phone ? <a className="ocd-go ph" href={`tel:+${o.phone.replace(/\D/g, "")}`} onClick={(e) => e.stopPropagation()} aria-label={`Подзвонити ${phone(o.phone)}`} title={phone(o.phone)}><Phone size={15} /></a>
-                          : <span className="ocd-go ph off" aria-hidden><Phone size={15} /></span>}
-                        {cardAction(o)}
-                      </div>
-                    </article>
-                  );
-                })}
+                {rows.map((o) => <Tile key={o.id} o={o} cur={!!id && Number(id) === o.id} render={cardTile} />)}
               </div>
             )}
           <EndSentinel onEnd={endReached} busy={query.isFetchingNextPage} more={!!query.hasNextPage} n={rows.length} />
         </div>
       ) : view === "inbox" ? (
         <div className="ib">
-          <div className="ib-list" role="listbox" aria-label="Замовлення">
+          <div className="ib-list" ref={ibList} role="listbox" aria-label="Замовлення">
             {query.isLoading ? Array.from({ length: 8 }, (_, i) => <div key={i} className="ib-item sk"><span className="skel" /><span className="skel" /></div>)
               : !rows.length ? <div className="ib-empty">{emptyBox}</div>
-                : rows.map((o) => {
-                  const st = statuses[o.status_id];
-                  const g = goodsOf(o);
-                  const cur = !!id && Number(id) === o.id;
-                  return (
-                    <button key={o.id} type="button" role="option" aria-selected={cur} className={`ib-item${cur ? " on" : ""}`} onClick={() => nav(`${base}/${o.id}${window.location.search}`, { replace: true })}>
-                      <span className="r1"><i style={{ background: st?.color ?? "var(--faint)" }} title={st?.name} /><b>{o.customer_name || "без імені"}</b><span className="s">{money(o.total)} ₴</span></span>
-                      <span className="r2"><span className="no">№{o.id}</span><span className="ell">{g.first}{g.rest > 0 && ` +${g.rest}`}</span><span className="t">{shortWhen(o.created_at)}</span></span>
-                    </button>
-                  );
-                })}
+                : rows.map((o) => <Tile key={o.id} o={o} cur={!!id && Number(id) === o.id} render={inboxItem} />)}
             <EndSentinel onEnd={endReached} busy={query.isFetchingNextPage} more={!!query.hasNextPage} n={rows.length} />
           </div>
           <div className="ib-pane">
@@ -490,6 +501,11 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     </div>
   );
 }
+
+// Плитка списку: перемальовується лише коли змінилось саме замовлення чи вибір (функція малювання бере свіже з замикання)
+const Tile = memo(function Tile({ o, cur, render }: { o: OrderRow; cur: boolean; render: (o: OrderRow, cur: boolean) => ReactNode }) {
+  return <>{render(o, cur)}</>;
+}, (a, b) => a.o === b.o && a.cur === b.cur);
 
 // ---------------------------------------------------------------- догрузка наступної сторінки, коли низ списку видно (картки, скринька)
 function EndSentinel({ onEnd, busy, more, n }: { onEnd: () => void; busy: boolean; more: boolean; n: number }) {

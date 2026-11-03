@@ -62,6 +62,9 @@
   .ocd:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .ocd.cur { box-shadow: 0 0 0 1.5px var(--accent); }
   .ocd.due { box-shadow: inset 3px 0 0 var(--bad); }
+  /* тисячі карток після прокрутки: те, що поза екраном, браузер не малює */
+  .ocd:not(.sk) { content-visibility: auto; contain-intrinsic-size: auto 132px; }
+  .ib-item:not(.sk) { content-visibility: auto; contain-intrinsic-size: auto 58px; }
   .ocd.sk { min-height: 128px; gap: 12px; cursor: default; }
   .ocd-top { display: flex; align-items: center; gap: 5px; min-width: 0; height: 22px; }
   .ocd-top .pill { height: 20px; font-size: 11.5px; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
