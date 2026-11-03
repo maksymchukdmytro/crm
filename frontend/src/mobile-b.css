@@ -97,3 +97,57 @@
   .det-comment { width: 100%; min-height: 48px; font-size: 15px; border-radius: 14px; }
   .det-edit { min-height: 44px; padding: 0 4px; font-size: 14px; }
 }
+
+@media (max-width: 768px) {
+  /* B9 · ліди: після дзвінка — результат прямо в картці, спроби крапками */
+  .ml-t small { display: flex; align-items: center; gap: 8px; }
+  .ml-t small .ld-dots { flex: none; }
+  .ml-res { padding: 0 12px 12px; }
+  .ml-res .ld-res { display: flex; gap: 8px; width: 100%; }
+  .ml-res .ld-rb { height: 44px; flex: none; width: 52px; justify-content: center; border-radius: 12px; font-size: 14px; }
+  .ml-res .ld-rb:first-child { flex: 1; width: auto; gap: 8px; }
+  .m-card.exp { box-shadow: 0 0 0 1.5px var(--accent-line); }
+  /* B10 · новий лід — шторкою, кнопка на всю ширину */
+  .nl-foot { display: flex; width: 100%; }
+  .nl-foot .btn { flex: 1; height: 52px; justify-content: center; font-size: 16px; border-radius: 16px; }
+  .m-sheet .new-lead input { height: 48px; font-size: 16px; }
+}
+
+@media (max-width: 768px) {
+  /* B11 · покупці: сегменти чипами, кільце викупу, дзвінок у картці */
+  .customers .cu-segs { flex-wrap: nowrap; overflow-x: auto; margin: 0 calc(-1 * var(--m-pad)) 10px; padding: 0 var(--m-pad); scrollbar-width: none; }
+  .customers .cu-segs::-webkit-scrollbar { display: none; }
+  .customers .cu-segs button { flex: none; height: 40px; padding: 0 14px; border-color: #E6E6E3; background: #fff; font-size: 14px; }
+  .customers .cu-segs button.on { background: var(--accent-soft); border-color: var(--accent-line); color: #1F4FB8; }
+  .customers .cu-segs button.bl { color: var(--bad-ink); }
+  .cu-mcard.v2 { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 14px; }
+  .cu-mcard.v2 .cu-mt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .cu-mcard.v2 .cu-mt > b { display: flex; align-items: center; gap: 5px; font-size: 16px; font-weight: 600; }
+  .cu-mcard.v2 .cu-m3 { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12.5px; color: var(--muted); }
+  .cu-mcard.v2 .cu-m3 .pill { flex: none; }
+  .cu-mcard.v2 .cu-grp { flex: none; }
+  .cu-mcard.v2.is-bl { background: #FFF7F7; }
+}
+
+@media (max-width: 768px) {
+  /* B12 · товари: пошук на всю ширину + фільтри шторкою, швидкі чипи, смужка залишку з прогнозом */
+  .pr-mfilters { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .pr-msearch { flex: 1; min-width: 0; display: flex !important; flex-direction: row !important; align-items: center; gap: 8px; height: 48px; padding: 0 14px;
+    border-radius: 16px; background: #fff; color: var(--muted); }
+  .pr-msearch input { flex: 1; min-width: 0; height: 44px; border: 0 !important; padding: 0; background: none; box-shadow: none !important; font-size: 16px; }
+  .pr-mfilters .rb { position: relative; flex: none; }
+  .pr-quick { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--m-pad)) 10px; padding: 0 var(--m-pad); }
+  .pr-quick::-webkit-scrollbar { display: none; }
+  .pr-qc { flex: none; height: 40px; padding: 0 14px; font-size: 14px; border-color: #E6E6E3; background: #fff; }
+  .pr-fs { display: flex; flex-direction: column; gap: 12px; }
+  .pr-mrow.v2 { align-items: center; }
+  .pr-mrow.v2 .pr-mt { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+  .pr-mrow.v2 .pr-mt > b { font-size: 15.5px; font-weight: 550; }
+  .pr-mrow.v2 small { font-size: 12.5px; color: var(--muted); }
+  .pr-mrow.v2 small .ok { color: var(--ok-ink); } .pr-mrow.v2 small .warn { color: var(--warn-ink); } .pr-mrow.v2 small .bad { color: var(--bad-ink); }
+  .pr-mstock { display: flex; align-items: center; gap: 10px; margin-top: 3px; }
+  .pr-mstock .pr-bar { flex: 1; width: auto; }
+  .pr-mstock em { font-style: normal; font-size: 12.5px; font-weight: 550; white-space: nowrap; color: var(--ok-ink); }
+  .pr-mstock.warn em { color: var(--warn-ink); } .pr-mstock.bad em { color: var(--bad-ink); }
+  .pr-mstock.warn .pr-bar > i { background: var(--warn); } .pr-mstock.bad .pr-bar > i { background: var(--bad); }
+}

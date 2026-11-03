@@ -4,14 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Archive, BadgeCheck, Boxes, Check, ChevronLeft, ChevronRight, Copy, Factory, FolderTree, Globe, GripVertical, ImagePlus, MoreHorizontal, Package, Plus, ShoppingCart, Tags, Trash2, TriangleAlert, Wand2, X,
+  Archive, BadgeCheck, Boxes, Check, ChevronLeft, ChevronRight, Copy, Factory, FolderTree, Globe, GripVertical, ImagePlus, ListFilter, MoreHorizontal, Package, Plus, Search, ShoppingCart, Tags, Trash2, TriangleAlert, Wand2, X,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { AttributeGroup, Category, Manufacturer, Product, ProductDetail } from "../lib/types";
 type ProductSummary = { days: number; qty: number; sum: number; margin: number; buyout_rate: number | null; upsell_share: number | null; orders: number; sold_total: number };
-import { Badge, Block, Button, ask, NumberField, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, Tag, Toggle, Window, useMobile , Select, EmptyState } from "../components/ui";
+import { Badge, Block, Button, ask, NumberField, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Sheet, Spinner, Tag, Toggle, Window, useMobile , Select, EmptyState } from "../components/ui";
 import MultiSelect from "../components/MultiSelect";
 import { MovesTable } from "./Catalog";
 import "./products.css";
@@ -81,11 +81,46 @@ function ProductList({ editable }: { editable: boolean }) {
   const nav = useNavigate();
   const [lossOnly, setLossOnly] = useState(false);
   const rowsShown = lossOnly ? data?.filter(isLoss) : data;
+  const [fsheet, setFsheet] = useState(false);
+  const quick = (
+    <div className="pr-quick" role="radiogroup" aria-label="Швидкий фільтр">
+      {([["", "Усі"], ["low", "Закінчуються"], ["out", "Немає"], ["loss", "Збиткові"]] as const).map(([k, n]) => {
+        const cnt = k === "loss" ? (data ?? []).filter(isLoss).length : null;
+        const on = k === "loss" ? lossOnly : !lossOnly && stockState === k;
+        return <button key={k} type="button" role="radio" aria-checked={on} className={`pr-qc${on ? " on" : ""}`}
+          onClick={() => { if (k === "loss") { setLossOnly(!lossOnly); setStockState(""); } else { setLossOnly(false); setStockState(k); } }}>
+          {k === "low" && <TriangleAlert size={13} />}{n}{cnt ? <em>{cnt}</em> : null}</button>;
+      })}
+    </div>
+  );
 
   return (
     <>
       {editable && <MobileActs><RoundButton icon={Plus} label="Новий товар" primary onClick={() => setEdit("new")} /></MobileActs>}
-      <div className="filters">
+      {mobile && (
+        <div className="pr-mfilters">
+          <label className="pr-msearch"><Search size={16} aria-hidden /><input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Назва, артикул або модель" aria-label="Пошук товару" /></label>
+          <button type="button" className="rb" aria-label="Фільтри товарів" onClick={() => setFsheet(true)}><ListFilter size={19} />{(category || manufacturer || show !== "active") && <span className="rb-dot" aria-hidden />}</button>
+        </div>
+      )}
+      {mobile && fsheet && (
+        <Sheet title="Фільтри" onClose={() => setFsheet(false)}
+          footer={<><button type="button" className="btn" onClick={() => { setCategory(""); setManufacturer(""); setShow("active"); setStockState(""); setFsheet(false); }}>Скинути</button>
+            <button type="button" className="btn primary" onClick={() => setFsheet(false)}>Показати</button></>}>
+          <div className="form pr-fs">
+            {catOpts.length > 0 && <Field label="Категорія"><Select value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="">Усі категорії</option><option value="-1">Без категорії</option>
+              {catOpts.map((c) => <option key={c.id} value={c.id}>{c.depth ? "  · " : ""}{c.label}</option>)}</Select></Field>}
+            {meta.manufacturers.length > 0 && <Field label="Виробник"><Select value={manufacturer} onChange={(e) => setManufacturer(e.target.value)}>
+              <option value="">Усі виробники</option>{meta.manufacturers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</Select></Field>}
+            <Field label="Залишок"><Select value={stockState} onChange={(e) => setStockState(e.target.value)}>
+              <option value="">Будь-який залишок</option><option value="in">Є в наявності</option><option value="low">Закінчується</option>
+              <option value="out">Немає</option><option value="minus">Мінус</option></Select></Field>
+            <Field label="Показати"><Select value={show} onChange={(e) => setShow(e.target.value)}><option value="active">Активні</option><option value="inactive">Архів</option><option value="all">Усі</option></Select></Field>
+          </div>
+        </Sheet>
+      )}
+      {!mobile && <div className="filters">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Назва, артикул або модель" />
         {catOpts.length > 0 && <Select value={category} onChange={(e) => setCategory(e.target.value)}>
           <option value="">Усі категорії</option><option value="-1">Без категорії</option>
@@ -98,24 +133,30 @@ function ProductList({ editable }: { editable: boolean }) {
         <Select value={show} onChange={(e) => setShow(e.target.value)}><option value="active">Активні</option><option value="inactive">Архів</option><option value="all">Усі</option></Select>
         <span className="spacer" />
         {editable && <button className="btn primary" onClick={() => setEdit("new")}><Plus size={15} /> Товар</button>}
-      </div>
+      </div>}
+      {mobile && quick}
       {mobile && (
         <div className="pr-mlist">
           {isLoading && <div className="m-card m-skel" aria-hidden><i /><i /><i /></div>}
-          {data?.map((p) => {
-            const st = !p.active ? ["архів", "#7C7B76"] : p.upsell ? ["допродаж", "#7C3AED"] : p.available <= 0 ? ["немає", "#DC2626"]
-              : p.available <= p.min_stock ? ["закінчується", "#D97706"] : ["у продажу", "#16A34A"];
+          {rowsShown?.map((p) => {
+            // B12: ціна й маржа, смужка залишку з прогнозом днів (як на ПК)
             const sale = p.discount_percent > 0 ? p.sale_price : p.price;
             const mPct = sale > 0 && p.cost > 0 ? Math.round(((sale - p.cost) / sale) * 100) : null;
+            const left = p.days_left;
+            const tone = p.available <= 0 ? "bad" : (left != null && left < 3) || p.available <= p.min_stock ? "bad" : left != null && left < 10 ? "warn" : "ok";
+            const cap = Math.max(p.available, p.min_stock * 3, p.sold_30 || 0, 1);
+            const tag = !p.active ? "архів" : p.upsell ? "допродаж" : "";
             return (
-              <button key={p.id} type="button" className="pr-mrow" onClick={() => setEdit(p.id)}>
+              <button key={p.id} type="button" className="pr-mrow v2" onClick={() => setEdit(p.id)}>
                 <span className="mc-thumb l">{p.photo ? <img src={`${ROOT}${p.photo}`} alt="" loading="lazy" /> : <Package size={20} />}</span>
                 <span className="pr-mt">
-                  <span className="pill" style={{ ["--c" as string]: st[1] }}>{st[0]}</span>
                   <b className="ell">{p.name}</b>
-                  <small><b>{money(sale)} ₴</b> · {p.available} шт{mPct != null ? ` · маржа ${mPct}%` : ""}</small>
+                  <small><b>{money(sale)} ₴</b>{mPct != null && <span className={mPct < 0 ? "bad" : mPct < 20 ? "warn" : "ok"}> · маржа {mPct}%</span>}{tag && <span> · {tag}</span>}</small>
+                  <span className={`pr-mstock ${tone}`}>
+                    <i className="pr-bar"><i style={{ width: `${Math.max(0, Math.min(100, (p.available / cap) * 100))}%` }} /></i>
+                    <em>{p.available} шт{p.available > 0 && left != null ? ` · ≈ ${daysText(left)}` : p.available <= 0 ? " · немає" : ""}</em>
+                  </span>
                 </span>
-                <ChevronRight size={18} className="pr-mgo" />
               </button>
             );
           })}
@@ -124,15 +165,7 @@ function ProductList({ editable }: { editable: boolean }) {
         </div>
       )}
       {!mobile && (<>
-        <div className="pr-quick" role="radiogroup" aria-label="Швидкий фільтр">
-          {([["", "Усі"], ["low", "Закінчуються"], ["out", "Немає"], ["loss", "Збиткові"]] as const).map(([k, n]) => {
-            const cnt = k === "loss" ? (data ?? []).filter(isLoss).length : null;
-            const on = k === "loss" ? lossOnly : !lossOnly && stockState === k;
-            return <button key={k} type="button" role="radio" aria-checked={on} className={`pr-qc${on ? " on" : ""}`}
-              onClick={() => { if (k === "loss") { setLossOnly(!lossOnly); setStockState(""); } else { setLossOnly(false); setStockState(k); } }}>
-              {k === "low" && <TriangleAlert size={13} />}{n}{cnt ? <em>{cnt}</em> : null}</button>;
-          })}
-        </div>
+        {quick}
         <div className="card flush tablewrap">
         <table className="t pr-table v2 m-cards">
           <thead><tr><th>Товар</th><th>Ціна</th><th>Залишок</th><th>Продажі · 30 днів</th><th /></tr></thead>

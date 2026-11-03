@@ -2,12 +2,12 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Clock3, Inbox, KanbanSquare, List, Phone, PhoneCall, PhoneMissed, Plus, Search, X } from "lucide-react";
+import { CalendarClock, Check, Clock3, Inbox, KanbanSquare, List, Phone, PhoneCall, PhoneMissed, Plus, Search, X } from "lucide-react";
 import { api, ApiError, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, phone } from "../lib/format";
 import type { Order, OrderList, OrderRow } from "../lib/types";
-import { Button, ChipSelect, DenseTable, FilterChip, Floating, HoverCard, MobileActs, Ring, RoundButton, Segmented, StatusPill, Tabs, UaPhone, Window, type DenseCol, type TabItem, EmptyState } from "../components/ui";
+import { Button, ChipSelect, DenseTable, FilterChip, Floating, HoverCard, MobileActs, Ring, RoundButton, Segmented, Sheet, StatusPill, Tabs, UaPhone, Window, useMobile, type DenseCol, type TabItem, EmptyState } from "../components/ui";
 import { PhoneCard, SOURCE_COLORS } from "./Orders";
 import LeadWindow from "./LeadWindow";
 import { SourceChips } from "./NewOrder";
@@ -122,23 +122,28 @@ export default function LeadsPage() {
   const open = useCallback((o: { id: number }) => nav(`/leads/${o.id}${window.location.search}`), [nav]);
 
   // телефон (мобільна v2): кільце часу очікування, статус, ім'я, товар · сума, кнопка дзвінка
+  // B9: після дзвінка картка розгортається — «Не відповів», «Передзвонити», «Оформити»; спроби — крапками
+  const [exp, setExp] = useState<number | null>(null);
   const mobileCard = (o: OrderRow) => {
     const code = statuses[o.status_id]?.code ?? "";
     const callable = ["new", "no_answer", "callback"].includes(code);
-    return (
+    const n = o.call_attempts ?? 0;
+    return (<>
       <div className="ml-card">
         <WaitRing minutes={o.wait_minutes} />
         <div className="ml-t">
           <StatusPill status={statuses[o.status_id]} />
           <b>{o.customer_name || phone(o.phone) || "без імені"}</b>
-          <small>{o.items[0]?.name ?? "—"} · {money(o.total)} ₴</small>
+          <small><span className="ell">{o.items[0]?.name ?? "—"}{o.total ? ` · ${money(o.total)} ₴` : ""}</span>
+            {callable && <span className="ld-dots" aria-label={`Спроб дзвінка: ${n}`}>{[0, 1, 2].map((i) => <i key={i} className={i < n ? "on" : ""} />)}</span>}</small>
         </div>
         {o.phone && callable && (
           <a className="ml-call" href={`tel:+${o.phone.replace(/\D/g, "")}`} aria-label={`Подзвонити: ${o.customer_name || phone(o.phone)}`}
-            onClick={(e) => { e.stopPropagation(); open(o); }}><Phone size={20} /></a>
+            onClick={(e) => { e.stopPropagation(); setExp(o.id); }}><Phone size={20} /></a>
         )}
       </div>
-    );
+      {exp === o.id && callable && <div className="ml-res m-stop"><LeadResult o={o} open={(lid) => nav(`/leads/${lid}${window.location.search}`)} /></div>}
+    </>);
   };
   const firstInQueue = qQueue.data?.ids[0];
 
@@ -191,7 +196,7 @@ export default function LeadsPage() {
       {view === "list" && (
         <DenseTable<OrderRow> label="Ліди" rows={rows} cols={COLS} rowKey={(o) => o.id} onOpen={open} current={id ? Number(id) : null}
           isLoading={q.isLoading}
-          rowClass={(o) => ((o.wait_minutes ?? 0) >= meta.lead_wait_bad_min ? "late" : "")}
+          rowClass={(o) => `${(o.wait_minutes ?? 0) >= meta.lead_wait_bad_min ? "late" : ""}${exp === o.id ? " exp" : ""}`}
           mobileCard={mobileCard}
           rowHeight={44}
           empty={tab === "open" ? <EmptyState icon={Inbox} title="Відкритих лідів немає" text="Заявки з форм на сайті з'являться тут самі. Дзвінок чи повідомлення — додайте лід вручну"
@@ -230,10 +235,9 @@ function NewLeadDialog({ onClose, onOpen }: { onClose: () => void; onOpen: (id: 
     onError: (e) => { lock.current = false; toast(errText(e), "error"); },
   });
   const addOnce = () => { if (lock.current || !ok) return; lock.current = true; add.mutate(); };
-  return (
-    <Window size="sm" onClose={onClose} title="Новий лід" label="Новий лід"
-      footer={<><span className="spacer" /><Button onClick={onClose}>Скасувати</Button>
-        <Button variant="primary" icon={Plus} disabled={!ok || add.isPending} onClick={addOnce}>{add.isPending ? "Додаю…" : "Додати лід"}</Button></>}>
+  const mobile = useMobile();
+  const addBtn = <Button variant="primary" icon={Plus} disabled={!ok || add.isPending} onClick={addOnce}>{add.isPending ? "Додаю…" : "Додати лід"}</Button>;
+  const body = (
       <form className="form new-lead" onSubmit={(e) => { e.preventDefault(); addOnce(); }}>
         <label className="fbox"><span className="lbl">Телефон</span>
           <UaPhone value={tel} country="UA" onChange={setTel} aria-label="Телефон" autoFocus /></label>
@@ -243,8 +247,11 @@ function NewLeadDialog({ onClose, onOpen }: { onClose: () => void; onOpen: (id: 
         <p className="hint">Лід з'явиться в стовпці «Новий». Товари, оплату й доставку додасте, відкривши його.</p>
         <button type="submit" hidden aria-hidden tabIndex={-1} />
       </form>
-    </Window>
   );
+  return mobile
+    ? <Sheet title="Новий лід" onClose={onClose} footer={<div className="nl-foot">{addBtn}</div>}>{body}</Sheet>
+    : <Window size="sm" onClose={onClose} title="Новий лід" label="Новий лід"
+      footer={<><span className="spacer" /><Button onClick={onClose}>Скасувати</Button>{addBtn}</>}>{body}</Window>;
 }
 
 // ---------------------------------------------------------------- дошка: Новий · Недодзвон · Передзвонити · Дубль, картки 58 px
@@ -336,6 +343,7 @@ function LeadResult({ o, open }: { o: OrderRow; open: (id: number) => void }) {
   const code = meta.statuses.find((s) => s.id === o.status_id)?.code ?? "";
   const ref = useRef<HTMLButtonElement>(null);
   const [menu, setMenu] = useState(false);
+  const mobile = useMobile();
   const done = () => { qc.invalidateQueries({ queryKey: ["orders"] }); qc.invalidateQueries({ queryKey: ["leads"] }); qc.invalidateQueries({ queryKey: ["counters"] }); };
   const result = useMutation({
     mutationFn: (body: { result: string; at?: string }) => api.post(`/orders/${o.id}/lead-result`, body),
@@ -363,11 +371,20 @@ function LeadResult({ o, open }: { o: OrderRow; open: (id: number) => void }) {
         <PhoneMissed size={13} />Не відповів</button>
       <button ref={ref} type="button" className="ld-rb ic v" disabled={busy} aria-label="Передзвонити — обрати час" aria-expanded={menu} title="Передзвонити" onClick={() => setMenu((x) => !x)}><Clock3 size={14} /></button>
       <button type="button" className="ld-rb ic g" disabled={busy} aria-label="Оформити замовлення з ліда" title="Оформити замовлення" onClick={() => convert.mutate()}><Check size={14} /></button>
-      <Floating anchor={ref.current} open={menu} onClose={() => setMenu(false)} width={210} className="hc-menu" role="menu" label="Коли передзвонити">
-        <div className="hc-t1">Передзвонити</div>
-        {presets.map(([n, v]) => <button key={n} type="button" role="menuitem" className="pop-item" onClick={() => { setMenu(false); result.mutate({ result: "callback", at: v }); }}>{n}</button>)}
-        <button type="button" role="menuitem" className="pop-item" onClick={() => { setMenu(false); open(o.id); }}>Свій час…</button>
-      </Floating>
+      {mobile ? menu && (
+        <Sheet title="Коли передзвонити" onClose={() => setMenu(false)}>
+          <div className="m-menu">
+            {presets.map(([n, v]) => <button key={n} type="button" className="pop-item" onClick={() => { setMenu(false); result.mutate({ result: "callback", at: v }); }}><Clock3 size={17} />{n}</button>)}
+            <button type="button" className="pop-item" onClick={() => { setMenu(false); open(o.id); }}><CalendarClock size={17} />Свій час…</button>
+          </div>
+        </Sheet>
+      ) : (
+        <Floating anchor={ref.current} open={menu} onClose={() => setMenu(false)} width={210} className="hc-menu" role="menu" label="Коли передзвонити">
+          <div className="hc-t1">Передзвонити</div>
+          {presets.map(([n, v]) => <button key={n} type="button" role="menuitem" className="pop-item" onClick={() => { setMenu(false); result.mutate({ result: "callback", at: v }); }}>{n}</button>)}
+          <button type="button" role="menuitem" className="pop-item" onClick={() => { setMenu(false); open(o.id); }}>Свій час…</button>
+        </Floating>
+      )}
     </span>
   );
 }

@@ -45,22 +45,24 @@ export default function CustomersPage() {
         <h1><span className="h-ico"><Contact size={18} /></span>Покупці <small className="muted">{data?.total ?? ""}</small> {isFetching && <span className="spinner sm" />}</h1>
         <div className="actions"><button className="btn primary" onClick={() => setAdding(true)}><Plus size={15} /> Покупець</button></div>
       </div>
-      {!mobile && (
+      {(
         <div className="cu-segs" role="radiogroup" aria-label="Сегмент">
           {SEGS.map(([k, n, c]) => (
             <button key={k} type="button" role="radio" aria-checked={segment === k} className={segment === k ? "on" : ""} onClick={() => setSegment(k)}>
               <i style={{ background: c }} />{n}{k ? data?.segments?.[k] != null && <em>{data.segments[k]}</em> : null}</button>
           ))}
+          {mobile && <button type="button" role="radio" aria-checked={blacklist === "1"} className={`bl${blacklist === "1" ? " on" : ""}`}
+            onClick={() => { setBlacklist(blacklist === "1" ? "" : "1"); setGroup(""); }}><Ban size={13} />Чорний список</button>}
         </div>
       )}
-      <div className="cu-groups">
+      {!mobile && <div className="cu-groups">
         <button className={!group && !blacklist ? "on" : ""} onClick={() => { setGroup(""); setBlacklist(""); }}>Усі</button>
         {meta.customer_groups.map((g) => (
           <button key={g.id} className={group === String(g.id) ? "on" : ""} style={{ ["--c" as string]: g.color }} onClick={() => { setGroup(String(g.id)); setBlacklist(""); }}>
             <i />{g.name}</button>
         ))}
         <button className={`bl ${blacklist === "1" ? "on" : ""}`} onClick={() => { setBlacklist(blacklist === "1" ? "" : "1"); setGroup(""); }}><Ban size={13} /> Чорний список</button>
-      </div>
+      </div>}
       <div className="filters">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ім'я, телефон або email" />
         <span className="cu-sort">
@@ -74,21 +76,24 @@ export default function CustomersPage() {
         <div className="m-list">
           {!data && Array.from({ length: 4 }, (_, i) => <div key={i} className="m-card m-skel" aria-hidden><i /><i /><i /></div>)}
           {data?.rows.map((c) => {
-            const ini = (c.name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-            const col = c.blacklisted ? "#DC2626" : c.group_color || "#3557A8";
+            // B11: кільце викупу, сегмент, «N замовл. · сума», кнопка дзвінка; типову групу не підписуємо, «0 ₴» не показуємо
+            const seg = SEGS.find(([k]) => k === c.segment);
+            const b = c.buyout_rate;
+            const tel = c.phone.replace(/\D/g, "");
             return (
-              <div key={c.id} role="button" tabIndex={0} className="m-card cu-mcard" onClick={() => nav(`/customers/${c.id}`)}
+              <div key={c.id} role="button" tabIndex={0} className={`m-card cu-mcard v2${c.blacklisted ? " is-bl" : ""}`} onClick={() => nav(`/customers/${c.id}`)}
                 onKeyDown={(e) => { if (e.key === "Enter") nav(`/customers/${c.id}`); }}>
-                <span className="m-av" style={{ background: `color-mix(in srgb, ${col} 13%, white)`, color: col }}>{ini}</span>
+                <Ring value={b == null ? "—" : Math.round(b)} frac={b == null ? 0 : b / 100} color={b == null ? "var(--faint)" : b >= 70 ? "#16A34A" : b >= 40 ? "#D97706" : "#DC2626"} size={44} stroke={4} />
                 <div className="cu-mt">
-                  <div className="cu-m1"><b className="ell">{c.name || "Без імені"}</b><b className="num">{money(c.sum_delivered)} ₴</b></div>
-                  <small>{phone(c.phone)}</small>
+                  <b className="ell">{c.blacklisted && <Ban size={14} className="bl-ico" />}{c.name || "Без імені"}</b>
                   <div className="cu-m3">
                     {c.blacklisted ? <span className="pill" style={{ ["--c" as string]: "#DC2626" }}>чорний список</span>
-                      : c.group ? <span className="pill" style={{ ["--c" as string]: c.group_color || "#64748b" }}>{c.group}</span> : null}
-                    <span>{c.orders} замовл. · викуп <b className={c.buyout_rate == null ? "" : c.buyout_rate >= 70 ? "t-ok" : c.buyout_rate >= 40 ? "t-warn" : "t-bad"}>{c.buyout_rate == null ? "—" : `${c.buyout_rate}%`}</b></span>
+                      : seg ? <span className="pill" style={{ ["--c" as string]: seg[2] }}>{SEG_ONE[seg[0]]}</span> : null}
+                    {c.group && c.group_id !== data?.default_group_id && <span className="cu-grp" style={{ ["--c" as string]: c.group_color || "#64748b" }}>{c.group}</span>}
+                    <span className="ell">{c.orders} замовл.{c.sum_total ? ` · ${money(c.sum_total)} ₴` : ""}</span>
                   </div>
                 </div>
+                {tel && <a className="mh-call cu-mcall" href={`tel:+${tel}`} aria-label={`Подзвонити ${phone(c.phone)}`} onClick={(e) => e.stopPropagation()}><Phone size={18} /></a>}
               </div>
             );
           })}
