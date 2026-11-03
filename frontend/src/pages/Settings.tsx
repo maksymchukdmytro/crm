@@ -11,7 +11,7 @@ import { dt, phone } from "../lib/format";
 import type { BlockedIp, Cashier, CustomerGroup, DirItem, LegalEntity, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { MarkLookPick } from "../components/marks";
-import { ask, FileDrop, NumberField, ColorPick, DateField, isoDate, Badge, Button, Empty, Field, IconButton, MenuButton, NpAutocomplete, RoundButton, Select, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
+import { ask, FileDrop, NumberField, Sheet, ColorPick, DateField, isoDate, Badge, Button, Empty, Field, IconButton, MenuButton, NpAutocomplete, RoundButton, Select, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
 
 type S = Settings;
 
@@ -443,6 +443,45 @@ function Statuses({ s }: { s: S }) {
   useRegister(tr.dirty, () => save.mutate({ path: "/settings/statuses", body: rows }, { onSuccess: (x) => tr.reset(x.statuses) }), tr.restore);
   const [nw, setNw] = useState({ name: "", color: "#64748b", stock_action: "none", sort: 200 });
   const upd = (id: number, patch: Partial<Status>) => setRows(rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  // телефон (B16): короткий список (колір, назва, розділ · дія); тап — шторка з полями й «Зберегти»
+  const mobile = useMobile();
+  const [edit, setEdit] = useState<number | null>(null);
+  const er = rows.find((r) => r.id === edit);
+  if (mobile) return (
+    <div className="stack">
+      <div className="set-mlist">
+        {rows.map((r) => (
+          <button key={r.id} type="button" className="set-mrow2" onClick={() => setEdit(r.id)}>
+            <i style={{ background: r.color }} />
+            <span><b>{r.name}</b><small>{r.stage === "lead" ? "ліди" : "замовлення"} · {(s.stock_actions[r.stock_action] ?? "без дії").toLowerCase()}{r.final ? " · фінальний" : ""}{!r.active ? " · вимкнено" : ""}</small></span>
+            <ChevronRight size={17} />
+          </button>
+        ))}
+      </div>
+      <form className="card form" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/statuses", body: nw, method: "post" }, { onSuccess: (x) => { tr.reset(x.statuses); setNw({ ...nw, name: "" }); } }); }}>
+        <Field label="Новий статус"><input value={nw.name} onChange={(e) => setNw({ ...nw, name: e.target.value })} required /></Field>
+        <div className="set-mnew"><ColorPick value={nw.color} onChange={(c) => setNw({ ...nw, color: c })} label="Колір нового статусу" /><button className="btn"><Plus size={14} /> Додати</button></div>
+      </form>
+      {er && (
+        <Sheet title={er.name || "Статус"} onClose={() => setEdit(null)}
+          footer={<button type="button" className="btn primary set-msave" onClick={() => { save.mutate({ path: "/settings/statuses", body: rows }, { onSuccess: (x) => tr.reset(x.statuses) }); setEdit(null); }}><Check size={16} />Зберегти</button>}>
+          <div className="form set-msheet">
+            <Field label="Назва"><input value={er.name} onChange={(e) => upd(er.id, { name: e.target.value })} /></Field>
+            <div className="set-mcolor"><span className="lbl">Колір</span><ColorPick value={er.color} onChange={(c) => upd(er.id, { color: c })} label={`Колір статусу «${er.name}»`} /></div>
+            <div className="cols">
+              <Field label="Розділ"><Select value={er.stage ?? "order"} onChange={(e) => upd(er.id, { stage: e.target.value as Status["stage"] })}><option value="lead">Ліди</option><option value="order">Замовлення</option></Select></Field>
+              <Field label="Порядок"><NumberField value={er.sort} onChange={(e) => upd(er.id, { sort: Number(e.target.value) })} /></Field>
+            </div>
+            <Field label="Що робити зі складом"><Select value={er.stock_action} onChange={(e) => upd(er.id, { stock_action: e.target.value })}>{Object.entries(s.stock_actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></Field>
+            <Toggle checked={er.approved} onChange={(v) => upd(er.id, { approved: v })} label="Підтверджене (апрув у звітах)" />
+            <Toggle checked={er.final} onChange={(v) => upd(er.id, { final: v })} label="Фінальний" />
+            <Toggle checked={er.active} disabled={er.code === "new"} onChange={(v) => upd(er.id, { active: v })} label="Активний" />
+            {!er.system && <button type="button" className="btn danger set-mdel" onClick={async () => { if (await ask({ title: `Видалити статус «${er.name}»?`, action: "Видалити", danger: true })) { setEdit(null); save.mutate({ path: `/settings/statuses/${er.id}`, method: "del" }, { onSuccess: (x) => tr.reset(x.statuses) }); } }}><Trash2 size={14} />Видалити статус</button>}
+          </div>
+        </Sheet>
+      )}
+    </div>
+  );
   return (
     <div className="stack">
       <div className="card flush tablewrap">
@@ -485,12 +524,27 @@ function Users({ s }: { s: S }) {
     onSuccess: (_r, vars) => { qc.invalidateQueries({ queryKey: ["settings"] }); qc.invalidateQueries({ queryKey: ["meta"] }); toast("Збережено"); if (!vars.id) setNw({ username: "", full_name: "", role: "manager", password: "", offices: [] }); },
     onError: (e) => toast(errText(e), "error"),
   });
+  const mobile = useMobile();
+  const [eu, setEu] = useState<User | null>(null);
   return (
     <div className="grid two">
-      <div className="card flush tablewrap"><table className="t dense t-cards">
+      {mobile && (
+        <div className="set-mlist">
+          {s.users.map((u) => (
+            <button key={u.id} type="button" className="set-mrow2" onClick={() => setEu(u)}>
+              <span className="set-mav">{(u.full_name || u.username).slice(0, 1).toUpperCase()}</span>
+              <span><b>{u.full_name || u.username}</b><small>{s.roles[u.role] ?? u.role} · {u.username}{!u.is_active ? " · вимкнено" : ""}</small></span>
+              <ChevronRight size={17} />
+            </button>
+          ))}
+        </div>
+      )}
+      {mobile && eu && <UserSheet u={eu} roles={s.roles} offices={s.offices.filter((o) => o.active)} self={eu.id === meta.user.id} onClose={() => setEu(null)}
+        onSave={(body) => { mut.mutate({ id: eu.id, body }); setEu(null); }} />}
+      {!mobile && <div className="card flush tablewrap"><table className="t dense t-cards">
         <thead><tr><th>Користувач</th><th>Роль</th>{s.offices.length > 0 && <th title="Замовлення яких відділів бачить користувач">Відділи</th>}<th>Новий пароль</th><th>Активний</th><th /></tr></thead>
         <tbody>{s.users.map((u) => <UserRow key={u.id} u={u} roles={s.roles} offices={s.offices.filter((o) => o.active)} self={u.id === meta.user.id} onSave={(body) => mut.mutate({ id: u.id, body })} />)}</tbody>
-      </table></div>
+      </table></div>}
       <form className="card form" onSubmit={(e) => { e.preventDefault(); mut.mutate({ body: nw }); }}>
         <h2>Новий користувач</h2>
         <div className="cols">
@@ -512,6 +566,23 @@ function OfficeChips({ offices, value, onChange }: { offices: DirItem[]; value: 
     const on = value.includes(o.id);
     return <button type="button" key={o.id} className={`chip ${on ? "on" : ""}`} onClick={() => onChange(on ? value.filter((x) => x !== o.id) : [...value, o.id])}>{o.name}</button>;
   })}</div>;
+}
+
+function UserSheet({ u, roles, offices, self, onSave, onClose }: { u: User; roles: Record<string, string>; offices: DirItem[]; self: boolean; onSave: (b: Record<string, unknown>) => void; onClose: () => void }) {
+  const [v, setV] = useState({ full_name: u.full_name, role: u.role as string, password: "", is_active: u.is_active, offices: u.offices ?? [] });
+  return (
+    <Sheet title={u.full_name || u.username} onClose={onClose}
+      footer={<button type="button" className="btn primary set-msave" onClick={() => onSave({ ...v, password: v.password || undefined })}><Check size={16} />Зберегти</button>}>
+      <div className="form set-msheet">
+        <p className="hint mono">{u.username}{u.last_login_at && ` · вхід ${dt(u.last_login_at, true)}`}</p>
+        <Field label="Ім'я"><input value={v.full_name} onChange={(e) => setV({ ...v, full_name: e.target.value })} /></Field>
+        <Field label="Роль"><Select value={v.role} onChange={(e) => setV({ ...v, role: e.target.value })} disabled={self}>{Object.entries(roles).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></Field>
+        {offices.length > 0 && v.role !== "admin" && <Field label="Відділи" hint="Порожньо — бачить замовлення всіх відділів"><OfficeChips offices={offices} value={v.offices} onChange={(o) => setV({ ...v, offices: o })} /></Field>}
+        <Field label="Новий пароль"><input type="password" value={v.password} onChange={(e) => setV({ ...v, password: e.target.value })} placeholder="не змінювати" autoComplete="new-password" /></Field>
+        <Toggle checked={v.is_active} disabled={self} onChange={(x) => setV({ ...v, is_active: x })} label="Активний" />
+      </div>
+    </Sheet>
+  );
 }
 
 function UserRow({ u, roles, offices, self, onSave }: { u: User; roles: Record<string, string>; offices: DirItem[]; self: boolean; onSave: (b: Record<string, unknown>) => void }) {

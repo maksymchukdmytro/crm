@@ -18,6 +18,7 @@ import "./settings.css";
 import "./mobile.css";
 import "./wizard.css";
 import "./kit.css";
+import "./mobile-b.css";
 
 initMonitoring();
 

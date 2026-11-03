@@ -1,0 +1,267 @@
+/* Етап B (docs/UI-NEXT.md, макети docs/design/v27-telefon/): покращення телефону. Лише до 768 px — ПК не змінюється. */
+@media (max-width: 768px) {
+  /* B1–B2 · головна: «Що зробити зараз», смуга продажів, мої нагадування */
+  .mh-h { display: flex; align-items: center; gap: 8px; margin: 4px 2px -2px; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+  .mh-h em, .mh-rems h2 em { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; background: #E0245E; color: #fff;
+    font-size: 12px; font-style: normal; font-weight: 600; }
+  .mh-todo { display: flex; gap: 10px; margin: 0 calc(-1 * var(--m-pad)); padding: 0 var(--m-pad) 2px; overflow-x: auto; scroll-snap-type: x mandatory;
+    scroll-padding: 0 var(--m-pad); scrollbar-width: none; }
+  .mh-todo::-webkit-scrollbar { display: none; }
+  .mh-job { flex: 0 0 136px; scroll-snap-align: start; display: flex; flex-direction: column; align-items: stretch; min-height: 118px; padding: 12px 13px;
+    border: 0; border-radius: var(--m-r); background: #fff; font: inherit; text-align: left; color: var(--ink); cursor: pointer; }
+  .mh-job-h { display: flex; align-items: center; justify-content: space-between; color: var(--faint); }
+  .mh-job .sq.sm { width: 32px; height: 32px; border-radius: 10px; }
+  .mh-job b { margin-top: 10px; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .mh-job small { margin-top: 2px; font-size: 12.5px; line-height: 1.3; color: var(--muted); }
+  .mh-job:active { transform: scale(.98); }
+  .mh-done { display: flex; align-items: center; gap: 8px; margin: 0; padding: 14px 16px; border-radius: var(--m-r); background: #fff; color: var(--ok-ink); font-size: 14px; }
+
+  .mh-strip { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 14px 16px; border: 0; border-radius: 22px;
+    background: #1E1E22; color: #fff; font: inherit; text-align: left; cursor: pointer; }
+  .mh-strip-t { display: flex; flex-direction: column; min-width: 0; }
+  .mh-strip-t small { font-size: 12.5px; color: #B7B7BC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mh-strip-t b { font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mh-strip-t b i { font-style: normal; font-size: 20px; color: #9E9EA3; font-weight: 500; }
+  .mh-strip-r { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: none; }
+  .mh-strip .hd-spark { display: block; }
+
+  .mh-rems h2 { justify-content: flex-start; gap: 8px; margin-bottom: 2px; }
+  .mh-rems h2 .link-btn { margin-left: auto; min-height: 44px; padding: 0 4px; }
+  .mh-rem { display: flex; align-items: center; gap: 12px; min-height: 60px; border-top: 1px solid #F0F0EE; }
+  .mh-rem-t { width: 46px; flex: none; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mh-rem.late .mh-rem-t { color: var(--bad-ink); }
+  .mh-rem-n { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; min-height: 48px; justify-content: center; padding: 0; border: 0;
+    background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
+  .mh-rem-n span { max-width: 100%; font-size: 15px; font-weight: 500; }
+  .mh-rem-n small { font-size: 12.5px; color: var(--muted); }
+  .mh-call { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 14px; background: var(--soft); color: var(--ink); }
+}
+
+@media (max-width: 768px) {
+  /* B3 · замовлення: статус — одна кнопка кольором статусу, список — шторкою; підсумок одним рядком */
+  .page-orders .lh-t .list-sum, .page-leads .lh-t .list-sum { display: none; }
+  .m-stsel { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+  .m-stbtn { display: inline-flex; align-items: center; gap: 7px; height: 40px; max-width: 62%; padding: 0 12px 0 15px; border: 0; border-radius: 99px; flex: none;
+    background: color-mix(in srgb, var(--c) 82%, #000); color: #fff; font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer; }
+  .m-stbtn em { font-style: normal; font-weight: 500; opacity: .8; font-variant-numeric: tabular-nums; }
+  .m-stbtn svg { flex: none; opacity: .85; }
+  .m-stsum { min-width: 0; font-size: 12.5px; line-height: 1.3; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .m-stlist { display: flex; flex-direction: column; background: var(--soft); border-radius: 16px; padding: 4px 12px; }
+  .m-stopt { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0; border: 0; border-bottom: 1px solid var(--line); background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
+  .m-stopt:last-child { border-bottom: 0; }
+  .m-stopt b { margin-left: auto; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .m-stopt svg { color: var(--accent); flex: none; }
+  .m-stck { width: 17px; flex: none; }
+  .m-stpill { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 99px; font-size: 14px; font-weight: 500;
+    background: color-mix(in srgb, var(--c) 13%, white); color: color-mix(in srgb, var(--c) 78%, black); }
+  .m-stpill i { width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
+
+  /* B4 · дія в картці: дзвінок 44 px і головна дія за станом */
+  .mc-acts { display: flex; gap: 8px; margin-top: 10px; }
+  .mc-call { display: grid; place-items: center; width: 52px; height: 44px; flex: none; border-radius: 12px; background: #F2F2F0; color: var(--ink); }
+  .mc-acts .ocd-go { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; height: 44px; padding: 0 10px; border: 0; border-radius: 12px;
+    background: #F2F2F0; color: var(--ink-2); font: inherit; font-size: 14.5px; font-weight: 550; cursor: pointer; }
+  .mc-acts .ocd-go.p { background: var(--accent); color: #fff; }
+  .mc-acts .ocd-go.s { background: var(--accent-soft); color: #1F56C4; }
+
+  /* B5 · свайп картки */
+  .m-sw { position: relative; border-radius: var(--m-r); }
+  .m-sw > .m-card { position: relative; z-index: 1; transition: transform 180ms var(--ease, ease); touch-action: pan-y; }
+  .m-sw-bg { position: absolute; inset: 0; z-index: 0; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 0 22px; border-radius: var(--m-r);
+    color: #fff; font-size: 13.5px; opacity: .55; transition: opacity 150ms; }
+  .m-sw.go .m-sw-bg { opacity: 1; }
+  .m-sw-bg.r { align-items: flex-start; }
+  .m-sw-bg.l { align-items: flex-end; }
+  .m-sw-bg.t-ok { background: #16A34A; }
+  .m-sw-bg.t-accent { background: var(--accent); }
+  .m-sw-bg.t-bad { background: var(--bad); }
+}
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) { .m-sw > .m-card, .m-sw-bg { transition: none; } }
+
+@media (max-width: 768px) {
+  /* B7 · товари: −/+ по 44 px, свайп ліворуч — прибрати */
+  .gi .qty-step { height: 44px; border: 0; border-radius: 12px; background: #F2F2F0; }
+  .gi .qty-step button { width: 44px; height: 44px; border-radius: 12px; color: var(--ink-2); }
+  .gi .qty-step input { width: 34px; height: 40px; font-size: 16px; font-weight: 600; }
+  .gi-sw { position: relative; border-radius: 12px; }
+  .gi-sw > .gi { position: relative; z-index: 1; background: var(--m-card, #fff); transition: transform 180ms var(--ease, ease); touch-action: pan-y; }
+  .gi-sw.on > .gi { transition: none; }
+  .gi-sw-bg { position: absolute; inset: 0; z-index: 0; display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding-right: 18px; border-radius: 12px;
+    background: var(--bad); color: #fff; font-size: 13.5px; font-weight: 600; opacity: .55; }
+  .gi-sw.go .gi-sw-bg { opacity: 1; }
+
+  /* B8 · деталі — чипами */
+  .oc-det-m .det-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .det-chip { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border: 0; border-radius: 99px; background: #F2F2F0; font: inherit; font-size: 14px; color: var(--ink); }
+  .det-chip.take { background: var(--accent-soft); color: #1F56C4; font-weight: 550; cursor: pointer; }
+  .det-comment { width: 100%; min-height: 48px; font-size: 15px; border-radius: 14px; }
+  .det-edit { min-height: 44px; padding: 0 4px; font-size: 14px; }
+}
+
+@media (max-width: 768px) {
+  /* B9 · ліди: після дзвінка — результат прямо в картці, спроби крапками */
+  .ml-t small { display: flex; align-items: center; gap: 8px; }
+  .ml-t small .ld-dots { flex: none; }
+  .ml-res { padding: 0 12px 12px; }
+  .ml-res .ld-res { display: flex; gap: 8px; width: 100%; }
+  .ml-res .ld-rb { height: 44px; flex: none; width: 52px; justify-content: center; border-radius: 12px; font-size: 14px; }
+  .ml-res .ld-rb:first-child { flex: 1; width: auto; gap: 8px; }
+  .m-card.exp { box-shadow: 0 0 0 1.5px var(--accent-line); }
+  /* B10 · новий лід — шторкою, кнопка на всю ширину */
+  .nl-foot { display: flex; width: 100%; }
+  .nl-foot .btn { flex: 1; height: 52px; justify-content: center; font-size: 16px; border-radius: 16px; }
+  .m-sheet .new-lead input { height: 48px; font-size: 16px; }
+  .m-sheet .new-lead .ua-phone { height: 50px; border-radius: 14px; font-size: 16px; }
+  .m-sheet .new-lead .ua-phone input { height: 46px; }
+}
+
+@media (max-width: 768px) {
+  /* B11 · покупці: сегменти чипами, кільце викупу, дзвінок у картці */
+  .customers .cu-segs { flex-wrap: nowrap; overflow-x: auto; margin: 0 calc(-1 * var(--m-pad)) 10px; padding: 0 var(--m-pad); scrollbar-width: none; }
+  .customers .cu-segs::-webkit-scrollbar { display: none; }
+  .customers .cu-segs button { flex: none; height: 40px; padding: 0 14px; border-color: #E6E6E3; background: #fff; font-size: 14px; }
+  .customers .cu-segs button.on { background: var(--accent-soft); border-color: var(--accent-line); color: #1F4FB8; }
+  .customers .cu-segs button.bl { color: var(--bad-ink); }
+  .cu-mcard.v2 { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 14px; }
+  .cu-mcard.v2 .cu-mt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .cu-mcard.v2 .cu-mt > b { display: flex; align-items: center; gap: 5px; font-size: 16px; font-weight: 600; }
+  .cu-mcard.v2 .cu-m3 { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12.5px; color: var(--muted); }
+  .cu-mcard.v2 .cu-m3 .pill { flex: none; }
+  .cu-mcard.v2 .cu-grp { flex: none; }
+  .cu-mcard.v2.is-bl { background: #FFF7F7; }
+}
+
+@media (max-width: 768px) {
+  /* B12 · товари: пошук на всю ширину + фільтри шторкою, швидкі чипи, смужка залишку з прогнозом */
+  .pr-mfilters { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .pr-msearch { flex: 1; min-width: 0; display: flex !important; flex-direction: row !important; align-items: center; gap: 8px; height: 48px; padding: 0 14px;
+    border-radius: 16px; background: #fff; color: var(--muted); }
+  .pr-msearch input { flex: 1; min-width: 0; height: 44px; border: 0 !important; padding: 0; background: none; box-shadow: none !important; font-size: 16px; }
+  .pr-mfilters .rb { position: relative; flex: none; }
+  .pr-quick { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--m-pad)) 10px; padding: 0 var(--m-pad); }
+  .pr-quick::-webkit-scrollbar { display: none; }
+  .pr-qc { flex: none; height: 40px; padding: 0 14px; font-size: 14px; border-color: #E6E6E3; background: #fff; }
+  .pr-fs { display: flex; flex-direction: column; gap: 12px; }
+  .pr-mrow.v2 { align-items: center; }
+  .pr-mrow.v2 .pr-mt { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+  .pr-mrow.v2 .pr-mt > b { font-size: 15.5px; font-weight: 550; }
+  .pr-mrow.v2 small { font-size: 12.5px; color: var(--muted); }
+  .pr-mrow.v2 small .ok { color: var(--ok-ink); } .pr-mrow.v2 small .warn { color: var(--warn-ink); } .pr-mrow.v2 small .bad { color: var(--bad-ink); }
+  .pr-mstock { display: flex; align-items: center; gap: 10px; margin-top: 3px; }
+  .pr-mstock .pr-bar { flex: 1; width: auto; }
+  .pr-mstock em { font-style: normal; font-size: 12.5px; font-weight: 550; white-space: nowrap; color: var(--ok-ink); }
+  .pr-mstock.warn em { color: var(--warn-ink); } .pr-mstock.bad em { color: var(--bad-ink); }
+  .pr-mstock.warn .pr-bar > i { background: var(--warn); } .pr-mstock.bad .pr-bar > i { background: var(--bad); }
+}
+
+@media (max-width: 768px) {
+  /* B13 · оплати: дві плитки, рядки 56 px з галочкою 26 px, закріплена кнопка «Гроші отримано» */
+  .pay-v2 .py-tiles { grid-template-columns: 1fr 1fr; }
+  .pay-v2 .py-tile small:first-child { display: none; }
+  .py-g { border-radius: var(--m-r); }
+  .py-gh { padding: 12px 14px 8px; font-size: 15px; }
+  .py-gh i { display: none; }
+  .py-mall { min-height: 44px; font-size: 14px; }
+  .py-mr { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 6px 14px; border: 0; border-top: 1px solid #F0F0EE;
+    background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; flex-direction: row !important; }
+  .py-mr input[type=checkbox] { width: 26px; height: 26px; border-radius: 8px; background-size: 16px 16px; flex: none; }
+  .py-mr.on { background: #F7FAFF; }
+  .py-mt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .py-mt b { font-size: 15px; font-weight: 550; }
+  .py-mt small { font-size: 12.5px; }
+  .py-mr .py-sum { font-size: 15px; font-weight: 600; white-space: nowrap; }
+  .py-more { min-height: 44px; }
+  .py-mgo { position: fixed; left: 12px; right: 12px; bottom: calc(86px + env(safe-area-inset-bottom)); z-index: 40; display: flex; align-items: center; justify-content: center;
+    gap: 8px; height: 54px; border: 0; border-radius: 18px; background: var(--accent); color: #fff; font: inherit; font-size: 16px; font-weight: 600;
+    box-shadow: 0 10px 24px -10px rgba(46, 107, 230, .7); cursor: pointer; }
+  .pay-v2:has(.py-mgo) { padding-bottom: 80px; }
+
+  /* B17 · журнал — стрічкою подій */
+  .au-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--m-pad)) 10px; padding: 0 var(--m-pad); }
+  .au-chips::-webkit-scrollbar { display: none; }
+  .au-chips .pr-qc { flex: none; height: 40px; padding: 0 14px; font-size: 14px; border-color: #E6E6E3; background: #fff; }
+  .au-date { margin-bottom: 12px; }
+  .au-day { margin-bottom: 12px; padding: 4px 0; border-radius: var(--m-r); background: #fff; }
+  .au-day h2 { margin: 0; padding: 10px 14px 4px; font-size: 13px; font-weight: 500; color: var(--muted); }
+  .au-ev { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 56px; padding: 10px 14px; border: 0; border-top: 1px solid #F0F0EE;
+    background: none; font: inherit; color: var(--ink); text-align: left; }
+  .au-day h2 + .au-ev { border-top: 0; }
+  .au-ev:disabled { opacity: 1; cursor: default; }
+  .au-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .au-t b { font-size: 14.5px; font-weight: 550; }
+  .au-t small { font-size: 12.5px; color: var(--muted); }
+  .au-t .au-d { color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .au-ev time { flex: none; font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .au-more { width: 100%; height: 48px; justify-content: center; }
+}
+
+@media (max-width: 768px) {
+  /* B18 · закупівлі — картками */
+  .pu-mcard { display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; border: 0; font: inherit; text-align: left; color: var(--ink); }
+  .pu-m1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); }
+  .pu-mcard > b { font-size: 16px; font-weight: 600; }
+  .pu-m3 { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .pu-m3 small { font-size: 12.5px; color: var(--muted); min-width: 0; }
+  .pu-m3 b { font-size: 16px; font-weight: 600; white-space: nowrap; }
+}
+
+@media (max-width: 768px) {
+  /* B14 · дошка: колонка на весь екран, свайп, чипи статусів, крапки; перенести — довгий натиск */
+  .m-board .board-hint { display: none; }
+  .mb-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--m-pad)) 10px; padding: 0 var(--m-pad); }
+  .mb-chips::-webkit-scrollbar { display: none; }
+  .mb-chip { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 0; border-radius: 99px; font: inherit; font-size: 14px; font-weight: 500;
+    background: color-mix(in srgb, var(--c) 12%, white); color: color-mix(in srgb, var(--c) 78%, black); cursor: pointer; }
+  .mb-chip i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .mb-chip em { font-style: normal; opacity: .75; font-variant-numeric: tabular-nums; }
+  .mb-chip.on { background: color-mix(in srgb, var(--c) 82%, #000); color: #fff; }
+  .mb-cols { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 calc(-1 * var(--m-pad)); }
+  .mb-cols::-webkit-scrollbar { display: none; }
+  .mb-col { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; display: flex; flex-direction: column; gap: 10px; padding: 0 var(--m-pad) 16px; min-height: 50vh; }
+  .mb-card { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; user-select: none; }
+  .mb-card .kcard { margin: 0; padding: 12px 14px; border: 0; border-radius: var(--m-r); background: #fff; box-shadow: none; }
+  .mb-card .kcard-name { font-size: 16px; font-weight: 600; }
+  .mb-more { text-align: center; padding: 6px; }
+  .mb-dots { position: sticky; bottom: calc(92px + env(safe-area-inset-bottom)); display: flex; justify-content: center; gap: 5px; pointer-events: none; }
+  .mb-dots i { width: 6px; height: 6px; border-radius: 99px; background: #CFCFCB; transition: width 150ms; }
+  .mb-dots i.on { width: 16px; background: var(--ink); }
+}
+
+@media (max-width: 768px) {
+  /* B15 · статистика: плитки по дві, період і фільтри — чипами */
+  .stats .st-head-r > .st-sel:first-child, .stats .st-group, .stats .st-head-r > .btn, .stats .st-period { display: none; }
+  .stats .st-head-r { gap: 8px; }
+  .stats .st-sel { height: 40px; border-radius: 99px; background: var(--accent-soft); color: #1F4FB8; }
+  .stats .st-fbar { margin-top: -2px; }
+  .stats .st-more { height: 40px; border-radius: 99px; }
+  .stats .st-fmore { grid-template-columns: 1fr; }
+  .stats .st-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats .st-kpi { min-width: 0; }
+  .stats .st-kpi-l { flex-wrap: wrap; gap: 4px; }
+  .stats .st-kpi-v { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+@media (max-width: 768px) {
+  /* B16 · налаштування: статуси й користувачі — коротким списком, тап — шторка з полями */
+  .set-mlist { display: flex; flex-direction: column; border-radius: var(--m-r); background: #fff; overflow: hidden; }
+  .set-mrow2 { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; padding: 8px 14px; border: 0; border-top: 1px solid #F0F0EE;
+    background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
+  .set-mrow2:first-child { border-top: 0; }
+  .set-mrow2 > i { width: 14px; height: 14px; border-radius: 5px; flex: none; }
+  .set-mrow2 > span:not(.set-mav) { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .set-mrow2 b { font-size: 15.5px; font-weight: 550; }
+  .set-mrow2 small { font-size: 12.5px; color: var(--muted); }
+  .set-mrow2 > svg { color: var(--faint); flex: none; }
+  .set-mav { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 50%; background: var(--accent-soft); color: #1F4FB8; font-weight: 600; }
+  .set-mnew { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .set-msheet { display: flex; flex-direction: column; gap: 12px; }
+  .set-mcolor { display: flex; align-items: center; justify-content: space-between; }
+  .set-msave { flex: 1; height: 52px; justify-content: center; font-size: 16px; border-radius: 16px; }
+  .set-mdel { height: 48px; justify-content: center; }
+}
+
+@media (max-width: 768px) {
+  /* дрібні цілі з повного проходу */
+  .mh-card h2 .link-btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; }
+  .gi-x { width: 40px; height: 40px; }
+}

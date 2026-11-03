@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { DndContext, DragOverlay, MouseSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { Eye, EyeOff, KanbanSquare, List } from "lucide-react";
-import { Segmented } from "../components/ui";
+import { Check, Eye, EyeOff, KanbanSquare, List } from "lucide-react";
+import { MobileActs, RoundButton, Segmented, Sheet, useMobile } from "../components/ui";
 import { api, qs } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { ago, itemsLabel, money, phone } from "../lib/format";
@@ -53,6 +53,8 @@ export default function BoardPage() {
     onSettled: () => qc.invalidateQueries({ queryKey: ["orders"] }),
   });
 
+  const mobile = useMobile();
+  const toggleFinal = () => { const v = !showFinal; setShowFinal(v); try { localStorage.setItem("crm-board-final", v ? "1" : "0"); } catch { /* приватне вікно */ } };
   const onDragEnd = (e: DragEndEvent) => {
     setDragging(null);
     const order = e.active.data.current?.order as OrderRow | undefined;
@@ -60,6 +62,14 @@ export default function BoardPage() {
     if (order && to && to.id !== order.status_id) move.mutate({ order, to });
   };
 
+  if (mobile) return (
+    <div className="page-board m-board">
+      <MobileActs><RoundButton icon={showFinal ? EyeOff : Eye} label={showFinal ? "Сховати завершені" : "Показати завершені"} onClick={toggleFinal} /></MobileActs>
+      <div className="head"><h1>Дошка</h1></div>
+      <MobileBoard columns={columns} data={data} onOpen={(oid) => nav(`/board/${oid}`)} onMove={(order, to) => move.mutate({ order, to })} />
+      {id && <OrderModal id={id} onClose={() => nav("/board")} onOpen={(oid) => nav(`/board/${oid}`)} />}
+    </div>
+  );
   return (
     <div className="page-board">
       <div className="head">
@@ -67,7 +77,7 @@ export default function BoardPage() {
         <div className="actions">
           <Segmented label="Вигляд" value="board" onChange={(k) => { if (k === "list") nav("/orders"); }}
             items={[{ key: "list", label: "Стрічка", icon: <List size={14} /> }, { key: "board", label: "Дошка", icon: <KanbanSquare size={14} /> }]} />
-          <button className="btn ghost" onClick={() => { const v = !showFinal; setShowFinal(v); localStorage.setItem("crm-board-final", v ? "1" : "0"); }}>
+          <button className="btn ghost" onClick={toggleFinal}>
             {showFinal ? <EyeOff size={15} /> : <Eye size={15} />} {showFinal ? "Сховати завершені" : "Показати завершені"}
           </button>
         </div>
@@ -126,4 +136,62 @@ function Card({ order: o, overlay = false }: { order: OrderRow; overlay?: boolea
         {o.duplicate_of_id && <span className="badge warn">дубль</span>}</div>
     </div>
   );
+}
+
+// телефон (B14): одна колонка на весь екран, свайп між колонками (scroll-snap), угорі чипи статусів з лічильниками,
+// крапки-індикатор. Перенести — довгий натиск на картку → шторка зі статусами.
+function MobileBoard({ columns, data, onOpen, onMove }: {
+  columns: Status[]; data: Record<number, OrderList | undefined>; onOpen: (id: number) => void; onMove: (o: OrderRow, to: Status) => void;
+}) {
+  const box = useRef<HTMLDivElement>(null);
+  const chips = useRef<HTMLDivElement>(null);
+  const [idx, setIdx] = useState(0);
+  const [pick, setPick] = useState<OrderRow | null>(null);
+  const press = useRef<{ t: number; long: boolean }>({ t: 0, long: false });
+  useEffect(() => { chips.current?.children[idx]?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }, [idx]);
+  const go = (i: number) => { const el = box.current; if (el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" }); };
+  return (<>
+    <div className="mb-chips" ref={chips} role="tablist" aria-label="Статуси">
+      {columns.map((s, i) => (
+        <button key={s.id} type="button" role="tab" aria-selected={i === idx} className={`mb-chip${i === idx ? " on" : ""}`} style={{ ["--c" as string]: s.color }} onClick={() => go(i)}>
+          <i />{s.name}<em>{data[s.id]?.total ?? ""}</em></button>
+      ))}
+    </div>
+    <div className="mb-cols" ref={box} onScroll={(e) => { const el = e.currentTarget; const i = Math.round(el.scrollLeft / Math.max(1, el.clientWidth)); if (i !== idx) setIdx(i); }}>
+      {columns.map((s) => {
+        const list = data[s.id];
+        return (
+          <section key={s.id} className="mb-col" aria-label={s.name}>
+            {!list && <div className="spinner sm" />}
+            {list?.items.map((o) => (
+              <div key={o.id} role="button" tabIndex={0} className="mb-card"
+                onTouchStart={() => { press.current.long = false; press.current.t = window.setTimeout(() => { press.current.long = true; navigator.vibrate?.(12); setPick(o); }, 450); }}
+                onTouchMove={() => clearTimeout(press.current.t)} onTouchEnd={() => clearTimeout(press.current.t)}
+                onContextMenu={(e) => e.preventDefault()}
+                onClick={() => { if (press.current.long) { press.current.long = false; return; } onOpen(o.id); }}
+                onKeyDown={(e) => { if (e.key === "Enter") onOpen(o.id); }}>
+                <Card order={o} />
+              </div>
+            ))}
+            {list && list.items.length === 0 && <div className="board-empty">Тут порожньо</div>}
+            {list && list.total != null && list.total > list.items.length && <div className="hint mb-more">ще {list.total - list.items.length} у списку замовлень</div>}
+          </section>
+        );
+      })}
+    </div>
+    <div className="mb-dots" aria-hidden>{columns.map((s, i) => <i key={s.id} className={i === idx ? "on" : ""} />)}</div>
+    {pick && (
+      <Sheet title={`Перенести №${pick.id}`} onClose={() => setPick(null)}>
+        <div className="m-stlist">
+          {columns.map((s) => (
+            <button key={s.id} type="button" className={`m-stopt${s.id === pick.status_id ? " on" : ""}`} disabled={s.id === pick.status_id}
+              onClick={() => { onMove(pick, s); setPick(null); }}>
+              <span className="m-stpill" style={{ ["--c" as string]: s.color }}><i />{s.name}</span>
+              {s.id === pick.status_id ? <Check size={17} /> : <span className="m-stck" />}
+            </button>
+          ))}
+        </div>
+      </Sheet>
+    )}
+  </>);
 }

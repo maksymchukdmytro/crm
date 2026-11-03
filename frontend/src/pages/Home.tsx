@@ -4,7 +4,7 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  AlarmClock, ArrowDownRight, ArrowUpRight, Boxes, CalendarDays, Check, ChevronRight, CircleDot, Clock, HandCoins, Inbox, MapPin, Package, PackageCheck, Phone, Truck,
+  AlarmClock, ArrowDownRight, ArrowUpRight, Boxes, CalendarDays, Check, ChevronRight, CircleDot, HandCoins, Inbox, MapPin, Package, PackageCheck, Phone, Truck,
   UserRound, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 import { api, qs } from "../lib/api";
@@ -78,7 +78,7 @@ export default function HomePage() {
   ];
   const more = attention.filter((x) => ["у дорозі", "очікуємо післяплату", "товарів закінчуються"].includes(x.label));
 
-  if (mobile) return <HomeMobile data={data} periodName={periodName} attention={attention} go={(to) => nav(to)} st={st} />;
+  if (mobile) return <HomeMobile data={data} periodName={periodName} attention={attention} todo={todo} go={(to) => nav(to)} />;
 
   return (
     <div className="home2">
@@ -283,7 +283,6 @@ function DayChart({ days, prev }: { days: Dashboard["days"]; prev: Dashboard["da
 
 // ---------------------------------------------------------------- телефон (мобільна v2): лічильники-пігулки, темна картка «Продано сьогодні»
 // зі стовпцями 7 днів, плитки 2×2 (період, середній чек, апрув, викуп), топ товарів і решта «потребує уваги».
-const WD = ["нд", "пн", "вт", "ср", "чт", "пт", "сб"];
 type Attn = { icon: LucideIcon; n: string | number; label: string; tone: "" | "hot" | "warn"; go?: () => void };
 
 function DeltaPill({ v, unit = "%" }: { v: number | null | undefined; unit?: string }) {
@@ -292,20 +291,19 @@ function DeltaPill({ v, unit = "%" }: { v: number | null | undefined; unit?: str
   return <span className={`mh-d ${up ? "up" : "down"}`}>{up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}{up ? "+" : "−"}{Math.abs(v)}{unit === "%" ? "%" : ` ${unit}`}</span>;
 }
 
-function HomeMobile({ data, periodName, attention, go, st }: {
-  data: Dashboard; periodName: string; attention: Attn[]; go: (to: string) => void; st: (code: string) => number | undefined;
+type Todo = { icon: LucideIcon; n: number; label: string; sub?: string; tone: string; go: () => void };
+
+// Телефон (макет v27-01): спершу «Що зробити зараз» (плитки гортаються вбік), компактна смуга продажів дня з лінією
+// за 7 днів, «Мої нагадування» з кнопкою дзвінка; далі — місяць, якість, топ товарів і решта уваги.
+function HomeMobile({ data, periodName, attention, todo, go }: {
+  data: Dashboard; periodName: string; attention: Attn[]; todo: Todo[]; go: (to: string) => void;
 }) {
-  const { today, month, quality: q, attention: a } = data;
-  const byDay = new Map<string, number>();
-  [...(data.prev_days ?? []), ...data.days].forEach((d) => byDay.set(d.day, d.sum));
-  const week = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (6 - i)); const k = isoDay(d); return { k, wd: i === 6 ? "сьогодні" : WD[d.getDay()], sum: byDay.get(k) ?? 0 }; });
-  const max = Math.max(1, ...week.map((w) => w.sum));
-  const pills: { icon: LucideIcon; tone: string; n: number; label: string; to: string }[] = [
-    { icon: Inbox, tone: "red", n: a.leads_new, label: "нові ліди", to: "/leads?tab=new" },
-    { icon: Clock, tone: "orange", n: a.orders_unsorted, label: "несортовані", to: st("unsorted") ? `/orders?status=${st("unsorted")}` : "/orders" },
-    { icon: Package, tone: "blue", n: a.to_ship, label: "відправити", to: st("confirmed") ? `/orders?status=${st("confirmed")}` : "/orders" },
-  ];
-  const rest = attention.filter((x) => !["нові ліди", "новий лід", "нових лідів", "несортованих", "чекають відправки"].includes(x.label) && x.n !== 0 && x.n !== "0 ₴");
+  const meta = useMeta();
+  const { today, month, quality: q } = data;
+  const now = new Date();
+  const jobs = todo.filter((t) => t.n > 0);
+  const rems = data.my_reminders ?? [];
+  const rest = attention.filter((x) => ["у дорозі", "очікуємо післяплату", "товарів закінчуються"].includes(x.label) && x.n !== 0 && x.n !== "0 ₴");
   const tile = (icon: LucideIcon, tone: string, d: ReactNode, v: ReactNode, l: string, to?: string) => {
     const I = icon;
     return (
@@ -317,24 +315,48 @@ function HomeMobile({ data, periodName, attention, go, st }: {
   };
   return (
     <div className="mh">
-      <div className="mh-pills">
-        {pills.map((p) => (
-          <button key={p.label} type="button" className="mh-pill" onClick={() => go(p.to)}>
-            <span className={`sq sm t-${p.tone}`}><p.icon size={15} /></span><span><b>{p.n}</b><small>{p.label}</small></span>
-          </button>
-        ))}
-      </div>
-      <button type="button" className="mh-dark" onClick={() => go(`/orders?date_from=${today.date}&date_to=${today.date}`)}>
-        <span className="mh-dark-h"><span>Продано сьогодні · {today.orders} {pl(today.orders, "замовлення", "замовлення", "замовлень")}</span><DeltaPill v={today.sum_delta} /></span>
-        <span className="mh-big">{money(today.sum)} <small>₴</small></span>
-        <span className="mh-bars" aria-label="Сума продажів за 7 днів">
-          {week.map((w, i) => (
-            <span key={w.k} className="mh-bar" title={`${w.wd}: ${money(w.sum)} ₴`}>
-              <i className={i === 6 ? "on" : ""} style={{ height: `${Math.max(6, (w.sum / max) * 62)}px` }} /><small>{w.wd}</small>
-            </span>
+      <h2 className="mh-h">Що зробити зараз{jobs.length > 0 && <em>{jobs.reduce((a, t) => a + t.n, 0)}</em>}</h2>
+      {jobs.length ? (
+        <div className="mh-todo" role="list">
+          {jobs.map((t) => (
+            <button key={t.label} type="button" role="listitem" className="mh-job" onClick={t.go}>
+              <span className="mh-job-h"><span className={`sq sm t-${t.tone}`}><t.icon size={16} /></span><ChevronRight size={16} /></span>
+              <b>{t.n}</b><small>{t.label}{t.sub ? ` · ${t.sub}` : ""}</small>
+            </button>
           ))}
+        </div>
+      ) : <p className="mh-done"><Check size={16} />Усе зроблено — нових справ немає</p>}
+
+      <button type="button" className="mh-strip" onClick={() => go(`/orders?date_from=${today.date}&date_to=${today.date}`)}>
+        <span className="mh-strip-t">
+          <small>Продано сьогодні · {today.orders} {pl(today.orders, "замовлення", "замовлення", "замовлень")}</small>
+          <b>{money(today.sum)} <i>₴</i></b>
         </span>
+        <span className="mh-strip-r"><DeltaPill v={today.sum_delta} /><Spark values={(data.week ?? []).map((d) => d.sum)} title="Продажі за 7 днів" /></span>
       </button>
+
+      {rems.length > 0 && (
+        <section className="mh-card mh-rems">
+          <h2><span className="sq sm t-red"><AlarmClock size={15} /></span>Мої нагадування<em>{rems.length}</em>
+            <button type="button" className="link-btn" onClick={() => go("/orders?remind=due")}>усі</button></h2>
+          {rems.slice(0, 6).map((r) => {
+            const at = new Date(r.remind_at);
+            const late = at <= now;
+            const st = meta.statuses.find((x) => x.id === r.status_id);
+            const tel = (r.phone ?? "").replace(/\D/g, "");
+            return (
+              <div key={r.id} className={`mh-rem${late ? " late" : ""}`}>
+                <b className="mh-rem-t">{isoDay(at) === isoDay(now) ? at.toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }) : dm(isoDay(at))}</b>
+                <button type="button" className="mh-rem-n" onClick={() => go(`/orders/${r.id}`)}>
+                  <span className="ell">{r.customer_name || "без імені"}</span><small>№{r.id}{st ? ` · ${st.name}` : ""}</small>
+                </button>
+                {tel && <a className="mh-call" href={`tel:+${tel}`} aria-label={`Подзвонити ${phone(r.phone ?? "")}`}><Phone size={18} /></a>}
+              </div>
+            );
+          })}
+        </section>
+      )}
+
       <div className="mh-tiles">
         {tile(CalendarDays, "blue", <DeltaPill v={month.sum_delta} />, <>{money(month.sum)} ₴</>, `за ${periodName.toLowerCase()}`, "/stats")}
         {tile(Wallet, "green", null, <>{money(month.avg_check)} ₴</>, "середній чек", "/stats")}
@@ -351,7 +373,7 @@ function HomeMobile({ data, periodName, attention, go, st }: {
       </section>
       {rest.length > 0 && (
         <section className="mh-card">
-          <h2>Потребує уваги</h2>
+          <h2>Ще варто глянути</h2>
           {rest.map((x) => (
             <button key={x.label} type="button" className="mh-attn" onClick={x.go} disabled={!x.go}>
               <span className={`sq sm t-${x.tone === "hot" ? "red" : x.tone === "warn" ? "orange" : "gray"}`}><x.icon size={15} /></span>

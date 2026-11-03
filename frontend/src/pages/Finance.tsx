@@ -1,12 +1,12 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banknote, BarChart3, CircleCheck, HandCoins, History, TriangleAlert, Wallet } from "lucide-react";
+import { Banknote, BarChart3, Check, CircleCheck, HandCoins, History, Package, ReceiptText, Settings, ShoppingCart, Trash2, TriangleAlert, Upload, UserRound, Wallet, type LucideIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, qs } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { date, dt, isoDay, money } from "../lib/format";
 import type { Audit, Payment, Payments, Registry, Report as ReportData } from "../lib/types";
-import { DateRangeField, FileButton, Empty, Kpi, Spinner, Select } from "../components/ui";
+import { DateRangeField, FileButton, Empty, Kpi, MobileActs, RoundButton, Spinner, Select, useMobile } from "../components/ui";
 
 // ================================================================ оплати
 
@@ -19,6 +19,8 @@ export function PaymentsPage() {
   const [ref, setRef] = useState("");
   const [report, setReport] = useState<Registry | null>(null);
   const [openG, setOpenG] = useState<Record<string, boolean>>({});
+  const mobile = useMobile();
+  const fileIn = useRef<HTMLInputElement>(null);
   const { data } = useQuery({ queryKey: ["payments", "all"], queryFn: () => api.get<Payments>(`/payments${qs({ status: "" })}`) });
   const receive = useMutation({
     mutationFn: () => api.post<{ done: number }>("/payments/receive", { ids: [...sel], reference: ref }),
@@ -50,15 +52,27 @@ export function PaymentsPage() {
   const ageDays = (iso?: string | null) => (iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86400_000) : 0);
   const toggle = (id: number) => setSel((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
-  const row = (p: Payment, kind: "collected" | "expected" | "bad" | "ok") => (
+  const stText = (p: Payment, kind: "collected" | "expected" | "bad" | "ok") => kind === "collected" ? `оплачено ${date(p.collected_at)}`
+    : kind === "expected" ? (ageDays(p.created_at) > 4 ? `у дорозі ${ageDays(p.created_at)} дн` : "чекаємо")
+      : kind === "bad" ? "сума не збігається" : `надійшло ${date(p.received_at)}`;
+  // телефон (B13): рядок 56 px — галочка 26 px, ім'я, «№ · стан», сума; тап по рядку — вибрати
+  const mrow = (p: Payment, kind: "collected" | "expected" | "bad" | "ok") => {
+    const inner = (<>
+      {kind === "collected" && <input type="checkbox" checked={sel.has(p.id)} onChange={() => toggle(p.id)} aria-label={`Вибрати №${p.order_id}`} />}
+      <span className="py-mt"><b className="ell">{p.customer || "—"}</b><small className={`py-st ${kind}`}>№{p.order_id} · {stText(p, kind)}</small></span>
+      <b className="num py-sum">{kind === "bad" ? <>{money(p.amount)} → {money(p.received_amount ?? 0)} ₴</> : <>{money(p.amount)} ₴</>}</b>
+    </>);
+    return kind === "collected"
+      ? <label key={p.id} className={`py-mr${sel.has(p.id) ? " on" : ""}`}>{inner}</label>
+      : <button key={p.id} type="button" className="py-mr" onClick={() => nav(`/orders/${p.order_id}`)}>{inner}</button>;
+  };
+  const row = (p: Payment, kind: "collected" | "expected" | "bad" | "ok") => mobile ? mrow(p, kind) : (
     <div key={p.id} className={`py-r${sel.has(p.id) ? " on" : ""}`}>
       {kind === "collected" ? <input type="checkbox" checked={sel.has(p.id)} onChange={() => toggle(p.id)} aria-label={`Вибрати №${p.order_id}`} /> : <span />}
       <button type="button" className="py-no" onClick={() => nav(`/orders/${p.order_id}`)}>№{p.order_id}</button>
       <span className="ell">{p.customer || "—"}</span>
       <span className="mono muted py-ttn">{p.ttn}</span>
-      <span className={`py-st ${kind}`}>{kind === "collected" ? `оплачено клієнтом ${date(p.collected_at)}`
-        : kind === "expected" ? (ageDays(p.created_at) > 4 ? `у дорозі ${ageDays(p.created_at)} дн` : "чекаємо")
-          : kind === "bad" ? "сума не збігається" : `надійшло ${date(p.received_at)}`}</span>
+      <span className={`py-st ${kind}`}>{kind === "collected" ? `оплачено клієнтом ${date(p.collected_at)}` : stText(p, kind)}</span>
       <b className="num py-sum">{kind === "bad" ? <>{money(p.amount)} → {money(p.received_amount ?? 0)} ₴</> : <>{money(p.amount)} ₴</>}</b>
     </div>
   );
@@ -78,14 +92,17 @@ export function PaymentsPage() {
   return (
     <div className="pay-v2">
       <div className="head"><h1><span className="h-ico"><Wallet size={18} /></span>Оплати</h1>
-        <div className="actions">
+        {!mobile && <div className="actions">
           <FileButton accept=".csv,.txt" busy={upload.isPending} onFile={(f) => upload.mutate(f)}>Імпорт реєстру НП (CSV)</FileButton>
-        </div></div>
+        </div>}</div>
+      <MobileActs><RoundButton icon={Upload} label="Імпорт реєстру НП (CSV)" onClick={() => fileIn.current?.click()} /></MobileActs>
+      <input ref={fileIn} type="file" accept=".csv,.txt" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) upload.mutate(f); }} />
       <div className="py-tiles">
         {([[HandCoins, "orange", "Післяплата в дорозі", `${money(sum(expected))} ₴`, `${expected.length} відправлень`],
           [Banknote, "blue", "Оплачено клієнтом — до зарахування", `${money(sum(collected))} ₴`, `${collected.length} відправлень`],
           [CircleCheck, "green", "Надійшло за 7 днів", `${money(sum(week, (p) => p.received_amount ?? p.amount))} ₴`, `${week.length} відправлень`],
           [TriangleAlert, "red", "Розбіжності", String(mismatch.length), mismatch.length ? `на ${money(sum(mismatch, (p) => p.amount - (p.received_amount ?? 0)))} ₴` : "усе збігається"]] as const)
+          .filter((_, i) => !mobile || i < 2 || (i === 3 && mismatch.length > 0))
           .map(([I, t, l, v, sub]) => (
             <div key={l} className="py-tile"><span className={`sq ${t}`}><I size={17} /></span><div><small>{l}</small><b>{v}</b><small className="s">{sub}</small></div></div>
           ))}
@@ -101,13 +118,18 @@ export function PaymentsPage() {
         </div>
       )}
       {!data ? <Empty><Spinner /></Empty> : !items.length ? <Empty>Платежів ще немає. Вони з'являються самі, коли відправляється замовлення з післяплатою.</Empty> : (<>
-        {group("collected", "Оплачено клієнтом — позначте, коли гроші надійдуть", "#2E6BE6", collected, "collected", `${money(sum(collected))} ₴`,
-          <label className="py-all" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={allCollected} onChange={() => setSel(allCollected ? new Set() : new Set(collected.map((p) => p.id)))} />усі</label>)}
+        {group("collected", mobile ? "Оплатили клієнти" : "Оплачено клієнтом — позначте, коли гроші надійдуть", "#2E6BE6", collected, "collected", mobile ? "" : `${money(sum(collected))} ₴`,
+          mobile ? <button type="button" className="link-btn py-mall" onClick={() => setSel(allCollected ? new Set() : new Set(collected.map((p) => p.id)))}>{allCollected ? "зняти всі" : "вибрати всі"}</button>
+            : <label className="py-all" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={allCollected} onChange={() => setSel(allCollected ? new Set() : new Set(collected.map((p) => p.id)))} />усі</label>)}
         {group("bad", "Розбіжності", "#DC2626", mismatch, "bad", String(mismatch.length))}
-        {group("expected", "Очікуються · у дорозі й на пошті", "#D97706", expected, "expected", `${money(sum(expected))} ₴`)}
+        {group("expected", mobile ? "Очікуються" : "Очікуються · у дорозі й на пошті", "#D97706", expected, "expected", `${money(sum(expected))} ₴`)}
         {[...regs.entries()].map(([k, list]) => group(k, k, "#16A34A", list, "ok", `надійшло ${money(sum(list, (p) => p.received_amount ?? p.amount))} ₴`))}
       </>)}
-      {sel.size > 0 && (
+      {sel.size > 0 && mobile && (
+        <button type="button" className="py-mgo" disabled={receive.isPending} onClick={() => receive.mutate()}>
+          <Check size={18} />Гроші отримано · {sel.size} на {money(sum(collected.filter((p) => sel.has(p.id))))} ₴</button>
+      )}
+      {sel.size > 0 && !mobile && (
         <div className="bulkbar py-bulk"><span>Вибрано: <b>{sel.size}</b> на <b>{money(sum(collected.filter((p) => sel.has(p.id))))} ₴</b></span>
           <input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="№ реєстру або виписки" aria-label="Примітка" />
           <button className="btn primary sm" disabled={receive.isPending} onClick={() => receive.mutate()}>Гроші отримано</button>
@@ -181,6 +203,9 @@ export function ReportsPage() {
 // ================================================================ журнал дій
 const ENTITIES: Record<string, string> = { order: "Замовлення", product: "Товар", purchase: "Закупівля", user: "Користувач", settings: "Налаштування" };
 
+const AU_ICON: Record<string, LucideIcon> = { order: ReceiptText, product: Package, purchase: ShoppingCart, user: UserRound, settings: Settings };
+const AU_TONE: Record<string, string> = { order: "t-blue", product: "t-green", purchase: "t-orange", user: "t-purple", settings: "t-gray" };
+
 export function AuditPage() {
   const nav = useNavigate();
   const [f, setF] = useState({ entity: "", action: "", date_from: "", date_to: "" });
@@ -191,6 +216,46 @@ export function AuditPage() {
   });
   const rows = q.data?.pages.flatMap((p) => p.items) ?? [];
   const actions = q.data?.pages[0]?.actions ?? {};
+  const mobile = useMobile();
+  if (mobile) {
+    // B17: стрічка подій — значок дії, що змінилось, хто, час; групи за днями; чипи-фільтри
+    const today = isoDay(new Date()), yest = isoDay(new Date(Date.now() - 86400_000));
+    const dayName = (d: string) => d === today ? "Сьогодні" : d === yest ? "Учора" : date(d);
+    const days: [string, typeof rows][] = [];
+    rows.forEach((r) => { const d = isoDay(new Date(r.created_at ?? "")); const last = days[days.length - 1]; if (last && last[0] === d) last[1].push(r); else days.push([d, [r]]); });
+    return (
+      <div className="au-m">
+        <div className="head"><h1>Журнал дій</h1></div>
+        <div className="au-chips" role="radiogroup" aria-label="Об'єкт">
+          {[["", "Усі"], ...Object.entries(ENTITIES)].map(([k, n]) => (
+            <button key={k} type="button" role="radio" aria-checked={f.entity === k} className={`pr-qc${f.entity === k ? " on" : ""}`} onClick={() => setF({ ...f, entity: k })}>{n}</button>
+          ))}
+        </div>
+        <DateRangeField className="au-date" from={f.date_from} to={f.date_to} clearable placeholder="За весь час" max={isoDay(new Date())} onChange={(a, b) => setF({ ...f, date_from: a, date_to: b })} />
+        {days.map(([d, list]) => (
+          <section key={d} className="au-day">
+            <h2>{dayName(d)}</h2>
+            {list.map((r) => {
+              const del = /delete|remove/.test(r.action);
+              const I = del ? Trash2 : AU_ICON[r.entity] ?? History;
+              const go = r.entity === "order" && r.entity_id ? () => nav(`/orders/${r.entity_id}`) : undefined;
+              return (
+                <button key={r.id} type="button" className="au-ev" onClick={go} disabled={!go}>
+                  <span className={`sq sm ${del ? "t-red" : AU_TONE[r.entity] ?? "t-gray"}`}><I size={15} /></span>
+                  <span className="au-t"><b>{r.entity === "order" && r.entity_id ? `№${r.entity_id}: ` : r.entity_id ? `${ENTITIES[r.entity] ?? r.entity} №${r.entity_id}: ` : ""}{r.action_name}</b>
+                    {r.details && <small className="au-d">{r.details}</small>}<small>{r.user}</small></span>
+                  <time>{new Date(r.created_at ?? "").toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}</time>
+                </button>
+              );
+            })}
+          </section>
+        ))}
+        {q.isLoading && <Empty><Spinner /></Empty>}
+        {!q.isLoading && !rows.length && <Empty>Подій за цей час немає</Empty>}
+        {q.hasNextPage && <button type="button" className="btn au-more" onClick={() => q.fetchNextPage()} disabled={q.isFetchingNextPage}>Показати ще</button>}
+      </div>
+    );
+  }
   return (
     <div>
       <div className="head"><h1><span className="h-ico"><History size={18} /></span>Журнал дій</h1></div>

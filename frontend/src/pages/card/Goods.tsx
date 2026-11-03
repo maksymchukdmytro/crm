@@ -5,7 +5,8 @@ import { ChevronDown, Link2, Package, Plus, Search, Sparkles, X } from "lucide-r
 import { ROOT } from "../../lib/api";
 import { money, num } from "../../lib/format";
 import type { OrderItem, Product, Variant } from "../../lib/types";
-import { QtyStepper, Select } from "../../components/ui";
+import { QtyStepper, Select, useMobile } from "../../components/ui";
+import { useToast } from "../../lib/app";
 import { arrange, newKey } from "./state";
 
 type Pick = { p: Product; v?: Variant };
@@ -55,6 +56,26 @@ export const Goods = forwardRef<GoodsHandle, {
   const remove = (it: OrderItem) => onChange(items.filter((x) => x.key !== it.key).map((x) =>
     x.upsell && it.product_id && !it.upsell && x.upsell_for === it.product_id && !items.some((o) => o !== it && !o.upsell && o.product_id === it.product_id) ? { ...x, upsell_for: null } : x));
 
+  // телефон (B7): свайп ліворуч по товару — прибрати; у тості «Скасувати»
+  const mobile = useMobile();
+  const toast = useToast();
+  const [sw, setSw] = useState<{ key: string; dx: number } | null>(null);
+  const g = useRef<{ key: string; x: number; y: number; h: boolean | null; dx: number } | null>(null);
+  const swipeProps = (i: OrderItem) => (!mobile || readOnly || !i.key ? {} : {
+    onTouchStart: (e: React.TouchEvent) => { const t = e.touches[0]; g.current = { key: i.key!, x: t.clientX, y: t.clientY, h: null, dx: 0 }; },
+    onTouchMove: (e: React.TouchEvent) => {
+      const s0 = g.current; if (!s0 || s0.key !== i.key) return;
+      const t = e.touches[0], dx = t.clientX - s0.x, dy = t.clientY - s0.y;
+      if (s0.h === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) s0.h = dx < 0 && Math.abs(dx) > 2 * Math.abs(dy) && !(e.target as HTMLElement).closest("input, .qty-step");
+      if (!s0.h) return;
+      s0.dx = Math.max(-130, Math.min(0, dx)); setSw({ key: i.key!, dx: s0.dx });
+    },
+    onTouchEnd: () => {
+      const s0 = g.current; g.current = null; setSw(null);
+      if (s0?.h && s0.dx <= -80) { const before = items; remove(i); toast(`«${i.name}» прибрано`, "ok", { undo: () => onChange(before) }); }
+    },
+  });
+
   const row = (i: OrderItem) => {
     const p = i.product_id ? byId[i.product_id] : undefined;
     const base = i.base_price ?? p?.price;
@@ -64,8 +85,9 @@ export const Goods = forwardRef<GoodsHandle, {
     const sku = i.variant_id ? variants.find((x) => x.id === i.variant_id)?.sku || p?.sku : p?.sku ?? i.sku;
     const photo = i.photo ?? p?.photo;
     const baseName = p && i.variant_id ? p.name : i.name;
-    return (
-      <div key={i.key} className={`gi${i.upsell ? " up" : ""}`}>
+    const dx = sw && sw.key === i.key ? sw.dx : 0;
+    const line = (
+      <div key={i.key} className={`gi${i.upsell ? " up" : ""}`} style={dx ? { transform: `translateX(${dx}px)` } : undefined} {...swipeProps(i)}>
         <span className="gi-ph">{i.upsell ? <Link2 size={15} /> : photo ? <img src={`${ROOT}${photo}`} alt="" /> : <Package size={15} />}</span>
         <div className="gi-main">
           <div className="gi-l1">
@@ -112,6 +134,8 @@ export const Goods = forwardRef<GoodsHandle, {
         {!readOnly && <button type="button" className="gi-x" aria-label="Прибрати позицію" title="Прибрати" onClick={() => remove(i)}><X size={14} /></button>}
       </div>
     );
+    if (!mobile || readOnly) return line;
+    return <div key={i.key} className={`gi-sw${dx ? " on" : ""}${dx <= -80 ? " go" : ""}`}>{dx < 0 && <span className="gi-sw-bg" aria-hidden><X size={16} />Прибрати</span>}{line}</div>;
   };
 
   const body: React.ReactNode[] = [];

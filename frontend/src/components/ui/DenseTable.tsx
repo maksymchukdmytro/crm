@@ -1,6 +1,7 @@
 // Щільна стрічка як у Notion (UI-DESIGN §4.1): рядок 31 px, шапка 32 px, рядки-групи 30 px, віртуалізація,
 // вибір (квадратик, пробіл або X, Shift-клік — діапазон), дії при наведенні, сірі заглушки, порожній стан.
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { SkeletonRows } from "./blocks";
 import { useMobile } from "./hooks";
@@ -40,7 +41,7 @@ function cardPlace<T>(cols: DenseCol<T>[]) {
 }
 
 export function DenseTable<T>({
-  rows, cols, rowKey, groupOf, selected, onSelect, onOpen, actions, isLoading, empty, onEndReached, current, className = "", label, rowClass, mobileCard, rowHeight = ROW_H, onRowMenu,
+  rows, cols, rowKey, groupOf, selected, onSelect, onOpen, actions, isLoading, empty, onEndReached, current, className = "", label, rowClass, mobileCard, rowHeight = ROW_H, onRowMenu, swipe,
 }: {
   rows: T[];
   cols: DenseCol<T>[];
@@ -52,6 +53,8 @@ export function DenseTable<T>({
   onOpen?: (r: T) => void;
   /** Контекстне меню рядка (правий клік, клавіша меню): координати для ContextMenu. */
   onRowMenu?: (r: T, x: number, y: number) => void;
+  /** Телефон: свайп картки вправо / вліво (поріг 80 px) — дія; when — чи доступна для рядка. */
+  swipe?: { right?: SwipeAct<T>; left?: SwipeAct<T> };
   actions?: (r: T) => ReactNode;
   isLoading?: boolean;
   empty?: ReactNode;
@@ -137,6 +140,7 @@ export function DenseTable<T>({
   // телефон: картки пам'ятають себе (memo), а свіжі обробники й рендер беруть через ref — інакше 1000 карток перемальовуються щоразу
   const toggleRef = useRef(toggle); toggleRef.current = toggle;
   const openRef = useRef(onOpen); openRef.current = onOpen;
+  const swipeRef = useRef(swipe); swipeRef.current = swipe;
   const selectedRef = useRef(selected); selectedRef.current = selected;
   const renderRef = useRef<(r: T) => ReactNode>(() => null);
 
@@ -168,6 +172,8 @@ export function DenseTable<T>({
           const on = selectable && selected!.has(id);
           return (
             <MobileCard key={it.key} row={r} on={!!on} cur={current === id} cls={rowClass?.(r) ?? ""} render={renderRef}
+              swR={swipe?.right && (swipe.right.when?.(r) ?? true) ? swipe.right : undefined} swL={swipe?.left && (swipe.left.when?.(r) ?? true) ? swipe.left : undefined}
+              onSwipe={(dir) => { const a = dir === "right" ? swipeRef.current?.right : swipeRef.current?.left; a?.run(r); }}
               onPress={() => { if (!selectable) return; press.current = window.setTimeout(() => { press.current = -1; toggleRef.current(r, false); }, 480); }}
               onRelease={(moved) => { if (press.current && press.current > 0) clearTimeout(press.current); if (moved) press.current = null; }}
               onTap={(t) => {
@@ -237,19 +243,59 @@ export function DenseTable<T>({
   );
 }
 
-/** Картка рядка на телефоні. Перемальовується лише коли змінився сам рядок, вибір або поточний запис. */
+export type SwipeAct<T> = { label: string; icon: LucideIcon; tone: "ok" | "accent" | "bad"; when?: (r: T) => boolean; run: (r: T) => void };
+type SwipeLook = { label: string; icon: LucideIcon; tone: string };
+
+/** Картка рядка на телефоні. Перемальовується лише коли змінився сам рядок, вибір або поточний запис.
+ *  Свайп (B5): лише горизонтальний жест (|dx| > 2·|dy|), поріг 80 px; під карткою — кольорова підкладка з дією. */
 type MCardProps = {
   row: unknown; on: boolean; cur: boolean; cls: string; selectable: boolean; render: { current: (r: never) => ReactNode };
   onPress: () => void; onRelease: (moved: boolean) => void; onTap: (t: HTMLElement) => void;
+  swR?: SwipeLook; swL?: SwipeLook; onSwipe: (dir: "right" | "left") => void;
 };
-const MobileCard = memo(function MobileCard({ row, on, cur, cls, selectable, render, onPress, onRelease, onTap }: MCardProps) {
-  return (
+const SW_MAX = 132, SW_GO = 80;
+const MobileCard = memo(function MobileCard({ row, on, cur, cls, selectable, render, onPress, onRelease, onTap, swR, swL, onSwipe }: MCardProps) {
+  const [dx, setDx] = useState(0);
+  const g = useRef<{ x: number; y: number; h: boolean | null; dx: number } | null>(null);
+  const swallow = useRef(false);
+  const can = !!(swR || swL);
+  const card = (
     <div role="listitem" aria-selected={on || undefined} tabIndex={0} className={`m-card${on ? " sel" : ""}${cur ? " cur" : ""} ${cls}`}
-      onTouchStart={onPress} onTouchEnd={() => onRelease(false)} onTouchMove={() => onRelease(true)}
+      style={dx ? { transform: `translateX(${dx}px)`, transition: "none" } : undefined}
+      onTouchStart={(e) => { onPress(); if (can) { const t = e.touches[0]; g.current = { x: t.clientX, y: t.clientY, h: null, dx: 0 }; } }}
+      onTouchEnd={() => {
+        onRelease(false);
+        const s = g.current; g.current = null;
+        if (s?.h) {
+          swallow.current = true;
+          if (Math.abs(s.dx) >= SW_GO) onSwipe(s.dx > 0 ? "right" : "left");
+          setDx(0);
+        }
+      }}
+      onTouchMove={(e) => {
+        onRelease(true);
+        const s = g.current; if (!s) return;
+        const t = e.touches[0], ddx = t.clientX - s.x, ddy = t.clientY - s.y;
+        if (s.h === null && (Math.abs(ddx) > 8 || Math.abs(ddy) > 8)) s.h = Math.abs(ddx) > 2 * Math.abs(ddy) && ((ddx > 0 && !!swR) || (ddx < 0 && !!swL));
+        if (!s.h) return;
+        s.dx = Math.max(swL ? -SW_MAX : 0, Math.min(swR ? SW_MAX : 0, ddx));
+        setDx(s.dx);
+      }}
       onContextMenu={(e) => { if (selectable) e.preventDefault(); }}
       onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) onTap(e.currentTarget); }}
-      onClick={(e) => onTap(e.target as HTMLElement)}>
+      onClick={(e) => { if (swallow.current) { swallow.current = false; return; } onTap(e.target as HTMLElement); }}>
       {render.current(row as never)}
     </div>
   );
-}, (a, b) => a.row === b.row && a.on === b.on && a.cur === b.cur && a.cls === b.cls && a.selectable === b.selectable);
+  if (!can) return card;
+  const side = dx > 0 ? swR : dx < 0 ? swL : null;
+  return (
+    <div className={`m-sw${dx ? " on" : ""}${Math.abs(dx) >= SW_GO ? " go" : ""}`}>
+      {side && (
+        <span className={`m-sw-bg t-${side.tone} ${dx > 0 ? "r" : "l"}`} aria-hidden><side.icon size={20} /><b>{side.label}</b></span>
+      )}
+      {card}
+    </div>
+  );
+}, (a, b) => a.row === b.row && a.on === b.on && a.cur === b.cur && a.cls === b.cls && a.selectable === b.selectable
+  && a.swR?.label === b.swR?.label && a.swL?.label === b.swL?.label);
