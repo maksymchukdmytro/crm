@@ -48,8 +48,11 @@ export function ContextMenu({ x, y, onClose, label, children }: {
     const top = y + h > window.innerHeight - 8 ? Math.max(8, y - h) : y;
     if (!pos || pos.left !== left || pos.top !== top) setPos({ left, top });
   });
+  const shown = pos != null;
   useEffect(() => {
-    box.current?.querySelector<HTMLElement>(ITEMS)?.focus({ preventScroll: true });
+    if (shown) box.current?.querySelector<HTMLElement>(ITEMS)?.focus({ preventScroll: true });
+  }, [shown]);
+  useEffect(() => {
     const away = (e: Event) => { if (!box.current?.contains(e.target as Node)) cb.current(); };
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cb.current(); } };
     const gone = () => cb.current();
