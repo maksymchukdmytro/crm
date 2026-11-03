@@ -148,11 +148,11 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
 
   // ---------------- колонки
   const COLS: DenseCol<OrderRow>[] = [
-    { key: "id", label: "№", width: "56px", render: (o) => {
+    { key: "id", label: "№", width: "48px", render: (o) => {
       const due = o.remind_at && new Date(o.remind_at) <= new Date();
       return <span className="o-id">{due && <AlarmClock size={12} className="o-bell" aria-label="Нагадування настало" />}{o.id}</span>;
     } },
-    { key: "customer", label: "Покупець", width: "minmax(110px, 1.3fr)", title: (o) => o.customer_name, render: (o) => (
+    { key: "customer", label: "Покупець", width: "minmax(100px, 1.3fr)", title: (o) => o.customer_name, render: (o) => (
       <span className="o-cust">
         <span className="ell">{o.customer_name || <span className="muted">без імені</span>}</span>
         {o.customer_group && /vip/i.test(o.customer_group.name) && <Tag kind="warn">VIP</Tag>}
@@ -161,22 +161,22 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         {isUnsorted && o.no_stock && <Tag kind="bad" title="Товару не вистачає на складі">немає товару</Tag>}
       </span>
     ) },
-    { key: "phone", mobile: "hide", label: "Телефон", width: "124px", render: (o) => <span className="nowrap num">{phone(o.phone)}</span> },
-    { key: "items", label: "Товар", width: "minmax(92px, 1.2fr)", title: (o) => o.items.map((i) => `${i.name} × ${i.qty}`).join(", "), render: (o) => {
+    { key: "phone", mobile: "hide", label: "Телефон", width: "122px", render: (o) => <span className="nowrap num">{phone(o.phone)}</span> },
+    { key: "items", label: "Товар", width: "minmax(80px, 1.2fr)", title: (o) => o.items.map((i) => `${i.name} × ${i.qty}`).join(", "), render: (o) => {
       const main = o.items.filter((i) => !i.upsell);
       const first = main[0] ?? o.items[0];
       const rest = o.items.length - 1;
       return <span className="o-items"><span className="ell">{first?.name ?? "—"}</span>{rest > 0 && <span className="o-more">+{rest}</span>}</span>;
     } },
-    { key: "status", label: "Статус", width: "132px", render: (o) => (
+    { key: "status", label: "Статус", width: "minmax(104px, 128px)", render: (o) => (
       <span className="o-st"><StatusPill status={statuses[o.status_id]} />{o.mark_id && marks[o.mark_id] && <span title={marks[o.mark_id].name}><MarkIcon icon={marks[o.mark_id].icon} color={marks[o.mark_id].color} size={13} /></span>}</span>
     ) },
-    { key: "pay", mobile: "hide", label: "Оплата", width: "minmax(80px, 0.9fr)", title: (o) => pm[o.payment_method_id ?? 0]?.name, render: (o) => {
+    { key: "pay", mobile: "hide", label: "Оплата", width: "minmax(68px, 0.9fr)", title: (o) => pm[o.payment_method_id ?? 0]?.name, render: (o) => {
       const m = pm[o.payment_method_id ?? 0];
       if (!m) return <span className="o-dot-txt muted"><i style={{ background: "var(--line)" }} />—</span>;
       return <span className="o-dot-txt"><i style={{ background: PAY_ICONS[m.icon || ""]?.color ?? "var(--muted)" }} /><span className="ell">{m.name}</span></span>;
     } },
-    { key: "delivery", label: "Доставка", width: "minmax(100px, 1fr)", title: (o) => [meta.delivery_methods[o.delivery_method], o.city_name, o.warehouse_name, o.delivery_status].filter(Boolean).join(" · "), render: (o) => {
+    { key: "delivery", label: "Доставка", width: "minmax(88px, 1fr)", title: (o) => [meta.delivery_methods[o.delivery_method], o.city_name, o.warehouse_name, o.delivery_status].filter(Boolean).join(" · "), render: (o) => {
       if (!o.city_name && !o.ttn) return <span className="muted">не вибрано</span>;
       const wh = (o.warehouse_name.match(/№\s*\d+/) || [""])[0].replace(/\s/g, "");
       const np = o.delivery_method === "novaposhta";
@@ -188,7 +188,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         </span>
       );
     } },
-    { key: "source", mobile: "hide", label: "Джерело", width: "minmax(64px, 0.7fr)", title: (o) => [sources[o.source_id ?? 0]?.name, o.utm_source].filter(Boolean).join(" · "), render: (o) => {
+    { key: "source", mobile: "hide", label: "Джерело", width: "minmax(56px, 0.7fr)", title: (o) => [sources[o.source_id ?? 0]?.name, o.utm_source].filter(Boolean).join(" · "), render: (o) => {
       const s = sources[o.source_id ?? 0];
       return s ? <span className="o-dot-txt"><i style={{ background: s.color }} /><span className="ell">{s.name}</span></span>
         : o.utm_source ? <span className="ell muted">{o.utm_source}</span> : <span className="muted">—</span>;
@@ -196,9 +196,9 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     { key: "manager", mobile: "hide", label: "М.", headTitle: "Менеджер", width: "28px", align: "center", title: (o) => managers[o.manager_id ?? 0]?.name ?? "Не призначено", render: (o) => (
       o.manager_id ? <span className="o-av">{initials(managers[o.manager_id]?.name)}</span> : <span className="muted">—</span>
     ) },
-    { key: "time", label: "Дата", headTitle: "Коли додано", width: "60px", title: (o) => whenLabel(o.created_at), render: (o) => <span className="muted num nowrap">{shortWhen(o.created_at)}</span> },
-    { key: "total", mobile: "end", label: "Сума", width: "78px", align: "right", render: (o) => <b className="num">{money(o.total)} ₴</b> },
-    { key: "pay_check", mobile: "hide", label: "Опл.", headTitle: "Перевірка оплати: чи ТТН відповідає виду оплати", width: "34px", align: "center", render: (o) => <PayCheck check={o.pay_check} /> },
+    { key: "time", label: "Дата", headTitle: "Коли додано", width: "46px", title: (o) => whenLabel(o.created_at), render: (o) => <span className="muted num nowrap">{shortWhen(o.created_at)}</span> },
+    { key: "total", mobile: "end", label: "Сума", width: "74px", align: "right", render: (o) => <b className="num">{money(o.total)} ₴</b> },
+    { key: "pay_check", mobile: "hide", label: "Опл.", headTitle: "Перевірка оплати: чи ТТН відповідає виду оплати", width: "30px", align: "center", render: (o) => <PayCheck check={o.pay_check} /> },
     { key: "ttn", mobile: "hide", label: "ТТН", width: "128px", render: (o) => (o.ttn ? <span className="mono o-ttn">{o.ttn}</span> : <span className="muted">—</span>) },
     { key: "entity", mobile: "hide", label: "Юрособа", width: "minmax(110px, 0.8fr)", render: (o) => <span className="ell">{entities[o.legal_entity_id ?? 0]?.name ?? "—"}</span> },
     { key: "utm", mobile: "hide", label: "UTM", width: "minmax(100px, 0.8fr)", render: (o) => <span className="ell muted">{[o.utm_source, o.utm_campaign].filter(Boolean).join(" · ") || "—"}</span> },
