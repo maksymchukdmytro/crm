@@ -2560,6 +2560,12 @@ export interface components {
             phone2: string;
             /** Refused */
             refused: number;
+            /**
+             * Segment
+             * @description vip | regular | repeat | new | risk — лише в списку
+             * @default
+             */
+            segment: string;
             /** Sources */
             sources?: string[];
             /** Sum Delivered */
@@ -2618,6 +2624,13 @@ export interface components {
             offset: number;
             /** Rows */
             rows: components["schemas"]["CustomerOut"][];
+            /**
+             * Segments
+             * @description Скільки покупців у кожному сегменті за поточним пошуком і групою
+             */
+            segments?: {
+                [key: string]: number;
+            };
             /** Total */
             total: number;
         };
@@ -2677,6 +2690,12 @@ export interface components {
             phone2: string;
             /** Refused */
             refused: number;
+            /**
+             * Segment
+             * @description vip | regular | repeat | new | risk — лише в списку
+             * @default
+             */
+            segment: string;
             /** Sum Delivered */
             sum_delivered: number;
             /** Sum Total */
@@ -4985,6 +5004,11 @@ export interface components {
              */
             countries?: string[];
             /**
+             * Days Left
+             * @description На скільки днів вистачить доступного залишку за темпом 30 днів
+             */
+            days_left?: number | null;
+            /**
              * Description
              * @default
              */
@@ -5037,6 +5061,11 @@ export interface components {
              */
             sale_price: number;
             /**
+             * Sales Trend
+             * @description Продажі за 30 днів по 3 дні (10 точок) — міні-графік у списку
+             */
+            sales_trend?: number[];
+            /**
              * Ship Description
              * @default
              */
@@ -5045,6 +5074,12 @@ export interface components {
             sku: string;
             /** Sold */
             sold: number;
+            /**
+             * Sold 30
+             * @description Продано штук за 30 днів (без скасованих і дублів) — лише в списку
+             * @default 0
+             */
+            sold_30: number;
             /**
              * Spec Price
              * @description Акційна ціна; 0 — без акції
@@ -5152,6 +5187,11 @@ export interface components {
              */
             countries?: string[];
             /**
+             * Days Left
+             * @description На скільки днів вистачить доступного залишку за темпом 30 днів
+             */
+            days_left?: number | null;
+            /**
              * Discount Percent
              * @default 0
              */
@@ -5195,12 +5235,23 @@ export interface components {
              */
             sale_price: number;
             /**
+             * Sales Trend
+             * @description Продажі за 30 днів по 3 дні (10 точок) — міні-графік у списку
+             */
+            sales_trend?: number[];
+            /**
              * Ship Description
              * @default
              */
             ship_description: string;
             /** Sku */
             sku: string;
+            /**
+             * Sold 30
+             * @description Продано штук за 30 днів (без скасованих і дублів) — лише в списку
+             * @default 0
+             */
+            sold_30: number;
             /**
              * Spec Price
              * @description Акційна ціна; 0 — без акції
@@ -7988,6 +8039,7 @@ export interface operations {
                 min_orders?: number;
                 offset?: number;
                 limit?: number;
+                segment?: string;
             };
             header?: never;
             path?: never;
