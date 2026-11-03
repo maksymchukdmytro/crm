@@ -25,7 +25,7 @@ export function ColorPick({ value, onChange, label = "Колір", colors = CRM_
         onClick={(e) => { e.stopPropagation(); setOwn(value || ""); setOpen((x) => !x); }}>
         <i style={{ background: value || "transparent" }} />
       </button>
-      <Floating anchor={ref.current} open={open} onClose={() => setOpen(false)} width={236} className="cpick-pop" label={label}>
+      <Floating anchor={ref.current} open={open} onClose={() => setOpen(false)} width={typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches ? 324 : 236} className="cpick-pop" label={label}>
         <div className="cpick-grid" role="listbox" aria-label={label}>
           {colors.map((c) => (
             <button key={c} type="button" role="option" aria-selected={cur === c.toUpperCase()} aria-label={c} title={c}

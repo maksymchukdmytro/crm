@@ -62,8 +62,9 @@ input[type=search]::-webkit-search-cancel-button { -webkit-appearance: none; }
   label.check, .mini-check { min-height: 44px; }
   .cpick { width: 44px; height: 44px; }
   .cpick > i { width: 30px; height: 30px; }
-  .cpick-grid { grid-template-columns: repeat(6, 40px); gap: 10px; }
-  .cpick-grid button { width: 40px; height: 40px; }
+  .cpick-grid { grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .cpick-grid button { width: 100%; height: auto; aspect-ratio: 1; }
+  .cpick-own input { height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {
   input[type=checkbox], input[type=radio], .cpick > i { transition: none; }
