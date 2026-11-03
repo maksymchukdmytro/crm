@@ -53,15 +53,18 @@
   .page-orders .dense-row { font-size: 13px; column-gap: 8px; padding: 0 12px; }
   .page-orders .o-cust > .ell { font-weight: 500; }
 
-  /* ---------------- картки: сітка, щільніше за макет (4 колонки на 1280, 5 — від 1600) */
+  /* ---------------- картки: сітка, щільніше за макет (4 колонки на 1280, 5 — на 1600, 6 — на 1920) */
   .ocd-wrap { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -6px; padding: 2px 6px 16px; }
-  .ocd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+  .ocd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); gap: 8px; }
   .ocd { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 10px 11px 10px 12px; background: var(--surface); border-radius: 16px;
     cursor: pointer; transition: box-shadow 150ms; }
   .ocd:hover { box-shadow: 0 0 0 1.5px var(--accent-line); }
   .ocd:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .ocd.cur { box-shadow: 0 0 0 1.5px var(--accent); }
   .ocd.due { box-shadow: inset 3px 0 0 var(--bad); }
+  /* тисячі карток після прокрутки: те, що поза екраном, браузер не малює */
+  .ocd:not(.sk) { content-visibility: auto; contain-intrinsic-size: auto 132px; }
+  .ib-item:not(.sk) { content-visibility: auto; contain-intrinsic-size: auto 58px; }
   .ocd.sk { min-height: 128px; gap: 12px; cursor: default; }
   .ocd-top { display: flex; align-items: center; gap: 5px; min-width: 0; height: 22px; }
   .ocd-top .pill { height: 20px; font-size: 11.5px; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -74,9 +77,9 @@
   .ocd-name .sum { flex: none; font-size: 14.5px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .ocd-row { display: flex; align-items: center; gap: 7px; min-width: 0; padding-top: 7px; border-top: 1px solid #F0F0EE; font-size: 12.5px; }
   .ocd-thumb { display: grid; place-items: center; width: 24px; height: 24px; flex: none; border-radius: 7px; background: #F1F1EF; color: #8F8E89; }
-  .ocd-goods { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ocd-goods { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ocd-goods .more { color: var(--muted); }
-  .ocd-dlv { display: flex; align-items: center; gap: 5px; flex: 0 1 auto; min-width: 0; max-width: 50%; color: var(--ink-2); }
+  .ocd-dlv { display: flex; align-items: center; gap: 5px; flex: 0 1 auto; min-width: 0; max-width: 52%; color: var(--ink-2); }
   .ocd-muted { flex: 0 1 auto; max-width: 45%; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ocd-acts { display: flex; gap: 6px; }
   .ocd-go { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1 1 0; height: 30px; padding: 0 8px; border: 0; border-radius: 9px;
