@@ -14,7 +14,7 @@ import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { Customer, Order } from "../lib/types";
-import { UaPhone, Window } from "../components/ui";
+import { Select, UaPhone, Window } from "../components/ui";
 import { SelectPick } from "../components/marks";
 import { flag, PayIcon } from "../components/payicons";
 import { EXTRA, UTM, payload, toForm, type Form } from "./card/state";
@@ -242,9 +242,9 @@ function StepCustomer({ form, set }: { form: Form; set: (p: Partial<Form>) => vo
     <label className="wz-lb" htmlFor="wz-phone">Телефон</label>
     <div className="wz-big wz-phone">
       <span className="ph-flag" aria-hidden>{flag(form.country)}</span>
-      <select className="ph-country" value={form.country} onChange={(e) => set({ country: e.target.value })} aria-label="Країна">
+      <Select className="ph-country" value={form.country} onChange={(e) => set({ country: e.target.value })} aria-label="Країна">
         {Object.entries(meta.countries).map(([cc, n]) => <option key={cc} value={cc} title={n}>{cc} · {n}</option>)}
-      </select>
+      </Select>
       <UaPhone id="wz-phone" value={form.phone} country={form.country} onChange={(v) => { set({ phone: v }); setAuto(false); }} aria-label="Телефон" autoFocus />
     </div>
     {c && (c.blacklisted ? (

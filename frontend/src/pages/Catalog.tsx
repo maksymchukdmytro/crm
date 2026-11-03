@@ -6,7 +6,7 @@ import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num } from "../lib/format";
 import type { Move, Product, Purchase, Supplier, Warehouse } from "../lib/types";
-import { ask, Badge, Button, DenseTable, Empty, Field, MobileActs, Modal, RoundButton, Segmented, Spinner, Tabs, Window, type DenseCol , Select, EmptyState } from "../components/ui";
+import { ask, NumberField, Badge, Button, DenseTable, Empty, Field, MobileActs, Modal, RoundButton, Segmented, Spinner, Tabs, Window, type DenseCol , Select, EmptyState } from "../components/ui";
 
 
 export function MovesTable({ moves, compact = false }: { moves: Move[]; compact?: boolean }) {
@@ -259,7 +259,7 @@ function PurchaseModal({ id, onClose, product = "" }: { id: number | "new"; onCl
           <tbody>{cur.items.map((it, i) => (
             <tr key={i}>
               <td><Select value={it.product_id} onChange={(e) => setItem(i, { product_id: e.target.value })}><option value="">Оберіть…</option>{meta.products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select></td>
-              <td className="qty num"><input type="number" min={1} value={it.qty} onChange={(e) => setItem(i, { qty: e.target.value })} /></td>
+              <td className="qty num"><NumberField min={1} unit="шт" aria-label="Кількість" value={it.qty} onChange={(e) => setItem(i, { qty: e.target.value })} /></td>
               <td className="price num"><input value={it.cost} onChange={(e) => setItem(i, { cost: e.target.value })} inputMode="decimal" /></td>
               <td className="num">{money(num(it.qty) * num(it.cost), true)}</td>
               <td><button type="button" className="x" onClick={() => setDraft({ ...cur, items: cur.items.filter((_, j) => j !== i) })}>×</button></td>

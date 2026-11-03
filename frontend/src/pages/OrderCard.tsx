@@ -801,9 +801,9 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
       <div className="oc-phone-row">
         <span className="phone-pill-in">
           <span className="ph-flag" aria-hidden>{flag(form.country)}</span>
-          <select className="ph-country" value={form.country} disabled={readOnly} onChange={(e) => set({ country: e.target.value })} aria-label="Країна">
+          <Select className="ph-country" value={form.country} disabled={readOnly} onChange={(e) => set({ country: e.target.value })} aria-label="Країна">
             {Object.entries(meta.countries).map(([cc, n]) => <option key={cc} value={cc} title={n}>{cc} · {n}</option>)}
-          </select>
+          </Select>
           <UaPhone value={form.phone} country={form.country} onChange={(v) => set({ phone: v })} aria-label="Телефон" disabled={readOnly} autoFocus={isNew} />
         </span>
         {tel.length >= 10 && <>

@@ -1,12 +1,12 @@
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banknote, BarChart3, CircleCheck, HandCoins, History, TriangleAlert, Upload, Wallet } from "lucide-react";
+import { Banknote, BarChart3, CircleCheck, HandCoins, History, TriangleAlert, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, qs } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { date, dt, isoDay, money } from "../lib/format";
 import type { Audit, Payment, Payments, Registry, Report as ReportData } from "../lib/types";
-import { DateRangeField, Empty, Kpi, Spinner, Select } from "../components/ui";
+import { DateRangeField, FileButton, Empty, Kpi, Spinner, Select } from "../components/ui";
 
 // ================================================================ оплати
 
@@ -19,7 +19,6 @@ export function PaymentsPage() {
   const [ref, setRef] = useState("");
   const [report, setReport] = useState<Registry | null>(null);
   const [openG, setOpenG] = useState<Record<string, boolean>>({});
-  const fileRef = useRef<HTMLInputElement>(null);
   const { data } = useQuery({ queryKey: ["payments", "all"], queryFn: () => api.get<Payments>(`/payments${qs({ status: "" })}`) });
   const receive = useMutation({
     mutationFn: () => api.post<{ done: number }>("/payments/receive", { ids: [...sel], reference: ref }),
@@ -80,8 +79,7 @@ export function PaymentsPage() {
     <div className="pay-v2">
       <div className="head"><h1><span className="h-ico"><Wallet size={18} /></span>Оплати</h1>
         <div className="actions">
-          <input ref={fileRef} type="file" accept=".csv,.txt" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) upload.mutate(f); e.target.value = ""; }} />
-          <button className="btn" onClick={() => fileRef.current?.click()} disabled={upload.isPending}><Upload size={15} /> Імпорт реєстру НП (CSV)</button>
+          <FileButton accept=".csv,.txt" busy={upload.isPending} onFile={(f) => upload.mutate(f)}>Імпорт реєстру НП (CSV)</FileButton>
         </div></div>
       <div className="py-tiles">
         {([[HandCoins, "orange", "Післяплата в дорозі", `${money(sum(expected))} ₴`, `${expected.length} відправлень`],

@@ -11,7 +11,7 @@ import { dt, phone } from "../lib/format";
 import type { BlockedIp, Cashier, CustomerGroup, DirItem, LegalEntity, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { MarkLookPick } from "../components/marks";
-import { ask, ColorPick, DateField, isoDate, Badge, Button, Empty, Field, IconButton, MenuButton, NpAutocomplete, RoundButton, Select, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
+import { ask, FileDrop, NumberField, ColorPick, DateField, isoDate, Badge, Button, Empty, Field, IconButton, MenuButton, NpAutocomplete, RoundButton, Select, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
 
 type S = Settings;
 
@@ -247,9 +247,9 @@ function General({ s }: { s: S }) {
       <form className="card form" onSubmit={noSubmit}>
         <h2>Замовлення</h2>
         <div className="cols c3">
-          <Field label="Пошук дублів за телефоном, днів" hint="0 — не шукати"><input type="number" min={0} {...bind("duplicate_days")} /></Field>
+          <Field label="Пошук дублів за телефоном" hint="0 — не шукати"><NumberField min={0} unit="дн" {...bind("duplicate_days")} /></Field>
           <Field label="Розподіл нових заявок"><Select {...bind("auto_assign")}><option value="off">Вручну — менеджер бере сам</option><option value="round_robin">По черзі між менеджерами</option></Select></Field>
-          <Field label="Перевіряти посилки кожні, хв"><input type="number" min={5} {...bind("tracking_interval_min")} /></Field>
+          <Field label="Перевіряти посилки кожні"><NumberField min={5} unit="хв" {...bind("tracking_interval_min")} /></Field>
         </div>
         <Toggle {...flag("managers_see_own_only")} label="Менеджери бачать лише свої й нерозподілені замовлення" />
         <Toggle {...flag("auto_status_from_tracking")} label="Змінювати статус за трекінгом (Відправлений → Отриманий / Відмова)" />
@@ -296,9 +296,9 @@ function LeadsSection({ s }: { s: S }) {
       </div>
       {meta.leads_enabled && (
         <form className="lc-grid" onSubmit={noSubmit}>
-          <Field label="Чекає — помаранчевим після, хв"><input type="number" min={1} {...bind("lead_wait_warn_min")} /></Field>
-          <Field label="Чекає — червоним після, хв"><input type="number" min={1} {...bind("lead_wait_bad_min")} /></Field>
-          <Field label="Нагадати після недодзвону через, хв"><input type="number" min={5} {...bind("lead_noanswer_remind_min")} /></Field>
+          <Field label="Чекає — помаранчевим після"><NumberField min={1} unit="хв" {...bind("lead_wait_warn_min")} /></Field>
+          <Field label="Чекає — червоним після"><NumberField min={1} unit="хв" {...bind("lead_wait_bad_min")} /></Field>
+          <Field label="Нагадати після недодзвону через"><NumberField min={5} unit="хв" {...bind("lead_noanswer_remind_min")} /></Field>
           <Field label="Замовлення з ліда отримує статус"><Select {...bind("lead_to_order_status")}><option value="confirmed">Прийнятий</option><option value="unsorted">Несортований</option></Select></Field>
         </form>
       )}
@@ -450,7 +450,7 @@ function Statuses({ s }: { s: S }) {
           <thead><tr><th>Порядок</th><th>Колір</th><th>Назва</th><th title="У якому розділі показується замовлення з цим статусом">Розділ</th><th>Дія зі складом</th><th title="Рахується як підтверджене у звітах">Апрув</th><th>Фінальний</th><th>Активний</th><th /></tr></thead>
           <tbody>{rows.map((r) => (
             <tr key={r.id}>
-              <td data-label="Порядок" style={{ width: 80 }}><input type="number" value={r.sort} onChange={(e) => upd(r.id, { sort: Number(e.target.value) })} /></td>
+              <td data-label="Порядок" style={{ width: 80 }}><NumberField value={r.sort} aria-label="Порядок" onChange={(e) => upd(r.id, { sort: Number(e.target.value) })} /></td>
               <td data-label="Колір" style={{ width: 56 }}><ColorPick value={r.color} onChange={(c) => upd(r.id, { color: c })} label={`Колір статусу «${r.name}»`} /></td>
               <td className="full" data-label="Назва"><input value={r.name} onChange={(e) => upd(r.id, { name: e.target.value })} /><span className="sub mono">{r.code}</span></td>
               <td data-label="Розділ"><Select value={r.stage ?? "order"} onChange={(e) => upd(r.id, { stage: e.target.value as Status["stage"] })}><option value="lead">Ліди</option><option value="order">Замовлення</option></Select></td>
@@ -1204,15 +1204,10 @@ function DocsSettings({ s }: { s: S }) {
           <Field label="Підпис унизу"><input {...bind("doc_note")} placeholder="Дякуємо за покупку!" /></Field>
         </div>
         <div><span className="lbl">Логотип у шапці (замість назви)</span>
-          <div className="doc-logo">
-            {v.doc_logo ? <img src={v.doc_logo} alt="Логотип" /> : <span className="hint">не завантажено — у шапці буде назва юрособи</span>}
-            <label className="btn sm"><Upload size={14} /> {v.doc_logo ? "Замінити" : "Завантажити"}
-              <input type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={async (e) => {
-                const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
-                try { setV({ ...v, doc_logo: await toPng(f) }); } catch (err) { toast((err as Error).message, "error"); }
-              }} /></label>
-            {v.doc_logo && <button type="button" className="btn sm ghost" onClick={() => setV({ ...v, doc_logo: "" })}>Прибрати</button>}
-          </div>
+          <FileDrop accept="image/png,image/jpeg,image/webp" preview={v.doc_logo || null} label="Перетягніть логотип або оберіть файл"
+            hint="PNG, JPG або WEBP. Без логотипа в шапці буде назва юрособи"
+            onFile={async (f) => { try { setV({ ...v, doc_logo: await toPng(f) }); } catch (err) { toast((err as Error).message, "error"); } }}
+            onClear={() => setV({ ...v, doc_logo: "" })} />
         </div>
       </div>
       <div className="card form">
@@ -1241,7 +1236,7 @@ function TelegramSettings({ s }: { s: S }) {
       <Secret label="Токен бота" k="alert_tg_token" bind={f.bind} hint="Створіть бота в @BotFather і вставте його токен" />
       <div className="cols">
         <Field label="ID чату" hint="Напишіть боту, потім дізнайтесь ID у @userinfobot (для групи — з мінусом)"><input {...f.bind("alert_tg_chat")} /></Field>
-        <Field label="Сповістити, якщо немає заявок, год" hint="Лише з 8:00 до 22:00. 0 — не стежити"><input type="number" min={0} {...f.bind("alert_no_leads_hours")} /></Field>
+        <Field label="Сповістити, якщо немає заявок" hint="Лише з 8:00 до 22:00. 0 — не стежити"><NumberField min={0} unit="год" {...f.bind("alert_no_leads_hours")} /></Field>
       </div>
       <div className="form-actions"><Button icon={Send} onClick={() => test.mutate()} disabled={test.isPending || f.dirty} title={f.dirty ? "Спершу збережіть зміни" : undefined}>Надіслати тестове</Button></div>
     </form>

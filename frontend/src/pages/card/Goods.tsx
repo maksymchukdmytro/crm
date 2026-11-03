@@ -5,7 +5,7 @@ import { ChevronDown, Link2, Package, Plus, Search, Sparkles, X } from "lucide-r
 import { ROOT } from "../../lib/api";
 import { money, num } from "../../lib/format";
 import type { OrderItem, Product, Variant } from "../../lib/types";
-import { QtyStepper } from "../../components/ui";
+import { QtyStepper, Select } from "../../components/ui";
 import { arrange, newKey } from "./state";
 
 type Pick = { p: Product; v?: Variant };
@@ -74,11 +74,11 @@ export const Goods = forwardRef<GoodsHandle, {
             {variants.length > 0 && (
               <label className="gi-var" title="Варіант">
                 <span className="ell">{variants.find((x) => x.id === i.variant_id)?.name ?? "варіант"}</span><ChevronDown size={12} />
-                <select value={i.variant_id ?? ""} disabled={readOnly} aria-label="Варіант"
+                <Select value={i.variant_id ?? ""} disabled={readOnly} aria-label="Варіант"
                   onChange={(e) => { const nv = variants.find((x) => x.id === Number(e.target.value)); upd(i.key, { variant_id: nv?.id ?? null, variant_name: nv?.name ?? "", name: nv ? `${p!.name} (${nv.name})` : p!.name, price: String(nv?.price ?? p!.sale_price ?? p!.price), base_price: nv?.price ?? p!.sale_price ?? p!.price }); }}>
                   <option value="">варіант…</option>
                   {variants.map((x) => <option key={x.id} value={x.id}>{x.name} · {x.available} шт</option>)}
-                </select>
+                </Select>
               </label>
             )}
             <span className="gi-meta">
@@ -96,9 +96,9 @@ export const Goods = forwardRef<GoodsHandle, {
                 ? <button type="button" className="gi-link" onClick={() => upd(i.key, { upsell: false, upsell_for: null })}>зробити основним</button>
                 : i.product_id && <button type="button" className="gi-link" onClick={() => setUpFor(upFor === i.key ? null : i.key ?? null)}><Plus size={11} />Допродаж</button>}
               {i.upsell && mainProducts.length > 1 && (
-                <select className="gi-mini" value={i.upsell_for ?? ""} aria-label="До якого товару" onChange={(e) => upd(i.key, { upsell_for: e.target.value ? Number(e.target.value) : null })}>
+                <Select className="gi-mini" value={i.upsell_for ?? ""} aria-label="До якого товару" onChange={(e) => upd(i.key, { upsell_for: e.target.value ? Number(e.target.value) : null })}>
                   <option value="">до замовлення</option>{mainProducts.map((m) => <option key={m.key} value={m.product_id!}>до «{m.name}»</option>)}
-                </select>
+                </Select>
               )}
               {changed && <span className="gi-was">ціна в каталозі {money(base!)} ₴</span>}
             </div>

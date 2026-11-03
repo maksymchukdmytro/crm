@@ -15,3 +15,4 @@ export * from "./HoverCard";
 export * from "./ColorPick";
 export * from "./DatePick";
 export * from "./Confirm";
+export * from "./FileDrop";

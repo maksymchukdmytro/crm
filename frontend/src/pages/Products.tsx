@@ -11,7 +11,7 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { AttributeGroup, Category, Manufacturer, Product, ProductDetail } from "../lib/types";
 type ProductSummary = { days: number; qty: number; sum: number; margin: number; buyout_rate: number | null; upsell_share: number | null; orders: number; sold_total: number };
-import { Badge, Block, Button, ask, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, Tag, Toggle, Window, useMobile , Select, EmptyState } from "../components/ui";
+import { Badge, Block, Button, ask, NumberField, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, Tag, Toggle, Window, useMobile , Select, EmptyState } from "../components/ui";
 import MultiSelect from "../components/MultiSelect";
 import { MovesTable } from "./Catalog";
 import "./products.css";
@@ -362,8 +362,8 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
               </div>
             )}
             <div className="pw-row">
-              {isNew && !curVariants.length && <Field label="Початковий залишок, шт"><input type="number" min={0} value={String(f.initial_stock ?? "0")} onChange={set("initial_stock")} /></Field>}
-              <Field label="Мінімальний залишок — сповістити"><input type="number" value={String(v("min_stock", "0"))} onChange={set("min_stock")} /></Field>
+              {isNew && !curVariants.length && <Field label="Початковий залишок, шт"><NumberField min={0} unit="шт" value={String(f.initial_stock ?? "0")} onChange={set("initial_stock")} /></Field>}
+              <Field label="Мінімальний залишок — сповістити"><NumberField min={0} unit="шт" value={String(v("min_stock", "0"))} onChange={set("min_stock")} /></Field>
               {!isNew && <a className="btn" href={`${ROOT}/warehouse?product=${id}`} onClick={(e) => { e.preventDefault(); onClose(); window.history.pushState({}, "", `${ROOT}/warehouse?product=${id}`); window.dispatchEvent(new PopStateEvent("popstate")); }}>
                 <Boxes size={15} />Прийняти / списати</a>}
             </div>
@@ -534,7 +534,7 @@ function VariantsTab({ rows, onChange, isNew, basePrice }: { rows: VRow[]; onCha
               <td><input value={r.name} onChange={(e) => upd(i, { name: e.target.value })} placeholder="Назва варіанта" /></td>
               <td><input className="mono" value={r.sku} onChange={(e) => upd(i, { sku: e.target.value })} placeholder="—" /></td>
               <td className="num"><input value={r.price} onChange={(e) => upd(i, { price: e.target.value })} placeholder={money(basePrice)} inputMode="decimal" /></td>
-              <td className="num">{r.id ? <b>{r.stock ?? 0}</b> : <input type="number" min={0} value={r.initial_stock} onChange={(e) => upd(i, { initial_stock: e.target.value })} placeholder="0" />}</td>
+              <td className="num">{r.id ? <b>{r.stock ?? 0}</b> : <NumberField min={0} unit="шт" aria-label="Початковий залишок" value={r.initial_stock} onChange={(e) => upd(i, { initial_stock: e.target.value })} placeholder="0" />}</td>
               <td><input type="checkbox" checked={r.active} onChange={(e) => upd(i, { active: e.target.checked })} /></td>
               <td><button type="button" className="btn icon ghost" title="Прибрати варіант" onClick={() => onChange(rows.filter((_, j) => j !== i))}><Trash2 size={14} /></button></td>
             </tr>
