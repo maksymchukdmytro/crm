@@ -216,3 +216,5 @@
 .sum-sel { margin-left: auto; color: var(--accent); }
 .sum-sel b { color: var(--accent); }
 @media (max-width: 768px) { .sum-bar { display: none; } }
+/* дія при наведенні («Прийняти» в несортованих) — лівіше від значка телефону, щоб не закривати його */
+@media (min-width: 769px) { .page-orders .dense-acts { right: 46px; } }

@@ -14,7 +14,7 @@ import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { MarkIcon } from "../components/marks";
 import type { Order, OrderList, OrderRow, Status } from "../lib/types";
 import {
-  BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, IconButton, MenuButton, MobileActs, PayCheck, RoundButton, Segmented, Sheet, StatusPill, Tabs,
+  BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, MenuButton, MobileActs, PayCheck, RoundButton, Segmented, Sheet, StatusPill, Tabs,
   useColumns, useMobile, useOutside, type DenseCol, type TabItem, EmptyState, Floating, HoverCard } from "../components/ui";
 import OrderModal, { openTtnOnLoad } from "./OrderCard";
 
@@ -491,12 +491,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
           rowHeight={mobile ? undefined : 40}
           rowClass={(o) => (o.remind_at && new Date(o.remind_at) <= new Date() ? "due" : "")}
           mobileCard={mobileCard}
-          actions={(o) => (<>
-            {isUnsorted && <Button size={30} variant="soft" icon={Check} onClick={() => accept([o.id])}>Прийняти</Button>}
-            {o.phone && <a className="icon-btn s28 quiet" href={`tel:+${o.phone.replace(/\D/g, "")}`} aria-label="Подзвонити" title="Подзвонити"><Phone size={15} /></a>}
-            {o.ttn && <a className="icon-btn s28 quiet" href={`${ROOT}/api/orders/${o.id}/label`} target="_blank" rel="noreferrer" aria-label="Наклейка" title="Наклейка"><Printer size={15} /></a>}
-            <IconButton size={28} quiet icon={Eye} label="Перегляд" onClick={() => open(o.id)} />
-          </>)}
+          actions={isUnsorted ? (o) => <Button size={30} variant="soft" icon={Check} onClick={() => accept([o.id])}>Прийняти</Button> : undefined}
           empty={emptyBox}
         />
       )}
@@ -718,6 +713,7 @@ function DeliveryCard({ o, name, state }: { o: OrderRow; name: string; state?: s
       <div className="hc-row"><span className="hc-state"><i style={{ background: DSTATE[o.delivery_state] ?? "var(--accent-line)" }} />{state ?? "ТТН створено"}</span>
         {eta && <span className="muted">прибуде {eta}</span>}</div>
       {o.delivery_status && <div className="hc-sub">{o.delivery_status}</div>}
+      <div className="hc-acts"><a className="btn sm" href={`${ROOT}/api/orders/${o.id}/label`} target="_blank" rel="noreferrer"><Printer size={14} />Наклейка</a></div>
     </>) : <div className="hc-sub">ТТН ще немає</div>}
   </>);
 }
