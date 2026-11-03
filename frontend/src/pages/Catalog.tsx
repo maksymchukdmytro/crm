@@ -197,7 +197,7 @@ export function PurchasesPage() {
       <MobileActs><RoundButton icon={Plus} label="Нова закупівля" primary onClick={() => setOpen("new")} /></MobileActs>
       <div className="head"><h1><span className="h-ico"><ShoppingCart size={18} /></span>Закупівлі</h1>
         <div className="actions"><button className="btn ghost" onClick={() => setSuppliers(true)}><Truck size={15} /> Постачальники</button>
-          <button className="btn primary" onClick={() => setOpen("new")}><Plus size={15} /> Закупівля</button></div></div>
+          {!mobile && <button className="btn primary" onClick={() => setOpen("new")}><Plus size={15} /> Закупівля</button>}</div></div>
       <div className="tabs">
         <a className={!status ? "on" : ""} onClick={() => setStatus("")}>Усі</a>
         {Object.entries(PSTATUS).map(([k, [n]]) => <a key={k} className={status === k ? "on" : ""} onClick={() => setStatus(k)}>{n}</a>)}
