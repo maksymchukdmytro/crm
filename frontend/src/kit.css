@@ -96,7 +96,7 @@ input[type=search]::-webkit-search-cancel-button { -webkit-appearance: none; }
 .dr-pre { display: flex; flex-direction: column; gap: 2px; padding-right: 12px; border-right: 1px solid var(--line); }
 .dr-chip { height: 32px; padding: 0 10px; border: 0; border-radius: 9px; background: none; font: inherit; font-size: 13px; color: var(--ink); text-align: left; cursor: pointer; white-space: nowrap; }
 .dr-chip:hover { background: var(--hover); }
-.dr-chip.on { background: var(--accent-soft); color: var(--accent-ink, #1F4FB8); font-weight: 600; }
+.dr-chip.on { background: var(--accent-soft); color: #1F4FB8; font-weight: 600; }
 .dr-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .dr-note { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); text-align: center; }
 .dr-clear { display: block; width: 100%; height: 34px; margin-top: 8px; border: 0; border-top: 1px solid var(--line); background: none; font: inherit; font-size: 13px; color: var(--bad-ink); cursor: pointer; }
@@ -113,7 +113,23 @@ input[type=search]::-webkit-search-cancel-button { -webkit-appearance: none; }
 .dt-view > .btn { width: 100%; justify-content: center; }
 .lw-pop.own { width: auto; }
 
+/* ---------------------------------------------------------------- підтвердження (A5) */
+.win.confirm { max-width: 420px; }
+.win.confirm > .win-body { padding: 22px 22px 18px; }
+.win.confirm > .win-foot { justify-content: flex-end; border-top: 0; padding: 0 22px 20px; }
+.win.confirm .btn.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
+.win.confirm .btn.danger:hover { background: #B91C1C; border-color: #B91C1C; color: #fff; }
+.cf { display: flex; gap: 14px; align-items: flex-start; }
+.cf-ic { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 12px; background: var(--accent-soft); color: var(--accent); }
+.cf.bad .cf-ic { background: var(--bad-soft); color: var(--bad-ink); }
+.cf h2 { margin: 2px 0 0; font-size: 16.5px; font-weight: 600; line-height: 1.35; letter-spacing: -0.005em; }
+.cf p { margin: 6px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+
 @media (max-width: 768px) {
+  .win-backdrop:has(> .win.confirm) { align-items: flex-end; }
+  .win.confirm { margin: auto 8px calc(8px + env(safe-area-inset-bottom)) !important; max-width: none; border-radius: 22px; }
+  .win.confirm > .win-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 16px 16px; }
+  .win.confirm > .win-foot .btn { height: 48px; justify-content: center; font-size: 15px; border-radius: 14px; }
   .dfield { height: 44px; font-size: 15px; border-radius: 12px; }
   .dpop.m { padding: 0 0 8px; }
   .cal-h b { font-size: 16px; }
