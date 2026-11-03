@@ -102,6 +102,7 @@ def dashboard(db: Session, user: User, period: str | None = None) -> dict:
 
     days = per_day(month_start, period_end)
     prev_days = per_day(prev_start, prev_same_end)
+    week = per_day(today - timedelta(days=6), today)  # міні-графік «7 днів» у плитці «Сьогодні»
 
     # апрув, викуп, допродаж — як у «Статистиці», і те саме за попередній період (дельта в пунктах)
     def quality(d1: date, d2: date) -> dict:
@@ -141,6 +142,18 @@ def dashboard(db: Session, user: User, period: str | None = None) -> dict:
     on_way = vis.filter(Order.delivery_state.in_(("created", "in_transit", "arrived"))).count()
     arrived = vis.filter((Order.delivery_state == "arrived") | (Status.code == "arrived")).count()
     reminders = vis.filter(Order.remind_at.isnot(None), Order.remind_at <= utcnow()).count()
+    # «Що зробити зараз»: скільки чекає найстаріше несортоване й посилки, що лежать на пошті понад 3 дні
+    oldest = vis.filter(Status.code == "unsorted").with_entities(func.min(Order.created_at)).scalar()
+    unsorted_oldest_min = int((utcnow() - oldest).total_seconds() // 60) if oldest else None
+    arrived_stale = vis.filter((Order.delivery_state == "arrived") | (Status.code == "arrived"),
+                               func.coalesce(Order.status_changed_at, Order.created_at) <= utcnow() - timedelta(days=3)).count()
+    # мої нагадування на сьогодні (і прострочені): менеджеру — свої, адміністратору — усі видимі
+    _, day_end = period_bounds(today, today)
+    rq = visible_orders_query(db, user).filter(Order.remind_at.isnot(None), Order.remind_at < day_end)
+    if user.role != "admin":
+        rq = rq.filter(Order.manager_id == user.id)
+    my_reminders = [{"id": o.id, "remind_at": o.remind_at.isoformat() + "Z", "customer_name": o.customer_name, "phone": o.phone,
+                     "status_id": o.status_id} for o in rq.order_by(Order.remind_at).limit(8)]
     visible_ids = visible_orders_query(db, user).with_entities(Order.id).subquery()
     cod_expected = db.query(func.coalesce(func.sum(Payment.amount), 0)).filter(
         Payment.status == "expected", Payment.order_id.in_(visible_ids.select())).scalar()
@@ -186,9 +199,12 @@ def dashboard(db: Session, user: User, period: str | None = None) -> dict:
                       "new_prev": int(new_prev), "new_today": int(new_today), "repeat_share": repeat_share, "blacklisted": int(blacklisted)},
         "attention": {"leads_new": leads_new, "leads_open": leads_open, "orders_unsorted": unsorted, "to_ship": to_ship, "on_way": on_way, "arrived": arrived,
                       "reminders": reminders, "low_stock": int(low_stock),
+                      "unsorted_oldest_min": unsorted_oldest_min, "arrived_stale": arrived_stale,
                       "cod_expected": _money(cod_expected), "cod_collected": _money(cod_collected)},
         "days": days,
         "prev_days": prev_days,
+        "week": week,
+        "my_reminders": my_reminders,
         "team": team,
         "top": [{"product_id": p["product_id"], "name": p["name"], "qty": p["qty"], "sum": p["sum"]} for p in top],
     }

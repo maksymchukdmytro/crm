@@ -718,7 +718,7 @@ function DeliveryCard({ o, name, state }: { o: OrderRow; name: string; state?: s
   </>);
 }
 
-function PhoneCard({ o }: { o: OrderRow }) {
+export function PhoneCard({ o }: { o: OrderRow }) {
   const toast = useToast();
   const meta = useMeta();
   const d = o.phone.replace(/\D/g, "");

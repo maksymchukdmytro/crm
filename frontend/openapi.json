@@ -1272,6 +1272,12 @@
       "title": "Refused",
       "type": "integer"
      },
+     "segment": {
+      "default": "",
+      "description": "vip | regular | repeat | new | risk — лише в списку",
+      "title": "Segment",
+      "type": "string"
+     },
      "sources": {
       "items": {
        "type": "string"
@@ -1522,6 +1528,14 @@
       "title": "Rows",
       "type": "array"
      },
+     "segments": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "description": "Скільки покупців у кожному сегменті за поточним пошуком і групою",
+      "title": "Segments",
+      "type": "object"
+     },
      "total": {
       "title": "Total",
       "type": "integer"
@@ -1681,6 +1695,12 @@
       "title": "Refused",
       "type": "integer"
      },
+     "segment": {
+      "default": "",
+      "description": "vip | regular | repeat | new | risk — лише в списку",
+      "title": "Segment",
+      "type": "string"
+     },
      "sum_delivered": {
       "title": "Sum Delivered",
       "type": "number"
@@ -1722,6 +1742,12 @@
       "title": "Arrived",
       "type": "integer"
      },
+     "arrived_stale": {
+      "default": 0,
+      "description": "Посилки, що лежать на пошті понад 3 дні",
+      "title": "Arrived Stale",
+      "type": "integer"
+     },
      "cod_collected": {
       "title": "Cod Collected",
       "type": "number"
@@ -1758,6 +1784,18 @@
      "to_ship": {
       "title": "To Ship",
       "type": "integer"
+     },
+     "unsorted_oldest_min": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Скільки хвилин чекає найстаріше несортоване",
+      "title": "Unsorted Oldest Min"
      }
     },
     "required": [
@@ -2013,6 +2051,39 @@
     "title": "DashQuality",
     "type": "object"
    },
+   "DashReminder": {
+    "properties": {
+     "customer_name": {
+      "title": "Customer Name",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "phone": {
+      "title": "Phone",
+      "type": "string"
+     },
+     "remind_at": {
+      "title": "Remind At",
+      "type": "string"
+     },
+     "status_id": {
+      "title": "Status Id",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "remind_at",
+     "customer_name",
+     "phone",
+     "status_id"
+    ],
+    "title": "DashReminder",
+    "type": "object"
+   },
    "DashTeam": {
     "properties": {
      "approve_rate": {
@@ -2192,6 +2263,14 @@
      "month": {
       "$ref": "#/components/schemas/DashMonth"
      },
+     "my_reminders": {
+      "description": "Нагадування на сьогодні й прострочені",
+      "items": {
+       "$ref": "#/components/schemas/DashReminder"
+      },
+      "title": "My Reminders",
+      "type": "array"
+     },
      "period": {
       "$ref": "#/components/schemas/DashPeriod"
      },
@@ -2220,6 +2299,14 @@
        "$ref": "#/components/schemas/DashTop"
       },
       "title": "Top",
+      "type": "array"
+     },
+     "week": {
+      "description": "Останні 7 днів по днях — міні-графік",
+      "items": {
+       "$ref": "#/components/schemas/DashDay"
+      },
+      "title": "Week",
       "type": "array"
      }
     },
@@ -7333,6 +7420,18 @@
       "title": "Countries",
       "type": "array"
      },
+     "days_left": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "На скільки днів вистачить доступного залишку за темпом 30 днів",
+      "title": "Days Left"
+     },
      "description": {
       "default": "",
       "title": "Description",
@@ -7421,6 +7520,14 @@
       "title": "Sale Price",
       "type": "number"
      },
+     "sales_trend": {
+      "description": "Продажі за 30 днів по 3 дні (10 точок) — міні-графік у списку",
+      "items": {
+       "type": "integer"
+      },
+      "title": "Sales Trend",
+      "type": "array"
+     },
      "ship_description": {
       "default": "",
       "title": "Ship Description",
@@ -7432,6 +7539,12 @@
      },
      "sold": {
       "title": "Sold",
+      "type": "integer"
+     },
+     "sold_30": {
+      "default": 0,
+      "description": "Продано штук за 30 днів (без скасованих і дублів) — лише в списку",
+      "title": "Sold 30",
       "type": "integer"
      },
      "spec_price": {
@@ -7853,6 +7966,18 @@
       "title": "Countries",
       "type": "array"
      },
+     "days_left": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "На скільки днів вистачить доступного залишку за темпом 30 днів",
+      "title": "Days Left"
+     },
      "discount_percent": {
       "default": 0,
       "title": "Discount Percent",
@@ -7922,6 +8047,14 @@
       "title": "Sale Price",
       "type": "number"
      },
+     "sales_trend": {
+      "description": "Продажі за 30 днів по 3 дні (10 точок) — міні-графік у списку",
+      "items": {
+       "type": "integer"
+      },
+      "title": "Sales Trend",
+      "type": "array"
+     },
      "ship_description": {
       "default": "",
       "title": "Ship Description",
@@ -7930,6 +8063,12 @@
      "sku": {
       "title": "Sku",
       "type": "string"
+     },
+     "sold_30": {
+      "default": 0,
+      "description": "Продано штук за 30 днів (без скасованих і дублів) — лише в списку",
+      "title": "Sold 30",
+      "type": "integer"
      },
      "spec_price": {
       "default": 0,
@@ -14646,6 +14785,16 @@
        "default": 100,
        "title": "Limit",
        "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "segment",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Segment",
+       "type": "string"
       }
      }
     ],

@@ -2560,6 +2560,12 @@ export interface components {
             phone2: string;
             /** Refused */
             refused: number;
+            /**
+             * Segment
+             * @description vip | regular | repeat | new | risk — лише в списку
+             * @default
+             */
+            segment: string;
             /** Sources */
             sources?: string[];
             /** Sum Delivered */
@@ -2618,6 +2624,13 @@ export interface components {
             offset: number;
             /** Rows */
             rows: components["schemas"]["CustomerOut"][];
+            /**
+             * Segments
+             * @description Скільки покупців у кожному сегменті за поточним пошуком і групою
+             */
+            segments?: {
+                [key: string]: number;
+            };
             /** Total */
             total: number;
         };
@@ -2677,6 +2690,12 @@ export interface components {
             phone2: string;
             /** Refused */
             refused: number;
+            /**
+             * Segment
+             * @description vip | regular | repeat | new | risk — лише в списку
+             * @default
+             */
+            segment: string;
             /** Sum Delivered */
             sum_delivered: number;
             /** Sum Total */
@@ -2686,6 +2705,12 @@ export interface components {
         DashAttention: {
             /** Arrived */
             arrived: number;
+            /**
+             * Arrived Stale
+             * @description Посилки, що лежать на пошті понад 3 дні
+             * @default 0
+             */
+            arrived_stale: number;
             /** Cod Collected */
             cod_collected: number;
             /** Cod Expected */
@@ -2707,6 +2732,11 @@ export interface components {
             reminders: number;
             /** To Ship */
             to_ship: number;
+            /**
+             * Unsorted Oldest Min
+             * @description Скільки хвилин чекає найстаріше несортоване
+             */
+            unsorted_oldest_min?: number | null;
         };
         /** DashCustomers */
         DashCustomers: {
@@ -2806,6 +2836,19 @@ export interface components {
             /** Upsell Rate */
             upsell_rate: number;
         };
+        /** DashReminder */
+        DashReminder: {
+            /** Customer Name */
+            customer_name: string;
+            /** Id */
+            id: number;
+            /** Phone */
+            phone: string;
+            /** Remind At */
+            remind_at: string;
+            /** Status Id */
+            status_id: number;
+        };
         /** DashTeam */
         DashTeam: {
             /**
@@ -2882,6 +2925,11 @@ export interface components {
             /** Days */
             days: components["schemas"]["DashDay"][];
             month: components["schemas"]["DashMonth"];
+            /**
+             * My Reminders
+             * @description Нагадування на сьогодні й прострочені
+             */
+            my_reminders?: components["schemas"]["DashReminder"][];
             period: components["schemas"]["DashPeriod"];
             /** Prev Days */
             prev_days?: components["schemas"]["DashDay"][];
@@ -2891,6 +2939,11 @@ export interface components {
             today: components["schemas"]["DashToday"];
             /** Top */
             top: components["schemas"]["DashTop"][];
+            /**
+             * Week
+             * @description Останні 7 днів по днях — міні-графік
+             */
+            week?: components["schemas"]["DashDay"][];
         };
         /** DayGroup */
         DayGroup: {
@@ -4951,6 +5004,11 @@ export interface components {
              */
             countries?: string[];
             /**
+             * Days Left
+             * @description На скільки днів вистачить доступного залишку за темпом 30 днів
+             */
+            days_left?: number | null;
+            /**
              * Description
              * @default
              */
@@ -5003,6 +5061,11 @@ export interface components {
              */
             sale_price: number;
             /**
+             * Sales Trend
+             * @description Продажі за 30 днів по 3 дні (10 точок) — міні-графік у списку
+             */
+            sales_trend?: number[];
+            /**
              * Ship Description
              * @default
              */
@@ -5011,6 +5074,12 @@ export interface components {
             sku: string;
             /** Sold */
             sold: number;
+            /**
+             * Sold 30
+             * @description Продано штук за 30 днів (без скасованих і дублів) — лише в списку
+             * @default 0
+             */
+            sold_30: number;
             /**
              * Spec Price
              * @description Акційна ціна; 0 — без акції
@@ -5118,6 +5187,11 @@ export interface components {
              */
             countries?: string[];
             /**
+             * Days Left
+             * @description На скільки днів вистачить доступного залишку за темпом 30 днів
+             */
+            days_left?: number | null;
+            /**
              * Discount Percent
              * @default 0
              */
@@ -5161,12 +5235,23 @@ export interface components {
              */
             sale_price: number;
             /**
+             * Sales Trend
+             * @description Продажі за 30 днів по 3 дні (10 точок) — міні-графік у списку
+             */
+            sales_trend?: number[];
+            /**
              * Ship Description
              * @default
              */
             ship_description: string;
             /** Sku */
             sku: string;
+            /**
+             * Sold 30
+             * @description Продано штук за 30 днів (без скасованих і дублів) — лише в списку
+             * @default 0
+             */
+            sold_30: number;
             /**
              * Spec Price
              * @description Акційна ціна; 0 — без акції
@@ -7954,6 +8039,7 @@ export interface operations {
                 min_orders?: number;
                 offset?: number;
                 limit?: number;
+                segment?: string;
             };
             header?: never;
             path?: never;

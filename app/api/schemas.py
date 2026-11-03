@@ -81,6 +81,9 @@ class ProductOut(Out):
     wholesale_price: float = 0
     photo: str | None = Field(None, description="Головне фото: шлях від кореня CRM (/media/…)")
     variants: list[VariantOut] = Field(default_factory=list)
+    sold_30: int = Field(0, description="Продано штук за 30 днів (без скасованих і дублів) — лише в списку")
+    sales_trend: list[int] = Field(default_factory=list, description="Продажі за 30 днів по 3 дні (10 точок) — міні-графік у списку")
+    days_left: float | None = Field(None, description="На скільки днів вистачить доступного залишку за темпом 30 днів")
 
 
 class VariantOut(Out):
@@ -1581,12 +1584,14 @@ class CustomerOut(Out):
     buyout_rate: float | None
     first_order_at: str | None
     last_order_at: str | None
+    segment: str = Field("", description="vip | regular | repeat | new | risk — лише в списку")
 
 
 class CustomerListOut(Out):
     total: int
     offset: int
     rows: list[CustomerOut]
+    segments: dict[str, int] = Field(default_factory=dict, description="Скільки покупців у кожному сегменті за поточним пошуком і групою")
 
 
 class CustomerComm(Out):
@@ -1772,6 +1777,8 @@ class DashAttention(Out):
     low_stock: int
     cod_expected: float
     cod_collected: float
+    unsorted_oldest_min: int | None = Field(None, description="Скільки хвилин чекає найстаріше несортоване")
+    arrived_stale: int = Field(0, description="Посилки, що лежать на пошті понад 3 дні")
 
 
 class DashDay(Out):
@@ -1799,6 +1806,14 @@ class DashTeam(Out):
     last_login: str | None = None
 
 
+class DashReminder(Out):
+    id: int
+    remind_at: str
+    customer_name: str
+    phone: str
+    status_id: int
+
+
 class DashboardOut(Out):
     today: DashToday
     period: DashPeriod
@@ -1808,6 +1823,8 @@ class DashboardOut(Out):
     attention: DashAttention
     days: list[DashDay]
     prev_days: list[DashDay] = Field(default_factory=list)
+    week: list[DashDay] = Field(default_factory=list, description="Останні 7 днів по днях — міні-графік")
+    my_reminders: list[DashReminder] = Field(default_factory=list, description="Нагадування на сьогодні й прострочені")
     team: list[DashTeam] = Field(default_factory=list)
     top: list[DashTop]
 

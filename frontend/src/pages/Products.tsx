@@ -1,10 +1,10 @@
 // Товари: список з фото й фільтрами; вікно товару в три колонки (UI-DESIGN §7, макет 10): основне й опис · ціни, склад, доставка · варіанти, допродаж, продажі;
 // довідники каталогу — категорії (два рівні), виробники, атрибути для варіантів.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Archive, BadgeCheck, Boxes, Check, ChevronLeft, ChevronRight, Copy, Factory, FolderTree, Globe, GripVertical, ImagePlus, MoreHorizontal, Package, Plus, Tags, Trash2, Wand2, X,
+  Archive, BadgeCheck, Boxes, Check, ChevronLeft, ChevronRight, Copy, Factory, FolderTree, Globe, GripVertical, ImagePlus, MoreHorizontal, Package, Plus, ShoppingCart, Tags, Trash2, TriangleAlert, Wand2, X,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
@@ -78,6 +78,9 @@ function ProductList({ editable }: { editable: boolean }) {
   const brands = useMemo(() => Object.fromEntries(meta.manufacturers.map((m) => [m.id, m.name])), [meta.manufacturers]);
   const catOpts = categoryOptions(meta.categories);
   const mobile = useMobile();
+  const nav = useNavigate();
+  const [lossOnly, setLossOnly] = useState(false);
+  const rowsShown = lossOnly ? data?.filter(isLoss) : data;
 
   return (
     <>
@@ -120,38 +123,59 @@ function ProductList({ editable }: { editable: boolean }) {
             : <EmptyState icon={Package} title="Додайте перший товар" text="Назва, ціна й залишок — і товар можна додавати в замовлення та продавати" action={{ label: "Додати товар", icon: Plus, onClick: () => setEdit("new") }} />)}
         </div>
       )}
-      {!mobile && <div className="card flush tablewrap">
-        <table className="t pr-table m-cards">
-          <thead><tr><th>Товар</th><th>Категорія</th><th>Артикул</th><th className="num">Ціна</th><th className="num">Собівартість</th>
-            <th className="num">Маржа</th><th className="num">Доступно</th><th className="num">Резерв</th></tr></thead>
+      {!mobile && (<>
+        <div className="pr-quick" role="radiogroup" aria-label="Швидкий фільтр">
+          {([["", "Усі"], ["low", "Закінчуються"], ["out", "Немає"], ["loss", "Збиткові"]] as const).map(([k, n]) => {
+            const cnt = k === "loss" ? (data ?? []).filter(isLoss).length : null;
+            const on = k === "loss" ? lossOnly : !lossOnly && stockState === k;
+            return <button key={k} type="button" role="radio" aria-checked={on} className={`pr-qc${on ? " on" : ""}`}
+              onClick={() => { if (k === "loss") { setLossOnly(!lossOnly); setStockState(""); } else { setLossOnly(false); setStockState(k); } }}>
+              {k === "low" && <TriangleAlert size={13} />}{n}{cnt ? <em>{cnt}</em> : null}</button>;
+          })}
+        </div>
+        <div className="card flush tablewrap">
+        <table className="t pr-table v2 m-cards">
+          <thead><tr><th>Товар</th><th>Ціна</th><th>Залишок</th><th>Продажі · 30 днів</th><th /></tr></thead>
           <tbody>
-            {isLoading && <tr><td colSpan={8}><Empty><Spinner /></Empty></td></tr>}
-            {data?.map((p) => {
+            {isLoading && <tr><td colSpan={5}><Empty><Spinner /></Empty></td></tr>}
+            {rowsShown?.map((p) => {
               const active = (p.variants ?? []).filter((v) => v.active);
+              const sale = p.discount_percent > 0 ? p.sale_price : p.price;
+              const mPct = sale > 0 ? Math.round(((sale - p.cost) / sale) * 100) : null;
+              const left = p.days_left;
+              const tone = p.available <= 0 ? "bad" : (left != null && left < 3) || p.available <= p.min_stock ? "bad" : left != null && left < 10 ? "warn" : "ok";
+              const cap = Math.max(p.available, p.min_stock * 3, p.sold_30 || 0, 1);
               return (
                 <tr key={p.id} className="clickable" onClick={() => setEdit(p.id)}>
                   <td><div className="pr-cell">
                     {p.photo ? <img src={`${ROOT}${p.photo}`} alt="" loading="lazy" /> : <span className="pr-ph"><Package size={16} /></span>}
                     <div><div className="pr-name">{p.name}</div>
-                      <div className="pr-tags">{p.manufacturer_id && <span>{brands[p.manufacturer_id]}{p.model && ` ${p.model}`}</span>}
+                      <div className="pr-tags"><span className="mono">{p.sku}</span>
+                        {p.category_id && cats[p.category_id] && <span>{cats[p.category_id]}</span>}
+                        {p.manufacturer_id && <span>{brands[p.manufacturer_id]}{p.model && ` ${p.model}`}</span>}
                         {active.length > 0 && <Badge>{active.length} варіант{active.length === 1 ? "" : active.length < 5 ? "и" : "ів"}</Badge>}
                         {p.upsell && <Badge kind="info">допродаж</Badge>}{!p.active && <Badge>архів</Badge>}</div></div>
                   </div></td>
-                  <td className="muted">{p.category_id ? cats[p.category_id] ?? "" : ""}</td>
-                  <td className="mono nowrap">{p.sku}</td>
-                  <td className="num">{p.discount_percent > 0 ? <><span className="pr-old">{money(p.price)}</span> <b className="pr-sale">{money(p.sale_price)}</b></> : money(p.price)}</td>
-                  <td className="num muted">{money(p.cost)}</td>
-                  <td className="num">{money(p.sale_price - p.cost)}</td>
-                  <td className={`num ${p.available <= p.min_stock ? "lowstock" : ""}`}><b>{p.available}</b></td>
-                  <td className="num muted">{p.reserved || ""}</td>
+                  <td><div className="pr-price">
+                    <b className="nowrap">{p.discount_percent > 0 && <span className="pr-old">{money(p.price)}</span>}{money(sale)} ₴</b>
+                    {mPct != null && p.cost > 0 && <small className={mPct < 0 ? "bad" : mPct < 20 ? "warn" : "ok"} title={`Собівартість ${money(p.cost)} ₴ · прибуток ${money(sale - p.cost)} ₴`}>маржа {mPct}%</small>}
+                  </div></td>
+                  <td><div className={`pr-stock ${tone}`} title={`Склад ${p.stock} · у резерві ${p.reserved} · доступно ${p.available}${p.min_stock ? ` · мінімум ${p.min_stock}` : ""}`}>
+                    <span><b className="nowrap">{p.available} шт</b><small>{p.available <= 0 ? (p.reserved ? `немає · ${p.reserved} в резерві` : "немає") : left != null ? `≈ ${daysText(left)}` : "продажів не було"}</small></span>
+                    <i className="pr-bar"><i style={{ width: `${Math.max(0, Math.min(100, (p.available / cap) * 100))}%` }} /></i>
+                  </div></td>
+                  <td><div className="pr-sales"><Spark values={p.sales_trend ?? []} /><b>{p.sold_30 ?? 0}</b></div></td>
+                  <td className="r">{editable && tone !== "ok" && p.active && !p.upsell && (
+                    <button type="button" className="btn soft sm" onClick={(e) => { e.stopPropagation(); nav(`/purchases?new=1&product=${p.id}`); }}><ShoppingCart size={14} />Закупити</button>
+                  )}</td>
                 </tr>
               );
             })}
-            {data && !data.length && <tr><td colSpan={8}>{dq || category || manufacturer || stockState ? <Empty><Package size={22} className="e-ico" />За цими фільтрами товарів немає</Empty>
+            {data && !rowsShown?.length && <tr><td colSpan={5}>{dq || category || manufacturer || stockState || lossOnly ? <Empty><Package size={22} className="e-ico" />За цими фільтрами товарів немає</Empty>
               : <EmptyState icon={Package} title="Додайте перший товар" text="Назва, ціна й залишок — і товар можна додавати в замовлення та продавати" action={{ label: "Додати товар", icon: Plus, onClick: () => setEdit("new") }} />}</td></tr>}
           </tbody>
         </table>
-      </div>}
+      </div></>)}
       {edit !== null && <ProductModal id={edit} editable={editable} onClose={() => setEdit(null)} onCreated={(id) => setEdit(id)} />}
     </>
   );
@@ -620,4 +644,20 @@ function AttributesTab() {
       ))}
     </div>
   );
+}
+
+// ---------------------------------------------------------------- список товарів v26 (15–16)
+const isLoss = (p: Product) => p.cost > 0 && (p.discount_percent > 0 ? p.sale_price : p.price) <= p.cost;
+function daysText(d: number) {
+  if (d < 1) return "менше дня";
+  if (d < 14) { const n = Math.round(d); return `${n} ${n % 10 === 1 && n % 100 !== 11 ? "день" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "дні" : "днів"}`; }
+  if (d < 60) return `${Math.round(d / 7)} тиж`;
+  return `${Math.round(d / 30)} міс`;
+}
+function Spark({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+  const w = 72, h = 24, mx = Math.max(...values, 1);
+  const pts = values.map((v, i) => [i * w / (values.length - 1), h - 3 - (v / mx) * (h - 6)]);
+  const d = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden className="pr-spark"><path d={d} fill="none" stroke="var(--accent)" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
