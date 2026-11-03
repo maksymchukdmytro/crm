@@ -735,7 +735,7 @@ function PhoneCard({ o }: { o: OrderRow }) {
       <a className="hc-ib v" href={`viber://chat?number=%2B${d}`} aria-label="Написати у Viber" title="Viber"><MessageCircle size={15} /></a>
       <a className="hc-ib t" href={`https://t.me/+${d}`} target="_blank" rel="noreferrer" aria-label="Написати в Telegram" title="Telegram"><Send size={15} /></a>
     </div>
-    {c && <div className="hc-stats"><span>{c.orders} {c.orders % 10 === 1 && c.orders % 100 !== 11 ? "замовлення" : "замовлень"}</span>
+    {c && <div className="hc-stats"><span>{c.orders} {plural(c.orders, "замовлення", "замовлення", "замовлень")}</span>
       {c.buyout_rate != null && c.delivered + c.refused > 0 && <span>викуп {Math.round(c.buyout_rate)}%</span>}
       {c.refused > 0 && <span className="bad">відмов {c.refused}</span>}</div>}
   </>);
