@@ -79,7 +79,7 @@ def customers(q: str = "", group: str = "", blacklist: str = "", sort: str = "la
         d = j_customer(c, stats.get(c.id))
         d["segment"] = svc.segment_of(c, stats.get(c.id), vip)
         out.append(d)
-    return {"total": total, "offset": offset, "rows": out, "segments": segments}
+    return {"total": total, "offset": offset, "rows": out, "segments": segments, "default_group_id": svc.default_group_id(db)}
 
 
 def _get(db: Session, cid: int) -> Customer:
