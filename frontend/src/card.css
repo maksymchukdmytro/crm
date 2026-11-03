@@ -336,3 +336,49 @@ label.gi-price { gap: 0; font-weight: 400; }
 .gi-offer:hover { background: color-mix(in srgb, var(--accent) 14%, white); }
 .gi-offer b { font-weight: 450; color: var(--ink-2); white-space: nowrap; }
 .gi-offer .ell { min-width: 0; }
+
+/* ---------------- картка v26 (6–9): покупець одним рядком, товари із залишком, оплата й доставка підсумком, історія з фільтром */
+.oc-cl { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.oc-cl-av { display: grid; place-items: center; width: 48px; height: 48px; flex: none; border-radius: 50%; background: #E3E9F7; color: #3557A8; font-weight: 600; font-size: 16px; }
+.oc-cl-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.oc-cl-t b { font-size: 20px; font-weight: 600; letter-spacing: -.01em; line-height: 1.2; }
+.oc-cl-sub { display: flex; gap: 10px; font-size: 13px; color: var(--muted); min-width: 0; }
+.oc-cl-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto; justify-content: flex-end; }
+.oc-chip { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: var(--r-pill); background: var(--soft); font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+.oc-chip.ok { background: var(--ok-soft); color: var(--ok-ink); }
+.oc-chip.warn { background: var(--warn-soft); color: var(--warn-ink); }
+.oc-chip.bad { background: var(--bad-soft); color: var(--bad-ink); }
+.oc-cl-acts { display: flex; gap: 6px; flex: none; }
+.oc-cl-b { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: var(--soft); color: var(--ink-2); text-decoration: none; transition: background 150ms; }
+.oc-cl-b:hover { background: #E8E8E5; }
+.oc-cl-b.v { background: #F1ECFB; color: #7C3AED; }
+.oc-cl-b.t { background: var(--accent-soft); color: var(--accent); }
+.oc-cust-c .oc-others { margin-top: 10px; }
+.oc-cust-c .block-head .sub { display: none; }
+
+.gi-stk { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
+.gi-stk i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+.gi-stk.low { color: var(--warn-ink); } .gi-stk.low i { background: var(--warn); }
+.gi-stk.bad { color: var(--bad-ink); } .gi-stk.bad i { background: var(--bad); }
+
+.oc-compact .block-head { margin-bottom: 8px; }
+.oc-sumline { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.oc-sl-ic { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 12px; background: var(--soft); color: var(--ink-2); }
+.oc-sl-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.oc-sl-t b { font-size: 14.5px; font-weight: 600; }
+.oc-sl-t > span { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.oc-sl-t > span.ok { color: var(--ok-ink); }
+.oc-sl-note { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
+.oc-copy { display: inline-grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 6px; background: var(--soft); color: var(--ink-2); cursor: pointer; }
+.oc-compact .oc-ttn-hint, .oc-compact .pc-line { margin-top: 10px; }
+.oc-compact .oc-ttn-acts { margin-top: 10px; }
+
+.oc-hist-f { display: flex; gap: 5px; flex-wrap: wrap; margin: 0 0 10px; }
+.oc-hist-f button { height: 28px; padding: 0 11px; border: 0; border-radius: var(--r-pill); background: var(--soft); color: var(--ink-2); font: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; }
+.oc-hist-f button.on { background: var(--ink); color: #fff; }
+.oc-hist-f button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.oc-hist-in { display: flex; gap: 6px; margin-top: 12px; }
+.oc-hist-in input { flex: 1; min-width: 0; height: 38px; }
+.oc-hist-send { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border: 0; border-radius: 10px; background: var(--accent); color: #fff; cursor: pointer; }
+.oc-hist-send:disabled { background: var(--soft); color: var(--faint); cursor: default; }
+@media (prefers-reduced-motion: reduce) { .oc-cl-b { transition: none; } }
