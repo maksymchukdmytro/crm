@@ -11,7 +11,7 @@ import { dt, phone } from "../lib/format";
 import type { BlockedIp, Cashier, CustomerGroup, DirItem, LegalEntity, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { MarkLookPick } from "../components/marks";
-import { ColorPick, DateField, isoDate, Badge, Button, Empty, Field, IconButton, MenuButton, NpAutocomplete, RoundButton, Select, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
+import { ask, ColorPick, DateField, isoDate, Badge, Button, Empty, Field, IconButton, MenuButton, NpAutocomplete, RoundButton, Select, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
 
 type S = Settings;
 
@@ -91,14 +91,14 @@ export default function SettingsPage() {
   const mobile = useMobile();
   const listMode = mobile && !fromUrl;
 
-  const guard = () => !dirty.length || window.confirm("Є незбережені зміни. Вийти без збереження?");
-  const back = () => { if (guard()) nav("/settings", { replace: true, state: loc.state }); };
-  const go = (k: string) => {
-    if ((k === cur.key && !listMode) || !guard()) return;
+  const guard = async () => !dirty.length || ask({ title: "Вийти без збереження?", text: "Є незбережені зміни — вони зникнуть.", action: "Вийти", cancel: "Лишитись", danger: true });
+  const back = async () => { if (await guard()) nav("/settings", { replace: true, state: loc.state }); };
+  const go = async (k: string) => {
+    if ((k === cur.key && !listMode) || !(await guard())) return;
     try { localStorage.setItem("crm-settings-tab", k); } catch { /* приватне вікно */ }
     nav(`/settings/${k}`, { replace: true, state: loc.state });
   };
-  const close = () => { if (guard()) nav(bg ?? "/", { replace: !bg }); };
+  const close = async () => { if (await guard()) nav(bg ?? "/", { replace: !bg }); };
   const saveAll = async () => {
     if (!dirty.length || busy) return;
     setBusy(true);
@@ -270,8 +270,8 @@ function LeadsSection({ s }: { s: S }) {
       if (!enabled) {
         const p = await api.get<{ open: number }>("/settings/leads/preview");
         if (p.open > 0) {
-          if (!window.confirm(`${p.open} відкритих лідів — перенести в «Несортовані»? Без перенесення вони лишаться в базі, але розділ буде прихований.`)) {
-            if (!window.confirm("Вимкнути розділ без перенесення лідів?")) throw new Error("cancel");
+          if (!(await ask({ title: `Перенести ${p.open} відкритих лідів у «Несортовані»?`, text: "Без перенесення вони лишаться в базі, але розділ «Ліди» буде прихований.", action: "Перенести", cancel: "Не переносити" }))) {
+            if (!(await ask({ title: "Вимкнути розділ без перенесення лідів?", action: "Вимкнути", danger: true }))) throw new Error("cancel");
           } else move_open = true;
         }
       }
@@ -332,7 +332,7 @@ var p = new URLSearchParams(location.search), f = document.forms[0];
         <p className="hint">POST-запит з форми лендингу, конструктора сайтів або вашого сервера.</p>
         <pre className="code wrap">{url}</pre>
         <div className="row"><button className="btn sm" onClick={copy}><Copy size={14} /> Копіювати</button>
-          <button className="btn sm danger" onClick={() => { if (window.confirm("Старий ключ перестане працювати. Продовжити?")) save.mutate({ path: "/settings/webhook/regenerate", method: "post" }); }}>Створити новий ключ</button></div>
+          <button className="btn sm danger" onClick={async () => { if (await ask({ title: "Створити новий ключ?", text: "Старий ключ перестане працювати — форми лендингів треба буде оновити.", action: "Створити ключ", danger: true })) save.mutate({ path: "/settings/webhook/regenerate", method: "post" }); }}>Створити новий ключ</button></div>
         <h3>Поля</h3>
         <table className="t dense"><tbody>
           <tr><td><code>name</code></td><td>ПІБ клієнта</td></tr><tr><td><code>phone</code></td><td>Телефон (обов'язково)</td></tr>
@@ -430,7 +430,7 @@ function TemplateRow({ t, statuses, onSave }: { t: S["sms_templates"][number]; s
         <Select value={v.channel} onChange={(e) => setV({ ...v, channel: e.target.value })} style={{ maxWidth: 150 }}><option value="sms">SMS</option><option value="viber">Viber</option><option value="hybrid">Viber → SMS</option></Select></div>
       <textarea rows={2} value={v.text} onChange={(e) => setV({ ...v, text: e.target.value })} />
       <div className="row"><label className="check"><input type="checkbox" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} /> Активний</label><span className="spacer" />
-        <button type="button" className="btn sm danger" onClick={() => { if (window.confirm("Видалити шаблон?")) onSave({ id: t.id, delete: true }); }}><Trash2 size={13} /></button>
+        <button type="button" className="btn sm danger" onClick={async () => { if (await ask({ title: "Видалити шаблон?", action: "Видалити", danger: true })) onSave({ id: t.id, delete: true }); }}><Trash2 size={13} /></button>
         <button className="btn sm">Зберегти</button></div>
     </form>
   );
@@ -458,7 +458,7 @@ function Statuses({ s }: { s: S }) {
               <td data-label="Підтверджене" className="t-cards-chk"><input type="checkbox" checked={r.approved} onChange={(e) => upd(r.id, { approved: e.target.checked })} /></td>
               <td data-label="Фінальний" className="t-cards-chk"><input type="checkbox" checked={r.final} onChange={(e) => upd(r.id, { final: e.target.checked })} /></td>
               <td data-label="Активний" className="t-cards-chk"><input type="checkbox" checked={r.active} disabled={r.code === "new"} onChange={(e) => upd(r.id, { active: e.target.checked })} /></td>
-              <td>{!r.system && <button className="btn sm danger" onClick={() => { if (window.confirm("Видалити статус?")) save.mutate({ path: `/settings/statuses/${r.id}`, method: "del" }, { onSuccess: (x) => tr.reset(x.statuses) }); }}><Trash2 size={13} /></button>}</td>
+              <td>{!r.system && <button className="btn sm danger" onClick={async () => { if (await ask({ title: `Видалити статус «${r.name}»?`, action: "Видалити", danger: true })) save.mutate({ path: `/settings/statuses/${r.id}`, method: "del" }, { onSuccess: (x) => tr.reset(x.statuses) }); }}><Trash2 size={13} /></button>}</td>
             </tr>
           ))}</tbody>
         </table>
@@ -784,7 +784,7 @@ function NpAccounts({ s }: { s: S }) {
                       <label className="check"><input type="radio" name="np-default" checked={a.is_default} onChange={() => setRows(rows.map((r) => ({ ...r, is_default: r.key === a.key })))} /> Основний ключ</label>
                       <label className="check"><input type="checkbox" checked={a.is_active} onChange={(e) => upd(a.key, { is_active: e.target.checked })} /> Активний</label>
                       <span className="spacer" />
-                      <button type="button" className="btn sm danger" onClick={() => { if (window.confirm("Прибрати ключ із CRM? ТТН у кабінеті НП не зміняться.")) { if (a.id) upd(a.key, { delete: true }); else setRows(rows.filter((r) => r.key !== a.key)); } }}><Trash2 size={13} /> Прибрати</button>
+                      <button type="button" className="btn sm danger" onClick={async () => { if (await ask({ title: "Прибрати ключ із CRM?", text: "ТТН у кабінеті Нової Пошти не зміняться.", action: "Прибрати", danger: true })) { if (a.id) upd(a.key, { delete: true }); else setRows(rows.filter((r) => r.key !== a.key)); } }}><Trash2 size={13} /> Прибрати</button>
                     </div>
                   </div>
                 )}
@@ -943,7 +943,7 @@ function Shops({ s }: { s: S }) {
                   <div className="form-actions">
                     <label className="check"><input type="checkbox" checked={x.is_active} onChange={(e) => upd(x.key, { is_active: e.target.checked })} /> Активний</label>
                     <span className="spacer" />
-                    <button type="button" className="btn sm danger" onClick={() => { if (window.confirm("Відключити магазин? Імпортовані замовлення залишаться.")) { if (x.id) upd(x.key, { delete: true }); else setRows(rows.filter((r) => r.key !== x.key)); } }}><Trash2 size={13} /> Відключити</button>
+                    <button type="button" className="btn sm danger" onClick={async () => { if (await ask({ title: "Відключити магазин?", text: "Імпортовані замовлення залишаться в CRM.", action: "Відключити", danger: true })) { if (x.id) upd(x.key, { delete: true }); else setRows(rows.filter((r) => r.key !== x.key)); } }}><Trash2 size={13} /> Відключити</button>
                   </div>
                 </div>
               )}
@@ -1138,7 +1138,7 @@ function EntityAccounts({ entityId }: { entityId: number }) {
             <div key={a.id} className={`ent-acc-row${a.is_active ? "" : " off"}`}>
               <b>{a.name}</b><span className="muted">{ACC_KINDS[a.kind] ?? a.kind}{a.card_mask && ` · ${a.card_mask}`}{a.iban && ` · ${a.iban}`}</span>
               <label className="mini-check"><input type="checkbox" checked={a.is_active} onChange={() => toggle.mutate(a)} /> активний</label>
-              <button type="button" className="x" title="Видалити рахунок" onClick={() => { if (window.confirm(`Видалити рахунок «${a.name}»?`)) del.mutate(a.id); }}>×</button>
+              <button type="button" className="x" title="Видалити рахунок" onClick={async () => { if (await ask({ title: `Видалити рахунок «${a.name}»?`, action: "Видалити", danger: true })) del.mutate(a.id); }}>×</button>
             </div>
           ))}
           {q.data && !q.data.length && <p className="hint">Рахунків ще немає. Додайте, куди надходять передоплати — у картці замовлення його можна буде вибрати.</p>}
@@ -1272,7 +1272,7 @@ function CustomerSettings() {
               <ColorPick value={g.color} onChange={(c) => mut.mutate({ method: "post", url: "/customer-groups", body: { id: g.id, name: g.name, color: c } })} label={`Колір групи «${g.name}»`} />
               <input defaultValue={g.name} onBlur={(e) => e.target.value.trim() && e.target.value !== g.name && mut.mutate({ method: "post", url: "/customer-groups", body: { id: g.id, name: e.target.value, color: g.color } })} />
               <span className="muted nowrap">{g.customers} покупц.</span>
-              <button type="button" className="x" title="Видалити групу" onClick={() => window.confirm(`Видалити групу «${g.name}»? Покупці залишаться без групи.`) && mut.mutate({ method: "del", url: `/customer-groups/${g.id}` })}>×</button>
+              <button type="button" className="x" title="Видалити групу" onClick={async () => { if (await ask({ title: `Видалити групу «${g.name}»?`, text: "Покупці залишаться без групи.", action: "Видалити", danger: true })) mut.mutate({ method: "del", url: `/customer-groups/${g.id}` }); }}>×</button>
             </div>
           ))}
         </div>

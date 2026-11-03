@@ -6,7 +6,7 @@ import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num } from "../lib/format";
 import type { Move, Product, Purchase, Supplier, Warehouse } from "../lib/types";
-import { Badge, Button, DenseTable, Empty, Field, MobileActs, Modal, RoundButton, Segmented, Spinner, Tabs, Window, type DenseCol , Select, EmptyState } from "../components/ui";
+import { ask, Badge, Button, DenseTable, Empty, Field, MobileActs, Modal, RoundButton, Segmented, Spinner, Tabs, Window, type DenseCol , Select, EmptyState } from "../components/ui";
 
 
 export function MovesTable({ moves, compact = false }: { moves: Move[]; compact?: boolean }) {
@@ -272,8 +272,8 @@ function PurchaseModal({ id, onClose, product = "" }: { id: number | "new"; onCl
           <div className="form-actions">
             <button className="btn" onClick={() => run.mutate("save")}>Зберегти</button>
             {(isNew || data?.status === "draft") && <button className="btn" onClick={() => run.mutate("ordered")}>Позначити «Замовлено»</button>}
-            <button className="btn primary" onClick={() => { if (window.confirm("Оприбуткувати товар? Залишки на складі збільшаться.")) run.mutate("receive"); }}>Оприбуткувати на склад</button>
-            {!isNew && <><span className="spacer" /><button className="btn danger" onClick={() => { if (window.confirm("Скасувати закупівлю?")) run.mutate("cancel"); }}>Скасувати</button></>}
+            <button className="btn primary" onClick={async () => { if (await ask({ title: "Оприбуткувати товар?", text: "Залишки на складі збільшаться на кількість із закупівлі.", action: "Оприбуткувати" })) run.mutate("receive"); }}>Оприбуткувати на склад</button>
+            {!isNew && <><span className="spacer" /><button className="btn danger" onClick={async () => { if (await ask({ title: "Скасувати закупівлю?", action: "Скасувати закупівлю", cancel: "Ні", danger: true })) run.mutate("cancel"); }}>Скасувати</button></>}
           </div>
         </>}
       </fieldset>

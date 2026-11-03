@@ -14,7 +14,7 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num, phone as fmtPhone } from "../lib/format";
 import type { Order } from "../lib/types";
 import {
-  Block, Button, Checklist, DateTimePicker, fmtDateTime, isoDate, IconButton, MenuButton, PayCheck, Ring, RoundButton, Segmented, Select, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useMobile, useOutside,
+  ask, Block, Button, Checklist, DateTimePicker, fmtDateTime, isoDate, IconButton, MenuButton, PayCheck, Ring, RoundButton, Segmented, Select, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useMobile, useOutside,
   type CheckItem,
 } from "../components/ui";
 import { flag, PayIcon, PayLabel } from "../components/payicons";
@@ -204,11 +204,11 @@ function OrderCard({ id, onClose, onOpen, ids, embed }: { id: string; onClose: (
     onError: (e) => toast(errText(e), "error"),
   });
 
-  const changeStatus = (sid: number, reasonId?: number) => {
+  const changeStatus = async (sid: number, reasonId?: number) => {
     const s = meta.statuses.find((x) => x.id === sid);
     if (!s || sid === form.status_id) return;
     const acts = [STOCK_TEXT[s.stock_action ?? ""], s.code === "shipped" || s.code === "delivered" ? "SMS покупцю й чек — якщо налаштовано для статусу" : ""].filter(Boolean);
-    if (acts.length && !window.confirm(`Статус «${s.name}»: ${acts.join("; ")}. Продовжити?`)) return;
+    if (acts.length && !(await ask({ title: `Змінити статус на «${s.name}»?`, text: `${acts.join("; ").replace(/^./, (c) => c.toUpperCase())}.`, action: "Змінити статус" }))) return;
     setForm((f) => ({ ...f, status_id: sid, reason_id: reasonId ?? f.reason_id }));
     setTimeout(() => (isNew ? null : saveNow()), 0);
   };
@@ -264,10 +264,14 @@ function OrderCard({ id, onClose, onOpen, ids, embed }: { id: string; onClose: (
     },
     onError: (e) => toast(errText(e), "error"),
   });
-  const askDelete = () => {
-    if (window.confirm(`Видалити замовлення №${oid} назавжди?\n\nРезерв товару повернеться на склад. Відновити замовлення не можна.`)) remove.mutate();
+  const askDelete = async () => {
+    if (await ask({ title: `Видалити замовлення №${oid} назавжди?`, text: "Резерв товару повернеться на склад. Відновити замовлення не можна.", action: "Видалити", danger: true })) remove.mutate();
   };
-  const close = () => { if (dirty && !isNew) saveNow(); else if (dirty && isNew && !window.confirm("Замовлення ще не створено. Закрити без збереження?")) return; onClose(); };
+  const close = async () => {
+    if (dirty && !isNew) saveNow();
+    else if (dirty && isNew && !(await ask({ title: "Закрити без збереження?", text: "Замовлення ще не створено — введене зникне.", action: "Закрити", cancel: "Лишитись", danger: true }))) return;
+    onClose();
+  };
 
   if (!isNew && (isLoading || !order || !baseline)) {
     return (
@@ -645,7 +649,7 @@ function CheckMenu({ order, busy, onReceipt }: { order: Order; busy: boolean; on
         {!sold && <button className="pop-item" onClick={() => { close(); onReceipt("sell"); }}><Receipt size={16} />Чек продажу</button>}
         <button className="pop-item" onClick={() => { close(); onReceipt("prepay"); }}><Wallet size={16} />Чек передоплати</button>
         <button className="pop-item" onClick={() => { close(); onReceipt("postpay"); }}><Wallet size={16} />Чек післяплати</button>
-        <button className="pop-item" onClick={() => { close(); if (window.confirm("Створити чек повернення?")) onReceipt("return"); }}><RefreshCw size={16} />Чек повернення</button>
+        <button className="pop-item" onClick={async () => { close(); if (await ask({ title: "Створити чек повернення?", text: "Чек піде у фіскальний сервер — скасувати його не можна.", action: "Створити чек" })) onReceipt("return"); }}><RefreshCw size={16} />Чек повернення</button>
         {rs.length > 0 && <div className="note-head">Чеки замовлення</div>}
         {rs.map((r) => (
           <a key={r.id} className="pop-item" href={r.url || undefined} target="_blank" rel="noreferrer" title={r.error || undefined}>
@@ -984,7 +988,7 @@ function DeliveryBlock({ order, form, set, cod, codKind, step, readOnly, locked,
                   <ListChecks size={16} />{order.np_registry_ref ? `У реєстрі ${order.np_registry_ref}` : "Додати в реєстр НП"}</button>}
                 {hasTtn && carrier && <button className="pop-item" onClick={() => { close(); onAction("/track"); }}><RefreshCw size={16} />Оновити статус</button>}
                 {hasTtn && <button className="pop-item" onClick={() => { close(); navigator.clipboard?.writeText(order.ttn || form.ttn); toast("ТТН скопійовано"); }}><Copy size={16} />Копіювати ТТН</button>}
-                {order.carrier_ref && !locked && <button className="pop-item danger" onClick={() => { close(); if (window.confirm(`Видалити ТТН ${order.ttn} у перевізника?`)) onAction("/ttn", "del"); }}><Trash2 size={16} />Видалити ТТН</button>}
+                {order.carrier_ref && !locked && <button className="pop-item danger" onClick={async () => { close(); if (await ask({ title: `Видалити ТТН ${order.ttn}?`, text: "Накладну буде видалено й у кабінеті перевізника.", action: "Видалити ТТН", danger: true })) onAction("/ttn", "del"); }}><Trash2 size={16} />Видалити ТТН</button>}
               </>)}
             </MenuButton>
           )}

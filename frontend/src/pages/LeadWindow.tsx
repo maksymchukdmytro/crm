@@ -7,7 +7,7 @@ import { api, ApiError } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, money, phone } from "../lib/format";
 import type { Order, OrderList } from "../lib/types";
-import { Block, Button, DateTimePicker, fmtDateTime, isoDate, IconButton, MenuButton, PropertyList, RoundButton, StatusPill, Window, useMobile, useOutside } from "../components/ui";
+import { ask, Block, Button, DateTimePicker, fmtDateTime, isoDate, IconButton, MenuButton, PropertyList, RoundButton, StatusPill, Window, useMobile, useOutside } from "../components/ui";
 import { WaitBadge, WaitRing, callbackTime, leadNo } from "./Leads";
 import OrderModal from "./OrderCard";
 
@@ -22,8 +22,8 @@ export default function LeadWindow({ id, onClose, onOpen }: { id: number; onClos
   const mobile = useMobile();
   const statuses = Object.fromEntries(meta.statuses.map((s) => [s.id, s]));
   const { data: o, isLoading } = useQuery({ queryKey: ["order", id], queryFn: () => api.get<Order>(`/orders/${id}`) });
-  const askDelete = () => {
-    if (!window.confirm(`Видалити лід ${leadNo(id)} назавжди? Відновити його не можна.`)) return;
+  const askDelete = async () => {
+    if (!(await ask({ title: `Видалити лід ${leadNo(id)}?`, text: "Назавжди: відновити його не можна.", action: "Видалити", danger: true }))) return;
     api.del(`/orders/${id}`).then(() => {
       qc.invalidateQueries({ queryKey: ["orders"] }); qc.invalidateQueries({ queryKey: ["leads"] }); qc.invalidateQueries({ queryKey: ["counters"] });
       toast(`Лід ${leadNo(id)} видалено`); onClose();

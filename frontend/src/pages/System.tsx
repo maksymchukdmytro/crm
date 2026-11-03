@@ -5,7 +5,7 @@ import { api, ROOT } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { ago, dt } from "../lib/format";
 import type { SystemStatus, TestData } from "../lib/types";
-import { Badge, Empty, Kpi, Spinner, confirmAction } from "../components/ui";
+import { Badge, Empty, Kpi, Spinner, ask } from "../components/ui";
 
 const CHECK_NAMES: Record<string, string> = { database: "База даних", redis: "Redis (черга й події)", worker: "Фоновий воркер" };
 const ALERT_NAMES: Record<string, string> = { sms_failed: "Помилки SMS/Viber", queue: "Переповнена черга", no_leads: "Немає нових заявок" };
@@ -91,7 +91,7 @@ export default function SystemPage() {
           <div className="form-actions">
             <button className="btn" disabled={tdAction.isPending} onClick={() => tdAction.mutate("create")}>Створити 10 замовлень</button>
             {!!(td.data?.orders || td.data?.products) && <button className="btn danger" disabled={tdAction.isPending}
-              onClick={() => confirmAction("Видалити всі тестові замовлення й товари? Справжні дані не зачіпаються.") && tdAction.mutate("delete")}>Видалити тестові дані</button>}
+              onClick={async () => { if (await ask({ title: "Видалити всі тестові дані?", text: "Тестові замовлення й товари зникнуть. Справжні дані не зачіпаються.", action: "Видалити", danger: true })) tdAction.mutate("delete"); }}>Видалити тестові дані</button>}
           </div>
         </div>
         <div className="card form">

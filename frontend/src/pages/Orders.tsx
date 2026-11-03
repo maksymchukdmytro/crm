@@ -15,7 +15,7 @@ import { MarkIcon } from "../components/marks";
 import type { Order, OrderList, OrderRow, Status } from "../lib/types";
 import {
   BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, MenuButton, MobileActs, PayCheck, RoundButton, Segmented, Sheet, StatusPill, Tabs,
-  useColumns, useMobile, useOutside, type DenseCol, type TabItem, EmptyState, Floating, HoverCard, DatePop, DateRangeField, RangePicker, fmtRange } from "../components/ui";
+  ask, useColumns, useMobile, useOutside, type DenseCol, type TabItem, EmptyState, Floating, HoverCard, DatePop, DateRangeField, RangePicker, fmtRange } from "../components/ui";
 import OrderModal, { openTtnOnLoad } from "./OrderCard";
 
 const FILTERS = ["status", "q", "manager", "delivery", "src", "entity", "pm", "mark", "date_from", "date_to", "dup", "remind", "ttn"] as const;
@@ -125,7 +125,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     if (!s || sid === o.status_id) return;
     const STOCK: Record<string, string> = { reserve: "товар буде зарезервовано", ship: "товар буде списано зі складу", return: "товар повернеться на залишок", release: "резерв буде знято" };
     const warn = STOCK[s.stock_action ?? ""];
-    if (warn && !window.confirm(`№${o.id} → «${s.name}»: ${warn}. Продовжити?`)) return;
+    if (warn && !(await ask({ title: `№${o.id} → «${s.name}»?`, text: `Після зміни статусу ${warn}.`, action: "Змінити статус" }))) return;
     try {
       if (reasonId) {
         const full = await api.get<Order>(`/orders/${o.id}`);
@@ -525,8 +525,9 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         {meta.checkbox_ready && <button className="btn quiet sm" onClick={() => bulk.mutate({ action: "fiscalize" })}><Receipt size={14} />Фіскалізувати</button>}
         <button className="btn quiet sm" onClick={() => { navigator.clipboard?.writeText(selectedIds.join(", ")); toast("Номери скопійовано"); }}><Copy size={14} />Номери</button>
         {meta.user.role !== "warehouse" && (
-          <button className="btn quiet sm danger" onClick={() => {
-            if (window.confirm(`Видалити ${sel.size} ${sel.size === 1 ? "замовлення" : "замовлень"} назавжди?\n\nРезерв повернеться на склад. Замовлення з ТТН у перевізника, фіскальним чеком чи вже відвантажені не видаляться.`)) bulk.mutate({ action: "delete" });
+          <button className="btn quiet sm danger" onClick={async () => {
+            if (await ask({ title: `Видалити ${sel.size} ${plural(sel.size, "замовлення", "замовлення", "замовлень")} назавжди?`, action: "Видалити", danger: true,
+              text: "Резерв повернеться на склад. Замовлення з ТТН у перевізника, фіскальним чеком чи вже відвантажені не видаляться." })) bulk.mutate({ action: "delete" });
           }}><Trash2 size={14} />Видалити</button>
         )}
       </BulkBar>
