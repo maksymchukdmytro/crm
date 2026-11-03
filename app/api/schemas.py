@@ -290,6 +290,7 @@ class OrderRowItem(Out):
     name: str
     qty: int
     upsell: bool
+    price: float = 0
 
 
 class GroupTag(Out):
@@ -340,6 +341,7 @@ class OrderRowOut(Out):
     customer_id: int | None = None
     blacklisted: bool = False
     pay_check: PayCheckOut | None = None
+    delivery_eta: str | None = Field(None, description="Очікувана дата прибуття за даними перевізника, YYYY-MM-DD")
 
 
 class DayGroup(Out):
@@ -366,6 +368,8 @@ class OrderListOut(Out):
     total: int | None = None
     counts: dict[str, int] | None = None
     all: int | None = None
+    sum: Num | None = Field(None, description="Сума замовлень за фільтром без скасованих і дублів (лише з counts=1)")
+    cod_wait: Num | None = Field(None, description="Післяплата, що чекаємо: відправлені й на пошті (лише з counts=1)")
     groups: list[DayGroup] = Field(default_factory=list, description="Підсумки за днями для дат на цій сторінці")
 
 

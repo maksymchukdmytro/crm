@@ -143,7 +143,7 @@ def j_order_row(o: Order) -> dict:
     return {
         "id": o.id, "status_id": o.status_id, "manager_id": o.manager_id,
         "customer_name": o.customer_name, "phone": o.phone,
-        "items": [{"name": i.name, "qty": i.qty, "upsell": i.is_upsell} for i in o.items],
+        "items": [{"name": i.name, "qty": i.qty, "upsell": i.is_upsell, "price": money(i.price)} for i in o.items],
         "total": money(o.total), "cod_amount": money(o.cod_amount), "payment_type": o.payment_type,
         "payment_method_id": o.payment_method_id, "source_id": o.source_id,
         "office_id": o.office_id, "np_account_id": o.np_account_id, "legal_entity_id": o.legal_entity_id, "reason_id": o.reason_id,

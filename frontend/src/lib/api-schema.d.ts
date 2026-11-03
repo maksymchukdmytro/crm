@@ -4364,6 +4364,11 @@ export interface components {
         OrderListOut: {
             /** All */
             all?: number | null;
+            /**
+             * Cod Wait
+             * @description Післяплата, що чекаємо: відправлені й на пошті (лише з counts=1)
+             */
+            cod_wait?: number | null;
             /** Counts */
             counts?: {
                 [key: string]: number;
@@ -4379,6 +4384,11 @@ export interface components {
             lead_tabs?: components["schemas"]["LeadTabsOut"] | null;
             /** Next */
             next: number | null;
+            /**
+             * Sum
+             * @description Сума замовлень за фільтром без скасованих і дублів (лише з counts=1)
+             */
+            sum?: number | null;
             /** Total */
             total?: number | null;
         };
@@ -4609,6 +4619,11 @@ export interface components {
         OrderRowItem: {
             /** Name */
             name: string;
+            /**
+             * Price
+             * @default 0
+             */
+            price: number;
             /** Qty */
             qty: number;
             /** Upsell */
@@ -4644,6 +4659,11 @@ export interface components {
             customer_id?: number | null;
             /** Customer Name */
             customer_name: string;
+            /**
+             * Delivery Eta
+             * @description Очікувана дата прибуття за даними перевізника, YYYY-MM-DD
+             */
+            delivery_eta?: string | null;
             /** Delivery Method */
             delivery_method: string;
             /** Delivery State */

@@ -3,19 +3,19 @@
 // вигляд і «+ Замовлення»; під нею вкладки статусів, а праворуч — лише ввімкнені фільтри (усі — під кнопкою фільтрів).
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlarmClock, Ban, Bookmark, CalendarDays, Check, CircleAlert, Copy, Download, Eye, Inbox, KanbanSquare, LayoutGrid, List, ListFilter, MessageSquare, Package, Phone, Plus, Printer, Receipt, ReceiptText, RefreshCw, Search, Trash2, Truck, UserRound, X,
+  AlarmClock, Ban, Bookmark, CalendarDays, Check, ChevronDown, CircleAlert, Copy, Crown, Download, Eye, Inbox, KanbanSquare, LayoutGrid, List, ListFilter, MessageCircle, MessageSquare, Package, PackageX, Phone, Plus, Printer, Receipt, ReceiptText, RefreshCw, Search, Send, Trash2, Truck, UserRound, Wallet, X,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { isoDay, money, phone } from "../lib/format";
-import { PAY_ICONS } from "../components/payicons";
+import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { MarkIcon } from "../components/marks";
-import type { OrderList, OrderRow } from "../lib/types";
+import type { Order, OrderList, OrderRow, Status } from "../lib/types";
 import {
-  BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, IconButton, MenuButton, MobileActs, PayCheck, RoundButton, Segmented, Sheet, StatusPill, Tabs, Tag,
-  useColumns, useMobile, useOutside, type DenseCol, type TabItem, EmptyState } from "../components/ui";
+  BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, MenuButton, MobileActs, PayCheck, RoundButton, Segmented, Sheet, StatusPill, Tabs,
+  useColumns, useMobile, useOutside, type DenseCol, type TabItem, EmptyState, Floating, HoverCard } from "../components/ui";
 import OrderModal, { openTtnOnLoad } from "./OrderCard";
 
 const FILTERS = ["status", "q", "manager", "delivery", "src", "entity", "pm", "mark", "date_from", "date_to", "dup", "remind", "ttn"] as const;
@@ -119,6 +119,22 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     },
     onError: (e) => toast(errText(e), "error"),
   });
+  // статус прямо з таблиці: той самий захист складу, що в картці; для відмови з причинами — причина
+  const setStatus = async (o: OrderRow, sid: number, reasonId?: number) => {
+    const s = meta.statuses.find((x) => x.id === sid);
+    if (!s || sid === o.status_id) return;
+    const STOCK: Record<string, string> = { reserve: "товар буде зарезервовано", ship: "товар буде списано зі складу", return: "товар повернеться на залишок", release: "резерв буде знято" };
+    const warn = STOCK[s.stock_action ?? ""];
+    if (warn && !window.confirm(`№${o.id} → «${s.name}»: ${warn}. Продовжити?`)) return;
+    try {
+      if (reasonId) {
+        const full = await api.get<Order>(`/orders/${o.id}`);
+        await api.patch(`/orders/${o.id}`, { status_id: sid, reason_id: reasonId, version: full.version });
+        toast(`№${o.id}: ${s.name}`);
+        qc.invalidateQueries({ queryKey: ["orders"] }); qc.invalidateQueries({ queryKey: ["counters"] });
+      } else bulk.mutate({ action: "status", value: sid, ids: [o.id] });
+    } catch (e) { toast(errText(e), "error"); }
+  };
   const accept = (ids: number[]) => { const c = byCode.confirmed; if (c) bulk.mutate({ action: "status", value: c.id, ids }); };
 
   // ---------------- клавіші: «/» — пошук у списку
@@ -146,66 +162,82 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     ? [[cnt("unsorted"), plural(cnt("unsorted"), "несортоване", "несортовані", "несортованих")], [cnt("confirmed"), "чекають відправки"], [cnt("shipped") + cnt("arrived"), "у дорозі"]]
     : [[cnt("new"), plural(cnt("new"), "новий", "нові", "нових")], [cnt("callback"), "передзвонити"], [cnt("no_answer"), "недодзвон"]];
 
-  // ---------------- колонки
+  // ---------------- колонки (макет v26): текстом — №, покупець, товар, статус, дата, сума; решта — значками з підказкою
   const COLS: DenseCol<OrderRow>[] = [
-    { key: "id", label: "№", width: "48px", render: (o) => {
-      const due = o.remind_at && new Date(o.remind_at) <= new Date();
-      return <span className="o-id">{due && <AlarmClock size={12} className="o-bell" aria-label="Нагадування настало" />}{o.id}</span>;
-    } },
-    { key: "customer", label: "Покупець", width: "minmax(100px, 1.3fr)", title: (o) => o.customer_name, render: (o) => (
-      <span className="o-cust">
-        <span className="ell">{o.customer_name || <span className="muted">без імені</span>}</span>
-        {o.customer_group && /vip/i.test(o.customer_group.name) && <Tag kind="warn">VIP</Tag>}
-        {o.duplicate_of_id && <Tag kind="warn" title={`Можливий дубль №${o.duplicate_of_id}`}>Дубль?</Tag>}
-        {o.blacklisted && <Tag kind="bad" title="Покупець у чорному списку" icon={<Ban size={11} />}>ЧС</Tag>}
-        {isUnsorted && o.no_stock && <Tag kind="bad" title="Товару не вистачає на складі">немає товару</Tag>}
-      </span>
-    ) },
-    { key: "phone", mobile: "hide", label: "Телефон", width: "122px", render: (o) => <span className="nowrap num">{phone(o.phone)}</span> },
-    { key: "items", label: "Товар", width: "minmax(80px, 1.2fr)", title: (o) => o.items.map((i) => `${i.name} × ${i.qty}`).join(", "), render: (o) => {
-      const main = o.items.filter((i) => !i.upsell);
-      const first = main[0] ?? o.items[0];
-      const rest = o.items.length - 1;
-      return <span className="o-items"><span className="ell">{first?.name ?? "—"}</span>{rest > 0 && <span className="o-more">+{rest}</span>}</span>;
-    } },
-    { key: "status", label: "Статус", width: "minmax(104px, 128px)", render: (o) => (
-      <span className="o-st"><StatusPill status={statuses[o.status_id]} />{o.mark_id && marks[o.mark_id] && <span title={marks[o.mark_id].name}><MarkIcon icon={marks[o.mark_id].icon} color={marks[o.mark_id].color} size={13} /></span>}</span>
-    ) },
-    { key: "pay", mobile: "hide", label: "Оплата", width: "minmax(68px, 0.9fr)", title: (o) => pm[o.payment_method_id ?? 0]?.name, render: (o) => {
-      const m = pm[o.payment_method_id ?? 0];
-      if (!m) return <span className="o-dot-txt muted"><i style={{ background: "var(--line)" }} />—</span>;
-      return <span className="o-dot-txt"><i style={{ background: PAY_ICONS[m.icon || ""]?.color ?? "var(--muted)" }} /><span className="ell">{m.name}</span></span>;
-    } },
-    { key: "delivery", label: "Доставка", width: "minmax(88px, 1fr)", title: (o) => [meta.delivery_methods[o.delivery_method], o.city_name, o.warehouse_name, o.delivery_status].filter(Boolean).join(" · "), render: (o) => {
-      if (!o.city_name && !o.ttn) return <span className="muted">не вибрано</span>;
-      const wh = (o.warehouse_name.match(/№\s*\d+/) || [""])[0].replace(/\s/g, "");
-      const np = o.delivery_method === "novaposhta";
+    { key: "id", label: "№", width: "48px", render: (o) => <span className="o-id">{o.id}</span> },
+    { key: "customer", label: "Покупець", width: "minmax(130px, 1.3fr)", title: (o) => o.customer_name, render: (o) => {
+      const due = !!o.remind_at && new Date(o.remind_at) <= new Date();
       return (
-        <span className="o-dlv">
-          {np && <span className="o-np" aria-label="Нова Пошта">НП</span>}
-          <span className="ell">{!np && `${CARRIER_SHORT[o.delivery_method] ?? meta.delivery_methods[o.delivery_method]} · `}{o.city_name}{wh && `, ${wh}`}</span>
-          {o.ttn && <i className="o-ds" style={{ background: DSTATE[o.delivery_state] ?? "var(--accent-line)" }} aria-label={meta.delivery_states[o.delivery_state] ?? "ТТН створено"} />}
+        <span className="o-cust">
+          <span className="ell">{o.customer_name || <span className="muted">без імені</span>}</span>
+          <Signals o={o} due={due} unsorted={isUnsorted} />
         </span>
       );
     } },
-    { key: "source", mobile: "hide", label: "Джерело", width: "minmax(56px, 0.7fr)", title: (o) => [sources[o.source_id ?? 0]?.name, o.utm_source].filter(Boolean).join(" · "), render: (o) => {
+    { key: "items", label: "Товар", width: "minmax(130px, 1.4fr)", title: (o) => o.items.map((i) => `${i.name} × ${i.qty}`).join(", "), render: (o) => {
+      const main = o.items.filter((i) => !i.upsell);
+      const first = main[0] ?? o.items[0];
+      const rest = o.items.length - 1;
+      return (
+        <span className="o-items"><span className="ell">{first?.name ?? "—"}</span>
+          {rest > 0 && <HoverCard label={`Усі товари замовлення №${o.id}`} triggerClass="o-more" width={300} trigger={`+${rest}`}>
+            <GoodsCard o={o} />
+          </HoverCard>}
+        </span>
+      );
+    } },
+    { key: "status", label: "Статус", width: "minmax(110px, 136px)", render: (o) => (
+      <span className="o-st"><StatusMenu o={o} statuses={stageStatuses} current={statuses[o.status_id]} onPick={(sid) => setStatus(o, sid)} />
+        {o.mark_id && marks[o.mark_id] && <span title={marks[o.mark_id].name}><MarkIcon icon={marks[o.mark_id].icon} color={marks[o.mark_id].color} size={13} /></span>}</span>
+    ) },
+    { key: "pay", mobile: "hide", label: <Wallet size={14} aria-label="Оплата" />, headTitle: "Оплата", width: "34px", align: "center", render: (o) => {
+      const m = pm[o.payment_method_id ?? 0];
+      const bad = o.pay_check?.state === "bad";
+      return (
+        <HoverCard label={`Оплата: ${m?.name ?? "не вибрано"}`} triggerClass={`o-ic${bad ? " bad" : ""}`} width={270}
+          trigger={m ? <PayIcon icon={m.icon} image={m.image} size={20} /> : <span className="o-none" aria-hidden>—</span>}>
+          <div className="hc-t1">Оплата</div>
+          <div className="hc-row">{m ? <PayIcon icon={m.icon} image={m.image} size={22} /> : null}<b>{m?.name ?? "Вид оплати не вибрано"}</b></div>
+          <div className="hc-kv"><span>Сума</span><b className="num">{money(o.total)} ₴</b></div>
+          <div className="hc-kv"><span>При отриманні</span><b className="num">{money(o.cod_amount)} ₴</b></div>
+          {o.pay_check && <div className={`hc-note ${o.pay_check.state}`}>{o.pay_check.text}</div>}
+        </HoverCard>
+      );
+    } },
+    { key: "delivery", label: <Truck size={14} aria-label="Доставка" />, headTitle: "Доставка", width: "56px", render: (o) => {
+      if (!o.city_name && !o.ttn) return <span className="o-none" title={o.delivery_method === "pickup" ? "Самовивіз" : "Доставку не вибрано"}>{o.delivery_method === "pickup" ? "Сам." : "—"}</span>;
+      return (
+        <HoverCard label={`Доставка: ${[o.city_name, o.warehouse_name].filter(Boolean).join(", ")}`} triggerClass="o-dlv-t" width={300}
+          trigger={<><CarrierBadge method={o.delivery_method} />{<i className="o-ds" style={{ background: o.ttn ? DSTATE[o.delivery_state] ?? "var(--accent-line)" : "var(--line)" }} />}</>}>
+          <DeliveryCard o={o} name={meta.delivery_methods[o.delivery_method] ?? o.delivery_method} state={meta.delivery_states[o.delivery_state]} />
+        </HoverCard>
+      );
+    } },
+    { key: "source", mobile: "hide", label: "Дж.", headTitle: "Джерело", width: "26px", align: "center", title: (o) => [sources[o.source_id ?? 0]?.name, o.utm_source].filter(Boolean).join(" · ") || "Джерело не вказано", render: (o) => {
       const s = sources[o.source_id ?? 0];
-      return s ? <span className="o-dot-txt"><i style={{ background: s.color }} /><span className="ell">{s.name}</span></span>
-        : o.utm_source ? <span className="ell muted">{o.utm_source}</span> : <span className="muted">—</span>;
+      return <i className="o-src" style={{ background: s?.color ?? (o.utm_source ? "var(--faint)" : "var(--line)") }} />;
     } },
     { key: "manager", mobile: "hide", label: "М.", headTitle: "Менеджер", width: "28px", align: "center", title: (o) => managers[o.manager_id ?? 0]?.name ?? "Не призначено", render: (o) => (
       o.manager_id ? <span className="o-av">{initials(managers[o.manager_id]?.name)}</span> : <span className="muted">—</span>
     ) },
-    { key: "time", label: "Дата", headTitle: "Коли додано", width: "46px", title: (o) => whenLabel(o.created_at), render: (o) => <span className="muted num nowrap">{shortWhen(o.created_at)}</span> },
-    { key: "total", mobile: "end", label: "Сума", width: "74px", align: "right", render: (o) => <b className="num">{money(o.total)} ₴</b> },
-    { key: "pay_check", mobile: "hide", label: "Опл.", headTitle: "Перевірка оплати: чи ТТН відповідає виду оплати", width: "30px", align: "center", render: (o) => <PayCheck check={o.pay_check} /> },
+    { key: "time", label: "Дата", headTitle: "Коли додано", width: "50px", title: (o) => whenLabel(o.created_at), render: (o) => <span className="muted num nowrap">{shortWhen(o.created_at)}</span> },
+    { key: "total", mobile: "end", label: "Сума", width: "78px", align: "right", render: (o) => <b className="num">{money(o.total)} ₴</b> },
+    { key: "call", mobile: "hide", label: <Phone size={13} aria-label="Телефон" />, headTitle: "Телефон", width: "32px", align: "center", render: (o) => (
+      o.phone ? <HoverCard label={`Телефон ${phone(o.phone)}`} triggerClass="o-ic o-call" width={290} trigger={<Phone size={14} />}>
+        {() => <PhoneCard o={o} />}
+      </HoverCard> : <span className="o-none">—</span>
+    ) },
+    // додаткові (вмикаються в «Колонки»)
+    { key: "phone", mobile: "hide", label: "Телефон", width: "124px", render: (o) => <span className="nowrap num">{phone(o.phone)}</span> },
+    { key: "address", mobile: "hide", label: "Адреса", width: "minmax(110px, 1fr)", title: (o) => [o.city_name, o.warehouse_name].filter(Boolean).join(", "), render: (o) => <span className="ell muted">{[o.city_name, (o.warehouse_name.match(/№\s*\d+/) || [""])[0]].filter(Boolean).join(", ") || "—"}</span> },
+    { key: "pay_check", mobile: "hide", label: "Опл.", headTitle: "Перевірка оплати: чи ТТН відповідає виду оплати", width: "34px", align: "center", render: (o) => <PayCheck check={o.pay_check} /> },
     { key: "ttn", mobile: "hide", label: "ТТН", width: "128px", render: (o) => (o.ttn ? <span className="mono o-ttn">{o.ttn}</span> : <span className="muted">—</span>) },
     { key: "entity", mobile: "hide", label: "Юрособа", width: "minmax(110px, 0.8fr)", render: (o) => <span className="ell">{entities[o.legal_entity_id ?? 0]?.name ?? "—"}</span> },
     { key: "utm", mobile: "hide", label: "UTM", width: "minmax(100px, 0.8fr)", render: (o) => <span className="ell muted">{[o.utm_source, o.utm_campaign].filter(Boolean).join(" · ") || "—"}</span> },
   ];
-  const ALL = COLS.map((c) => ({ key: c.key, label: typeof c.label === "string" ? c.label : c.key, locked: c.key === "id" }));
-  const DEFAULT = ["id", "customer", "phone", "items", "status", "pay", "delivery", "source", "manager", "time", "total", "pay_check"];
-  const colPrefs = useColumns(`${stage}s.columns`, ALL, DEFAULT);
+  const ALL = COLS.map((c) => ({ key: c.key, label: c.headTitle ?? (typeof c.label === "string" ? c.label : c.key), locked: c.key === "id" }));
+  const DEFAULT = ["id", "customer", "items", "status", "pay", "delivery", "source", "manager", "time", "total", "call"];
+  const colPrefs = useColumns(`${stage}s.columns2`, ALL, DEFAULT);
   const cols = colPrefs.visible.map((k) => COLS.find((c) => c.key === k)!).filter(Boolean);
 
 
@@ -456,17 +488,20 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
           selected={sel} onSelect={setSel} current={id ? Number(id) : null}
           onOpen={(o) => open(o.id)}
           isLoading={query.isLoading} onEndReached={endReached}
-          rowHeight={mobile ? undefined : 35}
+          rowHeight={mobile ? undefined : 40}
           rowClass={(o) => (o.remind_at && new Date(o.remind_at) <= new Date() ? "due" : "")}
           mobileCard={mobileCard}
-          actions={(o) => (<>
-            {isUnsorted && <Button size={30} variant="soft" icon={Check} onClick={() => accept([o.id])}>Прийняти</Button>}
-            {o.phone && <a className="icon-btn s28 quiet" href={`tel:+${o.phone.replace(/\D/g, "")}`} aria-label="Подзвонити" title="Подзвонити"><Phone size={15} /></a>}
-            {o.ttn && <a className="icon-btn s28 quiet" href={`${ROOT}/api/orders/${o.id}/label`} target="_blank" rel="noreferrer" aria-label="Наклейка" title="Наклейка"><Printer size={15} /></a>}
-            <IconButton size={28} quiet icon={Eye} label="Перегляд" onClick={() => open(o.id)} />
-          </>)}
+          actions={isUnsorted ? (o) => <Button size={30} variant="soft" icon={Check} onClick={() => accept([o.id])}>Прийняти</Button> : undefined}
           empty={emptyBox}
         />
+      )}
+      {view === "table" && !mobile && head?.total != null && rows.length > 0 && (
+        <div className="sum-bar" aria-live="polite">
+          <span><b>{head.total}</b> {plural(head.total, "замовлення", "замовлення", "замовлень")}</span>
+          {head.sum != null && <span>на <b className="num">{money(head.sum)} ₴</b></span>}
+          {!!head.cod_wait && <span>післяплата в дорозі й на пошті <b className="num">{money(head.cod_wait)} ₴</b></span>}
+          {sel.size > 0 && <span className="sum-sel">вибрано <b>{sel.size}</b> на <b className="num">{money(rows.filter((r) => sel.has(r.id)).reduce((a, r) => a + r.total, 0))} ₴</b></span>}
+        </div>
       )}
 
       <BulkBar count={sel.size} onClear={() => setSel(new Set())}
@@ -631,4 +666,107 @@ function SaveFilter({ section, query }: { section: string; query: string }) {
       )}
     </span>
   );
+}
+
+// ---------------------------------------------------------------- значки й підказки рядка (макет v26)
+const COPY = (t: string, toast: (m: string) => void) => { navigator.clipboard?.writeText(t); toast("Скопійовано"); };
+
+/** Мітки біля імені — маленькі значки замість слів: дубль, чорний список, VIP, немає товару, настало нагадування. */
+function Signals({ o, due, unsorted }: { o: OrderRow; due: boolean; unsorted: boolean }) {
+  const list: [string, string, typeof Copy][] = [];
+  if (o.duplicate_of_id) list.push(["warn", `Можливий дубль №${o.duplicate_of_id}`, Copy]);
+  if (o.blacklisted) list.push(["bad", "Покупець у чорному списку", Ban]);
+  if (o.customer_group && /vip/i.test(o.customer_group.name)) list.push(["vip", `Група «${o.customer_group.name}»`, Crown]);
+  if (unsorted && o.no_stock) list.push(["bad", "Товару не вистачає на складі", PackageX]);
+  if (due) list.push(["bad", "Нагадування настало", AlarmClock]);
+  if (!list.length) return null;
+  return <>{list.map(([k, t, I]) => <span key={t} className={`o-sig ${k}`} title={t} aria-label={t}><I size={11} strokeWidth={2.2} /></span>)}</>;
+}
+
+function GoodsCard({ o }: { o: OrderRow }) {
+  return (<>
+    <div className="hc-t1">Товари · №{o.id}</div>
+    {o.items.map((i, k) => (
+      <div key={k} className="hc-good"><span className="hc-th"><Package size={12} /></span>
+        <span className="ell">{i.upsell && <span className="hc-up">допродаж · </span>}{i.name}</span><span className="muted nowrap">× {i.qty}</span><b className="num nowrap">{money((i.price ?? 0) * i.qty)} ₴</b></div>
+    ))}
+    <div className="hc-kv sum"><span>Разом</span><b className="num">{money(o.total)} ₴</b></div>
+  </>);
+}
+
+const CARRIER_BADGE: Record<string, [string, string]> = { novaposhta: ["НП", "np"], ukrposhta: ["УП", "up"], meest: ["M", "me"], rozetka: ["R", "rz"], pickup: ["С", "pk"] };
+function CarrierBadge({ method }: { method: string }) {
+  const [t, c] = CARRIER_BADGE[method] ?? [method.slice(0, 2).toUpperCase(), "pk"];
+  return <span className={`o-car ${c}`}>{t}</span>;
+}
+
+function DeliveryCard({ o, name, state }: { o: OrderRow; name: string; state?: string }) {
+  const toast = useToast();
+  const eta = o.delivery_eta ? new Date(o.delivery_eta + "T00:00:00").toLocaleDateString("uk-UA", { day: "numeric", month: "long" }) : "";
+  return (<>
+    <div className="hc-t1">Доставка · {name}</div>
+    <div className="hc-row"><CarrierBadge method={o.delivery_method} /><b>{o.city_name || "Місто не вказано"}</b></div>
+    {o.warehouse_name && <div className="hc-sub">{o.warehouse_name}</div>}
+    {o.ttn ? (<>
+      <div className="hc-row hc-ttn"><span className="mono">{o.ttn}</span>
+        <button type="button" className="hc-ib" aria-label="Скопіювати ТТН" onClick={() => COPY(o.ttn, toast)}><Copy size={13} /></button></div>
+      <div className="hc-row"><span className="hc-state"><i style={{ background: DSTATE[o.delivery_state] ?? "var(--accent-line)" }} />{state ?? "ТТН створено"}</span>
+        {eta && <span className="muted">прибуде {eta}</span>}</div>
+      {o.delivery_status && <div className="hc-sub">{o.delivery_status}</div>}
+      <div className="hc-acts"><a className="btn sm" href={`${ROOT}/api/orders/${o.id}/label`} target="_blank" rel="noreferrer"><Printer size={14} />Наклейка</a></div>
+    </>) : <div className="hc-sub">ТТН ще немає</div>}
+  </>);
+}
+
+function PhoneCard({ o }: { o: OrderRow }) {
+  const toast = useToast();
+  const meta = useMeta();
+  const d = o.phone.replace(/\D/g, "");
+  const { data: c } = useQuery({
+    queryKey: ["customer-brief", o.customer_id], enabled: !!o.customer_id && meta.user.role !== "warehouse", staleTime: 60_000,
+    queryFn: () => api.get<{ orders: number; refused: number; buyout_rate: number | null; delivered: number }>(`/customers/${o.customer_id}`),
+  });
+  return (<>
+    <div className="hc-t1">Телефон · {o.customer_name || "без імені"}</div>
+    <div className="hc-row"><b className="hc-phone num">{phone(o.phone)}</b>
+      <button type="button" className="hc-ib" aria-label="Скопіювати номер" onClick={() => COPY(`+${d}`, toast)}><Copy size={13} /></button></div>
+    <div className="hc-acts">
+      <a className="btn primary sm" href={`tel:+${d}`}><Phone size={14} />Дзвінок</a>
+      <a className="hc-ib v" href={`viber://chat?number=%2B${d}`} aria-label="Написати у Viber" title="Viber"><MessageCircle size={15} /></a>
+      <a className="hc-ib t" href={`https://t.me/+${d}`} target="_blank" rel="noreferrer" aria-label="Написати в Telegram" title="Telegram"><Send size={15} /></a>
+    </div>
+    {c && <div className="hc-stats"><span>{c.orders} {plural(c.orders, "замовлення", "замовлення", "замовлень")}</span>
+      {c.buyout_rate != null && c.delivered + c.refused > 0 && <span>викуп {Math.round(c.buyout_rate)}%</span>}
+      {c.refused > 0 && <span className="bad">відмов {c.refused}</span>}</div>}
+  </>);
+}
+
+/** Статус у рядку: клік — меню статусів цього етапу; для відмови з причинами — одразу причина. */
+function StatusMenu({ o, statuses, current, onPick }: { o: OrderRow; statuses: Status[]; current?: Status; onPick: (sid: number, reasonId?: number) => void }) {
+  const meta = useMeta();
+  const ref = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const [reasonFor, setReasonFor] = useState<Status | null>(null);
+  const close = useCallback(() => { setOpen(false); setReasonFor(null); }, []);
+  const reasons = (s: Status) => meta.reasons.filter((r) => r.active && r.status_ids.includes(s.id));
+  const pick = (s: Status) => {
+    if ((s.code === "cancelled" || s.code === "refused") && reasons(s).length) { setReasonFor(s); return; }
+    close(); onPick(s.id);
+  };
+  if (meta.user.role === "warehouse") return <StatusPill status={current} />;
+  return (<>
+    <button ref={ref} type="button" className={`o-stb${open ? " on" : ""}`} aria-haspopup="menu" aria-expanded={open} title="Змінити статус"
+      onClick={(e) => { e.stopPropagation(); setOpen((x) => !x); setReasonFor(null); }}>
+      <StatusPill status={current} /><ChevronDown size={12} className="o-stb-ch" aria-hidden />
+    </button>
+    <Floating anchor={ref.current} open={open} onClose={close} width={220} className="hc-menu" role="menu" label={`Статус №${o.id}`}>
+      {reasonFor ? (<>
+        <div className="hc-t1">«{reasonFor.name}» — причина</div>
+        {reasons(reasonFor).map((r) => <button key={r.id} type="button" className="pop-item" role="menuitem" onClick={() => { close(); onPick(reasonFor.id, r.id); }}>{r.name}</button>)}
+      </>) : statuses.map((s) => (
+        <button key={s.id} type="button" role="menuitemradio" aria-checked={s.id === o.status_id} className={`pop-item${s.id === o.status_id ? " on" : ""}`}
+          disabled={s.id === o.status_id} onClick={() => pick(s)}><StatusPill status={s} />{s.id === o.status_id && <Check size={14} className="hc-cur" />}</button>
+      ))}
+    </Floating>
+  </>);
 }

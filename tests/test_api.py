@@ -121,6 +121,22 @@ def test_order_list_cursor_counts_filters(api, db, products, webhook_key):
     assert "fb" in api.get("/api/orders/sources").json()
 
 
+def test_order_list_totals_and_item_prices(api, db, products):
+    """Рядок підсумку під таблицею й ціни товарів для підказки «+N»."""
+    from app.models import Status
+    a = new_order(api, products)
+    b = new_order(api, products, phone="0501112234")
+    d = api.get("/api/orders").json()
+    assert d["sum"] == a["total"] + b["total"] and d["cod_wait"] == 0
+    row = next(x for x in d["items"] if x["id"] == a["id"])
+    assert [i["price"] for i in row["items"]] == [399, 99]
+    shipped = db.query(Status).filter_by(code="shipped").one()
+    api.patch(f"/api/orders/{a['id']}", json={"status_id": shipped.id, "version": a["version"]})
+    d = api.get("/api/orders").json()
+    assert d["cod_wait"] == float(api.get(f"/api/orders/{a['id']}").json()["cod_amount"])
+    assert api.get("/api/orders?counts=0").json().get("sum") is None
+
+
 def test_bulk_without_queue(api, db, products, webhook_key):
     ids = [api.post(f"/api/v1/orders?key={webhook_key}", data={"phone": f"067000{i:04d}", "sku": "CREAM-1"})
            .json()["order_id"] for i in range(3)]
