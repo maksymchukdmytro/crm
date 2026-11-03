@@ -177,7 +177,19 @@ def list_orders(request: Request, before: int = 0, after: int = 0, sort: str = "
                          .group_by(Order.status_id).all())
         out["counts"] = {str(k): v for k, v in by_status.items()}
         out["all"] = sum(by_status.values())
+        out["sum"], out["cod_wait"] = _totals(db, q)
     return out
+
+
+def _totals(db: Session, q) -> tuple[float, float]:
+    """Рядок підсумку під таблицею: сума за фільтром (без скасованих і дублів) і післяплата в дорозі й на пошті."""
+    codes = dict(db.query(Status.id, Status.code).all())
+    excluded = [i for i, c in codes.items() if c in ("cancelled", "duplicate", "lead_refused")]
+    going = [i for i, c in codes.items() if c in ("shipped", "arrived")]
+    total = func.sum(case((Order.status_id.in_(excluded), 0), else_=Order.total)) if excluded else func.sum(Order.total)
+    cod = func.sum(case((Order.status_id.in_(going), Order.cod_amount), else_=0)) if going else func.sum(0)
+    s, c = q.with_entities(func.coalesce(total, 0), func.coalesce(cod, 0)).order_by(None).one()
+    return float(s or 0), float(c or 0)
 
 
 def _has_reasons(db: Session) -> bool:

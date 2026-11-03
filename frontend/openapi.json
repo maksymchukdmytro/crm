@@ -5736,6 +5736,21 @@
       ],
       "title": "All"
      },
+     "cod_wait": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Післяплата, що чекаємо: відправлені й на пошті (лише з counts=1)",
+      "title": "Cod Wait"
+     },
      "counts": {
       "anyOf": [
        {
@@ -5786,6 +5801,21 @@
        }
       ],
       "title": "Next"
+     },
+     "sum": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Сума замовлень за фільтром без скасованих і дублів (лише з counts=1)",
+      "title": "Sum"
      },
      "total": {
       "anyOf": [
@@ -6412,6 +6442,11 @@
       "title": "Name",
       "type": "string"
      },
+     "price": {
+      "default": 0,
+      "title": "Price",
+      "type": "number"
+     },
      "qty": {
       "title": "Qty",
       "type": "integer"
@@ -6500,6 +6535,18 @@
      "customer_name": {
       "title": "Customer Name",
       "type": "string"
+     },
+     "delivery_eta": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Очікувана дата прибуття за даними перевізника, YYYY-MM-DD",
+      "title": "Delivery Eta"
      },
      "delivery_method": {
       "title": "Delivery Method",
