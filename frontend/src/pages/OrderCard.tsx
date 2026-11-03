@@ -741,7 +741,7 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
     const ini = (form.customer_name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
     return (
       <Block title="Покупець" step={step} className="oc-cust oc-cust-c"
-        acts={!readOnly && <IconButton icon={Pencil} label="Змінити дані покупця" quiet size={30} onClick={() => setEdit(true)} />}>
+        acts={!readOnly && <IconButton icon={Pencil} label="Змінити дані покупця" quiet size={32} onClick={() => setEdit(true)} />}>
         {strips}
         <div className="oc-cl">
           <span className="oc-cl-av" aria-hidden>{ini}</span>
@@ -868,7 +868,7 @@ function PaymentBlock({ order, form, set, total, cod, prepay, step, readOnly, bu
     ].filter(Boolean);
     return (
       <Block title="Оплата" step={step} className="oc-pay oc-compact"
-        acts={!readOnly && <IconButton icon={Pencil} label="Змінити оплату" quiet size={30} onClick={() => setOpen(true)} />}>
+        acts={!readOnly && <IconButton icon={Pencil} label="Змінити оплату" quiet size={32} onClick={() => setOpen(true)} />}>
         <div className="oc-sumline">
           <span className="oc-sl-ic"><PayIcon icon={method.icon} image={method.image} size={24} /></span>
           <div className="oc-sl-t"><b className="ell">{method.name}</b>
@@ -986,7 +986,7 @@ function DeliveryBlock({ order, form, set, cod, codKind, step, readOnly, locked,
     const ttn = order.ttn || form.ttn;
     return (
       <Block title="Доставка" step={step} className="oc-dlv oc-compact"
-        acts={<>{stateTag}{!dis && !order.carrier_ref && <IconButton icon={Pencil} label="Змінити доставку" quiet size={30} onClick={() => setOpen(true)} />}</>}>
+        acts={<>{stateTag}{!dis && !order.carrier_ref && <IconButton icon={Pencil} label="Змінити доставку" quiet size={32} onClick={() => setOpen(true)} />}</>}>
         <div className="oc-sumline">
           <span className="oc-sl-ic">{dm === "novaposhta" ? <span className="np-badge">НП</span> : <Truck size={18} />}</span>
           <div className="oc-sl-t"><b className="ell" title={whereLine}>{whereLine || meta.delivery_methods[dm] || "Адреса не вказана"}</b>
