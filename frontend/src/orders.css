@@ -1,0 +1,142 @@
+/* Список замовлень на ПК — макети v20 (рішення власника 03.11): сторінка без білої панелі, шапка з пошуком, фільтрами,
+   виглядом і «+ Замовлення»; вигляди «Таблиця», «Картки» (щільніші за макет) і «Скринька». Телефон — без змін (mobile.css). */
+
+/* бейдж Нової Пошти й догрузка — спільні для всіх виглядів */
+.o-np { display: inline-grid; place-items: center; height: 17px; padding: 0 4px; flex: none; border-radius: 5px; background: #E2302D; color: #fff;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .02em; line-height: 1; }
+.end-sentinel { min-height: 1px; text-align: center; font-size: 12px; color: var(--muted); }
+.end-sentinel:not(:empty) { padding: 10px 0; }
+
+@media (min-width: 769px) {
+  .work:has(> .page-orders) { background: transparent; border: 0; border-radius: 0; padding: 2px 0 0; }
+  .page-orders.page-list { height: calc(100vh - 74px); height: calc(100dvh - 74px); }
+  body:has(.page-orders) .fab-wrap { display: none; }
+
+  /* шапка */
+  .page-orders .list-head { flex-wrap: nowrap; align-items: center; gap: 12px; margin: 0 0 12px; }
+  .lh-t { display: flex; flex-direction: column; gap: 1px; flex: 1 1 auto; min-width: 0; }
+  .page-orders .list-head h1 { font-size: 26px; font-weight: 640; letter-spacing: -0.02em; line-height: 1.15; }
+  .page-orders .list-sum { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .page-orders .list-acts { flex: none; gap: 8px; }
+  .page-orders .list-search { width: clamp(160px, 15vw, 250px); margin: 0; order: 0; }
+  .page-orders .list-search input { height: 40px; border-radius: var(--r-pill); background: var(--surface); border-color: transparent; padding-right: 34px; }
+  .page-orders .list-search input:focus { border-color: var(--accent-line); }
+  .list-search kbd { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font: 11px var(--mono); color: var(--muted); background: var(--soft);
+    border-radius: 5px; padding: 1px 6px; pointer-events: none; }
+  .lh-filter { position: relative; display: grid; place-items: center; width: 40px; height: 40px; flex: none; border: 0; border-radius: var(--r-pill);
+    background: var(--surface); color: var(--ink); cursor: pointer; transition: background 150ms; }
+  .lh-filter:hover { background: #ECECE9; }
+  .lh-filter.on { background: var(--ink); color: #fff; }
+  .lh-filter .dot { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface); }
+  .lh-filter.on .dot { box-shadow: 0 0 0 2px var(--ink); }
+  .page-orders .list-acts .seg { background: #E9E9E6; padding: 3px; }
+  .page-orders .list-acts .seg > button { height: 34px; padding: 0 12px; gap: 6px; }
+  .page-orders .list-acts .btn.primary { height: 40px; padding: 0 16px; border-radius: 12px; font-weight: 560; }
+  /* вузький ПК: у перемикачі підпис лише в увімкненого вигляду */
+  @media (max-width: 1499px) {
+    .page-orders .seg > button:not(.on) .seg-l { display: none; }
+    .page-orders .seg > button:not(.on) { padding: 0 10px; }
+  }
+
+  /* вкладки статусів, праворуч — увімкнені фільтри */
+  .list-tabsrow { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; min-width: 0; }
+  .list-tabsrow > .tabs-wrap, .list-tabsrow > .tabs { flex: 1 1 auto; min-width: 0; }
+  .list-tabsrow .list-tabs { margin: 0; }
+  .page-orders .list-tabs button { height: 34px; padding: 0 13px; }
+  .lh-active { display: flex; align-items: center; gap: 6px; flex: none; max-width: 50%; overflow-x: auto; scrollbar-width: none; }
+  .page-orders .chips-row { margin: -2px 0 12px; }
+  .chips-end { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+  /* таблиця — біла картка без рамки */
+  .page-orders div.dense { border: 0; border-radius: 18px; }
+  .page-orders .dense-head { height: 40px; padding-top: 4px; }
+  .page-orders .dense-row { font-size: 13px; column-gap: 8px; padding: 0 12px; }
+  .page-orders .o-cust > .ell { font-weight: 500; }
+
+  /* ---------------- картки: сітка, щільніше за макет (4 колонки на 1280, 5 — від 1600) */
+  .ocd-wrap { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -6px; padding: 2px 6px 16px; }
+  .ocd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+  .ocd { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 10px 11px 10px 12px; background: var(--surface); border-radius: 16px;
+    cursor: pointer; transition: box-shadow 150ms; }
+  .ocd:hover { box-shadow: 0 0 0 1.5px var(--accent-line); }
+  .ocd:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .ocd.cur { box-shadow: 0 0 0 1.5px var(--accent); }
+  .ocd.due { box-shadow: inset 3px 0 0 var(--bad); }
+  .ocd.sk { min-height: 128px; gap: 12px; cursor: default; }
+  .ocd-top { display: flex; align-items: center; gap: 5px; min-width: 0; height: 22px; }
+  .ocd-top .pill { height: 20px; font-size: 11.5px; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ocd .mc-flag { display: grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: 6px; }
+  .ocd .mc-flag.warn { background: var(--warn-soft); color: var(--warn); }
+  .ocd .mc-flag.bad { background: var(--bad-soft); color: var(--bad); }
+  .ocd-meta { margin-left: auto; flex: none; font-size: 11.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .ocd-name { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+  .ocd-name b { min-width: 0; font-size: 14.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ocd-name .sum { flex: none; font-size: 14.5px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .ocd-row { display: flex; align-items: center; gap: 7px; min-width: 0; padding-top: 7px; border-top: 1px solid #F0F0EE; font-size: 12.5px; }
+  .ocd-thumb { display: grid; place-items: center; width: 24px; height: 24px; flex: none; border-radius: 7px; background: #F1F1EF; color: #8F8E89; }
+  .ocd-goods { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ocd-goods .more { color: var(--muted); }
+  .ocd-dlv { display: flex; align-items: center; gap: 5px; flex: 0 1 auto; min-width: 0; max-width: 50%; color: var(--ink-2); }
+  .ocd-muted { flex: 0 1 auto; max-width: 45%; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ocd-acts { display: flex; gap: 6px; }
+  .ocd-go { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1 1 0; height: 30px; padding: 0 8px; border: 0; border-radius: 9px;
+    background: #F2F2F0; color: var(--ink-2); font: inherit; font-size: 12.5px; font-weight: 500; text-decoration: none; cursor: pointer; transition: background 150ms; }
+  .ocd-go:hover { background: #E8E8E5; color: var(--ink); }
+  .ocd-go:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .ocd-go.ph { flex: 0 0 38%; }
+  .ocd-go.off { opacity: .45; cursor: default; }
+  .ocd-go.p { background: var(--accent); color: #fff; }
+  .ocd-go.p:hover { background: var(--accent-hover); }
+  .ocd-go.s { background: var(--accent-soft); color: #1F56C4; }
+  .ocd-go.s:hover { background: #DCE8FC; }
+  .ocd-go:disabled { opacity: .6; cursor: progress; }
+
+  /* ---------------- скринька: вузький список ліворуч + картка праворуч */
+  .ib { flex: 1; min-height: 0; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 12px; }
+  .ib-list { display: flex; flex-direction: column; gap: 2px; min-height: 0; overflow-y: auto; padding: 6px; background: #ECECE9; border-radius: 18px; }
+  .ib-item { display: flex; flex-direction: column; gap: 3px; width: 100%; padding: 9px 12px; border: 0; border-radius: 12px; background: transparent;
+    color: inherit; font: inherit; text-align: left; cursor: pointer; flex: none; transition: background 150ms; }
+  .ib-item:hover { background: rgba(255, 255, 255, .6); }
+  .ib-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .ib-item.on { background: var(--surface); box-shadow: 0 0 0 1.5px var(--accent-line); }
+  .ib-item.sk { gap: 8px; padding: 12px; cursor: default; }
+  .ib-item .r1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .ib-item .r1 i { width: 7px; height: 7px; flex: none; border-radius: 50%; }
+  .ib-item .r1 b { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ib-item .s { flex: none; font-size: 13.5px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .ib-item .r2 { display: flex; align-items: baseline; gap: 7px; min-width: 0; padding-left: 15px; font-size: 12px; color: var(--muted); }
+  .ib-item .no { flex: none; font-family: var(--mono); font-size: 11.5px; }
+  .ib-item .r2 .ell { flex: 1; min-width: 0; }
+  .ib-item .t { flex: none; }
+  .ib-empty { padding: 40px 12px; }
+  .ib-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .ib-none { flex: 1; display: grid; place-items: center; color: var(--muted); background: var(--surface); border-radius: 18px; }
+
+  /* картка без вікна: шапка й нижня смуга — білі острівці, блоки картки — просто на сірому */
+  .oc-embed { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+  .oc-embed > .oc-head { flex-wrap: wrap; min-height: 0; gap: 8px 10px; padding: 10px 12px; background: var(--surface); border: 0; border-radius: 18px; }
+  .oc-emb-t { display: flex; align-items: baseline; gap: 8px; flex: 1 1 auto; min-width: 0; font-size: 12.5px; color: var(--muted); }
+  .oc-emb-t b { flex: none; font-size: 15px; font-weight: 600; color: var(--ink); }
+  .oc-head.emb .track { order: 3; flex: 1 1 100%; }
+  .oc-head.emb .oc-save-st { min-width: 0; }
+  .oc-embed-body.oc-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 !important; background: transparent; container-type: inline-size; }
+  .oc-embed-foot { display: flex; align-items: center; gap: 8px; flex: none; padding: 10px 12px; background: var(--surface); border-radius: 18px; }
+  .oc-embed-foot .hint { margin-right: auto; font-size: 12px; color: var(--muted); }
+  .oc-embed-foot kbd { font: 11px var(--mono); color: var(--ink-2); background: var(--soft); border-radius: 5px; padding: 1px 5px; }
+  .oc-embed-foot .btn { height: 40px; border-radius: 12px; padding: 0 16px; }
+  /* одна колонка: покупець → товари → оплата | доставка → деталі → сума → історія */
+  .oc-embed .oc-grid.oc-c { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .oc-embed .oc-left, .oc-embed .oc-right { display: contents; }
+  .oc-embed .oc-cust { order: 1; }
+  .oc-embed .oc-goods { order: 2; min-height: 0; }
+  .oc-embed .oc-pd { order: 3; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: stretch; }
+  .oc-embed .oc-bottom { order: 4; }
+  .oc-embed .oc-sum { order: 5; }
+  .oc-embed .oc-hist { order: 6; }
+}
+@container (max-width: 620px) {
+  .oc-embed .oc-pd { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ocd, .ocd-go, .ib-item, .lh-filter { transition: none; }
+}

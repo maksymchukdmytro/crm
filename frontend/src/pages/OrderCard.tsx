@@ -1,7 +1,7 @@
 // Картка замовлення (UI-DESIGN §5, макети 01 і 02): велике вікно поверх списку, дві колонки 4/12 + 8/12.
 // Ліворуч Покупець → Оплата → Доставка, праворуч Товари, під ними Деталі й Підсумок. Історія — бічна панель під значком.
 // Збереження автоматичне (0,8 с після введення, Ctrl S — одразу); «Створити ТТН», «Друк» і «Чек» спершу самі зберігають замовлення.
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -36,16 +36,34 @@ const COD_TEXT: Record<string, string> = { control: "контроль оплат
 // «Створити ТТН» у ще не створеному замовленні: спершу створюємо замовлення, а вікно ТТН відкриваємо вже в ньому
 // (картка перемонтовується з новим id, тому номер переносимо через змінну модуля)
 let ttnAfterCreate: number | null = null;
+/** Відкрити вікно ТТН одразу, щойно картка цього замовлення завантажиться (кнопка «ТТН» на картці в списку). */
+export function openTtnOnLoad(orderId: number) { ttnAfterCreate = orderId; }
 
-export default function OrderModal({ id, onClose, onOpen, ids }: { id: string; onClose: () => void; onOpen: (id: number) => void; ids?: number[] }) {
+// Рамка картки: вікно поверх списку або — у «Скриньці» — права частина сторінки без вікна, з нижньою смугою дій.
+function Frame({ embed, onClose, head, label, bodyClass = "", foot, children }: {
+  embed?: boolean; onClose: () => void; head: ReactNode; label: string; bodyClass?: string; foot?: ReactNode; children: ReactNode;
+}) {
+  if (embed) {
+    return (
+      <section className="oc-embed" aria-label={label}>
+        {head}
+        <div className={`oc-embed-body ${bodyClass}`}>{children}</div>
+        {foot}
+      </section>
+    );
+  }
+  return <Window size="xl" onClose={onClose} head={head} label={label} bodyClass={bodyClass}>{children}</Window>;
+}
+
+export default function OrderModal({ id, onClose, onOpen, ids, embed }: { id: string; onClose: () => void; onOpen: (id: number) => void; ids?: number[]; embed?: boolean }) {
   // нове замовлення — покроково (крім нового ліда, він має свою картку); існуюче — повна картка
   if (id === "new" && !window.location.pathname.includes("/leads")) {
     return <NewOrder onClose={onClose} onCreated={(o, ttn) => { if (ttn) ttnAfterCreate = o.id; onOpen(o.id); }} />;
   }
-  return <OrderCard key={id} id={id} onClose={onClose} onOpen={onOpen} ids={ids} />;
+  return <OrderCard key={id} id={id} onClose={onClose} onOpen={onOpen} ids={ids} embed={embed && id !== "new"} />;
 }
 
-function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => void; onOpen: (id: number) => void; ids?: number[] }) {
+function OrderCard({ id, onClose, onOpen, ids, embed }: { id: string; onClose: () => void; onOpen: (id: number) => void; ids?: number[]; embed?: boolean }) {
   const meta = useMeta();
   const toast = useToast();
   const qc = useQueryClient();
@@ -96,6 +114,16 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   }, [order, source]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dirty = baseline !== "" && JSON.stringify(form) !== baseline;
+  // «Скринька»: перейшли до іншого замовлення раніше, ніж спрацювало автозбереження, — дозберегти без вікна
+  const leaveRef = useRef({ dirty, version, order });
+  leaveRef.current = { dirty, version, order };
+  useEffect(() => () => {
+    const l = leaveRef.current;
+    if (!embed || !l.dirty || !l.order) return;
+    api.patch<Order>(`/orders/${l.order.id}`, payload(formRef.current, l.version || l.order.version))
+      .then((o) => { qc.setQueryData(["order", o.id], o); qc.invalidateQueries({ queryKey: ["orders"] }); })
+      .catch((e) => toast(`№${l.order?.id}: ${errText(e)}`, "error"));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
   const status = meta.statuses.find((s) => s.id === form.status_id);
   const code = status?.code ?? "";
@@ -243,9 +271,9 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
 
   if (!isNew && (isLoading || !order || !baseline)) {
     return (
-      <Window size="xl" onClose={onClose} label="Замовлення" head={<div className="oc-head"><IconButton icon={ArrowLeft} label="Назад" quiet onClick={onClose} /><span className="skel" style={{ width: 420 }} /></div>}>
+      <Frame embed={embed} onClose={onClose} label="Замовлення" head={<div className="oc-head">{!embed && <IconButton icon={ArrowLeft} label="Назад" quiet onClick={onClose} />}<span className="skel" style={{ width: embed ? 260 : 420 }} /></div>}>
         {error ? <div className="empty big"><h1>Не вдалося відкрити</h1><p>{errText(error)}</p></div> : <div className="oc-grid oc-loading">{[0, 1].map((i) => <div key={i} className="block"><span className="skel" /><span className="skel" /><span className="skel" /></div>)}</div>}
-      </Window>
+      </Frame>
     );
   }
 
@@ -253,8 +281,11 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   const delivDone = !!(form.ttn || form.city_name || form.delivery_method === "pickup");
 
   const head = (
-    <div className="oc-head">
-      <IconButton icon={ArrowLeft} label="Назад (Esc)" quiet onClick={close} />
+    <div className={`oc-head${embed ? " emb" : ""}`}>
+      {!embed && <IconButton icon={ArrowLeft} label="Назад (Esc)" quiet onClick={close} />}
+      {embed && order && (
+        <span className="oc-emb-t"><b>№{order.id}</b><span className="ell">{[order.created_at && dateTime(order.created_at), meta.order_sources.find((x) => x.id === form.source_id)?.name ?? order.site].filter(Boolean).join(" · ")}</span></span>
+      )}
       {isNew ? <h2 className="oc-new-title">{isLeadNew ? "Новий лід" : "Нове замовлення"}</h2> : <StatusTrack statusId={form.status_id} onPick={changeStatus} disabled={closed} />}
       <div className="oc-head-acts">
         <span className={`oc-save-st ${saveState}`} aria-live="polite">
@@ -275,7 +306,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
             </>)}
           </MenuButton>
         )}
-        <IconButton icon={X} label="Закрити (Esc)" quiet onClick={close} />
+        {!embed && <IconButton icon={X} label="Закрити (Esc)" quiet onClick={close} />}
       </div>
     </div>
   );
@@ -313,6 +344,37 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
         ? { label: "Створити ТТН", icon: Truck, run: openTtn, disabled: save.isPending || action.isPending }
         : dirty ? { label: "Зберегти", icon: Check, run: () => saveNow(), disabled: save.isPending || closed }
           : { label: "Готово", icon: Check, run: close };
+  // «Скринька»: «Прийняти й далі» — приймає замовлення й одразу відкриває наступне в списку
+  const neighbour = () => { const i = ids?.indexOf(oid) ?? -1; return i >= 0 ? ids?.[i + 1] ?? ids?.[i - 1] : undefined; };
+  const acceptNext = async () => {
+    if (!confirmedSt || save.isPending || action.isPending) return;
+    try {
+      await saveAsync();
+      const r = await api.post<{ done: number; errors: string[] }>("/orders/bulk", { ids: [oid], action: "status", value: confirmedSt.id });
+      if (r.errors.length) { r.errors.slice(0, 3).forEach((e) => toast(e, "error")); return; }
+    } catch (e) { toast(errText(e), "error"); return; }
+    setBaseline(JSON.stringify(formRef.current));
+    qc.invalidateQueries({ queryKey: ["orders"] });
+    qc.invalidateQueries({ queryKey: ["counters"] });
+    qc.invalidateQueries({ queryKey: ["order", oid] });
+    toast(`№${oid} прийнято`);
+    const next = neighbour();
+    if (next != null) onOpen(next);
+  };
+  const canTtn = !!order && !order.ttn && !closed && form.delivery_method !== "pickup" && !SHIPPED.includes(code);
+  const foot = embed && order && (
+    <div className="oc-embed-foot">
+      <span className="hint"><kbd>J</kbd> / <kbd>K</kbd> — наступне / попереднє · зберігається само</span>
+      {code === "unsorted" && confirmedSt?.active ? (<>
+        {canTtn && <Button variant="soft" icon={Truck} onClick={openTtn} disabled={save.isPending || action.isPending}>Створити ТТН</Button>}
+        <Button variant="primary" icon={Check} onClick={acceptNext} disabled={closed || save.isPending || action.isPending}>Прийняти й далі</Button>
+      </>) : canTtn ? (
+        <Button variant="primary" icon={Truck} kbd="Ctrl ⏎" onClick={openTtn} disabled={save.isPending || action.isPending}>Створити ТТН</Button>
+      ) : neighbour() != null ? (
+        <Button variant="soft" icon={ChevronDown} onClick={() => { const n = neighbour(); if (n != null) onOpen(n); }}>Наступне</Button>
+      ) : null}
+    </div>
+  );
   const cust = order?.customer;
   const mtop = mobile && order && (<>
     <section className="oc-hero">
@@ -365,7 +427,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
   );
 
   return (
-    <Window size="xl" onClose={close} head={mobile ? mhead : head} label={title} bodyClass={`oc-body${mobile && !isNew && !editCust ? " m-no-cust" : ""}`}>
+    <Frame embed={embed} onClose={close} head={mobile ? mhead : head} label={title} foot={foot} bodyClass={`oc-body${mobile && !isNew && !editCust ? " m-no-cust" : ""}`}>
       {mtop}
       {closed && (
         <div className="oc-strip lock"><Lock size={15} /><span>Замовлення закрите — «{status?.name}». Зміни вимкнено, щоб не зачепити склад і оплати.</span>
@@ -405,7 +467,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
         <div className="oc-right">
           <SummaryCard order={order} form={form} total={total} cod={cod} prepay={prepay} subtotal={subtotal}
             onTodo={(a) => runTodo(a)} onReceipt={(k) => action.mutate({ path: "/receipts", body: { kind: k } })}
-            primary={!mobile ? <Button variant="primary" icon={primary.icon} disabled={primary.disabled} onClick={primary.run} kbd={primary.label === "Створити ТТН" ? "Ctrl ⏎" : undefined}>{primary.label}</Button> : null} />
+            primary={!mobile && !embed ? <Button variant="primary" icon={primary.icon} disabled={primary.disabled} onClick={primary.run} kbd={primary.label === "Створити ТТН" ? "Ctrl ⏎" : undefined}>{primary.label}</Button> : null} />
           <div className="oc-bottom">
             <DetailsBlock order={order} form={form} set={set} readOnly={closed} onTake={() => action.mutate({ path: "/take" })} />
           </div>
@@ -428,7 +490,7 @@ function OrderCard({ id, onClose, onOpen, ids }: { id: string; onClose: () => vo
       {history && order && <HistoryPanel order={order} onClose={() => setHistory(false)}
         onComment={(text) => action.mutate({ path: "/comments", body: { text } })}
         onSms={(text, channel) => action.mutate({ path: "/sms", body: { text, channel } })} />}
-    </Window>
+    </Frame>
   );
 
   function runTodo(a: string) {

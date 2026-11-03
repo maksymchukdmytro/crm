@@ -10,6 +10,7 @@ import "./theme.css";
 import "./ui.css";
 import "./shell.css";
 import "./list.css";
+import "./orders.css";
 import "./leads.css";
 import "./card.css";
 import "./catalog.css";
