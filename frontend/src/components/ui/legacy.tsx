@@ -112,11 +112,6 @@ export function NpAutocomplete({ kind, cityRef, value, refValue, onPick, onType,
   );
 }
 
-// ---------------------------------------------------------------- підтвердження
-export function confirmAction(text: string): boolean {
-  return window.confirm(text);
-}
-
 /** «Перевірка оплати»: ✓ — ТТН відповідає виду оплати, ✗ — ні, годинник — ТТН ще немає або НП не повернула дані. */
 export function PayCheck({ check, text = false }: { check?: { state: string; text: string } | null; text?: boolean }) {
   if (!check) return text ? null : <span className="muted">—</span>;

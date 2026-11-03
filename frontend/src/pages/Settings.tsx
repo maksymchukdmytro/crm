@@ -11,7 +11,7 @@ import { dt, phone } from "../lib/format";
 import type { BlockedIp, Cashier, CustomerGroup, DirItem, LegalEntity, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { MarkLookPick } from "../components/marks";
-import { ColorPick, Badge, Button, Empty, Field, IconButton, MenuButton, NpAutocomplete, RoundButton, Select, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
+import { ask, FileDrop, NumberField, ColorPick, DateField, isoDate, Badge, Button, Empty, Field, IconButton, MenuButton, NpAutocomplete, RoundButton, Select, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
 
 type S = Settings;
 
@@ -91,14 +91,14 @@ export default function SettingsPage() {
   const mobile = useMobile();
   const listMode = mobile && !fromUrl;
 
-  const guard = () => !dirty.length || window.confirm("Є незбережені зміни. Вийти без збереження?");
-  const back = () => { if (guard()) nav("/settings", { replace: true, state: loc.state }); };
-  const go = (k: string) => {
-    if ((k === cur.key && !listMode) || !guard()) return;
+  const guard = async () => !dirty.length || ask({ title: "Вийти без збереження?", text: "Є незбережені зміни — вони зникнуть.", action: "Вийти", cancel: "Лишитись", danger: true });
+  const back = async () => { if (await guard()) nav("/settings", { replace: true, state: loc.state }); };
+  const go = async (k: string) => {
+    if ((k === cur.key && !listMode) || !(await guard())) return;
     try { localStorage.setItem("crm-settings-tab", k); } catch { /* приватне вікно */ }
     nav(`/settings/${k}`, { replace: true, state: loc.state });
   };
-  const close = () => { if (guard()) nav(bg ?? "/", { replace: !bg }); };
+  const close = async () => { if (await guard()) nav(bg ?? "/", { replace: !bg }); };
   const saveAll = async () => {
     if (!dirty.length || busy) return;
     setBusy(true);
@@ -247,9 +247,9 @@ function General({ s }: { s: S }) {
       <form className="card form" onSubmit={noSubmit}>
         <h2>Замовлення</h2>
         <div className="cols c3">
-          <Field label="Пошук дублів за телефоном, днів" hint="0 — не шукати"><input type="number" min={0} {...bind("duplicate_days")} /></Field>
+          <Field label="Пошук дублів за телефоном" hint="0 — не шукати"><NumberField min={0} unit="дн" {...bind("duplicate_days")} /></Field>
           <Field label="Розподіл нових заявок"><Select {...bind("auto_assign")}><option value="off">Вручну — менеджер бере сам</option><option value="round_robin">По черзі між менеджерами</option></Select></Field>
-          <Field label="Перевіряти посилки кожні, хв"><input type="number" min={5} {...bind("tracking_interval_min")} /></Field>
+          <Field label="Перевіряти посилки кожні"><NumberField min={5} unit="хв" {...bind("tracking_interval_min")} /></Field>
         </div>
         <Toggle {...flag("managers_see_own_only")} label="Менеджери бачать лише свої й нерозподілені замовлення" />
         <Toggle {...flag("auto_status_from_tracking")} label="Змінювати статус за трекінгом (Відправлений → Отриманий / Відмова)" />
@@ -270,8 +270,8 @@ function LeadsSection({ s }: { s: S }) {
       if (!enabled) {
         const p = await api.get<{ open: number }>("/settings/leads/preview");
         if (p.open > 0) {
-          if (!window.confirm(`${p.open} відкритих лідів — перенести в «Несортовані»? Без перенесення вони лишаться в базі, але розділ буде прихований.`)) {
-            if (!window.confirm("Вимкнути розділ без перенесення лідів?")) throw new Error("cancel");
+          if (!(await ask({ title: `Перенести ${p.open} відкритих лідів у «Несортовані»?`, text: "Без перенесення вони лишаться в базі, але розділ «Ліди» буде прихований.", action: "Перенести", cancel: "Не переносити" }))) {
+            if (!(await ask({ title: "Вимкнути розділ без перенесення лідів?", action: "Вимкнути", danger: true }))) throw new Error("cancel");
           } else move_open = true;
         }
       }
@@ -296,9 +296,9 @@ function LeadsSection({ s }: { s: S }) {
       </div>
       {meta.leads_enabled && (
         <form className="lc-grid" onSubmit={noSubmit}>
-          <Field label="Чекає — помаранчевим після, хв"><input type="number" min={1} {...bind("lead_wait_warn_min")} /></Field>
-          <Field label="Чекає — червоним після, хв"><input type="number" min={1} {...bind("lead_wait_bad_min")} /></Field>
-          <Field label="Нагадати після недодзвону через, хв"><input type="number" min={5} {...bind("lead_noanswer_remind_min")} /></Field>
+          <Field label="Чекає — помаранчевим після"><NumberField min={1} unit="хв" {...bind("lead_wait_warn_min")} /></Field>
+          <Field label="Чекає — червоним після"><NumberField min={1} unit="хв" {...bind("lead_wait_bad_min")} /></Field>
+          <Field label="Нагадати після недодзвону через"><NumberField min={5} unit="хв" {...bind("lead_noanswer_remind_min")} /></Field>
           <Field label="Замовлення з ліда отримує статус"><Select {...bind("lead_to_order_status")}><option value="confirmed">Прийнятий</option><option value="unsorted">Несортований</option></Select></Field>
         </form>
       )}
@@ -332,7 +332,7 @@ var p = new URLSearchParams(location.search), f = document.forms[0];
         <p className="hint">POST-запит з форми лендингу, конструктора сайтів або вашого сервера.</p>
         <pre className="code wrap">{url}</pre>
         <div className="row"><button className="btn sm" onClick={copy}><Copy size={14} /> Копіювати</button>
-          <button className="btn sm danger" onClick={() => { if (window.confirm("Старий ключ перестане працювати. Продовжити?")) save.mutate({ path: "/settings/webhook/regenerate", method: "post" }); }}>Створити новий ключ</button></div>
+          <button className="btn sm danger" onClick={async () => { if (await ask({ title: "Створити новий ключ?", text: "Старий ключ перестане працювати — форми лендингів треба буде оновити.", action: "Створити ключ", danger: true })) save.mutate({ path: "/settings/webhook/regenerate", method: "post" }); }}>Створити новий ключ</button></div>
         <h3>Поля</h3>
         <table className="t dense"><tbody>
           <tr><td><code>name</code></td><td>ПІБ клієнта</td></tr><tr><td><code>phone</code></td><td>Телефон (обов'язково)</td></tr>
@@ -430,7 +430,7 @@ function TemplateRow({ t, statuses, onSave }: { t: S["sms_templates"][number]; s
         <Select value={v.channel} onChange={(e) => setV({ ...v, channel: e.target.value })} style={{ maxWidth: 150 }}><option value="sms">SMS</option><option value="viber">Viber</option><option value="hybrid">Viber → SMS</option></Select></div>
       <textarea rows={2} value={v.text} onChange={(e) => setV({ ...v, text: e.target.value })} />
       <div className="row"><label className="check"><input type="checkbox" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} /> Активний</label><span className="spacer" />
-        <button type="button" className="btn sm danger" onClick={() => { if (window.confirm("Видалити шаблон?")) onSave({ id: t.id, delete: true }); }}><Trash2 size={13} /></button>
+        <button type="button" className="btn sm danger" onClick={async () => { if (await ask({ title: "Видалити шаблон?", action: "Видалити", danger: true })) onSave({ id: t.id, delete: true }); }}><Trash2 size={13} /></button>
         <button className="btn sm">Зберегти</button></div>
     </form>
   );
@@ -450,7 +450,7 @@ function Statuses({ s }: { s: S }) {
           <thead><tr><th>Порядок</th><th>Колір</th><th>Назва</th><th title="У якому розділі показується замовлення з цим статусом">Розділ</th><th>Дія зі складом</th><th title="Рахується як підтверджене у звітах">Апрув</th><th>Фінальний</th><th>Активний</th><th /></tr></thead>
           <tbody>{rows.map((r) => (
             <tr key={r.id}>
-              <td data-label="Порядок" style={{ width: 80 }}><input type="number" value={r.sort} onChange={(e) => upd(r.id, { sort: Number(e.target.value) })} /></td>
+              <td data-label="Порядок" style={{ width: 80 }}><NumberField value={r.sort} aria-label="Порядок" onChange={(e) => upd(r.id, { sort: Number(e.target.value) })} /></td>
               <td data-label="Колір" style={{ width: 56 }}><ColorPick value={r.color} onChange={(c) => upd(r.id, { color: c })} label={`Колір статусу «${r.name}»`} /></td>
               <td className="full" data-label="Назва"><input value={r.name} onChange={(e) => upd(r.id, { name: e.target.value })} /><span className="sub mono">{r.code}</span></td>
               <td data-label="Розділ"><Select value={r.stage ?? "order"} onChange={(e) => upd(r.id, { stage: e.target.value as Status["stage"] })}><option value="lead">Ліди</option><option value="order">Замовлення</option></Select></td>
@@ -458,7 +458,7 @@ function Statuses({ s }: { s: S }) {
               <td data-label="Підтверджене" className="t-cards-chk"><input type="checkbox" checked={r.approved} onChange={(e) => upd(r.id, { approved: e.target.checked })} /></td>
               <td data-label="Фінальний" className="t-cards-chk"><input type="checkbox" checked={r.final} onChange={(e) => upd(r.id, { final: e.target.checked })} /></td>
               <td data-label="Активний" className="t-cards-chk"><input type="checkbox" checked={r.active} disabled={r.code === "new"} onChange={(e) => upd(r.id, { active: e.target.checked })} /></td>
-              <td>{!r.system && <button className="btn sm danger" onClick={() => { if (window.confirm("Видалити статус?")) save.mutate({ path: `/settings/statuses/${r.id}`, method: "del" }, { onSuccess: (x) => tr.reset(x.statuses) }); }}><Trash2 size={13} /></button>}</td>
+              <td>{!r.system && <button className="btn sm danger" onClick={async () => { if (await ask({ title: `Видалити статус «${r.name}»?`, action: "Видалити", danger: true })) save.mutate({ path: `/settings/statuses/${r.id}`, method: "del" }, { onSuccess: (x) => tr.reset(x.statuses) }); }}><Trash2 size={13} /></button>}</td>
             </tr>
           ))}</tbody>
         </table>
@@ -784,7 +784,7 @@ function NpAccounts({ s }: { s: S }) {
                       <label className="check"><input type="radio" name="np-default" checked={a.is_default} onChange={() => setRows(rows.map((r) => ({ ...r, is_default: r.key === a.key })))} /> Основний ключ</label>
                       <label className="check"><input type="checkbox" checked={a.is_active} onChange={(e) => upd(a.key, { is_active: e.target.checked })} /> Активний</label>
                       <span className="spacer" />
-                      <button type="button" className="btn sm danger" onClick={() => { if (window.confirm("Прибрати ключ із CRM? ТТН у кабінеті НП не зміняться.")) { if (a.id) upd(a.key, { delete: true }); else setRows(rows.filter((r) => r.key !== a.key)); } }}><Trash2 size={13} /> Прибрати</button>
+                      <button type="button" className="btn sm danger" onClick={async () => { if (await ask({ title: "Прибрати ключ із CRM?", text: "ТТН у кабінеті Нової Пошти не зміняться.", action: "Прибрати", danger: true })) { if (a.id) upd(a.key, { delete: true }); else setRows(rows.filter((r) => r.key !== a.key)); } }}><Trash2 size={13} /> Прибрати</button>
                     </div>
                   </div>
                 )}
@@ -895,7 +895,7 @@ function Shops({ s }: { s: S }) {
                       : <Field label="API-токен Prom" hint="Кабінет Prom → Налаштування → Керування API-токенами"><input className="mono" autoComplete="off" placeholder="не вказано" value={x.secret} onChange={(e) => upd(x.key, { secret: e.target.value })} /></Field>}
                   </div>
                   {x.kind === "rozetka" && <div className="cols"><Field label="Пароль кабінету продавця"><input type="password" autoComplete="new-password" placeholder={x.secret ? "збережено" : "не вказано"} value={x.secret === "********" ? "" : x.secret} onChange={(e) => upd(x.key, { secret: e.target.value || (x.id ? "********" : "") })} /></Field>
-                    <Field label="Імпортувати з дати" hint="Порожньо — останні 14 днів"><input type="date" value={x.since ? x.since.slice(0, 10) : ""} onChange={(e) => upd(x.key, { since: e.target.value || null })} /></Field></div>}
+                    <Field label="Імпортувати з дати" hint="Порожньо — останні 14 днів"><DateField value={x.since} clearable label="Імпортувати з дати" placeholder="Останні 14 днів" max={isoDate(new Date())} onChange={(d) => upd(x.key, { since: d || null })} /></Field></div>}
                   <div className="cols c3">
                     <Field label="Відділ" hint="У який відділ іти замовленням"><Select value={x.office_id ?? ""} onChange={(e) => upd(x.key, { office_id: e.target.value ? Number(e.target.value) : null })}>
                       <option value="">не вказано</option>{s.offices.filter((o) => o.active).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</Select></Field>
@@ -943,7 +943,7 @@ function Shops({ s }: { s: S }) {
                   <div className="form-actions">
                     <label className="check"><input type="checkbox" checked={x.is_active} onChange={(e) => upd(x.key, { is_active: e.target.checked })} /> Активний</label>
                     <span className="spacer" />
-                    <button type="button" className="btn sm danger" onClick={() => { if (window.confirm("Відключити магазин? Імпортовані замовлення залишаться.")) { if (x.id) upd(x.key, { delete: true }); else setRows(rows.filter((r) => r.key !== x.key)); } }}><Trash2 size={13} /> Відключити</button>
+                    <button type="button" className="btn sm danger" onClick={async () => { if (await ask({ title: "Відключити магазин?", text: "Імпортовані замовлення залишаться в CRM.", action: "Відключити", danger: true })) { if (x.id) upd(x.key, { delete: true }); else setRows(rows.filter((r) => r.key !== x.key)); } }}><Trash2 size={13} /> Відключити</button>
                   </div>
                 </div>
               )}
@@ -1138,7 +1138,7 @@ function EntityAccounts({ entityId }: { entityId: number }) {
             <div key={a.id} className={`ent-acc-row${a.is_active ? "" : " off"}`}>
               <b>{a.name}</b><span className="muted">{ACC_KINDS[a.kind] ?? a.kind}{a.card_mask && ` · ${a.card_mask}`}{a.iban && ` · ${a.iban}`}</span>
               <label className="mini-check"><input type="checkbox" checked={a.is_active} onChange={() => toggle.mutate(a)} /> активний</label>
-              <button type="button" className="x" title="Видалити рахунок" onClick={() => { if (window.confirm(`Видалити рахунок «${a.name}»?`)) del.mutate(a.id); }}>×</button>
+              <button type="button" className="x" title="Видалити рахунок" onClick={async () => { if (await ask({ title: `Видалити рахунок «${a.name}»?`, action: "Видалити", danger: true })) del.mutate(a.id); }}>×</button>
             </div>
           ))}
           {q.data && !q.data.length && <p className="hint">Рахунків ще немає. Додайте, куди надходять передоплати — у картці замовлення його можна буде вибрати.</p>}
@@ -1204,15 +1204,10 @@ function DocsSettings({ s }: { s: S }) {
           <Field label="Підпис унизу"><input {...bind("doc_note")} placeholder="Дякуємо за покупку!" /></Field>
         </div>
         <div><span className="lbl">Логотип у шапці (замість назви)</span>
-          <div className="doc-logo">
-            {v.doc_logo ? <img src={v.doc_logo} alt="Логотип" /> : <span className="hint">не завантажено — у шапці буде назва юрособи</span>}
-            <label className="btn sm"><Upload size={14} /> {v.doc_logo ? "Замінити" : "Завантажити"}
-              <input type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={async (e) => {
-                const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
-                try { setV({ ...v, doc_logo: await toPng(f) }); } catch (err) { toast((err as Error).message, "error"); }
-              }} /></label>
-            {v.doc_logo && <button type="button" className="btn sm ghost" onClick={() => setV({ ...v, doc_logo: "" })}>Прибрати</button>}
-          </div>
+          <FileDrop accept="image/png,image/jpeg,image/webp" preview={v.doc_logo || null} label="Перетягніть логотип або оберіть файл"
+            hint="PNG, JPG або WEBP. Без логотипа в шапці буде назва юрособи"
+            onFile={async (f) => { try { setV({ ...v, doc_logo: await toPng(f) }); } catch (err) { toast((err as Error).message, "error"); } }}
+            onClear={() => setV({ ...v, doc_logo: "" })} />
         </div>
       </div>
       <div className="card form">
@@ -1241,7 +1236,7 @@ function TelegramSettings({ s }: { s: S }) {
       <Secret label="Токен бота" k="alert_tg_token" bind={f.bind} hint="Створіть бота в @BotFather і вставте його токен" />
       <div className="cols">
         <Field label="ID чату" hint="Напишіть боту, потім дізнайтесь ID у @userinfobot (для групи — з мінусом)"><input {...f.bind("alert_tg_chat")} /></Field>
-        <Field label="Сповістити, якщо немає заявок, год" hint="Лише з 8:00 до 22:00. 0 — не стежити"><input type="number" min={0} {...f.bind("alert_no_leads_hours")} /></Field>
+        <Field label="Сповістити, якщо немає заявок" hint="Лише з 8:00 до 22:00. 0 — не стежити"><NumberField min={0} unit="год" {...f.bind("alert_no_leads_hours")} /></Field>
       </div>
       <div className="form-actions"><Button icon={Send} onClick={() => test.mutate()} disabled={test.isPending || f.dirty} title={f.dirty ? "Спершу збережіть зміни" : undefined}>Надіслати тестове</Button></div>
     </form>
@@ -1272,7 +1267,7 @@ function CustomerSettings() {
               <ColorPick value={g.color} onChange={(c) => mut.mutate({ method: "post", url: "/customer-groups", body: { id: g.id, name: g.name, color: c } })} label={`Колір групи «${g.name}»`} />
               <input defaultValue={g.name} onBlur={(e) => e.target.value.trim() && e.target.value !== g.name && mut.mutate({ method: "post", url: "/customer-groups", body: { id: g.id, name: e.target.value, color: g.color } })} />
               <span className="muted nowrap">{g.customers} покупц.</span>
-              <button type="button" className="x" title="Видалити групу" onClick={() => window.confirm(`Видалити групу «${g.name}»? Покупці залишаться без групи.`) && mut.mutate({ method: "del", url: `/customer-groups/${g.id}` })}>×</button>
+              <button type="button" className="x" title="Видалити групу" onClick={async () => { if (await ask({ title: `Видалити групу «${g.name}»?`, text: "Покупці залишаться без групи.", action: "Видалити", danger: true })) mut.mutate({ method: "del", url: `/customer-groups/${g.id}` }); }}>×</button>
             </div>
           ))}
         </div>

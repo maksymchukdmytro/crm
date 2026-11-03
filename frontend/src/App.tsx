@@ -6,7 +6,7 @@ import { report } from "./lib/monitoring";
 import { RealtimeProvider, ToastProvider } from "./lib/app";
 import type { Meta } from "./lib/types";
 import Layout from "./components/Layout";
-import { Spinner } from "./components/ui";
+import { ConfirmHost, Spinner, TooltipLayer } from "./components/ui";
 import OrdersPage from "./pages/Orders";
 import LeadsPage from "./pages/Leads";
 import InvoicesPage from "./pages/Invoices";
@@ -87,6 +87,8 @@ export default function App() {
       <ToastProvider>
         <BrowserRouter basename={ROOT || "/"}>
           <ErrorBoundary area="app"><Gate /></ErrorBoundary>
+          <ConfirmHost />
+          <TooltipLayer />
         </BrowserRouter>
       </ToastProvider>
     </QueryClientProvider>

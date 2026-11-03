@@ -7,7 +7,7 @@ import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money } from "../lib/format";
 import { DOC_OF, printDocument, printIssued, printMany } from "../lib/docs";
-import { BulkBar, Button, ChipSelect, DenseTable, IconButton, MenuButton, MobileActs, Tabs, Tag, type DenseCol } from "../components/ui";
+import { ask, BulkBar, Button, ChipSelect, DenseTable, IconButton, MenuButton, MobileActs, Tabs, Tag, type DenseCol } from "../components/ui";
 import { SOURCE_COLORS } from "./Orders";
 import OrderModal from "./OrderCard";
 
@@ -64,7 +64,7 @@ export default function InvoicesPage() {
           <MenuButton className="doc-more" button={({ open: o, toggle }) => <button type="button" className="doc-arrow" aria-label={`${label}: ще`} aria-expanded={o} onClick={toggle}><ChevronDown size={12} /></button>}>
             {(close) => (<>
               <button className="pop-item" onClick={() => { close(); printIssued(id, err, true); }}><Download size={15} />Завантажити</button>
-              <button className="pop-item" onClick={() => { close(); if (window.confirm("Перевипустити документ? Старий буде анульовано, новий отримає новий номер.")) reissue.mutate(id); }}><RefreshCw size={15} />Перевипустити</button>
+              <button className="pop-item" onClick={async () => { close(); if (await ask({ title: "Перевипустити документ?", text: "Старий буде анульовано, новий отримає новий номер.", action: "Перевипустити" })) reissue.mutate(id); }}><RefreshCw size={15} />Перевипустити</button>
             </>)}
           </MenuButton>
         )}

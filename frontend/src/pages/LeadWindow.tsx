@@ -2,12 +2,12 @@
 // Результати дзвінка: Недодзвон F1 · Передзвонити F2 · Відмова F3 · Дубль. Головна дія — «Створити замовлення» (Ctrl ⏎).
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Check, ChevronLeft, Copy, MessageCircle, MoreHorizontal, Package, Phone, PhoneMissed, PhoneOff, Plus, Send, Timer, Trash2 } from "lucide-react";
+import { Ban, CalendarClock, Check, ChevronLeft, Copy, MessageCircle, MoreHorizontal, Package, Phone, PhoneMissed, PhoneOff, Plus, Send, Timer, Trash2 } from "lucide-react";
 import { api, ApiError } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { dt, money, phone } from "../lib/format";
 import type { Order, OrderList } from "../lib/types";
-import { Block, Button, IconButton, MenuButton, PropertyList, RoundButton, StatusPill, Window, useMobile, useOutside } from "../components/ui";
+import { ask, Block, Button, DateTimePicker, fmtDateTime, isoDate, IconButton, MenuButton, PropertyList, RoundButton, StatusPill, Window, useMobile, useOutside } from "../components/ui";
 import { WaitBadge, WaitRing, callbackTime, leadNo } from "./Leads";
 import OrderModal from "./OrderCard";
 
@@ -22,8 +22,8 @@ export default function LeadWindow({ id, onClose, onOpen }: { id: number; onClos
   const mobile = useMobile();
   const statuses = Object.fromEntries(meta.statuses.map((s) => [s.id, s]));
   const { data: o, isLoading } = useQuery({ queryKey: ["order", id], queryFn: () => api.get<Order>(`/orders/${id}`) });
-  const askDelete = () => {
-    if (!window.confirm(`Видалити лід ${leadNo(id)} назавжди? Відновити його не можна.`)) return;
+  const askDelete = async () => {
+    if (!(await ask({ title: `Видалити лід ${leadNo(id)}?`, text: "Назавжди: відновити його не можна.", action: "Видалити", danger: true }))) return;
     api.del(`/orders/${id}`).then(() => {
       qc.invalidateQueries({ queryKey: ["orders"] }); qc.invalidateQueries({ queryKey: ["leads"] }); qc.invalidateQueries({ queryKey: ["counters"] });
       toast(`Лід ${leadNo(id)} видалено`); onClose();
@@ -246,7 +246,8 @@ export default function LeadWindow({ id, onClose, onOpen }: { id: number; onClos
 function CallbackPop({ onPick, onClose }: { onPick: (iso: string) => void; onClose: () => void }) {
   const box = useRef<HTMLDivElement>(null);
   useOutside(box, onClose);
-  const [own, setOwn] = useState("");
+  const [own, setOwn] = useState<string | null>(null);
+  const tomorrow10 = () => { const d = new Date(); d.setDate(d.getDate() + 1); return `${isoDate(d)}T10:00`; };
   const at = (f: (d: Date) => void) => { const d = new Date(); f(d); return d.toISOString(); };
   const presets: [string, string][] = [
     ["Через 30 хв", at((d) => d.setMinutes(d.getMinutes() + 30))],
@@ -255,12 +256,17 @@ function CallbackPop({ onPick, onClose }: { onPick: (iso: string) => void; onClo
     ["Завтра о 10:00", at((d) => { d.setDate(d.getDate() + 1); d.setHours(10, 0, 0, 0); })],
   ];
   return (
-    <div className="pop lw-pop" ref={box} role="menu">
-      {presets.map(([l, iso]) => <button key={l} className="pop-item" onClick={() => onPick(iso)}>{l}</button>)}
-      <form className="lw-own" onSubmit={(e) => { e.preventDefault(); if (own) onPick(new Date(own).toISOString()); }}>
-        <input type="datetime-local" value={own} onChange={(e) => setOwn(e.target.value)} aria-label="Свій час" />
-        <Button type="submit" size={30} disabled={!own}>OK</Button>
-      </form>
+    <div className={`pop lw-pop${own != null ? " own" : ""}`} ref={box} role="menu">
+      {own != null ? (
+        <div className="dt-view">
+          <button type="button" className="dt-back" onClick={() => setOwn(null)}><ChevronLeft size={16} />Свій час</button>
+          <DateTimePicker value={own} min={isoDate(new Date())} onChange={setOwn} />
+          <Button variant="primary" disabled={!own.slice(11)} onClick={() => onPick(new Date(own).toISOString())}>Передзвонити {fmtDateTime(own)}</Button>
+        </div>
+      ) : (<>
+        {presets.map(([l, iso]) => <button key={l} className="pop-item" onClick={() => onPick(iso)}>{l}</button>)}
+        <button className="pop-item" onClick={() => setOwn(tomorrow10())}><CalendarClock size={15} />Свій час…</button>
+      </>)}
     </div>
   );
 }

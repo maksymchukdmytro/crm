@@ -19,10 +19,6 @@
 .chip-box.on { background: var(--accent); border-color: var(--accent); }
 .chip-dot { width: 8px; height: 8px; border-radius: var(--r-pill); flex: none; }
 .chip-foot { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); margin-top: 4px; padding: 4px 4px 0 10px; font-size: 12px; color: var(--muted); }
-.date-pop { width: 280px; }
-.date-own { border-top: 1px solid var(--line); margin-top: 4px; padding: 8px 6px 4px; display: flex; flex-direction: column; gap: 6px; }
-.date-own > div { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.date-own input { min-width: 0; font-size: 12.5px; }
 .save-pop { width: 270px; gap: 8px; padding: 12px; }
 .sf-colors { display: flex; gap: 6px; }
 .sf-colors button { width: 22px; height: 22px; border-radius: var(--r-pill); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); cursor: pointer; }

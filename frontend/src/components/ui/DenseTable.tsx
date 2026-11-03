@@ -4,6 +4,7 @@ import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "reac
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { SkeletonRows } from "./blocks";
 import { useMobile } from "./hooks";
+import { menuPoint } from "./ContextMenu";
 
 export type DenseCol<T> = {
   key: string;
@@ -39,7 +40,7 @@ function cardPlace<T>(cols: DenseCol<T>[]) {
 }
 
 export function DenseTable<T>({
-  rows, cols, rowKey, groupOf, selected, onSelect, onOpen, actions, isLoading, empty, onEndReached, current, className = "", label, rowClass, mobileCard, rowHeight = ROW_H,
+  rows, cols, rowKey, groupOf, selected, onSelect, onOpen, actions, isLoading, empty, onEndReached, current, className = "", label, rowClass, mobileCard, rowHeight = ROW_H, onRowMenu,
 }: {
   rows: T[];
   cols: DenseCol<T>[];
@@ -49,6 +50,8 @@ export function DenseTable<T>({
   selected?: Set<number>;
   onSelect?: (next: Set<number>) => void;
   onOpen?: (r: T) => void;
+  /** Контекстне меню рядка (правий клік, клавіша меню): координати для ContextMenu. */
+  onRowMenu?: (r: T, x: number, y: number) => void;
   actions?: (r: T) => ReactNode;
   isLoading?: boolean;
   empty?: ReactNode;
@@ -118,6 +121,12 @@ export function DenseTable<T>({
     else if (e.key === "ArrowUp" || e.key === "k") { e.preventDefault(); setFocus((f) => Math.max(f - 1, 0)); }
     else if ((e.key === " " || e.key.toLowerCase() === "x") && focus >= 0) { e.preventDefault(); toggle(rows[focus], e.shiftKey); }
     else if (e.key === "Enter" && focus >= 0) { e.preventDefault(); onOpen?.(rows[focus]); }
+    else if ((e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) && focus >= 0 && onRowMenu) {
+      e.preventDefault();
+      const el = (e.currentTarget as HTMLElement).querySelector<HTMLElement>(".dense-row.focus");
+      const r = el?.getBoundingClientRect();
+      onRowMenu(rows[focus], r ? r.left + 40 : 200, r ? r.bottom - 4 : 200);
+    }
   };
   useEffect(() => {
     if (focus < 0) return;
@@ -208,7 +217,8 @@ export function DenseTable<T>({
                   if (t.closest("input, button, a, .c-sel")) return;
                   if (e.shiftKey && selectable) { e.preventDefault(); toggle(r, true); return; }
                   onOpen?.(r);
-                }}>
+                }}
+                onContextMenu={onRowMenu ? (e) => { e.preventDefault(); const p = menuPoint(e, e.currentTarget); onRowMenu(r, p.x, p.y); } : undefined}>
                 {selectable && (
                   <span className="c-sel" onClick={(e) => { e.stopPropagation(); toggle(r, e.shiftKey); }}>
                     <input type="checkbox" aria-label={`Вибрати ${id}`} checked={on} readOnly tabIndex={-1} />

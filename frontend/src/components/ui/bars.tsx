@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { Plus, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useMobile, useOutside } from "./hooks";
+import { useMenuKeys } from "./ContextMenu";
 
 export function BulkBar({ count, onClear, children, primary }: { count: number; onClear: () => void; children?: ReactNode; primary?: ReactNode }) {
   if (!count) return null;
@@ -52,21 +53,38 @@ export function Fab({ onClick, actions, label = "Нове замовлення" 
 }
 
 /** Кнопка з випадним меню (Друк ▾, «⋯»). Меню відкривається вгору, якщо внизу мало місця. */
-export function MenuButton({ button, children, align = "right", className = "" }: {
+export function MenuButton({ button, children, align = "right", className = "", title, sheet = true }: {
   button: (p: { open: boolean; toggle: () => void }) => ReactNode; children: (close: () => void) => ReactNode; align?: "left" | "right"; className?: string;
+  /** Заголовок шторки на телефоні; без нього — з підпису кнопки. */
+  title?: string;
+  /** На телефоні меню відкривається шторкою знизу (A6); false — як на ПК. */
+  sheet?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [up, setUp] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
-  useOutside(wrap, () => setOpen(false), open);
+  const pop = useRef<HTMLDivElement>(null);
+  const mobile = useMobile();
+  const asSheet = mobile && sheet;
+  useOutside(wrap, () => setOpen(false), open && !asSheet);
+  useMenuKeys(pop, open && !asSheet);
   const toggle = () => {
     if (!open && wrap.current) setUp(window.innerHeight - wrap.current.getBoundingClientRect().bottom < 260);
     setOpen((o) => !o);
   };
+  const close = () => setOpen(false);
+  const sheetTitle = () => {
+    if (title) return title;
+    const b = wrap.current?.querySelector("button, a");
+    const t = (b?.getAttribute("aria-label") || b?.textContent || "").split(/[:(]/)[0].replace(/\s*Esc$/, "").trim();
+    return t.replace(/^Ще дії/, "Дії") || "Дії";
+  };
   return (
     <div className={`menu-btn ${className}`} ref={wrap}>
       {button({ open, toggle })}
-      {open && <div className={`pop menu-pop ${align}${up ? " up" : ""}`} role="menu">{children(() => setOpen(false))}</div>}
+      {open && (asSheet
+        ? <Sheet title={sheetTitle()} onClose={close}><div className="m-menu" role="menu" onClick={(e) => e.stopPropagation()}>{children(close)}</div></Sheet>
+        : <div ref={pop} className={`pop menu-pop ${align}${up ? " up" : ""}`} role="menu">{children(close)}</div>)}
     </div>
   );
 }

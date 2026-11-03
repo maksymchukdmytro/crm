@@ -1,12 +1,12 @@
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banknote, BarChart3, CircleCheck, HandCoins, History, TriangleAlert, Upload, Wallet } from "lucide-react";
+import { Banknote, BarChart3, CircleCheck, HandCoins, History, TriangleAlert, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, qs } from "../lib/api";
 import { errText, useMeta, useToast } from "../lib/app";
 import { date, dt, isoDay, money } from "../lib/format";
 import type { Audit, Payment, Payments, Registry, Report as ReportData } from "../lib/types";
-import { Empty, Kpi, Spinner , Select } from "../components/ui";
+import { DateRangeField, FileButton, Empty, Kpi, Spinner, Select } from "../components/ui";
 
 // ================================================================ оплати
 
@@ -19,7 +19,6 @@ export function PaymentsPage() {
   const [ref, setRef] = useState("");
   const [report, setReport] = useState<Registry | null>(null);
   const [openG, setOpenG] = useState<Record<string, boolean>>({});
-  const fileRef = useRef<HTMLInputElement>(null);
   const { data } = useQuery({ queryKey: ["payments", "all"], queryFn: () => api.get<Payments>(`/payments${qs({ status: "" })}`) });
   const receive = useMutation({
     mutationFn: () => api.post<{ done: number }>("/payments/receive", { ids: [...sel], reference: ref }),
@@ -80,8 +79,7 @@ export function PaymentsPage() {
     <div className="pay-v2">
       <div className="head"><h1><span className="h-ico"><Wallet size={18} /></span>Оплати</h1>
         <div className="actions">
-          <input ref={fileRef} type="file" accept=".csv,.txt" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) upload.mutate(f); e.target.value = ""; }} />
-          <button className="btn" onClick={() => fileRef.current?.click()} disabled={upload.isPending}><Upload size={15} /> Імпорт реєстру НП (CSV)</button>
+          <FileButton accept=".csv,.txt" busy={upload.isPending} onFile={(f) => upload.mutate(f)}>Імпорт реєстру НП (CSV)</FileButton>
         </div></div>
       <div className="py-tiles">
         {([[HandCoins, "orange", "Післяплата в дорозі", `${money(sum(expected))} ₴`, `${expected.length} відправлень`],
@@ -122,12 +120,6 @@ export function PaymentsPage() {
 
 // ================================================================ звіти
 
-function presets() {
-  const t = new Date(); const d = (n: number) => { const x = new Date(t); x.setDate(x.getDate() - n); return isoDay(x); };
-  const ms = new Date(t.getFullYear(), t.getMonth(), 1); const pe = new Date(ms); pe.setDate(0); const ps = new Date(pe.getFullYear(), pe.getMonth(), 1);
-  return [["Сьогодні", d(0), d(0)], ["Вчора", d(1), d(1)], ["7 днів", d(6), d(0)], ["30 днів", d(29), d(0)], ["Цей місяць", isoDay(ms), d(0)], ["Минулий місяць", isoDay(ps), isoDay(pe)]];
-}
-
 export function ReportsPage() {
   const meta = useMeta();
   const [p, setP] = useState({ date_from: "", date_to: "", dim: "utm_source", manager: "" });
@@ -140,11 +132,8 @@ export function ReportsPage() {
     <div>
       <div className="head"><h1><span className="h-ico"><BarChart3 size={18} /></span>Звіти</h1>{isFetching && <span className="spinner sm" />}</div>
       <div className="filters">
-        <input type="date" value={data.date_from} onChange={(e) => setP({ ...p, date_from: e.target.value, date_to: data.date_to })} />
-        <input type="date" value={data.date_to} onChange={(e) => setP({ ...p, date_to: e.target.value, date_from: data.date_from })} />
+        <DateRangeField from={data.date_from} to={data.date_to} max={isoDay(new Date())} onChange={(a, b) => setP({ ...p, date_from: a, date_to: b })} />
         {meta.user.role === "admin" && <Select value={p.manager} onChange={(e) => setP({ ...p, manager: e.target.value })}><option value="">Усі менеджери</option>{meta.managers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</Select>}
-        <span className="spacer" />
-        {presets().map(([n, a, b]) => <button key={n} className={`btn sm ${data.date_from === a && data.date_to === b ? "dark" : ""}`} onClick={() => setP({ ...p, date_from: a, date_to: b })}>{n}</button>)}
       </div>
       <div className="kpis">
         <Kpi label="Заявки" value={T.leads} sub={`унікальних ${T.unique}`} /><Kpi label="Апрув" value={pct(T.approve_rate)} sub={`${T.approved} підтверджено`} />
@@ -208,8 +197,7 @@ export function AuditPage() {
       <div className="filters">
         <Select value={f.entity} onChange={(e) => setF({ ...f, entity: e.target.value })}><option value="">Усі об'єкти</option>{Object.entries(ENTITIES).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select>
         <Select value={f.action} onChange={(e) => setF({ ...f, action: e.target.value })}><option value="">Усі дії</option>{Object.entries(actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select>
-        <input type="date" value={f.date_from} onChange={(e) => setF({ ...f, date_from: e.target.value })} />
-        <input type="date" value={f.date_to} onChange={(e) => setF({ ...f, date_to: e.target.value })} />
+        <DateRangeField from={f.date_from} to={f.date_to} clearable placeholder="За весь час" max={isoDay(new Date())} onChange={(a, b) => setF({ ...f, date_from: a, date_to: b })} />
       </div>
       <div className="card flush tablewrap"><table className="t dense">
         <thead><tr><th>Час</th><th>Хто</th><th>Об'єкт</th><th>Дія</th><th>Деталі</th></tr></thead>

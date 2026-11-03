@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlarmClock, ArrowLeft, ArrowUpRight, Ban, Bell, Building2, Check, ChevronDown, ChevronLeft, CircleCheck, Copy, CreditCard, ExternalLink, FileText, History,
+  AlarmClock, ArrowLeft, ArrowUpRight, Ban, Bell, Building2, CalendarClock, Check, ChevronDown, ChevronLeft, CircleCheck, Copy, CreditCard, ExternalLink, FileText, History,
   ListChecks, Lock, MessageCircle, MessageSquare, MoreHorizontal, Pencil, Phone, Plus, Printer, Receipt, RefreshCw, ScanBarcode,
   Send, ShieldCheck, Tag as TagIcon, Trash2, Truck, Wallet, X,
 } from "lucide-react";
@@ -14,7 +14,7 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num, phone as fmtPhone } from "../lib/format";
 import type { Order } from "../lib/types";
 import {
-  Block, Button, Checklist, IconButton, MenuButton, PayCheck, Ring, RoundButton, Segmented, Select, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useMobile, useOutside,
+  ask, Block, Button, Checklist, DateTimePicker, fmtDateTime, isoDate, IconButton, MenuButton, PayCheck, Ring, RoundButton, Segmented, Select, SidePanel, StatusPill, Tag, UaPhone, Window, inField, useMobile, useOutside,
   type CheckItem,
 } from "../components/ui";
 import { flag, PayIcon, PayLabel } from "../components/payicons";
@@ -204,11 +204,11 @@ function OrderCard({ id, onClose, onOpen, ids, embed }: { id: string; onClose: (
     onError: (e) => toast(errText(e), "error"),
   });
 
-  const changeStatus = (sid: number, reasonId?: number) => {
+  const changeStatus = async (sid: number, reasonId?: number) => {
     const s = meta.statuses.find((x) => x.id === sid);
     if (!s || sid === form.status_id) return;
     const acts = [STOCK_TEXT[s.stock_action ?? ""], s.code === "shipped" || s.code === "delivered" ? "SMS покупцю й чек — якщо налаштовано для статусу" : ""].filter(Boolean);
-    if (acts.length && !window.confirm(`Статус «${s.name}»: ${acts.join("; ")}. Продовжити?`)) return;
+    if (acts.length && !(await ask({ title: `Змінити статус на «${s.name}»?`, text: `${acts.join("; ").replace(/^./, (c) => c.toUpperCase())}.`, action: "Змінити статус" }))) return;
     setForm((f) => ({ ...f, status_id: sid, reason_id: reasonId ?? f.reason_id }));
     setTimeout(() => (isNew ? null : saveNow()), 0);
   };
@@ -264,10 +264,14 @@ function OrderCard({ id, onClose, onOpen, ids, embed }: { id: string; onClose: (
     },
     onError: (e) => toast(errText(e), "error"),
   });
-  const askDelete = () => {
-    if (window.confirm(`Видалити замовлення №${oid} назавжди?\n\nРезерв товару повернеться на склад. Відновити замовлення не можна.`)) remove.mutate();
+  const askDelete = async () => {
+    if (await ask({ title: `Видалити замовлення №${oid} назавжди?`, text: "Резерв товару повернеться на склад. Відновити замовлення не можна.", action: "Видалити", danger: true })) remove.mutate();
   };
-  const close = () => { if (dirty && !isNew) saveNow(); else if (dirty && isNew && !window.confirm("Замовлення ще не створено. Закрити без збереження?")) return; onClose(); };
+  const close = async () => {
+    if (dirty && !isNew) saveNow();
+    else if (dirty && isNew && !(await ask({ title: "Закрити без збереження?", text: "Замовлення ще не створено — введене зникне.", action: "Закрити", cancel: "Лишитись", danger: true }))) return;
+    onClose();
+  };
 
   if (!isNew && (isLoading || !order || !baseline)) {
     return (
@@ -572,7 +576,7 @@ function MobileStatus({ statusId, onPick, disabled }: { statusId: number; onPick
   };
   return (
     <div className="oc-mstatus-wrap">
-      <MenuButton className="oc-mstatus-menu" align="left" button={({ open, toggle }) => (
+      <MenuButton className="oc-mstatus-menu" title="Статус замовлення" align="left" button={({ open, toggle }) => (
         <button type="button" className="oc-mstatus" style={{ ["--c" as string]: cur?.color ?? "#7C7B76" }} aria-expanded={open} disabled={disabled} onClick={toggle}>
           <i /><b>{cur?.name ?? "Статус"}</b><span>змінити<ChevronDown size={15} /></span>
         </button>
@@ -645,7 +649,7 @@ function CheckMenu({ order, busy, onReceipt }: { order: Order; busy: boolean; on
         {!sold && <button className="pop-item" onClick={() => { close(); onReceipt("sell"); }}><Receipt size={16} />Чек продажу</button>}
         <button className="pop-item" onClick={() => { close(); onReceipt("prepay"); }}><Wallet size={16} />Чек передоплати</button>
         <button className="pop-item" onClick={() => { close(); onReceipt("postpay"); }}><Wallet size={16} />Чек післяплати</button>
-        <button className="pop-item" onClick={() => { close(); if (window.confirm("Створити чек повернення?")) onReceipt("return"); }}><RefreshCw size={16} />Чек повернення</button>
+        <button className="pop-item" onClick={async () => { close(); if (await ask({ title: "Створити чек повернення?", text: "Чек піде у фіскальний сервер — скасувати його не можна.", action: "Створити чек" })) onReceipt("return"); }}><RefreshCw size={16} />Чек повернення</button>
         {rs.length > 0 && <div className="note-head">Чеки замовлення</div>}
         {rs.map((r) => (
           <a key={r.id} className="pop-item" href={r.url || undefined} target="_blank" rel="noreferrer" title={r.error || undefined}>
@@ -664,19 +668,28 @@ function RemindButton({ value, onChange }: { value: string; onChange: (v: string
     ["Через годину", () => local(new Date(Date.now() + 3600_000))], ["Сьогодні о 18:00", () => at(0, 18)],
     ["Завтра о 10:00", () => at(1, 10)], ["Через 3 дні", () => at(3, 10)],
   ];
+  // «Свій час» — календар і години в тому ж меню (A4), замість системного datetime-local
+  const [own, setOwn] = useState<string | null>(null);
   const due = value && new Date(value) <= new Date();
-  const label = value ? `Нагадування ${value.slice(8, 10)}.${value.slice(5, 7)} о ${value.slice(11, 16)}` : "Нагадати про замовлення";
+  const label = value ? `Нагадування ${fmtDateTime(value)}` : "Нагадати про замовлення";
   return (
     <MenuButton button={({ open, toggle }) => (
-      <button type="button" className={`icon-btn remind${value ? (due ? " due" : " on") : ""}`} aria-label={label} title={label} aria-expanded={open} onClick={toggle}>
+      <button type="button" className={`icon-btn remind${value ? (due ? " due" : " on") : ""}`} aria-label={label} title={label} aria-expanded={open}
+        onClick={() => { setOwn(null); toggle(); }}>
         {due ? <AlarmClock size={16} /> : <Bell size={16} />}
       </button>
     )}>
-      {(close) => (
+      {(close) => own != null ? (
+        <div className="dt-view">
+          <button type="button" className="dt-back" onClick={() => setOwn(null)}><ChevronLeft size={16} />Свій час</button>
+          <DateTimePicker value={own} min={isoDate(new Date())} onChange={setOwn} />
+          <Button variant="primary" icon={Bell} disabled={!own.slice(11)} onClick={() => { onChange(own); close(); }}>Нагадати {fmtDateTime(own)}</Button>
+        </div>
+      ) : (
         <div className="remind-menu">
           <div className="note-head">{value ? label : "Нагадати про замовлення"}</div>
           {presets.map(([t, f]) => <button key={t} className="pop-item" onClick={() => { onChange(f()); close(); }}>{t}</button>)}
-          <label className="remind-own"><span className="lbl">Свій час</span><input type="datetime-local" value={value} onChange={(e) => onChange(e.target.value)} /></label>
+          <button className="pop-item" onClick={() => setOwn(value || at(1, 10))}><CalendarClock size={15} />Свій час…</button>
           {value && <button className="pop-item danger" onClick={() => { onChange(""); close(); }}><X size={15} />Прибрати нагадування</button>}
         </div>
       )}
@@ -788,9 +801,9 @@ function CustomerBlock({ order, form, set, isNew, step, onNewForClient, onOpen, 
       <div className="oc-phone-row">
         <span className="phone-pill-in">
           <span className="ph-flag" aria-hidden>{flag(form.country)}</span>
-          <select className="ph-country" value={form.country} disabled={readOnly} onChange={(e) => set({ country: e.target.value })} aria-label="Країна">
+          <Select className="ph-country" value={form.country} disabled={readOnly} onChange={(e) => set({ country: e.target.value })} aria-label="Країна">
             {Object.entries(meta.countries).map(([cc, n]) => <option key={cc} value={cc} title={n}>{cc} · {n}</option>)}
-          </select>
+          </Select>
           <UaPhone value={form.phone} country={form.country} onChange={(v) => set({ phone: v })} aria-label="Телефон" disabled={readOnly} autoFocus={isNew} />
         </span>
         {tel.length >= 10 && <>
@@ -975,7 +988,7 @@ function DeliveryBlock({ order, form, set, cod, codKind, step, readOnly, locked,
                   <ListChecks size={16} />{order.np_registry_ref ? `У реєстрі ${order.np_registry_ref}` : "Додати в реєстр НП"}</button>}
                 {hasTtn && carrier && <button className="pop-item" onClick={() => { close(); onAction("/track"); }}><RefreshCw size={16} />Оновити статус</button>}
                 {hasTtn && <button className="pop-item" onClick={() => { close(); navigator.clipboard?.writeText(order.ttn || form.ttn); toast("ТТН скопійовано"); }}><Copy size={16} />Копіювати ТТН</button>}
-                {order.carrier_ref && !locked && <button className="pop-item danger" onClick={() => { close(); if (window.confirm(`Видалити ТТН ${order.ttn} у перевізника?`)) onAction("/ttn", "del"); }}><Trash2 size={16} />Видалити ТТН</button>}
+                {order.carrier_ref && !locked && <button className="pop-item danger" onClick={async () => { close(); if (await ask({ title: `Видалити ТТН ${order.ttn}?`, text: "Накладну буде видалено й у кабінеті перевізника.", action: "Видалити ТТН", danger: true })) onAction("/ttn", "del"); }}><Trash2 size={16} />Видалити ТТН</button>}
               </>)}
             </MenuButton>
           )}

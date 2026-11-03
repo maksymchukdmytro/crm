@@ -11,7 +11,7 @@ import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { money, num } from "../lib/format";
 import type { AttributeGroup, Category, Manufacturer, Product, ProductDetail } from "../lib/types";
 type ProductSummary = { days: number; qty: number; sum: number; margin: number; buyout_rate: number | null; upsell_share: number | null; orders: number; sold_total: number };
-import { Badge, Block, Button, confirmAction, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, Tag, Toggle, Window, useMobile , Select, EmptyState } from "../components/ui";
+import { Badge, Block, Button, ask, NumberField, Empty, Field, IconButton, MenuButton, MobileActs, Modal, RoundButton, Spinner, Tag, Toggle, Window, useMobile , Select, EmptyState } from "../components/ui";
 import MultiSelect from "../components/MultiSelect";
 import { MovesTable } from "./Catalog";
 import "./products.css";
@@ -237,6 +237,9 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
     onSuccess: (r) => { refresh(); toast(r.message, r.deleted ? "ok" : "warn"); onClose(); },
     onError: (e) => toast(errText(e), "error"),
   });
+  const askDel = () => ask(data?.sold
+    ? { title: `Перенести «${data?.name}» в архів?`, text: "Товар уже був у замовленнях, тож він не зникне, а перейде в архів.", action: "В архів" }
+    : { title: `Видалити «${data?.name}»?`, text: "Якщо товар уже був у замовленнях, він перейде в архів.", action: "Видалити", danger: true });
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setF({ ...f, [k]: e.target instanceof HTMLInputElement && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   const price = num(v("price", 0)), spec = num(v("spec_price", 0)), cost = num(v("cost", 0));
@@ -285,7 +288,7 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
       <div className="acts">
         {editable && !isNew && <Button icon={Copy} disabled={duplicate.isPending} onClick={() => duplicate.mutate()}>Дублювати</Button>}
         {editable && !isNew && <Button variant="danger" icon={data?.sold ? Archive : Trash2} disabled={del.isPending}
-          onClick={() => confirmAction(`${data?.sold ? "Перенести в архів" : "Видалити"} «${data?.name}»? Якщо товар уже був у замовленнях, він перейде в архів.`) && del.mutate()}>
+          onClick={async () => { if (await askDel()) del.mutate(); }}>
           {data?.sold ? "В архів" : "Видалити"}</Button>}
         {editable && <Button variant="primary" icon={Check} kbd="Ctrl S" disabled={save.isPending} onClick={() => saveAll()}>{save.isPending ? "Зберігаю…" : isNew ? "Створити" : "Зберегти"}</Button>}
         <IconButton icon={X} label="Закрити (Esc)" quiet onClick={onClose} />
@@ -302,7 +305,7 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
         <MenuButton button={({ open, toggle }) => <button type="button" className="rb" aria-label="Ще дії" aria-expanded={open} onClick={toggle}><MoreHorizontal size={20} /></button>}>
           {(close) => (<>
             <button className="pop-item" disabled={duplicate.isPending} onClick={() => { close(); duplicate.mutate(); }}><Copy size={16} />Дублювати</button>
-            <button className="pop-item danger" disabled={del.isPending} onClick={() => { close(); if (confirmAction(`${data?.sold ? "Перенести в архів" : "Видалити"} «${data?.name}»?`)) del.mutate(); }}>
+            <button className="pop-item danger" disabled={del.isPending} onClick={async () => { close(); if (await askDel()) del.mutate(); }}>
               {data?.sold ? <Archive size={16} /> : <Trash2 size={16} />}{data?.sold ? "В архів" : "Видалити"}</button>
           </>)}
         </MenuButton>
@@ -359,8 +362,8 @@ function ProductModal({ id, editable, onClose, onCreated }: { id: number | "new"
               </div>
             )}
             <div className="pw-row">
-              {isNew && !curVariants.length && <Field label="Початковий залишок, шт"><input type="number" min={0} value={String(f.initial_stock ?? "0")} onChange={set("initial_stock")} /></Field>}
-              <Field label="Мінімальний залишок — сповістити"><input type="number" value={String(v("min_stock", "0"))} onChange={set("min_stock")} /></Field>
+              {isNew && !curVariants.length && <Field label="Початковий залишок, шт"><NumberField min={0} unit="шт" value={String(f.initial_stock ?? "0")} onChange={set("initial_stock")} /></Field>}
+              <Field label="Мінімальний залишок — сповістити"><NumberField min={0} unit="шт" value={String(v("min_stock", "0"))} onChange={set("min_stock")} /></Field>
               {!isNew && <a className="btn" href={`${ROOT}/warehouse?product=${id}`} onClick={(e) => { e.preventDefault(); onClose(); window.history.pushState({}, "", `${ROOT}/warehouse?product=${id}`); window.dispatchEvent(new PopStateEvent("popstate")); }}>
                 <Boxes size={15} />Прийняти / списати</a>}
             </div>
@@ -531,7 +534,7 @@ function VariantsTab({ rows, onChange, isNew, basePrice }: { rows: VRow[]; onCha
               <td><input value={r.name} onChange={(e) => upd(i, { name: e.target.value })} placeholder="Назва варіанта" /></td>
               <td><input className="mono" value={r.sku} onChange={(e) => upd(i, { sku: e.target.value })} placeholder="—" /></td>
               <td className="num"><input value={r.price} onChange={(e) => upd(i, { price: e.target.value })} placeholder={money(basePrice)} inputMode="decimal" /></td>
-              <td className="num">{r.id ? <b>{r.stock ?? 0}</b> : <input type="number" min={0} value={r.initial_stock} onChange={(e) => upd(i, { initial_stock: e.target.value })} placeholder="0" />}</td>
+              <td className="num">{r.id ? <b>{r.stock ?? 0}</b> : <NumberField min={0} unit="шт" aria-label="Початковий залишок" value={r.initial_stock} onChange={(e) => upd(i, { initial_stock: e.target.value })} placeholder="0" />}</td>
               <td><input type="checkbox" checked={r.active} onChange={(e) => upd(i, { active: e.target.checked })} /></td>
               <td><button type="button" className="btn icon ghost" title="Прибрати варіант" onClick={() => onChange(rows.filter((_, j) => j !== i))}><Trash2 size={14} /></button></td>
             </tr>
@@ -588,7 +591,7 @@ function CategoriesTab() {
       <InlineName value={c.name} onSave={(name) => save({ ...c, name })} />
       <span className="muted dir-n">{c.products} тов.</span>
       <label className="check" title="Показувати в списках"><input type="checkbox" checked={c.active} onChange={(e) => save({ ...c, active: e.target.checked })} /></label>
-      <button className="btn icon ghost" title="Видалити (товари залишаться без категорії)" onClick={() => confirmAction(`Видалити категорію «${c.name}»? Товари залишаться без категорії.`) && mut.mutate({ method: "del", url: `/catalog/categories/${c.id}` })}><Trash2 size={14} /></button>
+      <button className="btn icon ghost" title="Видалити (товари залишаться без категорії)" onClick={async () => { if (await ask({ title: `Видалити категорію «${c.name}»?`, text: "Товари залишаться без категорії.", action: "Видалити", danger: true })) mut.mutate({ method: "del", url: `/catalog/categories/${c.id}` }); }}><Trash2 size={14} /></button>
     </div>
   );
   return (
@@ -613,7 +616,7 @@ function ManufacturersTab() {
         <div key={m.id} className={`dir-row ${m.active ? "" : "off"}`}>
           <Factory size={15} className="muted" /><InlineName value={m.name} onSave={(name) => save({ ...m, name })} />
           <span className="muted dir-n">{m.products} тов.</span>
-          <button className="btn icon ghost" title="Видалити" onClick={() => confirmAction(`Видалити виробника «${m.name}»?`) && mut.mutate({ method: "del", url: `/catalog/manufacturers/${m.id}` })}><Trash2 size={14} /></button>
+          <button className="btn icon ghost" title="Видалити" onClick={async () => { if (await ask({ title: `Видалити виробника «${m.name}»?`, action: "Видалити", danger: true })) mut.mutate({ method: "del", url: `/catalog/manufacturers/${m.id}` }); }}><Trash2 size={14} /></button>
         </div>
       ))}
       {!data.length && <Empty><Factory size={22} className="e-ico" />Виробників ще немає.</Empty>}
@@ -631,7 +634,7 @@ function AttributesTab() {
         <div key={g.id} className="card dir">
           <div className="dir-row head-row"><Tags size={15} className="muted" />
             <InlineName value={g.name} onSave={(name) => mut.mutate({ method: "post", url: "/catalog/attribute-groups", body: { id: g.id, name } })} />
-            <button className="btn icon ghost" title="Видалити категорію атрибутів" onClick={() => confirmAction(`Видалити «${g.name}» з усіма значеннями?`) && mut.mutate({ method: "del", url: `/catalog/attribute-groups/${g.id}` })}><Trash2 size={14} /></button>
+            <button className="btn icon ghost" title="Видалити категорію атрибутів" onClick={async () => { if (await ask({ title: `Видалити «${g.name}»?`, text: "Разом з усіма значеннями атрибута.", action: "Видалити", danger: true })) mut.mutate({ method: "del", url: `/catalog/attribute-groups/${g.id}` }); }}><Trash2 size={14} /></button>
           </div>
           <div className="attr-chips">
             {g.attributes.map((a) => (

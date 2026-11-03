@@ -125,3 +125,25 @@ export function Toggle({ checked, onChange, label, disabled, hint }: {
     </label>
   );
 }
+
+// ---------------------------------------------------------------- число з одиницею (етап A8)
+/** Поле числа без системних стрілок: одиниця праворуч (₴, шт, хв…), кома й крапка однаково, межі min/max — підказкою під полем.
+ *  API як у <input>: value, onChange(e => e.target.value). decimals — дозволити дробові. */
+export function NumberField({ unit, min, max, decimals, className = "", onChange, value, ...rest }: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "min" | "max"> & {
+  unit?: string; min?: number; max?: number; decimals?: boolean;
+}) {
+  const n = value === "" || value == null ? null : Number(String(value).replace(",", "."));
+  const err = n == null || Number.isNaN(n) ? null : min != null && n < min ? `Не менше ${min}` : max != null && n > max ? `Не більше ${max}` : null;
+  return (
+    <span className={`nf${err ? " bad" : ""} ${className}`}>
+      <span className="nf-box"><input {...rest} value={value ?? ""} type="text" inputMode={decimals ? "decimal" : "numeric"} aria-invalid={!!err || undefined}
+        onChange={(e) => {
+          const clean = e.target.value.replace(",", ".").replace(decimals ? /[^\d.-]/g : /[^\d-]/g, "");
+          if (clean !== e.target.value) e.target.value = clean;
+          onChange?.(e);
+        }} />
+      {unit && <span className="nf-u" aria-hidden>{unit}</span>}</span>
+      {err && <span className="nf-err" role="alert">{err}</span>}
+    </span>
+  );
+}

@@ -4,8 +4,6 @@
 .hd-head h1 { margin: 0; font-size: 22px; font-weight: 560; letter-spacing: -.01em; }
 .hd-sub { color: var(--muted); font-size: 13px; align-self: flex-end; padding-bottom: 3px; }
 .hd-acts { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-.hd-range { display: flex; flex-direction: column; gap: 8px; padding: 10px; min-width: 220px; }
-.hd-range label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
 
 .hd-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .hd-tile { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; text-align: left; font: inherit; color: var(--ink);

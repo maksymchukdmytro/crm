@@ -5,7 +5,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlarmClock, Ban, Bookmark, CalendarDays, Check, ChevronDown, CircleAlert, Copy, Crown, Download, Eye, Inbox, KanbanSquare, LayoutGrid, List, ListFilter, MessageCircle, MessageSquare, Package, PackageX, Phone, Plus, Printer, Receipt, ReceiptText, RefreshCw, Search, Send, Trash2, Truck, UserRound, Wallet, X,
+  AlarmClock, Ban, Bookmark, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, CircleDot, ExternalLink, Copy, Crown, Download, Eye, Inbox, KanbanSquare, LayoutGrid, List, ListFilter, MessageCircle, MessageSquare, Package, PackageX, Phone, Plus, Printer, Receipt, ReceiptText, RefreshCw, Search, Send, Trash2, Truck, UserRound, Wallet, X,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
@@ -15,7 +15,7 @@ import { MarkIcon } from "../components/marks";
 import type { Order, OrderList, OrderRow, Status } from "../lib/types";
 import {
   BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, MenuButton, MobileActs, PayCheck, RoundButton, Segmented, Sheet, StatusPill, Tabs,
-  useColumns, useMobile, useOutside, type DenseCol, type TabItem, EmptyState, Floating, HoverCard } from "../components/ui";
+  ask, ContextMenu, menuPoint, useColumns, useMobile, useOutside, type DenseCol, type TabItem, EmptyState, Floating, HoverCard, DatePop, DateRangeField, RangePicker, fmtRange } from "../components/ui";
 import OrderModal, { openTtnOnLoad } from "./OrderCard";
 
 const FILTERS = ["status", "q", "manager", "delivery", "src", "entity", "pm", "mark", "date_from", "date_to", "dup", "remind", "ttn"] as const;
@@ -125,7 +125,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     if (!s || sid === o.status_id) return;
     const STOCK: Record<string, string> = { reserve: "товар буде зарезервовано", ship: "товар буде списано зі складу", return: "товар повернеться на залишок", release: "резерв буде знято" };
     const warn = STOCK[s.stock_action ?? ""];
-    if (warn && !window.confirm(`№${o.id} → «${s.name}»: ${warn}. Продовжити?`)) return;
+    if (warn && !(await ask({ title: `№${o.id} → «${s.name}»?`, text: `Після зміни статусу ${warn}.`, action: "Змінити статус" }))) return;
     try {
       if (reasonId) {
         const full = await api.get<Order>(`/orders/${o.id}`);
@@ -290,6 +290,16 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
   const allFilters = mobile || showF;
   const open = (oid: number) => nav(`${base}/${oid}${window.location.search}`);
   const openTtn = (oid: number) => { openTtnOnLoad(oid); open(oid); };
+  // контекстне меню рядка й картки (A6): правий клік або клавіша меню
+  const [ctx, setCtx] = useState<{ o: OrderRow; x: number; y: number; view: "main" | "status" | "manager" | number } | null>(null);
+  const tileMenu = (e: React.MouseEvent) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>("[data-oid]");
+    const o = el && rows.find((r) => r.id === Number(el.dataset.oid));
+    if (!o) return;
+    e.preventDefault();
+    const p = menuPoint(e, el);
+    setCtx({ o, ...p, view: "main" });
+  };
   const smsTtn = useMutation({
     mutationFn: (oid: number) => api.post(`/orders/${oid}/sms-ttn`, {}),
     onSuccess: () => toast("SMS з номером ТТН поставлено в чергу"),
@@ -371,7 +381,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     const mk = o.mark_id ? marks[o.mark_id] : null;
     const g = goodsOf(o);
     return (
-      <article role="listitem" tabIndex={0} className={`ocd${cur ? " cur" : ""}${due ? " due" : ""}`}
+      <article role="listitem" tabIndex={0} data-oid={o.id} className={`ocd${cur ? " cur" : ""}${due ? " due" : ""}`}
         onClick={() => open(o.id)} onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) open(o.id); }}>
         <div className="ocd-top">
           <StatusPill status={statuses[o.status_id]} />
@@ -398,7 +408,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     const st = statuses[o.status_id];
     const g = goodsOf(o);
     return (
-      <button type="button" role="option" aria-selected={cur} className={`ib-item${cur ? " on" : ""}`} onClick={() => nav(`${base}/${o.id}${window.location.search}`, { replace: true })}>
+      <button type="button" role="option" aria-selected={cur} data-oid={o.id} className={`ib-item${cur ? " on" : ""}`} onClick={() => nav(`${base}/${o.id}${window.location.search}`, { replace: true })}>
         <span className="r1"><i style={{ background: st?.color ?? "var(--faint)" }} title={st?.name} /><b>{o.customer_name || "без імені"}</b><span className="s">{money(o.total)} ₴</span></span>
         <span className="r2"><span className="no">№{o.id}</span><span className="ell">{g.first}{g.rest > 0 && ` +${g.rest}`}</span><span className="t">{shortWhen(o.created_at)}</span></span>
       </button>
@@ -461,7 +471,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         <div className="ocd-wrap">
           {query.isLoading ? <div className="ocd-grid">{Array.from({ length: 12 }, (_, i) => <div key={i} className="ocd sk"><span className="skel" /><span className="skel" /><span className="skel" /></div>)}</div>
             : !rows.length ? <div className="dense-empty">{emptyBox}</div> : (
-              <div className="ocd-grid" role="list" aria-label="Замовлення">
+              <div className="ocd-grid" role="list" aria-label="Замовлення" onContextMenu={mobile ? undefined : tileMenu}>
                 {rows.map((o) => <Tile key={o.id} o={o} cur={!!id && Number(id) === o.id} render={cardTile} />)}
               </div>
             )}
@@ -469,7 +479,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         </div>
       ) : view === "inbox" ? (
         <div className="ib">
-          <div className="ib-list" ref={ibList} role="listbox" aria-label="Замовлення">
+          <div className="ib-list" ref={ibList} role="listbox" aria-label="Замовлення" onContextMenu={tileMenu}>
             {query.isLoading ? Array.from({ length: 8 }, (_, i) => <div key={i} className="ib-item sk"><span className="skel" /><span className="skel" /></div>)
               : !rows.length ? <div className="ib-empty">{emptyBox}</div>
                 : rows.map((o) => <Tile key={o.id} o={o} cur={!!id && Number(id) === o.id} render={inboxItem} />)}
@@ -487,6 +497,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
           rows={rows} cols={cols} rowKey={(o) => o.id}
           selected={sel} onSelect={setSel} current={id ? Number(id) : null}
           onOpen={(o) => open(o.id)}
+          onRowMenu={mobile ? undefined : (o, x, y) => setCtx({ o, x, y, view: "main" })}
           isLoading={query.isLoading} onEndReached={endReached}
           rowHeight={mobile ? undefined : 40}
           rowClass={(o) => (o.remind_at && new Date(o.remind_at) <= new Date() ? "due" : "")}
@@ -525,14 +536,51 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         {meta.checkbox_ready && <button className="btn quiet sm" onClick={() => bulk.mutate({ action: "fiscalize" })}><Receipt size={14} />Фіскалізувати</button>}
         <button className="btn quiet sm" onClick={() => { navigator.clipboard?.writeText(selectedIds.join(", ")); toast("Номери скопійовано"); }}><Copy size={14} />Номери</button>
         {meta.user.role !== "warehouse" && (
-          <button className="btn quiet sm danger" onClick={() => {
-            if (window.confirm(`Видалити ${sel.size} ${sel.size === 1 ? "замовлення" : "замовлень"} назавжди?\n\nРезерв повернеться на склад. Замовлення з ТТН у перевізника, фіскальним чеком чи вже відвантажені не видаляться.`)) bulk.mutate({ action: "delete" });
+          <button className="btn quiet sm danger" onClick={async () => {
+            if (await ask({ title: `Видалити ${sel.size} ${plural(sel.size, "замовлення", "замовлення", "замовлень")} назавжди?`, action: "Видалити", danger: true,
+              text: "Резерв повернеться на склад. Замовлення з ТТН у перевізника, фіскальним чеком чи вже відвантажені не видаляться." })) bulk.mutate({ action: "delete" });
           }}><Trash2 size={14} />Видалити</button>
         )}
       </BulkBar>
 
       {id && (view !== "inbox" || id === "new") && <OrderModal id={id} onClose={() => nav(`${base}${window.location.search}`)} onOpen={(oid) => nav(`${base}/${oid}${window.location.search}`)}
         ids={rows.map((r) => r.id)} />}
+      {ctx && <ContextMenu x={ctx.x} y={ctx.y} onClose={() => setCtx(null)} label={`Замовлення №${ctx.o.id}`}>{(close) => {
+        const o = ctx.o;
+        const back = <button type="button" className="pop-item ctx-back" onClick={() => setCtx({ ...ctx, view: "main" })}><ChevronLeft size={15} />Назад</button>;
+        if (ctx.view === "status" || typeof ctx.view === "number") {
+          const rs = typeof ctx.view === "number" ? meta.reasons.filter((r) => r.active && r.status_ids.includes(ctx.view as number)) : [];
+          if (typeof ctx.view === "number") return (<>{back}<div className="note-head">Причина</div>
+            {rs.map((r) => <button key={r.id} type="button" className="pop-item" onClick={() => { close(); setStatus(o, ctx.view as number, r.id); }}>{r.name}</button>)}</>);
+          return (<>{back}{stageStatuses.map((s) => (
+            <button key={s.id} type="button" role="menuitemradio" aria-checked={s.id === o.status_id} className={`pop-item${s.id === o.status_id ? " on" : ""}`} disabled={s.id === o.status_id}
+              onClick={() => {
+                if ((s.code === "cancelled" || s.code === "refused") && meta.reasons.some((r) => r.active && r.status_ids.includes(s.id))) { setCtx({ ...ctx, view: s.id }); return; }
+                close(); setStatus(o, s.id);
+              }}><StatusPill status={s} />{s.id === o.status_id && <Check size={14} className="hc-cur" />}</button>))}</>);
+        }
+        if (ctx.view === "manager") return (<>{back}
+          {meta.managers.map((m) => <button key={m.id} type="button" className={`pop-item${m.id === o.manager_id ? " on" : ""}`} onClick={() => { close(); bulk.mutate({ action: "assign", value: m.id, ids: [o.id] }); }}><UserRound size={15} />{m.name}</button>)}
+          <button type="button" className="pop-item" onClick={() => { close(); bulk.mutate({ action: "assign", value: 0, ids: [o.id] }); }}><X size={15} />Зняти менеджера</button></>);
+        const tel = (o.phone ?? "").replace(/\D/g, "");
+        return (<>
+          <div className="note-head">№{o.id}{o.customer_name ? ` · ${o.customer_name}` : ""}</div>
+          <button type="button" className="pop-item" onClick={() => { close(); open(o.id); }}><Eye size={15} />Відкрити<kbd>Enter</kbd></button>
+          <button type="button" className="pop-item" onClick={() => { close(); window.open(`${ROOT}${base}/${o.id}`, "_blank"); }}><ExternalLink size={15} />У новій вкладці</button>
+          {meta.user.role !== "warehouse" && <button type="button" className="pop-item" onClick={() => setCtx({ ...ctx, view: "status" })}><CircleDot size={15} />Змінити статус<ChevronRight size={14} className="ctx-more" /></button>}
+          {meta.user.role === "admin" && <button type="button" className="pop-item" onClick={() => setCtx({ ...ctx, view: "manager" })}><UserRound size={15} />Менеджер<ChevronRight size={14} className="ctx-more" /></button>}
+          {!o.ttn && o.delivery_method === "novaposhta" && <button type="button" className="pop-item" onClick={() => { close(); openTtn(o.id); }}><Truck size={15} />Створити ТТН</button>}
+          <a className="pop-item" href={`${ROOT}/api/orders/${o.id}/print`} target="_blank" rel="noreferrer" onClick={close}><Printer size={15} />Друк бланка</a>
+          <div className="pop-sep" />
+          <button type="button" className="pop-item" onClick={() => { close(); navigator.clipboard?.writeText(String(o.id)); toast(`Номер ${o.id} скопійовано`); }}><Copy size={15} />Копіювати номер</button>
+          {tel && <button type="button" className="pop-item" onClick={() => { close(); navigator.clipboard?.writeText(`+${tel}`); toast("Телефон скопійовано"); }}><Phone size={15} />Копіювати телефон</button>}
+          {o.ttn && <button type="button" className="pop-item" onClick={() => { close(); navigator.clipboard?.writeText(o.ttn ?? ""); toast("ТТН скопійовано"); }}><Package size={15} />Копіювати ТТН</button>}
+          {meta.user.role !== "warehouse" && <><div className="pop-sep" />
+            <button type="button" className="pop-item danger" onClick={async () => { close();
+              if (await ask({ title: `Видалити замовлення №${o.id} назавжди?`, text: "Резерв товару повернеться на склад. Відновити замовлення не можна.", action: "Видалити", danger: true })) bulk.mutate({ action: "delete", ids: [o.id] });
+            }}><Trash2 size={15} />Видалити</button></>}
+        </>);
+      }}</ContextMenu>}
     </div>
   );
 }
@@ -560,8 +608,9 @@ function EndSentinel({ onEnd, busy, more, n }: { onEnd: () => void; busy: boolea
 const PERIODS = (): [string, string, string][] => {
   const t = new Date();
   const d = (shift: number) => { const x = new Date(t); x.setDate(x.getDate() - shift); return isoDay(x); };
-  return [["Сьогодні", d(0), d(0)], ["Сьогодні й учора", d(1), d(0)], ["7 днів", d(6), d(0)], ["30 днів", d(29), d(0)],
-    ["Цей місяць", isoDay(new Date(t.getFullYear(), t.getMonth(), 1)), d(0)]];
+  return [["Сьогодні", d(0), d(0)], ["Учора", d(1), d(1)], ["Сьогодні й учора", d(1), d(0)], ["7 днів", d(6), d(0)], ["30 днів", d(29), d(0)],
+    ["Цей місяць", isoDay(new Date(t.getFullYear(), t.getMonth(), 1)), d(0)],
+    ["Минулий місяць", isoDay(new Date(t.getFullYear(), t.getMonth() - 1, 1)), isoDay(new Date(t.getFullYear(), t.getMonth(), 0))]];
 };
 function FilterSheet({ f, onClose, onApply, onReset, sources }: {
   f: F; onClose: () => void; onApply: (p: Partial<F>) => void; onReset: () => void; sources: Record<number, { color: string }>;
@@ -588,7 +637,10 @@ function FilterSheet({ f, onClose, onApply, onReset, sources }: {
       <div className="fs-chips">{periods.map(([n, a, b]) => {
         const on = d.date_from === a && d.date_to === b;
         return <button key={n} type="button" className={`fs-chip${on ? " on" : ""}`} aria-pressed={on} onClick={() => setD({ ...d, date_from: on ? "" : a, date_to: on ? "" : b })}>{n}</button>;
-      })}</div>
+      })}
+        <DateRangeField className="fs-own" from={periods.some((p) => p[1] === d.date_from && p[2] === d.date_to) ? "" : d.date_from} to={periods.some((p) => p[1] === d.date_from && p[2] === d.date_to) ? "" : d.date_to}
+          presets={[]} label="Свій період" placeholder="Свій період" max={isoDay(new Date())} onChange={(a, b) => setD({ ...d, date_from: a, date_to: b })} />
+      </div>
       <div className="fs-l">Менеджер</div>
       {chips("manager", [...meta.managers.map((m) => ({ value: String(m.id), label: m.name })), { value: "none", label: "Без менеджера" }])}
       <div className="fs-l">Доставка</div>
@@ -602,35 +654,19 @@ function FilterSheet({ f, onClose, onApply, onReset, sources }: {
   );
 }
 
-// ---------------------------------------------------------------- чип дат: готові відрізки й свій період
+// ---------------------------------------------------------------- чип дат: готові відрізки й свій період (календар CRM, A4)
 function DateChip({ from, to, onChange }: { from: string; to: string; onChange: (a: string, b: string) => void }) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLSpanElement>(null);
-  useOutside(box, () => setOpen(false), open);
-  const today = new Date();
-  const d = (shift: number) => { const x = new Date(today); x.setDate(x.getDate() - shift); return isoDay(x); };
-  const monthStart = isoDay(new Date(today.getFullYear(), today.getMonth(), 1));
-  const presets: [string, string, string][] = [
-    ["Сьогодні", d(0), d(0)], ["Сьогодні й учора", d(1), d(0)], ["7 днів", d(6), d(0)], ["30 днів", d(29), d(0)], ["Цей місяць", monthStart, d(0)],
-  ];
+  const presets = PERIODS();
   const cur = presets.find((p) => p[1] === from && p[2] === to);
-  const label = cur ? cur[0] : from || to ? `${from || "…"} — ${to || "…"}` : undefined;
+  const label = cur ? cur[0] : from || to ? fmtRange(from, to) : undefined;
   return (
     <span className="chip-sel" ref={box}>
       <FilterChip label="Дата" value={label} icon={<CalendarDays size={13} />} onClick={() => setOpen((o) => !o)} onClear={() => onChange("", "")} />
-      {open && (
-        <div className="pop chip-pop date-pop">
-          {presets.map(([n, a, b]) => (
-            <button key={n} className={`pop-item${cur?.[0] === n ? " on" : ""}`} onClick={() => { onChange(a, b); setOpen(false); }}>
-              <span style={{ flex: 1 }}>{n}</span>{cur?.[0] === n && <Check size={14} />}
-            </button>
-          ))}
-          <div className="date-own">
-            <span className="lbl">Свій період</span>
-            <div><input type="date" value={from} onChange={(e) => onChange(e.target.value, to)} aria-label="Від" /><input type="date" value={to} onChange={(e) => onChange(from, e.target.value)} aria-label="До" /></div>
-          </div>
-        </div>
-      )}
+      <DatePop anchor={box.current} open={open} onClose={() => setOpen(false)} title="Період" width={444}>
+        <RangePicker from={from} to={to} max={isoDay(new Date())} presets={presets} onChange={(a, b) => { onChange(a, b); setOpen(false); }} />
+      </DatePop>
     </span>
   );
 }

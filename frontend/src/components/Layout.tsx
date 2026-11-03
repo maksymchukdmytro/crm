@@ -293,7 +293,7 @@ function MoreSheet({ routes, officeName, onOffice, onLogout }: {
         <span className="m-av lg">{initials(meta.user.name)}</span>
         <div className="mm-me-t"><b className="ell">{meta.user.name}</b><small className="ell">Відділ: {officeName ?? "усі"}</small></div>
         {offices.length > 0 && (
-          <MenuButton className="mm-office" button={({ open, toggle }) => (
+          <MenuButton className="mm-office" title="Відділ" button={({ open, toggle }) => (
             <button type="button" className="mm-chip" aria-haspopup="menu" aria-expanded={open} onClick={toggle}>Змінити<ChevronDown size={14} /></button>
           )}>
             {(close) => (<>
@@ -351,7 +351,7 @@ function TopBell({ due, round }: { due: number; round?: boolean }) {
   const [on, setOn] = useState(false);
   const q = useNotifications(on);
   return (
-    <MenuButton className="top-pop" button={({ open, toggle }) => (
+    <MenuButton className="top-pop" title="Сповіщення" button={({ open, toggle }) => (
       round
         ? <RoundButton icon={Bell} label={due ? `Нагадування: ${due}` : "Сповіщення"} count={due} onClick={() => { setOn(true); toggle(); }} />
         : <IconButton icon={Bell} label={due ? `Нагадування: ${due}` : "Сповіщення"} count={due} aria-expanded={open} onClick={() => { setOn(true); toggle(); }} />
