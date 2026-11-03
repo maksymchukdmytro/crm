@@ -11,7 +11,7 @@ import { dt, phone } from "../lib/format";
 import type { BlockedIp, Cashier, CustomerGroup, DirItem, LegalEntity, NpAccount, PaymentMethod, Reason, Settings, Shop, ShopCheck, ShopSync, Status, User } from "../lib/types";
 import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { MarkLookPick } from "../components/marks";
-import { Badge, Button, Empty, Field, IconButton, MenuButton, NpAutocomplete, RoundButton, Select, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
+import { ColorPick, Badge, Button, Empty, Field, IconButton, MenuButton, NpAutocomplete, RoundButton, Select, SkeletonRows, Toggle, Window, useMobile } from "../components/ui";
 
 type S = Settings;
 
@@ -451,7 +451,7 @@ function Statuses({ s }: { s: S }) {
           <tbody>{rows.map((r) => (
             <tr key={r.id}>
               <td data-label="Порядок" style={{ width: 80 }}><input type="number" value={r.sort} onChange={(e) => upd(r.id, { sort: Number(e.target.value) })} /></td>
-              <td data-label="Колір" style={{ width: 56 }}><input type="color" value={r.color} onChange={(e) => upd(r.id, { color: e.target.value })} /></td>
+              <td data-label="Колір" style={{ width: 56 }}><ColorPick value={r.color} onChange={(c) => upd(r.id, { color: c })} label={`Колір статусу «${r.name}»`} /></td>
               <td className="full" data-label="Назва"><input value={r.name} onChange={(e) => upd(r.id, { name: e.target.value })} /><span className="sub mono">{r.code}</span></td>
               <td data-label="Розділ"><Select value={r.stage ?? "order"} onChange={(e) => upd(r.id, { stage: e.target.value as Status["stage"] })}><option value="lead">Ліди</option><option value="order">Замовлення</option></Select></td>
               <td data-label="Дія зі складом"><Select value={r.stock_action} onChange={(e) => upd(r.id, { stock_action: e.target.value })}>{Object.entries(s.stock_actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></td>
@@ -465,7 +465,7 @@ function Statuses({ s }: { s: S }) {
       </div>
       <form className="card row" onSubmit={(e) => { e.preventDefault(); save.mutate({ path: "/settings/statuses", body: nw, method: "post" }, { onSuccess: (x) => { tr.reset(x.statuses); setNw({ ...nw, name: "" }); } }); }}>
         <Field label="Новий статус"><input value={nw.name} onChange={(e) => setNw({ ...nw, name: e.target.value })} required /></Field>
-        <Field label="Колір"><input type="color" value={nw.color} onChange={(e) => setNw({ ...nw, color: e.target.value })} /></Field>
+        <Field label="Колір"><ColorPick value={nw.color} onChange={(c) => setNw({ ...nw, color: c })} label="Колір нового статусу" /></Field>
         <Field label="Дія зі складом"><Select value={nw.stock_action} onChange={(e) => setNw({ ...nw, stock_action: e.target.value })}>{Object.entries(s.stock_actions).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</Select></Field>
         <button className="btn"><Plus size={14} /> Додати</button>
       </form>
@@ -1197,7 +1197,7 @@ function DocsSettings({ s }: { s: S }) {
         <div className="cols c3">
           <Field label="Одиниця"><input {...bind("doc_unit")} placeholder="шт." /></Field>
           <Field label="Рахунок дійсний, банківських днів"><input {...bind("invoice_days")} inputMode="numeric" placeholder="3" /></Field>
-          <Field label="Фірмовий колір"><div className="doc-color"><input type="color" value={v.doc_accent || "#C1D0E4"} onChange={(e) => setV({ ...v, doc_accent: e.target.value })} /><span className="hint">підсумок і картки сторін</span></div></Field>
+          <Field label="Фірмовий колір"><div className="doc-color"><ColorPick value={v.doc_accent || "#C1D0E4"} onChange={(c) => setV({ ...v, doc_accent: c })} label="Фірмовий колір документів" colors={["#C1D0E4", "#2E6BE6", "#16A34A", "#D97706", "#7C3AED", "#DC2626", "#0D9488", "#DB2777", "#0EA5E9", "#A16207", "#1F1F1C", "#64748B"]} /><span className="hint">підсумок і картки сторін</span></div></Field>
         </div>
         <div className="cols">
           <Field label="Сайт (унизу документів)"><input {...bind("doc_site")} placeholder="antony.com.ua" /></Field>
@@ -1269,7 +1269,7 @@ function CustomerSettings() {
         <div className="dir-list">
           {groups.data?.map((g) => (
             <div key={g.id} className="dir-row">
-              <input type="color" value={g.color} onChange={(e) => mut.mutate({ method: "post", url: "/customer-groups", body: { id: g.id, name: g.name, color: e.target.value } })} />
+              <ColorPick value={g.color} onChange={(c) => mut.mutate({ method: "post", url: "/customer-groups", body: { id: g.id, name: g.name, color: c } })} label={`Колір групи «${g.name}»`} />
               <input defaultValue={g.name} onBlur={(e) => e.target.value.trim() && e.target.value !== g.name && mut.mutate({ method: "post", url: "/customer-groups", body: { id: g.id, name: e.target.value, color: g.color } })} />
               <span className="muted nowrap">{g.customers} покупц.</span>
               <button type="button" className="x" title="Видалити групу" onClick={() => window.confirm(`Видалити групу «${g.name}»? Покупці залишаться без групи.`) && mut.mutate({ method: "del", url: `/customer-groups/${g.id}` })}>×</button>
@@ -1277,7 +1277,7 @@ function CustomerSettings() {
           ))}
         </div>
         <form className="dir-add-row" onSubmit={(e) => { e.preventDefault(); mut.mutate({ method: "post", url: "/customer-groups", body: ng }); setNg({ ...ng, name: "" }); }}>
-          <input type="color" value={ng.color} onChange={(e) => setNg({ ...ng, color: e.target.value })} />
+          <ColorPick value={ng.color} onChange={(c) => setNg({ ...ng, color: c })} label="Колір нової групи" />
           <input value={ng.name} onChange={(e) => setNg({ ...ng, name: e.target.value })} placeholder="Нова група" required />
           <button className="btn"><Plus size={14} /> Додати</button>
         </form>
