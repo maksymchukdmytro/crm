@@ -39,7 +39,7 @@ function cardPlace<T>(cols: DenseCol<T>[]) {
 }
 
 export function DenseTable<T>({
-  rows, cols, rowKey, groupOf, selected, onSelect, onOpen, actions, isLoading, empty, onEndReached, current, className = "", label, rowClass, mobileCard,
+  rows, cols, rowKey, groupOf, selected, onSelect, onOpen, actions, isLoading, empty, onEndReached, current, className = "", label, rowClass, mobileCard, rowHeight = ROW_H,
 }: {
   rows: T[];
   cols: DenseCol<T>[];
@@ -59,6 +59,8 @@ export function DenseTable<T>({
   rowClass?: (r: T) => string;
   /** Телефон: власна картка рядка (макети мобільної v2). Без неї — картка з колонок за підказками mobile. */
   mobileCard?: (r: T) => ReactNode;
+  /** Висота рядка на ПК (типово 31 px). */
+  rowHeight?: number;
 }) {
   const scroll = useRef<HTMLDivElement>(null);
   const anchor = useRef<number | null>(null);
@@ -81,7 +83,7 @@ export function DenseTable<T>({
 
   const v = useVirtualizer({
     count: items.length, getScrollElement: () => scroll.current, overscan: 16,
-    estimateSize: (i) => (items[i]?.type === "group" ? GROUP_H : ROW_H),
+    estimateSize: (i) => (items[i]?.type === "group" ? GROUP_H : rowHeight),
     getItemKey: (i) => items[i]?.key ?? i,
   });
   const vItems = v.getVirtualItems();
@@ -200,7 +202,7 @@ export function DenseTable<T>({
             return (
               <div key={it.key} role="row" aria-selected={on || undefined}
                 className={`dense-row${on ? " sel" : ""}${current === id ? " cur" : ""}${focus === it.index ? " focus" : ""} ${rowClass?.(r) ?? ""}`}
-                style={{ gridTemplateColumns: grid, transform: `translateY(${vi.start}px)`, height: ROW_H }}
+                style={{ gridTemplateColumns: grid, transform: `translateY(${vi.start}px)`, height: rowHeight }}
                 onClick={(e) => {
                   const t = e.target as HTMLElement;
                   if (t.closest("input, button, a, .c-sel")) return;

@@ -1,10 +1,11 @@
-// Список замовлень — щільна стрічка (UI-DESIGN §4.1–4.2, макет 05-zamovlennia.png).
-// Шапка в один рядок, вкладки статусів («Несортовані» першою), фільтри-чипи в адресі сторінки, групи за днями, масові дії знизу.
+// Список замовлень (макети v20, рішення власника 03.11): три вигляди на ПК — «Таблиця», «Картки» (щільніші за макет) і «Скринька»
+// (вузький список ліворуч + картка праворуч без вікна); «Дошка» — окрема сторінка. Шапка: назва з підсумком, пошук, фільтри,
+// вигляд і «+ Замовлення»; під нею вкладки статусів, а праворуч — лише ввімкнені фільтри (усі — під кнопкою фільтрів).
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  AlarmClock, Ban, Bookmark, CalendarDays, Check, CircleAlert, Copy, Download, Eye, KanbanSquare, List, ListFilter, Package, Phone, Plus, Printer, Receipt, ReceiptText, RefreshCw, Search, Trash2, Truck, UserRound, X,
+  AlarmClock, Ban, Bookmark, CalendarDays, Check, CircleAlert, Copy, Download, Eye, Inbox, KanbanSquare, LayoutGrid, List, ListFilter, MessageSquare, Package, Phone, Plus, Printer, Receipt, ReceiptText, RefreshCw, Search, Trash2, Truck, UserRound, X,
 } from "lucide-react";
 import { api, qs, ROOT } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
@@ -14,8 +15,8 @@ import { MarkIcon } from "../components/marks";
 import type { OrderList, OrderRow } from "../lib/types";
 import {
   BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, IconButton, MenuButton, MobileActs, PayCheck, RoundButton, Segmented, Sheet, StatusPill, Tabs, Tag,
-  useColumns, useOutside, type DenseCol, type TabItem, EmptyState } from "../components/ui";
-import OrderModal from "./OrderCard";
+  useColumns, useMobile, useOutside, type DenseCol, type TabItem, EmptyState } from "../components/ui";
+import OrderModal, { openTtnOnLoad } from "./OrderCard";
 
 const FILTERS = ["status", "q", "manager", "delivery", "src", "entity", "pm", "mark", "date_from", "date_to", "dup", "remind", "ttn"] as const;
 type F = Record<(typeof FILTERS)[number], string>;
@@ -39,6 +40,21 @@ function whenLabel(iso?: string | null) {
   const dd = String(d.getDate()).padStart(2, "0"), mm = String(d.getMonth() + 1).padStart(2, "0");
   return d.getFullYear() === new Date().getFullYear() ? `${dd}.${mm} ${t}` : `${dd}.${mm}.${String(d.getFullYear()).slice(2)} ${t}`;
 }
+// коротко для таблиці, карток і скриньки: «17:10» сьогодні, «учора», «28.10», «28.10.25»
+function shortWhen(iso?: string | null) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  const day = isoDay(d);
+  if (day === isoDay(new Date())) return hhmm(iso);
+  if (day === isoDay(y)) return "учора";
+  const dd = String(d.getDate()).padStart(2, "0"), mm = String(d.getMonth() + 1).padStart(2, "0");
+  return d.getFullYear() === new Date().getFullYear() ? `${dd}.${mm}` : `${dd}.${mm}.${String(d.getFullYear()).slice(2)}`;
+}
+type View = "table" | "cards" | "inbox";
+const VIEW_KEY = "crm-orders-view";
+const readView = (): View => { try { const v = localStorage.getItem(VIEW_KEY); return v === "cards" || v === "inbox" ? v : "table"; } catch { return "table"; } };
+
 const plural = (n: number, a: string, b: string, c: string) => (n % 10 === 1 && n % 100 !== 11 ? a : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? b : c);
 
 export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "order" }) {
@@ -163,9 +179,11 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
     { key: "delivery", label: "Доставка", width: "minmax(100px, 1fr)", title: (o) => [meta.delivery_methods[o.delivery_method], o.city_name, o.warehouse_name, o.delivery_status].filter(Boolean).join(" · "), render: (o) => {
       if (!o.city_name && !o.ttn) return <span className="muted">не вибрано</span>;
       const wh = (o.warehouse_name.match(/№\s*\d+/) || [""])[0].replace(/\s/g, "");
+      const np = o.delivery_method === "novaposhta";
       return (
         <span className="o-dlv">
-          <span className="ell">{CARRIER_SHORT[o.delivery_method] ?? meta.delivery_methods[o.delivery_method]} · {o.city_name}{wh && `, ${wh}`}</span>
+          {np && <span className="o-np" aria-label="Нова Пошта">НП</span>}
+          <span className="ell">{!np && `${CARRIER_SHORT[o.delivery_method] ?? meta.delivery_methods[o.delivery_method]} · `}{o.city_name}{wh && `, ${wh}`}</span>
           {o.ttn && <i className="o-ds" style={{ background: DSTATE[o.delivery_state] ?? "var(--accent-line)" }} aria-label={meta.delivery_states[o.delivery_state] ?? "ТТН створено"} />}
         </span>
       );
@@ -175,10 +193,10 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
       return s ? <span className="o-dot-txt"><i style={{ background: s.color }} /><span className="ell">{s.name}</span></span>
         : o.utm_source ? <span className="ell muted">{o.utm_source}</span> : <span className="muted">—</span>;
     } },
-    { key: "manager", mobile: "hide", label: "Мен.", headTitle: "Менеджер", width: "36px", align: "center", title: (o) => managers[o.manager_id ?? 0]?.name ?? "Не призначено", render: (o) => (
+    { key: "manager", mobile: "hide", label: "М.", headTitle: "Менеджер", width: "28px", align: "center", title: (o) => managers[o.manager_id ?? 0]?.name ?? "Не призначено", render: (o) => (
       o.manager_id ? <span className="o-av">{initials(managers[o.manager_id]?.name)}</span> : <span className="muted">—</span>
     ) },
-    { key: "time", label: "Дата", headTitle: "Коли додано", width: "104px", render: (o) => <span className="muted num nowrap">{whenLabel(o.created_at)}</span> },
+    { key: "time", label: "Дата", headTitle: "Коли додано", width: "60px", title: (o) => whenLabel(o.created_at), render: (o) => <span className="muted num nowrap">{shortWhen(o.created_at)}</span> },
     { key: "total", mobile: "end", label: "Сума", width: "78px", align: "right", render: (o) => <b className="num">{money(o.total)} ₴</b> },
     { key: "pay_check", mobile: "hide", label: "Опл.", headTitle: "Перевірка оплати: чи ТТН відповідає виду оплати", width: "34px", align: "center", render: (o) => <PayCheck check={o.pay_check} /> },
     { key: "ttn", mobile: "hide", label: "ТТН", width: "128px", render: (o) => (o.ttn ? <span className="mono o-ttn">{o.ttn}</span> : <span className="muted">—</span>) },
@@ -225,74 +243,220 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
   const selectedIds = [...sel];
   const [sheet, setSheet] = useState(false);
 
+  // ---------------- вигляд (лише ПК і лише замовлення): таблиця / картки / скринька
+  const mobile = useMobile();
+  const [viewPref, setViewPref] = useState<View>(readView);
+  const view: View = mobile || stage !== "order" ? "table" : viewPref;
+  const pickView = (k: string) => {
+    if (k === "board") { nav("/board"); return; }
+    const v = k as View;
+    setViewPref(v);
+    try { localStorage.setItem(VIEW_KEY, v); } catch { /* приватне вікно — без запам'ятовування */ }
+    if (v !== "inbox" && id) nav(`${base}${window.location.search}`, { replace: true });
+  };
+  const [showF, setShowF] = useState(false);
+  const allFilters = mobile || showF;
+  const open = (oid: number) => nav(`${base}/${oid}${window.location.search}`);
+  const openTtn = (oid: number) => { openTtnOnLoad(oid); open(oid); };
+  const smsTtn = useMutation({
+    mutationFn: (oid: number) => api.post(`/orders/${oid}/sms-ttn`, {}),
+    onSuccess: () => toast("SMS з номером ТТН поставлено в чергу"),
+    onError: (e) => toast(errText(e), "error"),
+  });
+
+  // скринька: завжди вибрано замовлення — перше в списку, а після зміни вкладки чи фільтра — знову перше
+  const inboxKey = useRef("");
+  useEffect(() => {
+    if (view !== "inbox" || query.isLoading || id === "new") return;
+    const changed = inboxKey.current !== filterKey;
+    if (!rows.length) { inboxKey.current = filterKey; return; }
+    if (!id || (changed && inboxKey.current)) nav(`${base}/${rows[0].id}${window.location.search}`, { replace: true });
+    inboxKey.current = filterKey;
+  }, [view, rows, id, filterKey, query.isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // дія в картці за станом: прийняти → ТТН → нагадати SMS → відкрити
+  const cardAction = (o: OrderRow) => {
+    const code = statuses[o.status_id]?.code;
+    if (code === "unsorted" && byCode.confirmed?.active) return <button type="button" className="ocd-go p" onClick={(e) => { e.stopPropagation(); accept([o.id]); }}><Check size={15} />Прийняти</button>;
+    if (code === "confirmed" && !o.ttn && o.delivery_method !== "pickup") return <button type="button" className="ocd-go s" onClick={(e) => { e.stopPropagation(); openTtn(o.id); }}><Truck size={15} />ТТН</button>;
+    if (code === "arrived" && o.ttn) return <button type="button" className="ocd-go s" title="Надіслати покупцю SMS з номером ТТН" disabled={smsTtn.isPending} onClick={(e) => { e.stopPropagation(); smsTtn.mutate(o.id); }}><MessageSquare size={15} />SMS</button>;
+    return <button type="button" className="ocd-go" onClick={(e) => { e.stopPropagation(); open(o.id); }}><Eye size={15} />Відкрити</button>;
+  };
+  const goodsOf = (o: OrderRow) => {
+    const main = o.items.filter((i) => !i.upsell);
+    return { first: (main[0] ?? o.items[0])?.name ?? "—", rest: o.items.length - 1 };
+  };
+  const dlvShort = (o: OrderRow) => {
+    if (!o.city_name && !o.ttn) return <span className="ocd-muted">{o.delivery_method === "pickup" ? "Самовивіз" : "без доставки"}</span>;
+    const wh = (o.warehouse_name.match(/№\s*\d+/) || [""])[0].replace(/\s/g, "");
+    if (o.delivery_method === "novaposhta") return <span className="ocd-dlv"><span className="o-np">НП</span><span className="ell">{o.city_name}{wh && `, ${wh}`}</span></span>;
+    return <span className="ocd-muted ell">{CARRIER_SHORT[o.delivery_method] ?? meta.delivery_methods[o.delivery_method]}</span>;
+  };
+
+  // ---------------- фільтри: усі (під кнопкою) або лише ввімкнені (праворуч від вкладок)
+  const on = (k: keyof F) => allFilters || !!f[k];
+  const filterChips = (<>
+    {(allFilters || f.date_from || f.date_to) && <DateChip from={f.date_from} to={f.date_to} onChange={(a, b) => setF({ date_from: a, date_to: b })} />}
+    {on("manager") && <ChipSelect label="Менеджер" value={list("manager")} onChange={setList("manager")}
+      options={[{ value: "none", label: "Не призначено" }, ...meta.managers.map((m) => ({ value: String(m.id), label: m.name }))]} />}
+    {on("src") && <ChipSelect label="Джерело" value={list("src")} onChange={setList("src")}
+      options={meta.order_sources.filter((s) => s.active).map((s) => ({ value: String(s.id), label: s.name, color: sources[s.id]?.color }))} />}
+    {meta.legal_entities.length > 0 && on("entity") && (
+      <ChipSelect label="Юрособа" value={list("entity")} onChange={setList("entity")} options={meta.legal_entities.map((e) => ({ value: String(e.id), label: e.name }))} />
+    )}
+    {on("delivery") && <ChipSelect label="Доставка" single value={list("delivery")} onChange={setList("delivery")}
+      options={Object.entries(meta.delivery_methods).map(([k, n]) => ({ value: k, label: n }))} />}
+    {on("pm") && <ChipSelect label="Оплата" value={list("pm")} onChange={setList("pm")}
+      options={meta.payment_methods.map((m) => ({ value: String(m.id), label: m.name, color: PAY_ICONS[m.icon || ""]?.color }))} />}
+    {meta.marks.length > 0 && on("mark") && (
+      <ChipSelect label="Позначки" value={list("mark")} onChange={setList("mark")}
+        options={meta.marks.map((m) => ({ value: String(m.id), label: m.name, icon: <MarkIcon icon={m.icon} color={m.color} size={14} /> }))} />
+    )}
+    {f.dup && <FilterChip label="Дублі" value="Лише дублі" onClear={() => setF({ dup: "" })} />}
+    {f.remind && <FilterChip label="Нагадування" value="Нагадування настало" onClear={() => setF({ remind: "" })} />}
+    {f.ttn && <FilterChip label="ТТН" value={f.ttn === "none" ? "Без ТТН" : "З ТТН"} onClear={() => setF({ ttn: "" })} />}
+  </>);
+  const searchBox = (
+    <label className="list-search">
+      <Search size={15} aria-hidden />
+      <input ref={searchRef} type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Пошук у списку" aria-label="Пошук у списку (/)" />
+      {!mobile && !search && <kbd aria-hidden>/</kbd>}
+    </label>
+  );
+  const emptyBox = (
+    <div className="empty-state">
+      {!(anyFilter || f.q) && !isUnsorted ? <EmptyState icon={ReceiptText} title="Замовлень поки немає" text="Заявки з лендингів і маркетплейсів з'являться тут самі. Або створіть замовлення вручну"
+        action={{ label: "Нове замовлення", icon: Plus, onClick: () => nav("/orders/new") }} /> : <p>{anyFilter || f.q ? "За цими фільтрами нічого немає" : "Усі замовлення розібрано"}</p>}
+      {(anyFilter || f.q) && <button className="btn" onClick={() => { setSearch(""); setSp(f.status ? { status: f.status } : {}, { replace: true }); }}>Скинути фільтр</button>}
+    </div>
+  );
+
   return (
-    <div className={`page-list page-${stage}s`}>
+    <div className={`page-list page-${stage}s v-${view}`}>
       <MobileActs><RoundButton icon={ListFilter} label="Фільтри" dot={anyFilter} onClick={() => setSheet(true)} /></MobileActs>
       {sheet && <FilterSheet f={f} onClose={() => setSheet(false)} sources={sources}
         onApply={(patch) => { setF(patch); setSheet(false); }} onReset={() => { setSp(f.status ? { status: f.status } : {}, { replace: true }); setSheet(false); }} />}
       <div className="list-head">
-        <h1>{stage === "lead" ? "Ліди" : "Замовлення"}</h1>
-        <span className="list-sum">{summary.map(([n, t], i) => <span key={i}>{i > 0 && " · "}<b>{n}</b> {t}</span>)}</span>
+        <div className="lh-t">
+          <h1>{stage === "lead" ? "Ліди" : "Замовлення"}</h1>
+          <span className="list-sum">{summary.map(([n, t], i) => <span key={i}>{i > 0 && " · "}<b>{n}</b> {t}</span>)}</span>
+        </div>
         <div className="list-acts">
+          {searchBox}
+          <button type="button" className={`lh-filter${showF ? " on" : ""}`} aria-label="Усі фільтри" title="Усі фільтри" aria-expanded={showF} onClick={() => setShowF((x) => !x)}>
+            <ListFilter size={18} />{anyFilter && <span className="dot" />}
+          </button>
           {stage === "order" && (
-            <Segmented label="Вигляд" value="list" onChange={(k) => { if (k === "board") nav("/board"); }}
-              items={[{ key: "list", label: "Стрічка", icon: <List size={14} /> }, { key: "board", label: "Дошка", icon: <KanbanSquare size={14} /> }]} />
+            <Segmented label="Вигляд" value={view} onChange={pickView}
+              items={[{ key: "table", label: <span className="seg-l">Таблиця</span>, title: "Таблиця", icon: <List size={14} /> },
+                { key: "cards", label: <span className="seg-l">Картки</span>, title: "Картки", icon: <LayoutGrid size={14} /> },
+                { key: "inbox", label: <span className="seg-l">Скринька</span>, title: "Скринька: список ліворуч, замовлення праворуч", icon: <Inbox size={14} /> },
+                { key: "board", label: <span className="seg-l">Дошка</span>, title: "Дошка", icon: <KanbanSquare size={14} /> }]} />
           )}
-          <ColumnsMenu all={ALL} visible={colPrefs.visible} onChange={colPrefs.set} onReset={colPrefs.reset} />
-          <a className="btn" href={exportUrl}><Download size={15} />Експорт</a>
+          <Button variant="primary" icon={Plus} onClick={() => nav(`${base}/new${window.location.search}`)}>{stage === "lead" ? "Лід" : "Замовлення"}</Button>
         </div>
       </div>
 
-      <Tabs items={tabs} value={f.status} onChange={(k) => setF({ status: k })} label="Статуси" className="list-tabs" />
-
-      <div className="chips-row">
-        <DateChip from={f.date_from} to={f.date_to} onChange={(a, b) => setF({ date_from: a, date_to: b })} />
-        <ChipSelect label="Менеджер" value={list("manager")} onChange={setList("manager")}
-          options={[{ value: "none", label: "Не призначено" }, ...meta.managers.map((m) => ({ value: String(m.id), label: m.name }))]} />
-        <ChipSelect label="Джерело" value={list("src")} onChange={setList("src")}
-          options={meta.order_sources.filter((s) => s.active).map((s) => ({ value: String(s.id), label: s.name, color: sources[s.id]?.color }))} />
-        {meta.legal_entities.length > 0 && (
-          <ChipSelect label="Юрособа" value={list("entity")} onChange={setList("entity")} options={meta.legal_entities.map((e) => ({ value: String(e.id), label: e.name }))} />
-        )}
-        <ChipSelect label="Доставка" single value={list("delivery")} onChange={setList("delivery")}
-          options={Object.entries(meta.delivery_methods).map(([k, n]) => ({ value: k, label: n }))} />
-        <ChipSelect label="Оплата" value={list("pm")} onChange={setList("pm")}
-          options={meta.payment_methods.map((m) => ({ value: String(m.id), label: m.name, color: PAY_ICONS[m.icon || ""]?.color }))} />
-        {meta.marks.length > 0 && (
-          <ChipSelect label="Позначки" value={list("mark")} onChange={setList("mark")}
-            options={meta.marks.map((m) => ({ value: String(m.id), label: m.name, icon: <MarkIcon icon={m.icon} color={m.color} size={14} /> }))} />
-        )}
-        {f.dup && <FilterChip label="Дублі" value="Лише дублі" onClear={() => setF({ dup: "" })} />}
-        {f.remind && <FilterChip label="Нагадування" value="Нагадування настало" onClear={() => setF({ remind: "" })} />}
-        {f.ttn && <FilterChip label="ТТН" value={f.ttn === "none" ? "Без ТТН" : "З ТТН"} onClear={() => setF({ ttn: "" })} />}
-        {anyFilter && <button className="btn quiet sm" onClick={() => setSp(f.status ? { status: f.status } : {}, { replace: true })}><X size={14} />Скинути</button>}
-        {anyFilter && <SaveFilter section={stage === "lead" ? "leads" : "orders"} query={sp.toString()} />}
-        <label className="list-search">
-          <Search size={15} aria-hidden />
-          <input ref={searchRef} type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Пошук у списку" aria-label="Пошук у списку (/)" />
-        </label>
+      <div className="list-tabsrow">
+        <Tabs items={tabs} value={f.status} onChange={(k) => setF({ status: k })} label="Статуси" className="list-tabs" />
+        {!allFilters && anyFilter && <div className="lh-active">{filterChips}</div>}
       </div>
 
-      <DenseTable<OrderRow>
-        label={stage === "lead" ? "Ліди" : "Замовлення"}
-        rows={rows} cols={cols} rowKey={(o) => o.id}
-        selected={sel} onSelect={setSel} current={id ? Number(id) : null}
-        onOpen={(o) => nav(`${base}/${o.id}${window.location.search}`)}
-        isLoading={query.isLoading} onEndReached={endReached}
-        rowClass={(o) => (o.remind_at && new Date(o.remind_at) <= new Date() ? "due" : "")}
-        mobileCard={mobileCard}
-        actions={(o) => (<>
-          {isUnsorted && <Button size={30} variant="soft" icon={Check} onClick={() => accept([o.id])}>Прийняти</Button>}
-          {o.phone && <a className="icon-btn s28 quiet" href={`tel:+${o.phone.replace(/\D/g, "")}`} aria-label="Подзвонити" title="Подзвонити"><Phone size={15} /></a>}
-          {o.ttn && <a className="icon-btn s28 quiet" href={`${ROOT}/api/orders/${o.id}/label`} target="_blank" rel="noreferrer" aria-label="Наклейка" title="Наклейка"><Printer size={15} /></a>}
-          <IconButton size={28} quiet icon={Eye} label="Перегляд" onClick={() => nav(`${base}/${o.id}${window.location.search}`)} />
-        </>)}
-        empty={<div className="empty-state">
-          {!(anyFilter || f.q) && !isUnsorted ? <EmptyState icon={ReceiptText} title="Замовлень поки немає" text="Заявки з лендингів і маркетплейсів з'являться тут самі. Або створіть замовлення вручну"
-            action={{ label: "Нове замовлення", icon: Plus, onClick: () => nav("/orders/new") }} /> : <p>{anyFilter || f.q ? "За цими фільтрами нічого немає" : "Усі замовлення розібрано"}</p>}
-          {(anyFilter || f.q) && <button className="btn" onClick={() => { setSearch(""); setSp(f.status ? { status: f.status } : {}, { replace: true }); }}>Скинути фільтр</button>}
-        </div>}
-      />
+      {allFilters && (
+        <div className="chips-row">
+          {filterChips}
+          {anyFilter && <button className="btn quiet sm" onClick={() => setSp(f.status ? { status: f.status } : {}, { replace: true })}><X size={14} />Скинути</button>}
+          {anyFilter && <SaveFilter section={stage === "lead" ? "leads" : "orders"} query={sp.toString()} />}
+          {mobile ? searchBox : (
+            <span className="chips-end">
+              {view === "table" && <ColumnsMenu all={ALL} visible={colPrefs.visible} onChange={colPrefs.set} onReset={colPrefs.reset} />}
+              <a className="btn sm" href={exportUrl}><Download size={14} />Експорт</a>
+            </span>
+          )}
+        </div>
+      )}
+
+      {view === "cards" ? (
+        <div className="ocd-wrap">
+          {query.isLoading ? <div className="ocd-grid">{Array.from({ length: 12 }, (_, i) => <div key={i} className="ocd sk"><span className="skel" /><span className="skel" /><span className="skel" /></div>)}</div>
+            : !rows.length ? <div className="dense-empty">{emptyBox}</div> : (
+              <div className="ocd-grid" role="list" aria-label="Замовлення">
+                {rows.map((o) => {
+                  const due = o.remind_at && new Date(o.remind_at) <= new Date();
+                  const warn = o.blacklisted ? "Покупець у чорному списку" : o.no_stock ? "Товару не вистачає на складі" : o.duplicate_of_id ? `Можливий дубль №${o.duplicate_of_id}` : "";
+                  const mk = o.mark_id ? marks[o.mark_id] : null;
+                  const g = goodsOf(o);
+                  return (
+                    <article key={o.id} role="listitem" tabIndex={0} className={`ocd${id && Number(id) === o.id ? " cur" : ""}${due ? " due" : ""}`}
+                      onClick={() => open(o.id)} onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) open(o.id); }}>
+                      <div className="ocd-top">
+                        <StatusPill status={statuses[o.status_id]} />
+                        {warn && <span className={`mc-flag ${o.blacklisted || o.no_stock ? "bad" : "warn"}`} title={warn} aria-label={warn}><CircleAlert size={13} /></span>}
+                        {due && <span className="mc-flag bad" title="Нагадування настало" aria-label="Нагадування настало"><AlarmClock size={13} /></span>}
+                        {mk && <span className="mc-flag" style={{ background: `color-mix(in srgb, ${mk.color} 14%, white)` }} title={mk.name}><MarkIcon icon={mk.icon} color={mk.color} size={12} /></span>}
+                        <span className="ocd-meta" title={whenLabel(o.created_at)}>№{o.id} · {shortWhen(o.created_at)}</span>
+                      </div>
+                      <div className="ocd-name"><b title={o.customer_name}>{o.customer_name || <span className="muted">без імені</span>}</b><span className="sum">{money(o.total)} ₴</span></div>
+                      <div className="ocd-row">
+                        <span className="ocd-thumb" aria-hidden><Package size={13} /></span>
+                        <span className="ocd-goods" title={o.items.map((i) => `${i.name} × ${i.qty}`).join(", ")}>{g.first}{g.rest > 0 && <span className="more"> +{g.rest}</span>}</span>
+                        {dlvShort(o)}
+                      </div>
+                      <div className="ocd-acts">
+                        {o.phone ? <a className="ocd-go ph" href={`tel:+${o.phone.replace(/\D/g, "")}`} onClick={(e) => e.stopPropagation()} aria-label={`Подзвонити ${phone(o.phone)}`} title={phone(o.phone)}><Phone size={15} /></a>
+                          : <span className="ocd-go ph off" aria-hidden><Phone size={15} /></span>}
+                        {cardAction(o)}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          <EndSentinel onEnd={endReached} busy={query.isFetchingNextPage} more={!!query.hasNextPage} n={rows.length} />
+        </div>
+      ) : view === "inbox" ? (
+        <div className="ib">
+          <div className="ib-list" role="listbox" aria-label="Замовлення">
+            {query.isLoading ? Array.from({ length: 8 }, (_, i) => <div key={i} className="ib-item sk"><span className="skel" /><span className="skel" /></div>)
+              : !rows.length ? <div className="ib-empty">{emptyBox}</div>
+                : rows.map((o) => {
+                  const st = statuses[o.status_id];
+                  const g = goodsOf(o);
+                  const cur = !!id && Number(id) === o.id;
+                  return (
+                    <button key={o.id} type="button" role="option" aria-selected={cur} className={`ib-item${cur ? " on" : ""}`} onClick={() => nav(`${base}/${o.id}${window.location.search}`, { replace: true })}>
+                      <span className="r1"><i style={{ background: st?.color ?? "var(--faint)" }} title={st?.name} /><b>{o.customer_name || "без імені"}</b><span className="s">{money(o.total)} ₴</span></span>
+                      <span className="r2"><span className="no">№{o.id}</span><span className="ell">{g.first}{g.rest > 0 && ` +${g.rest}`}</span><span className="t">{shortWhen(o.created_at)}</span></span>
+                    </button>
+                  );
+                })}
+            <EndSentinel onEnd={endReached} busy={query.isFetchingNextPage} more={!!query.hasNextPage} n={rows.length} />
+          </div>
+          <div className="ib-pane">
+            {id && id !== "new" ? <OrderModal key={id} id={id} embed ids={rows.map((r) => r.id)}
+              onClose={() => nav(`${base}${window.location.search}`, { replace: true })} onOpen={(oid) => nav(`${base}/${oid}${window.location.search}`, { replace: true })} />
+              : <div className="ib-none">{rows.length || query.isLoading ? "" : "Тут з'явиться вибране замовлення"}</div>}
+          </div>
+        </div>
+      ) : (
+        <DenseTable<OrderRow>
+          label={stage === "lead" ? "Ліди" : "Замовлення"}
+          rows={rows} cols={cols} rowKey={(o) => o.id}
+          selected={sel} onSelect={setSel} current={id ? Number(id) : null}
+          onOpen={(o) => open(o.id)}
+          isLoading={query.isLoading} onEndReached={endReached}
+          rowHeight={mobile ? undefined : 35}
+          rowClass={(o) => (o.remind_at && new Date(o.remind_at) <= new Date() ? "due" : "")}
+          mobileCard={mobileCard}
+          actions={(o) => (<>
+            {isUnsorted && <Button size={30} variant="soft" icon={Check} onClick={() => accept([o.id])}>Прийняти</Button>}
+            {o.phone && <a className="icon-btn s28 quiet" href={`tel:+${o.phone.replace(/\D/g, "")}`} aria-label="Подзвонити" title="Подзвонити"><Phone size={15} /></a>}
+            {o.ttn && <a className="icon-btn s28 quiet" href={`${ROOT}/api/orders/${o.id}/label`} target="_blank" rel="noreferrer" aria-label="Наклейка" title="Наклейка"><Printer size={15} /></a>}
+            <IconButton size={28} quiet icon={Eye} label="Перегляд" onClick={() => open(o.id)} />
+          </>)}
+          empty={emptyBox}
+        />
+      )}
 
       <BulkBar count={sel.size} onClear={() => setSel(new Set())}
         primary={isUnsorted
@@ -321,10 +485,24 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
         )}
       </BulkBar>
 
-      {id && <OrderModal id={id} onClose={() => nav(`${base}${window.location.search}`)} onOpen={(oid) => nav(`${base}/${oid}${window.location.search}`)}
+      {id && (view !== "inbox" || id === "new") && <OrderModal id={id} onClose={() => nav(`${base}${window.location.search}`)} onOpen={(oid) => nav(`${base}/${oid}${window.location.search}`)}
         ids={rows.map((r) => r.id)} />}
     </div>
   );
+}
+
+// ---------------------------------------------------------------- догрузка наступної сторінки, коли низ списку видно (картки, скринька)
+function EndSentinel({ onEnd, busy, more, n }: { onEnd: () => void; busy: boolean; more: boolean; n: number }) {
+  const el = useRef<HTMLDivElement>(null);
+  const cb = useRef(onEnd);
+  cb.current = onEnd;
+  useEffect(() => {
+    if (!el.current || !more) return;
+    const io = new IntersectionObserver((e) => { if (e[0]?.isIntersecting) cb.current(); }, { rootMargin: "400px" });
+    io.observe(el.current);
+    return () => io.disconnect();
+  }, [more, n]);  // нова сторінка підвантажилась, а низ досі видно — перевірити ще раз
+  return <div ref={el} className="end-sentinel" aria-hidden>{busy ? "Завантажую…" : ""}</div>;
 }
 
 // ---------------------------------------------------------------- телефон: усі фільтри однією панеллю знизу (макет мобільної v2, екран 7)
