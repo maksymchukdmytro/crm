@@ -14,7 +14,7 @@ import { PAY_ICONS, PayIcon } from "../components/payicons";
 import { MarkIcon } from "../components/marks";
 import type { Order, OrderList, OrderRow, Status } from "../lib/types";
 import {
-  BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, IconButton, MenuButton, MobileActs, PayCheck, RoundButton, Segmented, Sheet, StatusPill, Tabs, Tag,
+  BulkBar, Button, ChipSelect, ColumnsMenu, DenseTable, FilterChip, IconButton, MenuButton, MobileActs, PayCheck, RoundButton, Segmented, Sheet, StatusPill, Tabs,
   useColumns, useMobile, useOutside, type DenseCol, type TabItem, EmptyState, Floating, HoverCard } from "../components/ui";
 import OrderModal, { openTtnOnLoad } from "./OrderCard";
 
