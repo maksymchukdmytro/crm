@@ -151,3 +151,54 @@
   .pr-mstock.warn em { color: var(--warn-ink); } .pr-mstock.bad em { color: var(--bad-ink); }
   .pr-mstock.warn .pr-bar > i { background: var(--warn); } .pr-mstock.bad .pr-bar > i { background: var(--bad); }
 }
+
+@media (max-width: 768px) {
+  /* B13 · оплати: дві плитки, рядки 56 px з галочкою 26 px, закріплена кнопка «Гроші отримано» */
+  .pay-v2 .py-tiles { grid-template-columns: 1fr 1fr; }
+  .pay-v2 .py-tile small:first-child { display: none; }
+  .py-g { border-radius: var(--m-r); }
+  .py-gh { padding: 12px 14px 8px; font-size: 15px; }
+  .py-gh i { display: none; }
+  .py-mall { min-height: 44px; font-size: 14px; }
+  .py-mr { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 6px 14px; border: 0; border-top: 1px solid #F0F0EE;
+    background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; flex-direction: row !important; }
+  .py-mr input[type=checkbox] { width: 26px; height: 26px; border-radius: 8px; background-size: 16px 16px; flex: none; }
+  .py-mr.on { background: #F7FAFF; }
+  .py-mt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .py-mt b { font-size: 15px; font-weight: 550; }
+  .py-mt small { font-size: 12.5px; }
+  .py-mr .py-sum { font-size: 15px; font-weight: 600; white-space: nowrap; }
+  .py-more { min-height: 44px; }
+  .py-mgo { position: fixed; left: 12px; right: 12px; bottom: calc(86px + env(safe-area-inset-bottom)); z-index: 40; display: flex; align-items: center; justify-content: center;
+    gap: 8px; height: 54px; border: 0; border-radius: 18px; background: var(--accent); color: #fff; font: inherit; font-size: 16px; font-weight: 600;
+    box-shadow: 0 10px 24px -10px rgba(46, 107, 230, .7); cursor: pointer; }
+  .pay-v2:has(.py-mgo) { padding-bottom: 80px; }
+
+  /* B17 · журнал — стрічкою подій */
+  .au-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--m-pad)) 10px; padding: 0 var(--m-pad); }
+  .au-chips::-webkit-scrollbar { display: none; }
+  .au-chips .pr-qc { flex: none; height: 40px; padding: 0 14px; font-size: 14px; border-color: #E6E6E3; background: #fff; }
+  .au-date { margin-bottom: 12px; }
+  .au-day { margin-bottom: 12px; padding: 4px 0; border-radius: var(--m-r); background: #fff; }
+  .au-day h2 { margin: 0; padding: 10px 14px 4px; font-size: 13px; font-weight: 500; color: var(--muted); }
+  .au-ev { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 56px; padding: 10px 14px; border: 0; border-top: 1px solid #F0F0EE;
+    background: none; font: inherit; color: var(--ink); text-align: left; }
+  .au-day h2 + .au-ev { border-top: 0; }
+  .au-ev:disabled { opacity: 1; cursor: default; }
+  .au-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .au-t b { font-size: 14.5px; font-weight: 550; }
+  .au-t small { font-size: 12.5px; color: var(--muted); }
+  .au-t .au-d { color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .au-ev time { flex: none; font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .au-more { width: 100%; height: 48px; justify-content: center; }
+}
+
+@media (max-width: 768px) {
+  /* B18 · закупівлі — картками */
+  .pu-mcard { display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; border: 0; font: inherit; text-align: left; color: var(--ink); }
+  .pu-m1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); }
+  .pu-mcard > b { font-size: 16px; font-weight: 600; }
+  .pu-m3 { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .pu-m3 small { font-size: 12.5px; color: var(--muted); min-width: 0; }
+  .pu-m3 b { font-size: 16px; font-weight: 600; white-space: nowrap; }
+}

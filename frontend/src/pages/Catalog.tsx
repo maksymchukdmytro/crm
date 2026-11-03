@@ -6,7 +6,7 @@ import { api, qs } from "../lib/api";
 import { errText, useDebounced, useMeta, useToast } from "../lib/app";
 import { date, dt, money, num } from "../lib/format";
 import type { Move, Product, Purchase, Supplier, Warehouse } from "../lib/types";
-import { ask, NumberField, Badge, Button, DenseTable, Empty, Field, MobileActs, Modal, RoundButton, Segmented, Spinner, Tabs, Window, type DenseCol , Select, EmptyState } from "../components/ui";
+import { ask, NumberField, Badge, Button, DenseTable, Empty, Field, MobileActs, Modal, RoundButton, Segmented, Spinner, Tabs, Window, useMobile, type DenseCol, Select, EmptyState } from "../components/ui";
 
 
 export function MovesTable({ moves, compact = false }: { moves: Move[]; compact?: boolean }) {
@@ -188,8 +188,13 @@ export function PurchasesPage() {
   const preset = sp.get("product") || "";
   const [suppliers, setSuppliers] = useState(false);
   const { data } = useQuery({ queryKey: ["purchases", status], queryFn: () => api.get<Purchase[]>(`/purchases${qs({ status })}`) });
+  const mobile = useMobile();
+  const empty = <EmptyState icon={ShoppingCart} title="Створіть першу закупівлю"
+    text="Закупівля — це прихід товару від постачальника: після оприбуткування залишки й собівартість оновляться самі"
+    action={{ label: "Закупівля", icon: Plus, onClick: () => setOpen("new") }} />;
   return (
     <div>
+      <MobileActs><RoundButton icon={Plus} label="Нова закупівля" primary onClick={() => setOpen("new")} /></MobileActs>
       <div className="head"><h1><span className="h-ico"><ShoppingCart size={18} /></span>Закупівлі</h1>
         <div className="actions"><button className="btn ghost" onClick={() => setSuppliers(true)}><Truck size={15} /> Постачальники</button>
           <button className="btn primary" onClick={() => setOpen("new")}><Plus size={15} /> Закупівля</button></div></div>
@@ -197,7 +202,23 @@ export function PurchasesPage() {
         <a className={!status ? "on" : ""} onClick={() => setStatus("")}>Усі</a>
         {Object.entries(PSTATUS).map(([k, [n]]) => <a key={k} className={status === k ? "on" : ""} onClick={() => setStatus(k)}>{n}</a>)}
       </div>
-      <div className="card flush tablewrap">
+      {mobile && (
+        <div className="m-list pu-mlist">
+          {!data && <div className="m-card m-skel" aria-hidden><i /><i /><i /></div>}
+          {data?.map((p) => {
+            const qty = p.items.reduce((a, i) => a + Number(i.qty || 0), 0);
+            return (
+              <button key={p.id} type="button" className="m-card pu-mcard" onClick={() => setOpen(p.id)}>
+                <span className="pu-m1"><span className="mono">№{p.id} · {date(p.created_at)}</span><Badge kind={PSTATUS[p.status]?.[1]}>{PSTATUS[p.status]?.[0]}</Badge></span>
+                <b className="ell">{p.supplier || "Без постачальника"}</b>
+                <span className="pu-m3"><small className="ell">{p.items.length === 1 ? `${p.items[0].name} · ${qty} шт` : `${p.items.length} товари · ${qty} шт`}</small><b className="num">{money(p.total)} ₴</b></span>
+              </button>
+            );
+          })}
+          {data && !data.length && <div className="m-card m-empty">{empty}</div>}
+        </div>
+      )}
+      {!mobile && <div className="card flush tablewrap">
         <table className="t dense">
           <thead><tr><th>№</th><th>Дата</th><th>Постачальник</th><th>Товари</th><th className="num">Сума</th><th>Статус</th></tr></thead>
           <tbody>
@@ -207,12 +228,10 @@ export function PurchasesPage() {
                 <td>{p.supplier || "—"}</td><td className="ell">{p.items.map((i) => `${i.name} ×${i.qty}`).join(", ")}</td>
                 <td className="num">{money(p.total)}</td><td><Badge kind={PSTATUS[p.status]?.[1]}>{PSTATUS[p.status]?.[0]}</Badge></td></tr>
             ))}
-            {data && !data.length && <tr><td colSpan={6}><EmptyState icon={ShoppingCart} title="Створіть першу закупівлю"
-              text="Закупівля — це прихід товару від постачальника: після оприбуткування залишки й собівартість оновляться самі"
-              action={{ label: "Закупівля", icon: Plus, onClick: () => setOpen("new") }} /></td></tr>}
+            {data && !data.length && <tr><td colSpan={6}>{empty}</td></tr>}
           </tbody>
         </table>
-      </div>
+      </div>}
       {open !== null && <PurchaseModal id={open} product={open === "new" ? preset : ""} onClose={() => { setOpen(null); if (sp.get("new")) setSp({}); }} />}
       {suppliers && <SuppliersModal onClose={() => setSuppliers(false)} />}
     </div>
