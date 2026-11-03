@@ -145,6 +145,5 @@ body:has(.bulkbar, .bulk.on, .win-backdrop, .modal, .side-panel) .fab-wrap { dis
   body:has(.win-backdrop, .modal, .side-panel) .tabbar { display: none; }
   .bulkbar { bottom: calc(88px + env(safe-area-inset-bottom)) !important; }
 }
-}
 /* палітра: дії з першим знайденим замовленням (макет v26, 20) */
 .palette-item .palette-ic { display: inline-grid; place-items: center; width: 24px; height: 24px; flex: none; border-radius: 7px; background: var(--accent-soft); color: var(--accent); }
