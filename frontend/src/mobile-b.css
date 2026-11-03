@@ -1,0 +1,79 @@
+/* Етап B (docs/UI-NEXT.md, макети docs/design/v27-telefon/): покращення телефону. Лише до 768 px — ПК не змінюється. */
+@media (max-width: 768px) {
+  /* B1–B2 · головна: «Що зробити зараз», смуга продажів, мої нагадування */
+  .mh-h { display: flex; align-items: center; gap: 8px; margin: 4px 2px -2px; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+  .mh-h em, .mh-rems h2 em { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; background: #E0245E; color: #fff;
+    font-size: 12px; font-style: normal; font-weight: 600; }
+  .mh-todo { display: flex; gap: 10px; margin: 0 calc(-1 * var(--m-pad)); padding: 0 var(--m-pad) 2px; overflow-x: auto; scroll-snap-type: x mandatory;
+    scroll-padding: 0 var(--m-pad); scrollbar-width: none; }
+  .mh-todo::-webkit-scrollbar { display: none; }
+  .mh-job { flex: 0 0 136px; scroll-snap-align: start; display: flex; flex-direction: column; align-items: stretch; min-height: 118px; padding: 12px 13px;
+    border: 0; border-radius: var(--m-r); background: #fff; font: inherit; text-align: left; color: var(--ink); cursor: pointer; }
+  .mh-job-h { display: flex; align-items: center; justify-content: space-between; color: var(--faint); }
+  .mh-job .sq.sm { width: 32px; height: 32px; border-radius: 10px; }
+  .mh-job b { margin-top: 10px; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .mh-job small { margin-top: 2px; font-size: 12.5px; line-height: 1.3; color: var(--muted); }
+  .mh-job:active { transform: scale(.98); }
+  .mh-done { display: flex; align-items: center; gap: 8px; margin: 0; padding: 14px 16px; border-radius: var(--m-r); background: #fff; color: var(--ok-ink); font-size: 14px; }
+
+  .mh-strip { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 14px 16px; border: 0; border-radius: 22px;
+    background: #1E1E22; color: #fff; font: inherit; text-align: left; cursor: pointer; }
+  .mh-strip-t { display: flex; flex-direction: column; min-width: 0; }
+  .mh-strip-t small { font-size: 12.5px; color: #B7B7BC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mh-strip-t b { font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mh-strip-t b i { font-style: normal; font-size: 20px; color: #9E9EA3; font-weight: 500; }
+  .mh-strip-r { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: none; }
+  .mh-strip .hd-spark { display: block; }
+
+  .mh-rems h2 { justify-content: flex-start; gap: 8px; margin-bottom: 2px; }
+  .mh-rems h2 .link-btn { margin-left: auto; min-height: 44px; padding: 0 4px; }
+  .mh-rem { display: flex; align-items: center; gap: 12px; min-height: 60px; border-top: 1px solid #F0F0EE; }
+  .mh-rem-t { width: 46px; flex: none; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mh-rem.late .mh-rem-t { color: var(--bad-ink); }
+  .mh-rem-n { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; min-height: 48px; justify-content: center; padding: 0; border: 0;
+    background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
+  .mh-rem-n span { max-width: 100%; font-size: 15px; font-weight: 500; }
+  .mh-rem-n small { font-size: 12.5px; color: var(--muted); }
+  .mh-call { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 14px; background: var(--soft); color: var(--ink); }
+}
+
+@media (max-width: 768px) {
+  /* B3 · замовлення: статус — одна кнопка кольором статусу, список — шторкою; підсумок одним рядком */
+  .page-orders .lh-t .list-sum, .page-leads .lh-t .list-sum { display: none; }
+  .m-stsel { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+  .m-stbtn { display: inline-flex; align-items: center; gap: 7px; height: 40px; max-width: 62%; padding: 0 12px 0 15px; border: 0; border-radius: 99px; flex: none;
+    background: color-mix(in srgb, var(--c) 82%, #000); color: #fff; font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer; }
+  .m-stbtn em { font-style: normal; font-weight: 500; opacity: .8; font-variant-numeric: tabular-nums; }
+  .m-stbtn svg { flex: none; opacity: .85; }
+  .m-stsum { min-width: 0; font-size: 12.5px; line-height: 1.3; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .m-stlist { display: flex; flex-direction: column; background: var(--soft); border-radius: 16px; padding: 4px 12px; }
+  .m-stopt { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0; border: 0; border-bottom: 1px solid var(--line); background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
+  .m-stopt:last-child { border-bottom: 0; }
+  .m-stopt b { margin-left: auto; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .m-stopt svg { color: var(--accent); flex: none; }
+  .m-stck { width: 17px; flex: none; }
+  .m-stpill { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 99px; font-size: 14px; font-weight: 500;
+    background: color-mix(in srgb, var(--c) 13%, white); color: color-mix(in srgb, var(--c) 78%, black); }
+  .m-stpill i { width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
+
+  /* B4 · дія в картці: дзвінок 44 px і головна дія за станом */
+  .mc-acts { display: flex; gap: 8px; margin-top: 10px; }
+  .mc-call { display: grid; place-items: center; width: 52px; height: 44px; flex: none; border-radius: 12px; background: #F2F2F0; color: var(--ink); }
+  .mc-acts .ocd-go { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; height: 44px; padding: 0 10px; border: 0; border-radius: 12px;
+    background: #F2F2F0; color: var(--ink-2); font: inherit; font-size: 14.5px; font-weight: 550; cursor: pointer; }
+  .mc-acts .ocd-go.p { background: var(--accent); color: #fff; }
+  .mc-acts .ocd-go.s { background: var(--accent-soft); color: #1F56C4; }
+
+  /* B5 · свайп картки */
+  .m-sw { position: relative; border-radius: var(--m-r); }
+  .m-sw > .m-card { position: relative; z-index: 1; transition: transform 180ms var(--ease, ease); touch-action: pan-y; }
+  .m-sw-bg { position: absolute; inset: 0; z-index: 0; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 0 22px; border-radius: var(--m-r);
+    color: #fff; font-size: 13.5px; opacity: .55; transition: opacity 150ms; }
+  .m-sw.go .m-sw-bg { opacity: 1; }
+  .m-sw-bg.r { align-items: flex-start; }
+  .m-sw-bg.l { align-items: flex-end; }
+  .m-sw-bg.t-ok { background: #16A34A; }
+  .m-sw-bg.t-accent { background: var(--accent); }
+  .m-sw-bg.t-bad { background: var(--bad); }
+}
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) { .m-sw > .m-card, .m-sw-bg { transition: none; } }

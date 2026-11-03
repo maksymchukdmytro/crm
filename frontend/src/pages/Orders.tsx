@@ -267,8 +267,27 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
           : o.city_name || o.ttn ? <span className="mc-muted">{CARRIER_SHORT[o.delivery_method] ?? meta.delivery_methods[o.delivery_method]}</span>
           : <span className="mc-muted">без доставки</span>}
       </div>
+      <div className="mc-acts">
+        {o.phone && <a className="mc-call" href={`tel:+${o.phone.replace(/\D/g, "")}`} aria-label={`Подзвонити ${o.customer_name || ""}`} onClick={(e) => e.stopPropagation()}><Phone size={18} /></a>}
+        {cardAction(o)}
+      </div>
     </>);
   };
+  // свайп картки на телефоні (B5): вправо — прийняти несортоване, вліво — подзвонити; «Скасувати» в тості
+  const quickAccept = async (o: OrderRow) => {
+    const to = byCode.confirmed;
+    if (!to) return;
+    const back = o.status_id;
+    try {
+      await api.post("/orders/bulk", { ids: [o.id], action: "status", value: to.id });
+      qc.invalidateQueries({ queryKey: ["orders"] }); qc.invalidateQueries({ queryKey: ["counters"] });
+      toast(`№${o.id} прийнято`, "ok", { undo: () => api.post("/orders/bulk", { ids: [o.id], action: "status", value: back }).then(() => { qc.invalidateQueries({ queryKey: ["orders"] }); qc.invalidateQueries({ queryKey: ["counters"] }); }) });
+    } catch (e) { toast(errText(e), "error"); }
+  };
+  const swipe = stage === "order" && meta.user.role !== "warehouse" ? {
+    right: { label: "Прийняти", icon: Check, tone: "ok" as const, when: (o: OrderRow) => statuses[o.status_id]?.code === "unsorted" && !!byCode.confirmed?.active, run: quickAccept },
+    left: { label: "Подзвонити", icon: Phone, tone: "accent" as const, when: (o: OrderRow) => !!o.phone, run: (o: OrderRow) => { window.location.href = `tel:+${o.phone.replace(/\D/g, "")}`; } },
+  } : undefined;
 
   const anyFilter = FILTERS.some((k) => k !== "status" && k !== "q" && f[k]);
   const exportUrl = `${ROOT}/api/orders/export.csv${qs({ status: f.status, q: f.q, manager: f.manager, date_from: f.date_from, date_to: f.date_to, delivery: f.delivery })}`;
@@ -449,7 +468,9 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
       </div>
 
       <div className="list-tabsrow">
-        <Tabs items={tabs} value={f.status} onChange={(k) => setF({ status: k })} label="Статуси" className="list-tabs" />
+        {mobile
+          ? <StatusSheet tabs={tabs} value={f.status} onChange={(k) => setF({ status: k })} summary={summary.filter(([n]) => n).map(([n, t]) => `${n} ${t}`).join(" · ")} />
+          : <Tabs items={tabs} value={f.status} onChange={(k) => setF({ status: k })} label="Статуси" className="list-tabs" />}
         {!allFilters && anyFilter && <div className="lh-active">{filterChips}</div>}
       </div>
 
@@ -502,6 +523,7 @@ export default function OrdersPage({ stage = "order" }: { stage?: "lead" | "orde
           rowHeight={mobile ? undefined : 40}
           rowClass={(o) => (o.remind_at && new Date(o.remind_at) <= new Date() ? "due" : "")}
           mobileCard={mobileCard}
+          swipe={swipe}
           actions={isUnsorted ? (o) => <Button size={30} variant="soft" icon={Check} onClick={() => accept([o.id])}>Прийняти</Button> : undefined}
           empty={emptyBox}
         />
@@ -805,4 +827,32 @@ function StatusMenu({ o, statuses, current, onPick }: { o: OrderRow; statuses: S
       ))}
     </Floating>
   </>);
+}
+
+// ---------------------------------------------------------------- телефон (B3): статус — одна кнопка кольором статусу, список — шторкою
+function StatusSheet({ tabs, value, onChange, summary }: { tabs: TabItem<string>[]; value: string; onChange: (k: string) => void; summary: string }) {
+  const [open, setOpen] = useState(false);
+  const cur = tabs.find((t) => t.key === value) ?? tabs[tabs.length - 1];
+  const c = cur.color ?? "#1F1F1C";
+  return (
+    <div className="m-stsel">
+      <button type="button" className="m-stbtn" style={{ ["--c" as string]: c }} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
+        <span className="ell">{cur.label}</span>{cur.count != null && <em>{cur.count}</em>}<ChevronDown size={16} />
+      </button>
+      {summary && <span className="m-stsum">{summary}</span>}
+      {open && (
+        <Sheet title="Статус" onClose={() => setOpen(false)}>
+          <div className="m-stlist" role="listbox" aria-label="Статус">
+            {tabs.map((t) => (
+              <button key={t.key} type="button" role="option" aria-selected={t.key === value} className={`m-stopt${t.key === value ? " on" : ""}`}
+                onClick={() => { onChange(t.key); setOpen(false); }}>
+                <span className="m-stpill" style={{ ["--c" as string]: t.color ?? "#7C7B76" }}><i />{t.label}</span>
+                {t.count != null && <b>{t.count}</b>}{t.key === value ? <Check size={17} /> : <span className="m-stck" />}
+              </button>
+            ))}
+          </div>
+        </Sheet>
+      )}
+    </div>
+  );
 }
