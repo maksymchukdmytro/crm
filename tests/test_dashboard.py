@@ -84,3 +84,23 @@ def test_payment_method_own_image(api, db, tmp_path, monkeypatch):
     r = api.delete("/api/settings/payment-methods/16/image")
     assert next(m for m in r.json()["payment_methods"] if m["id"] == 16)["image"] == ""
     assert not list((tmp_path / "pay").iterdir())
+
+
+def test_dashboard_todo_week_and_my_reminders(api, admin, db, products):
+    """«Що зробити зараз» (найстаріше несортоване, посилки на пошті понад 3 дні), міні-графік за 7 днів, мої нагадування."""
+    from datetime import timedelta
+    from app.models import Order, Status, utcnow
+    create_via_ui(admin, products)
+    create_via_ui(admin, products, phone="0679998877")
+    o = db.query(Order).order_by(Order.id).first()
+    o.created_at = utcnow() - timedelta(hours=2, minutes=5)
+    o.remind_at = utcnow() - timedelta(minutes=10)
+    arrived = db.query(Status).filter_by(code="arrived").one()
+    o2 = db.query(Order).order_by(Order.id.desc()).first()
+    o2.status_id, o2.status_changed_at = arrived.id, utcnow() - timedelta(days=4)
+    db.commit()
+    d = api.get("/api/dashboard").json()
+    a = d["attention"]
+    assert a["unsorted_oldest_min"] >= 125 and a["arrived_stale"] == 1
+    assert len(d["week"]) == 7 and d["week"][-1]["day"] == d["today"]["date"]
+    assert [r["id"] for r in d["my_reminders"]] == [o.id]

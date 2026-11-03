@@ -4,14 +4,14 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  AlarmClock, ArrowDownRight, ArrowUpRight, Boxes, CalendarDays, Check, ChevronRight, CircleDot, Clock, HandCoins, Inbox, MapPin, Package, PackageCheck, Truck,
+  AlarmClock, ArrowDownRight, ArrowUpRight, Boxes, CalendarDays, Check, ChevronRight, CircleDot, Clock, HandCoins, Inbox, MapPin, Package, PackageCheck, Phone, Truck,
   UserRound, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 import { api, qs } from "../lib/api";
 import { useMeta } from "../lib/app";
-import { isoDay, money } from "../lib/format";
+import { isoDay, money, phone } from "../lib/format";
 import type { Dashboard } from "../lib/types";
-import { MenuButton, Segmented, Spinner, useMobile } from "../components/ui";
+import { MenuButton, Segmented, Spinner, StatusPill, useMobile } from "../components/ui";
 import "./home.css";
 
 const WEEK = ["неділя", "понеділок", "вівторок", "середа", "четвер", "пʼятниця", "субота"];
@@ -66,6 +66,19 @@ export default function HomePage() {
     { icon: Boxes, n: a.low_stock, label: "товарів закінчуються", tone: "hot", go: meta.nav.includes("warehouse") ? () => nav("/warehouse") : undefined },
   ];
 
+  // «Що зробити зараз» (макет v26, 10): п'ять дій із лічильником; клік — відфільтрований список
+  const age = (min?: number | null) => min == null ? "" : min < 60 ? `найдовше ${min} хв` : min < 1440 ? `найдовше ${Math.floor(min / 60)} год` : `найдовше ${Math.floor(min / 1440)} дн`;
+  const todo: { icon: LucideIcon; n: number; label: string; sub?: string; tone: string; go: () => void }[] = [
+    { icon: CircleDot, n: a.orders_unsorted, label: pl(a.orders_unsorted, "несортоване", "несортовані", "несортованих"), sub: age(a.unsorted_oldest_min), tone: "gray",
+      go: () => nav(st("unsorted") ? `/orders?status=${st("unsorted")}` : "/orders") },
+    { icon: Truck, n: a.to_ship, label: "прийняті без ТТН", tone: "blue", go: () => nav(st("confirmed") ? `/orders?status=${st("confirmed")}&ttn=none` : "/orders") },
+    { icon: AlarmClock, n: a.reminders, label: "нагадування настали", tone: "red", go: () => nav("/orders?remind=due") },
+    { icon: Package, n: a.arrived_stale ?? 0, label: "лежать на пошті > 3 дн", sub: a.arrived ? `усього на пошті ${a.arrived}` : "", tone: "orange",
+      go: () => nav(st("arrived") ? `/orders?status=${st("arrived")}` : "/orders") },
+    ...(leadsOn ? [{ icon: Phone, n: a.leads_new, label: "лідів чекають дзвінка", tone: "purple", go: () => nav("/leads?tab=new") }] : []),
+  ];
+  const more = attention.filter((x) => ["у дорозі", "очікуємо післяплату", "товарів закінчуються"].includes(x.label));
+
   if (mobile) return <HomeMobile data={data} periodName={periodName} attention={attention} go={(to) => nav(to)} st={st} />;
 
   return (
@@ -92,13 +105,13 @@ export default function HomePage() {
       <div className="hd-tiles">
         <button type="button" className="hd-tile" onClick={() => nav(`/orders?date_from=${today.date}&date_to=${today.date}`)}>
           <small><CircleDot size={14} />Сьогодні</small>
-          <span className="hd-big">{money(today.sum)} ₴<Delta v={today.sum_delta} hint="До вчора" /></span>
+          <span className="hd-big">{money(today.sum)} ₴<Delta v={today.sum_delta} hint="До вчора" /><Spark values={(data.week ?? []).map((d) => d.sum)} title="Продажі за 7 днів" /></span>
           <span className="hd-row"><span>{today.orders} {pl(today.orders, "замовлення", "замовлення", "замовлень")} · сер. чек</span><b>{money(avgToday)} ₴</b></span>
           <span className="hd-row"><span>Учора</span><b>{money(today.yesterday_sum)} ₴</b></span>
         </button>
         <button type="button" className="hd-tile" onClick={() => nav("/stats")}>
           <small><CalendarDays size={14} />{periodName}</small>
-          <span className="hd-big">{money(month.sum)} ₴<Delta v={month.sum_delta} hint={`До ${prevName}`} /></span>
+          <span className="hd-big">{money(month.sum)} ₴<Delta v={month.sum_delta} hint={`До ${prevName}`} /><Spark values={data.days.map((d) => d.sum)} title={`Продажі по днях · ${periodName.toLowerCase()}`} /></span>
           <span className="hd-row"><span>{month.orders} {pl(month.orders, "замовлення", "замовлення", "замовлень")} · сер. чек</span><b>{money(month.avg_check)} ₴</b></span>
           <span className="hd-row"><span>{prevName}</span><b>{money(month.prev_sum)} ₴</b></span>
         </button>
@@ -117,17 +130,20 @@ export default function HomePage() {
       </div>
 
       <div>
-        <div className="hd-cap">Потребує уваги — клік відкриває відфільтрований список</div>
-        <div className="hd-attn" style={{ gridTemplateColumns: `repeat(${attention.length}, minmax(0, 1fr))` }}>
-          {attention.map((x) => {
-            const zero = x.n === 0 || x.n === "0 ₴";
-            return (
-              <button key={x.label} type="button" className={`${zero ? "zero" : x.tone}`} onClick={x.go} disabled={!x.go}>
-                <span className="ic"><x.icon size={16} />{x.go && <ChevronRight size={14} />}</span>
-                <b>{x.n}</b><small>{x.label}</small>
-              </button>
-            );
-          })}
+        <div className="hd-cap">Що зробити зараз — клік відкриває потрібний список</div>
+        <div className="hd-todo" style={{ gridTemplateColumns: `repeat(${todo.length}, minmax(0, 1fr))` }}>
+          {todo.map((x) => (
+            <button key={x.label} type="button" className={`hd-td ${x.tone}${x.n ? "" : " zero"}`} onClick={x.go}>
+              <span className="sq"><x.icon size={17} /></span>
+              <span className="t"><b className="num">{x.n}</b><small>{x.label}</small>{x.sub && x.n > 0 && <small className="s">{x.sub}</small>}</span>
+              <ChevronRight size={16} className="go" aria-hidden />
+            </button>
+          ))}
+        </div>
+        <div className="hd-more">
+          {more.map((x) => (
+            <button key={x.label} type="button" className="hd-mchip" onClick={x.go} disabled={!x.go}><x.icon size={14} /><b>{x.n}</b>{x.label}</button>
+          ))}
         </div>
       </div>
 
@@ -145,7 +161,29 @@ export default function HomePage() {
         </section>
       </div>
 
-      <div className={`hd-bottom${(data.team ?? []).length ? "" : " one"}`}>
+      <div className="hd-bottom">
+        <section className="hd-card flush">
+          <h2><span className="hd-h-ic red"><AlarmClock size={15} /></span>Мої нагадування на сьогодні
+            <button type="button" className="link-btn" onClick={() => nav("/orders?remind=due")}>Усі<ChevronRight size={14} /></button></h2>
+          {(data.my_reminders ?? []).length === 0 ? <p className="hint pad">На сьогодні нагадувань немає.</p> : (
+            <div className="hd-rem">
+              {(data.my_reminders ?? []).map((r) => {
+                const at = new Date(r.remind_at);
+                const late = at <= new Date();
+                const sameDay = isoDay(at) === isoDay(new Date());
+                return (
+                  <div key={r.id} className={`hd-rem-r${late ? " late" : ""}`}>
+                    <b className="num">{sameDay ? at.toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }) : dm(isoDay(at))}</b>
+                    <button type="button" className="ell hd-rem-n" onClick={() => nav(`/orders/${r.id}`)}>{r.customer_name || "без імені"}</button>
+                    <StatusPill status={meta.statuses.find((x) => x.id === r.status_id)} />
+                    <span className="mono muted">№{r.id}</span>
+                    {r.phone && <a className="hd-rem-call" href={`tel:+${r.phone.replace(/\D/g, "")}`} aria-label={`Подзвонити ${phone(r.phone)}`} title={phone(r.phone)}><Phone size={14} /></a>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
         <section className="hd-card flush">
           <h2>Топ товарів · {periodName.toLowerCase()}<button type="button" className="link-btn" onClick={() => nav("/stats")}>Статистика<ChevronRight size={14} /></button></h2>
           {data.top.length === 0 ? <p className="hint pad">Продажів за цей період ще немає.</p> : (
@@ -174,6 +212,24 @@ export default function HomePage() {
         )}
       </div>
     </div>
+  );
+}
+
+/** Міні-графік у плитці: лінія за днями, остання точка — крапкою. */
+function Spark({ values, title }: { values: number[]; title: string }) {
+  if (values.length < 2) return null;
+  const w = 96, h = 30, mx = Math.max(...values), mn = Math.min(...values);
+  const pts = values.map((v, i) => [i * w / (values.length - 1), h - 3 - ((v - mn) / ((mx - mn) || 1)) * (h - 6)]);
+  const up = values[values.length - 1] >= values[0];
+  const c = up ? "var(--ok)" : "var(--bad)";
+  const d = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const [lx, ly] = pts[pts.length - 1];
+  return (
+    <svg className="hd-spark" width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img" aria-label={title}>
+      <title>{title}</title>
+      <path d={d} fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={lx} cy={ly} r={3} fill={c} />
+    </svg>
   );
 }
 
